@@ -1,5 +1,5 @@
-import { LoginPage } from '@/modules/auth'
+import { DashboardAdmin } from '@/modules/administrador'
 
 export default function App() {
-  return <LoginPage />
+  return <DashboardAdmin />
 }
