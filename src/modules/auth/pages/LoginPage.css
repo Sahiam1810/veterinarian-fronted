@@ -1,0 +1,228 @@
+.login-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: var(--color-ink);
+}
+
+.login-page__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: var(--color-cream);
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.login-page__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 2rem 1.25rem 3rem;
+  /* Sube el bloque (wordmark + card) hacia el centro óptico */
+  transform: translateY(-6vh);
+}
+
+.login-page__wordmark {
+  display: block;
+  width: min(420px, 88vw);
+  height: auto;
+  margin-inline: auto;
+  margin-bottom: 0.55rem;
+  position: relative;
+  z-index: 2;
+}
+
+.login-card {
+  width: min(100%, 380px);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--color-cream) 92%, white);
+  padding: 1.75rem 1.5rem 1.5rem;
+  box-shadow:
+    0 18px 40px rgb(29 67 55 / 12%),
+    0 2px 8px rgb(29 67 55 / 6%);
+  border: 1px solid rgb(29 67 55 / 6%);
+}
+
+.login-card__emblem {
+  display: block;
+  width: 108px;
+  height: auto;
+  margin: 0 auto 0.75rem;
+}
+
+.login-card__title {
+  margin: 0 0 1.25rem;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+
+.login-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.login-field__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.login-field__input {
+  width: 100%;
+  border: 1px solid rgb(29 67 55 / 16%);
+  border-radius: 0.7rem;
+  background: #fff;
+  padding: 0.7rem 0.85rem;
+  font: inherit;
+  color: var(--color-ink);
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.login-field__input::placeholder {
+  color: #9aa8a2;
+}
+
+.login-field__input:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgb(45 90 88 / 18%);
+}
+
+.login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  color: var(--color-ink);
+  user-select: none;
+  cursor: pointer;
+}
+
+.login-remember__control {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+.login-remember__control input {
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 1.5px solid rgb(45 90 88 / 45%);
+  border-radius: 0.28rem;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.login-remember__control input:checked {
+  background: var(--color-brand-teal);
+  border-color: var(--color-brand-teal);
+}
+
+.login-remember__control input:focus-visible {
+  outline: 2px solid rgb(45 90 88 / 35%);
+  outline-offset: 2px;
+}
+
+.login-remember__paw {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.login-remember__control input:checked + .login-remember__paw {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.login-card__submit {
+  margin-top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-brand-teal);
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.login-card__submit:hover {
+  background: color-mix(in srgb, var(--color-brand-teal) 88%, black);
+}
+
+.login-card__submit:active {
+  transform: translateY(1px);
+}
+
+.login-card__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-card__error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b42318;
+}
+
+@media (min-width: 768px) {
+  .login-page__content {
+    transform: translateY(-8vh);
+  }
+
+  .login-page__wordmark {
+    width: min(520px, 52vw);
+    margin-bottom: 0.75rem;
+  }
+
+  .login-card {
+    width: min(100%, 400px);
+    padding: 2rem 1.75rem 1.75rem;
+  }
+
+  .login-card__emblem {
+    width: 120px;
+  }
+}

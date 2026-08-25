@@ -16,19 +16,43 @@ pnpm dev
 - `pnpm preview` — previsualizar build
 - `pnpm lint` — comprobar tipos
 
-## Estructura
+## Arquitectura de módulos (por rol)
 
 ```
-src/
-  main.tsx
-  App.tsx
-  index.css
-  modules/
-  config/
-  services/
-  stores/
-  styles/
-  global/
+src/modules/
+  auth/                 # login / sesión (compartido)
+  administrador/
+  veterinario/
+  recepcionista/
+  auxiliar/
+  cliente/
+```
+
+Cada rol incluye: `pages/`, `components/`, `hooks/`, `services/`, `styles/`, `types/`, `utils/`.
+
+## Branding
+
+```
+src/assets/branding/
+  huellitas-logo-principal-with-bg.png|.svg      # emblema (logo_principal)
+  huellitas-logo-principal-transparent.png|.svg
+  huellitas-wordmark-with-bg.png|.svg            # letras
+  huellitas-wordmark-transparent.png|.svg
+```
+
+```tsx
+import { BrandLogo } from '@/global/components'
+
+<BrandLogo mark="principal" variant="transparent" />
+<BrandLogo mark="wordmark" variant="with-bg" />
 ```
 
 Alias `@/` → `src/`.
+
+## Auth (cara principal)
+
+La app arranca en `LoginPage` (`src/modules/auth/pages`):
+- Fondo hi-res: `src/modules/auth/assets/login-background.jpeg`
+- Wordmark + emblema Huellitas
+- Formulario listo (API pendiente)
+
