@@ -1,2 +1,6 @@
-/** Módulo de rol: administrador */
-export {}
+ï»¿export * from './pages'
+export * from './components'
+export * from './hooks'
+export * from './types'
+export * from './services'
+export * from './utils'
