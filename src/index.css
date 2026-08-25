@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+:root {
+  --color-brand: #1d4337;
+  --color-brand-teal: #2d5a58;
+  --color-brand-terracotta: #d67b5c;
+  --color-cream: #fdf7f0;
+  --color-ink: #1a2e2c;
+  --color-brand-surface: #fdf7f0;
+  --color-brand-muted: #6b7c78;
+}
+
 html,
 body,
 #root {
@@ -8,4 +18,18 @@ body,
 
 body {
   margin: 0;
+  font-family:
+    "Segoe UI",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
