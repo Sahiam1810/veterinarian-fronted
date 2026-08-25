@@ -1,12 +1,34 @@
-# HuellitasFront
+# Huellitas Front
 
-Estructura base del nuevo proyecto Node.js.
+Frontend con Vite, React, TypeScript y Tailwind CSS (pnpm).
 
 ## Inicio
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-El punto de entrada se encuentra en `src/index.js`.
+## Scripts
+
+- `pnpm dev` — desarrollo
+- `pnpm build` — producción
+- `pnpm preview` — previsualizar build
+- `pnpm lint` — comprobar tipos
+
+## Estructura
+
+```
+src/
+  main.tsx
+  App.tsx
+  index.css
+  modules/
+  config/
+  services/
+  stores/
+  styles/
+  global/
+```
+
+Alias `@/` → `src/`.
