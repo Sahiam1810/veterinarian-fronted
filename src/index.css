@@ -1,5 +1,49 @@
 @import "tailwindcss";
-@import "./global/components/styles/globalStyles.css";
+@import "./global/styles/globalStyles.css";
+
+@theme {
+  --color-brand: var(--color-brand);
+  --color-brand-teal: var(--color-brand-teal);
+  --color-brand-deep: var(--color-brand-deep);
+  --color-brand-dark: var(--color-brand-dark);
+  --color-brand-hover: var(--color-brand-hover);
+  --color-brand-darker: var(--color-brand-darker);
+  --color-brand-darkest: var(--color-brand-darkest);
+  --color-brand-focus: var(--color-brand-focus);
+
+  --color-terracotta: var(--color-terracotta);
+  --color-brand-terracotta: var(--color-brand-terracotta);
+  --color-terracotta-soft: var(--color-terracotta-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+
+  --color-ochre: var(--color-ochre);
+  --color-brand-ochre: var(--color-brand-ochre);
+  --color-ochre-soft: var(--color-ochre-soft);
+
+  --color-sage: var(--color-sage);
+  --color-brand-sage: var(--color-brand-sage);
+  --color-brand-muted: var(--color-brand-muted);
+  --color-sage-soft: var(--color-sage-soft);
+  --color-mint-soft: var(--color-mint-soft);
+  --color-success-soft: var(--color-success-soft);
+  --color-text-placeholder: var(--color-text-placeholder);
+
+  --color-bone: var(--color-bone);
+  --color-bone-bg: var(--color-bone-bg);
+  --color-brand-surface: var(--color-brand-surface);
+  --color-cream: var(--color-cream);
+  --color-card-bg: var(--color-card-bg);
+  --color-card-cream: var(--color-card-cream);
+  --color-border-tan: var(--color-border-tan);
+  --color-tan-border: var(--color-tan-border);
+
+  --color-slate: var(--color-slate);
+  --color-charcoal: var(--color-charcoal);
+  --color-ink: var(--color-ink);
+  --color-text-main: var(--color-text-main);
+  --color-text-muted: var(--color-text-muted);
+}
 
 html,
 body,
@@ -23,4 +67,5 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
-}
+}
+

@@ -1,2 +1,5 @@
 export { BrandLogo } from './BrandLogo'
 export type { BrandLogoMark, BrandLogoVariant } from './BrandLogo'
+export { Sidebar } from './Sidebar'
+export type { SidebarProps, SidebarNavItem } from './Sidebar'
+export * from './Icons'
