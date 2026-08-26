@@ -7,6 +7,8 @@ interface AdminHeaderProps {
   unreadNotificationsCount?: number
   userName?: string
   userRole?: string
+  onNotificationClick?: () => void
+  onProfileClick?: () => void
 }
 
 export function AdminHeader({
@@ -15,6 +17,8 @@ export function AdminHeader({
   unreadNotificationsCount = 2,
   userName = 'Admin Veterinario',
   userRole = 'Administrador',
+  onNotificationClick,
+  onProfileClick,
 }: AdminHeaderProps) {
   return (
     <header className="sticky top-0 z-50 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-bone border-b border-border-tan transition-all duration-200">
@@ -62,6 +66,7 @@ export function AdminHeader({
         {/* Notifications Button */}
         <button
           type="button"
+          onClick={onNotificationClick}
           className="relative p-2 text-brand hover:text-brand-hover hover:bg-border-tan/50 rounded-xl transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/20 group"
           aria-label="Notificaciones"
           title="Notificaciones"
@@ -78,6 +83,7 @@ export function AdminHeader({
         {/* User Profile */}
         <button
           type="button"
+          onClick={onProfileClick}
           className="flex items-center gap-2 p-1.5 text-brand hover:text-brand-hover hover:bg-border-tan/50 rounded-full sm:rounded-xl transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/20 group"
           aria-label={`Perfil de ${userName}`}
           title={`${userName} (${userRole})`}
@@ -95,6 +101,7 @@ export function AdminHeader({
           </div>
         </button>
       </div>
+
     </header>
   )
 }

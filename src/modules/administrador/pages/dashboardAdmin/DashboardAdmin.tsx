@@ -9,23 +9,54 @@ import {
 import { useAdminDashboard } from '../../hooks'
 import './DashboardAdmin.css'
 
-export function DashboardAdmin() {
+interface DashboardAdminProps {
+  onNavigate?: (routeId: string) => void
+  activeRoute?: string
+  isSidebarOpen?: boolean
+  onToggleSidebar?: () => void
+  onCloseSidebar?: () => void
+}
+
+export function DashboardAdmin({
+  onNavigate,
+  activeRoute: externalActiveRoute,
+  isSidebarOpen: externalIsSidebarOpen,
+  onToggleSidebar: externalOnToggleSidebar,
+  onCloseSidebar: externalOnCloseSidebar,
+}: DashboardAdminProps = {}) {
   const {
     stats,
     appointments,
-    isSidebarOpen,
-    toggleSidebar,
-    closeSidebar,
-    activeRoute,
-    handleNavigate,
+    isSidebarOpen: internalIsSidebarOpen,
+    toggleSidebar: internalToggleSidebar,
+    closeSidebar: internalCloseSidebar,
+    activeRoute: internalActiveRoute,
+    handleNavigate: internalHandleNavigate,
     activeNotification,
-    handleCreateUser,
     handleRegisterOwner,
     handleRegisterPet,
     handleScheduleAppointment,
     handleViewAllAppointments,
     handleSelectAppointment,
   } = useAdminDashboard()
+
+  const currentRoute = externalActiveRoute || internalActiveRoute
+  const isSidebarOpen =
+    externalIsSidebarOpen !== undefined ? externalIsSidebarOpen : internalIsSidebarOpen
+  const toggleSidebar = externalOnToggleSidebar || internalToggleSidebar
+  const closeSidebar = externalOnCloseSidebar || internalCloseSidebar
+
+  const handleNavigate = (routeId: string) => {
+    if (onNavigate) {
+      onNavigate(routeId)
+    } else {
+      internalHandleNavigate(routeId)
+    }
+  }
+
+  const handleCreateUser = () => {
+    handleNavigate('usuarios')
+  }
 
   return (
     <div className="dashboard-admin h-screen max-h-screen overflow-hidden flex flex-col bg-bone">
@@ -40,28 +71,32 @@ export function DashboardAdmin() {
 
       {/* Main Body with Left Sidebar & Content */}
       <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden relative">
-        {/* Left Vertical Illustration Sidebar with Animated Reveal Menu (No modificado) */}
+        {/* Left Vertical Illustration Sidebar with Animated Reveal Menu */}
         <AdminSidebar
           isOpen={isSidebarOpen}
           onClose={closeSidebar}
-          activeRoute={activeRoute}
+          activeRoute={currentRoute}
           onNavigate={handleNavigate}
         />
 
+
         {/* Central Dashboard Content with Themed Background Decorations */}
-        <main className="dashboard-admin__main-content flex-1 h-full overflow-y-auto p-5 sm:p-6 lg:p-7 xl:p-8 flex flex-col gap-6 sm:gap-7 max-w-[1600px] w-full mx-auto relative">
+        <main
+          key={currentRoute}
+          className="dashboard-admin__main-content flex-1 h-full overflow-y-auto p-5 sm:p-6 lg:p-7 xl:p-8 flex flex-col gap-6 sm:gap-7 max-w-[1600px] w-full mx-auto relative animate-view-popup"
+        >
           {/* Subtle Themed Ambient Background Layer (Paws, botanical leaves & soft glow) */}
           <DashboardBackgroundDecoration />
 
           {/* Section 1: Resumen de Hoy (Metrics Cards) */}
-          <div className="relative z-10">
+          <div className="relative z-10 animate-pop-in stagger-1">
             <DashboardSummaryCards stats={stats} />
           </div>
 
           {/* Section 2: Split Layout (Próximas Citas & Accesos Rápidos) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-7 items-start relative z-10">
             {/* Left: Próximas Citas Table */}
-            <div className="lg:col-span-8 xl:col-span-8">
+            <div className="lg:col-span-8 xl:col-span-8 animate-pop-in stagger-2">
               <UpcomingAppointmentsTable
                 appointments={appointments}
                 onViewAll={handleViewAllAppointments}
@@ -70,7 +105,7 @@ export function DashboardAdmin() {
             </div>
 
             {/* Right: Accesos Rápidos Buttons */}
-            <div className="lg:col-span-4 xl:col-span-4">
+            <div className="lg:col-span-4 xl:col-span-4 animate-pop-in stagger-3">
               <QuickActionsCard
                 onCreateUser={handleCreateUser}
                 onRegisterOwner={handleRegisterOwner}
@@ -80,6 +115,7 @@ export function DashboardAdmin() {
             </div>
           </section>
         </main>
+
       </div>
 
       {/* Interactive Toast Notification Feedback */}
