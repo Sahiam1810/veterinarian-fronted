@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { LoginPage, useAuth, type AuthUser } from '@/modules/auth'
-import { AdminHeader, DashboardAdmin, UserAdmin } from '@/modules/administrador'
+import {
+  AdminHeader,
+  DashboardAdmin,
+  UserAdmin,
+  MascotasAdmin,
+} from '@/modules/administrador'
 import { PuntoInicio } from '@/modules/veterinario'
 
 export default function App() {
@@ -43,8 +48,7 @@ export default function App() {
   return <FallbackRoleApp user={currentUser} onLogout={logout} />
 }
 
-
-// Shell administrador (DashboardAdmin y UserAdmin) conectado al usuario autenticado
+// Shell administrador (DashboardAdmin, UserAdmin, MascotasAdmin) conectado al usuario autenticado
 function AdminApp({
   user,
   onLogout,
@@ -86,6 +90,21 @@ function AdminApp({
     )
   }
 
+  if (currentRoute === 'mascotas' || currentRoute === 'duenos') {
+    return (
+      <MascotasAdmin
+        onNavigate={handleNavigate}
+        activeRoute="mascotas"
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        onCloseSidebar={closeSidebar}
+        userName={user.name}
+        userRole={user.roleName}
+        onLogout={onLogout}
+      />
+    )
+  }
+
   return (
     <DashboardAdmin
       onNavigate={handleNavigate}
@@ -99,6 +118,7 @@ function AdminApp({
     />
   )
 }
+
 
 // Vista provisional para roles adicionales (ej. Recepcionista o Auxiliar)
 function FallbackRoleApp({

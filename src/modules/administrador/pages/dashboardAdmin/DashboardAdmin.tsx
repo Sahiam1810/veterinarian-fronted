@@ -39,12 +39,11 @@ export function DashboardAdmin({
     activeRoute: internalActiveRoute,
     handleNavigate: internalHandleNavigate,
     activeNotification,
-    handleRegisterOwner,
-    handleRegisterPet,
     handleScheduleAppointment,
     handleViewAllAppointments,
     handleSelectAppointment,
   } = useAdminDashboard()
+
 
   const currentRoute = externalActiveRoute || internalActiveRoute
   const isSidebarOpen =
@@ -63,6 +62,15 @@ export function DashboardAdmin({
   const handleCreateUser = () => {
     handleNavigate('usuarios')
   }
+
+  const handleRegisterOwner = () => {
+    handleNavigate('mascotas')
+  }
+
+  const handleRegisterPet = () => {
+    handleNavigate('mascotas')
+  }
+
 
   return (
     <div className="dashboard-admin h-screen max-h-screen overflow-hidden flex flex-col bg-bone">
