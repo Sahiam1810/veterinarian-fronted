@@ -1,31 +1,5 @@
 @import "tailwindcss";
-
-:root {
-  --color-brand: #234E46;
-  --color-brand-teal: #234E46;
-  --color-brand-terracotta: #C86D51;
-  --color-brand-ochre: #E4A67A;
-  --color-brand-sage: #658E83;
-  --color-card-bg: #F6EDE0;
-  --color-cream: #F6EDE0;
-  --color-bone: #FAF5EC;
-  --color-border-tan: #E8DCCF;
-  --color-slate: #2C3A38;
-  --color-ink: #2C3A38;
-  --color-brand-surface: #FAF5EC;
-  --color-brand-muted: #658E83;
-}
-
-@theme {
-  --color-brand-deep: #234E46;
-  --color-terracotta: #C86D51;
-  --color-ochre: #E4A67A;
-  --color-sage: #658E83;
-  --color-card-cream: #F6EDE0;
-  --color-bone-bg: #FAF5EC;
-  --color-tan-border: #E8DCCF;
-  --color-charcoal: #2C3A38;
-}
+@import "./global/components/styles/globalStyles.css";
 
 html,
 body,
@@ -49,4 +23,4 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
-}
+}
