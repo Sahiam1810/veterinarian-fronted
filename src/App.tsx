@@ -1,5 +1,5 @@
-import { DashboardAdmin } from '@/modules/administrador'
+import { PuntoInicio } from '@/modules/veterinario'
 
 export default function App() {
-  return <DashboardAdmin />
+  return <PuntoInicio />
 }

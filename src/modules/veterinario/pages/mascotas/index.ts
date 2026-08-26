@@ -1,0 +1,1 @@
+export { MascotasPage } from './MascotasPage'
