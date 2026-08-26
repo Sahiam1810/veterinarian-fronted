@@ -1,0 +1,6 @@
+export { fetchVetHomeDashboard } from './vetHomeService'
+export { fetchVetNavPermissions } from './vetNavPermissionsService'
+export { fetchVetAgendaWeek } from './vetAgendaService'
+export { fetchVetMascotasDirectory } from './vetMascotasService'
+export { fetchHistoriaClinica } from './historiaClinicaService'
+export { fetchVetProfile } from './vetProfileService'
