@@ -11,8 +11,18 @@ import { MascotasPage } from '../mascotas'
 import { PerfilPage } from '../perfil'
 import { useVetHome } from '../../hooks'
 
+interface PuntoInicioProps {
+  userName?: string
+  userRole?: string
+  onLogout?: () => void
+}
+
 // Shell del veterinario: Inicio, Agenda, Mascotas y Perfil
-export function PuntoInicio() {
+export function PuntoInicio({
+  userName,
+  userRole,
+  onLogout,
+}: PuntoInicioProps = {}) {
   const {
     dashboard,
     grantedPermissions,
@@ -44,9 +54,10 @@ export function PuntoInicio() {
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         unreadNotificationsCount={2}
-        userName={dashboard?.profile.displayName ?? 'Dr. Roberto Silva'}
-        userRole="Veterinario"
+        userName={userName || dashboard?.profile.displayName || 'Dr. Roberto Silva'}
+        userRole={userRole || 'Veterinario'}
       />
+
 
       <div className="flex flex-1 h-[calc(100vh-57px)] overflow-hidden overflow-x-hidden relative min-w-0">
         <VetSidebar
@@ -56,7 +67,9 @@ export function PuntoInicio() {
           onNavigate={handleNavigate}
           onPrimaryAction={handlePrimaryAction}
           grantedPermissions={grantedPermissions}
+          onLogout={onLogout}
         />
+
 
         <main
           className={`flex-1 h-full min-w-0 overflow-x-hidden p-4 sm:p-5 lg:p-6 xl:p-7 flex flex-col gap-4 sm:gap-5 max-w-[1400px] w-full mx-auto ${

@@ -31,7 +31,14 @@ import './UserAdmin.css'
 interface UserAdminProps {
   onNavigate?: (routeId: string) => void
   activeRoute?: string
+  isSidebarOpen?: boolean
+  onToggleSidebar?: () => void
+  onCloseSidebar?: () => void
+  userName?: string
+  userRole?: string
+  onLogout?: () => void
 }
+
 
 /* ============================================================================
    1. DRAWER / PANEL LATERAL: NUEVO / EDITAR USUARIO
@@ -1146,6 +1153,9 @@ export function UserAdmin({
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
   onCloseSidebar: externalOnCloseSidebar,
+  userName = 'Admin Veterinario',
+  userRole = 'Administrador',
+  onLogout,
 }: UserAdminProps) {
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
 
@@ -1209,9 +1219,12 @@ export function UserAdmin({
       <AdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
+        userName={userName}
+        userRole={userRole}
         onNotificationClick={() => showToast('Tienes 3 notificaciones del sistema')}
         onProfileClick={() => showToast('Abriendo panel de perfil de administrador')}
       />
+
 
       {/* 2. Cuerpo Principal con Sidebar y Área de Trabajo */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -1221,7 +1234,9 @@ export function UserAdmin({
           activeRoute={activeRoute}
           onNavigate={handleSidebarNavigate}
           canViewModule={canView}
+          onLogout={onLogout}
         />
+
 
         <main
           key={activeRoute}

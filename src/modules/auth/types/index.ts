@@ -1,1 +1,2 @@
-export type { LoginCredentials } from './auth'
+export type { UserRole, AuthUser, LoginCredentials, MockAccount } from './auth'
+

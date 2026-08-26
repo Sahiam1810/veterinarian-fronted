@@ -1,19 +1,43 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { BrandLogo } from '@/global/components'
-import { useLogin } from '../hooks'
+import { useAuth } from '../hooks'
+import type { LoginCredentials, AuthUser } from '../types'
 import loginBackground from '@/modules/auth/assets/login-background.jpeg'
 import './LoginPage.css'
 
-export function LoginPage() {
-  const { login, isSubmitting, error } = useLogin()
+
+interface LoginPageProps {
+  onLogin?: (credentials: LoginCredentials) => Promise<AuthUser | null>
+  isSubmitting?: boolean
+  error?: string | null
+}
+
+export function LoginPage({
+  onLogin: externalLogin,
+  isSubmitting: externalIsSubmitting,
+  error: externalError,
+}: LoginPageProps = {}) {
+  const internalAuth = useAuth()
+
+  const isSubmitting =
+    externalIsSubmitting !== undefined
+      ? externalIsSubmitting
+      : internalAuth.isSubmitting
+  const error =
+    externalError !== undefined ? externalError : internalAuth.error
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(false)
+  const [remember, setRemember] = useState(true)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    await login({ email, password, remember })
+    if (externalLogin) {
+      await externalLogin({ email, password, remember })
+    } else {
+      await internalAuth.login({ email, password, remember })
+    }
   }
 
   return (
@@ -69,19 +93,25 @@ export function LoginPage() {
               />
             </label>
 
-            <label className="login-remember">
-              <span className="login-remember__control">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                <PawIcon className="login-remember__paw" />
-              </span>
-              <span>Recordarme</span>
-            </label>
+            <div className="login-row-remember">
+              <label className="login-remember">
+                <span className="login-remember__control">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
+                  <PawIcon className="login-remember__paw" />
+                </span>
+                <span>Recordarme</span>
+              </label>
+            </div>
 
-            {error ? <p className="login-card__error">{error}</p> : null}
+            {error ? (
+              <div className="login-card__error-box">
+                <p className="login-card__error">{error}</p>
+              </div>
+            ) : null}
 
             <button
               type="submit"
@@ -96,6 +126,7 @@ export function LoginPage() {
     </main>
   )
 }
+
 
 function PawIcon({ className }: { className?: string }) {
   return (
@@ -114,3 +145,4 @@ function PawIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+

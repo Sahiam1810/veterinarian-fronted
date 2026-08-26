@@ -15,6 +15,9 @@ interface DashboardAdminProps {
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
   onCloseSidebar?: () => void
+  userName?: string
+  userRole?: string
+  onLogout?: () => void
 }
 
 export function DashboardAdmin({
@@ -23,6 +26,9 @@ export function DashboardAdmin({
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
   onCloseSidebar: externalOnCloseSidebar,
+  userName = 'Admin Veterinario',
+  userRole = 'Administrador',
+  onLogout,
 }: DashboardAdminProps = {}) {
   const {
     stats,
@@ -65,9 +71,10 @@ export function DashboardAdmin({
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         unreadNotificationsCount={2}
-        userName="Admin Veterinario"
-        userRole="Administrador"
+        userName={userName}
+        userRole={userRole}
       />
+
 
       {/* Main Body with Left Sidebar & Content */}
       <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden relative">
@@ -77,7 +84,9 @@ export function DashboardAdmin({
           onClose={closeSidebar}
           activeRoute={currentRoute}
           onNavigate={handleNavigate}
+          onLogout={onLogout}
         />
+
 
 
         {/* Central Dashboard Content with Themed Background Decorations */}

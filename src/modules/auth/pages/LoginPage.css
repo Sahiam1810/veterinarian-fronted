@@ -201,11 +201,27 @@
   cursor: not-allowed;
 }
 
+.login-row-remember {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-card__error-box {
+  padding: 0.65rem 0.85rem;
+  background-color: color-mix(in srgb, var(--color-danger) 10%, var(--color-white));
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  border-radius: 0.7rem;
+}
+
 .login-card__error {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: var(--color-danger);
+  text-align: center;
 }
+
 
 @media (min-width: 768px) {
   .login-page__content {

@@ -20,6 +20,7 @@ export interface AdminSidebarProps {
   activeRoute?: string
   onNavigate?: (route: string) => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  onLogout?: () => void
 }
 
 export const adminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
@@ -92,6 +93,7 @@ export function AdminSidebar({
   activeRoute = 'inicio',
   onNavigate,
   canViewModule,
+  onLogout,
 }: AdminSidebarProps) {
   const visibleNavItems = canViewModule
     ? adminNavItems.filter((item) => canViewModule(item.moduleId))
@@ -106,8 +108,10 @@ export function AdminSidebar({
       navItems={visibleNavItems}
       sectionTitle="Navegación Admin"
       panelTitle="Panel de Control"
+      onLogout={onLogout}
     />
   )
 }
+
 
 

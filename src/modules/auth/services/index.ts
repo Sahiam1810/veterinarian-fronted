@@ -1,1 +1,8 @@
-export { loginRequest } from './authService'
+export {
+  loginRequest,
+  getStoredUser,
+  setStoredUser,
+  clearStoredUser,
+  MOCK_ACCOUNTS,
+} from './authService'
+

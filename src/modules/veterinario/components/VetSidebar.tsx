@@ -22,6 +22,7 @@ export interface VetSidebarProps {
   onPrimaryAction?: (actionId: string) => void
   // null/undefined = defaults del rol; array = permisos del super admin para este vet
   grantedPermissions?: GrantedPermissions
+  onLogout?: () => void
 }
 
 // Resuelve menú + pie + CTA del veterinario según permisos efectivos
@@ -53,6 +54,7 @@ export function VetSidebar({
   onNavigate,
   onPrimaryAction,
   grantedPermissions,
+  onLogout,
 }: VetSidebarProps) {
   const { navItems, footerNavItems, primaryAction } =
     resolveVetSidebarNav(grantedPermissions)
@@ -75,6 +77,8 @@ export function VetSidebar({
       logoutLabel="Cerrar Sesión"
       sectionTitle="Navegación Veterinario"
       panelTitle="Panel Veterinario"
+      onLogout={onLogout}
     />
   )
 }
+
