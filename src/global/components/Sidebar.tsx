@@ -37,8 +37,8 @@ export function Sidebar({
   onNavigate,
   navItems = [],
   sectionTitle = 'Navegación',
-  panelTitle = 'Panel de Control',
   illustrationSrc = defaultIllustration,
+
   illustrationAlt = 'Ilustración botánica veterinaria Huellitas',
   showProfileButton = true,
   showLogoutButton = true,
@@ -111,18 +111,9 @@ export function Sidebar({
         >
           {/* Top navigation section */}
           <div className="space-y-3.5">
-            {/* Header del menú */}
-            <div className="pb-3 border-b border-border-tan">
-              <span className="text-[11px] font-bold text-sage uppercase tracking-wider block">
-                {sectionTitle}
-              </span>
-              <span className="text-sm font-bold text-charcoal">
-                {panelTitle}
-              </span>
-            </div>
-
             {/* Links list */}
             <nav className="flex flex-col gap-1.5" aria-label={sectionTitle}>
+
               {navItems.map((item) => {
                 const isActive = activeRoute === item.id
 
