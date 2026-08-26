@@ -6,3 +6,5 @@ export * from './DashboardSummaryCards'
 export * from './UpcomingAppointmentsTable'
 export * from './QuickActionsCard'
 export * from './DashboardBackgroundDecoration'
+export * from './HistoriaClinicaAdminModal'
+

@@ -1,0 +1,153 @@
+/* Estilos del Módulo Unificado de Mascotas y Dueños (Admin) */
+
+.mascotas-admin {
+  position: relative;
+  min-height: 100vh;
+  color: var(--color-charcoal, #2B3A36);
+  font-family: inherit;
+}
+
+/* Tabs de navegación superior */
+.mascotas-admin__tab-btn {
+  position: relative;
+  padding: 0.75rem 1.25rem 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-sage, #70857D);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.mascotas-admin__tab-btn:hover {
+  color: var(--color-brand, #234E46);
+}
+
+.mascotas-admin__tab-btn--active {
+  color: var(--color-brand, #234E46);
+  font-weight: 700;
+}
+
+.mascotas-admin__tab-btn--active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background-color: var(--color-brand, #234E46);
+  border-radius: 999px;
+}
+
+/* Barra de Filtros Card */
+.mascotas-filter-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-tan, #E5DFD5);
+  border-radius: 1.25rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 12px rgba(35, 78, 70, 0.03);
+}
+
+.mascotas-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2370857D'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.25rem;
+}
+
+/* Botón CTA Terracotta */
+.btn-terracotta {
+  background-color: #B85D43;
+  color: #FFFFFF;
+  font-weight: 700;
+  transition: all 160ms ease;
+}
+
+.btn-terracotta:hover {
+  background-color: #A34E35;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 93, 67, 0.25);
+}
+
+.btn-terracotta:active {
+  transform: translateY(0);
+}
+
+/* Tabla de Mascotas & Dueños */
+.mascotas-table-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-tan, #E5DFD5);
+  border-radius: 1.25rem;
+  padding: 0.5rem 0 0 0;
+  box-shadow: 0 4px 20px rgba(35, 78, 70, 0.04);
+}
+
+.mascotas-table thead tr th {
+  color: #70857D;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.mascotas-table tbody tr {
+  border-bottom: 1px solid rgba(229, 223, 213, 0.5);
+  transition: background-color 150ms ease;
+}
+
+.mascotas-table tbody tr:hover {
+  background-color: rgba(245, 243, 238, 0.6);
+}
+
+.mascotas-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+/* Badges de Estado */
+.status-badge-activo {
+  background-color: #E8F2EF;
+  color: #234E46;
+  border: 1px solid rgba(35, 78, 70, 0.15);
+}
+
+.status-badge-inactivo {
+  background-color: #F1EFEA;
+  color: #70857D;
+  border: 1px solid #E5DFD5;
+}
+
+/* Paginación */
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #70857D;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #F5F3EE;
+  color: #234E46;
+}
+
+.pagination-btn--active {
+  background-color: #234E46 !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
