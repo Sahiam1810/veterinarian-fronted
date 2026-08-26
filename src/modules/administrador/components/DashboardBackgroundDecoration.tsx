@@ -5,14 +5,14 @@ export function DashboardBackgroundDecoration() {
       aria-hidden="true"
     >
       {/* 1. Ambient Soft Warm Gradients */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[#E4A67A]/12 blur-3xl" />
-      <div className="absolute top-1/3 left-1/4 w-[32rem] h-[32rem] rounded-full bg-[#658E83]/8 blur-3xl" />
-      <div className="absolute -bottom-32 right-1/4 w-[36rem] h-[36rem] rounded-full bg-[#C86D51]/7 blur-3xl" />
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-ochre/12 blur-3xl" />
+      <div className="absolute top-1/3 left-1/4 w-[32rem] h-[32rem] rounded-full bg-sage/8 blur-3xl" />
+      <div className="absolute -bottom-32 right-1/4 w-[36rem] h-[36rem] rounded-full bg-terracotta/7 blur-3xl" />
 
       {/* 2. Floating Faint Paw Footprints Watermarks */}
       {/* Top right paw 1 */}
       <svg
-        className="absolute top-6 right-16 w-20 h-20 text-[#658E83] opacity-[0.07] transform rotate-12"
+        className="absolute top-6 right-16 w-20 h-20 text-sage opacity-[0.07] transform rotate-12"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -24,7 +24,7 @@ export function DashboardBackgroundDecoration() {
 
       {/* Center paw 2 */}
       <svg
-        className="absolute top-1/2 right-1/3 w-28 h-28 text-[#234E46] opacity-[0.045] transform -rotate-25"
+        className="absolute top-1/2 right-1/3 w-28 h-28 text-brand opacity-[0.045] transform -rotate-25"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -36,7 +36,7 @@ export function DashboardBackgroundDecoration() {
 
       {/* Bottom left paw 3 */}
       <svg
-        className="absolute bottom-12 left-10 w-24 h-24 text-[#C86D51] opacity-[0.05] transform rotate-45"
+        className="absolute bottom-12 left-10 w-24 h-24 text-terracotta opacity-[0.05] transform rotate-45"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -48,7 +48,7 @@ export function DashboardBackgroundDecoration() {
 
       {/* Bottom right paw 4 */}
       <svg
-        className="absolute bottom-8 right-12 w-32 h-32 text-[#658E83] opacity-[0.05] transform -rotate-12"
+        className="absolute bottom-8 right-12 w-32 h-32 text-sage opacity-[0.05] transform -rotate-12"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -61,7 +61,7 @@ export function DashboardBackgroundDecoration() {
       {/* 3. Subtle Botanical Leaf Vectors */}
       {/* Top right botanical branch */}
       <svg
-        className="absolute -top-6 right-1/4 w-44 h-44 text-[#234E46] opacity-[0.045] transform rotate-45"
+        className="absolute -top-6 right-1/4 w-44 h-44 text-brand opacity-[0.045] transform rotate-45"
         viewBox="0 0 100 100"
         fill="none"
         stroke="currentColor"
@@ -77,7 +77,7 @@ export function DashboardBackgroundDecoration() {
 
       {/* Bottom right botanical branch */}
       <svg
-        className="absolute bottom-0 right-2 w-48 h-48 text-[#658E83] opacity-[0.05] transform -rotate-15"
+        className="absolute bottom-0 right-2 w-48 h-48 text-sage opacity-[0.05] transform -rotate-15"
         viewBox="0 0 100 100"
         fill="none"
         stroke="currentColor"
@@ -91,7 +91,7 @@ export function DashboardBackgroundDecoration() {
 
       {/* 4. Veterinary Medical Cross Accents */}
       <svg
-        className="absolute top-28 left-1/3 w-8 h-8 text-[#C86D51] opacity-[0.08]"
+        className="absolute top-28 left-1/3 w-8 h-8 text-terracotta opacity-[0.08]"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -103,7 +103,7 @@ export function DashboardBackgroundDecoration() {
       </svg>
 
       <svg
-        className="absolute bottom-28 right-1/2 w-7 h-7 text-[#234E46] opacity-[0.07]"
+        className="absolute bottom-28 right-1/2 w-7 h-7 text-brand opacity-[0.07]"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"

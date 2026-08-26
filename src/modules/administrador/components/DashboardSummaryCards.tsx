@@ -22,11 +22,11 @@ export function DashboardSummaryCards({
       <div>
         <h1
           id="resumen-hoy-title"
-          className="text-2xl sm:text-3xl font-bold text-[#2C3A38] tracking-tight leading-tight"
+          className="text-2xl sm:text-3xl font-bold text-charcoal tracking-tight leading-tight"
         >
           Resumen de Hoy
         </h1>
-        <p className="text-xs sm:text-sm font-medium text-[#658E83] mt-0.5">
+        <p className="text-xs sm:text-sm font-medium text-sage mt-0.5">
           {stats.formattedDate || dateText}
         </p>
       </div>
@@ -37,8 +37,8 @@ export function DashboardSummaryCards({
           label="Citas del Día"
           value={stats.totalAppointments}
           icon={<CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
-          iconBgColor="bg-[#FAF5EC]"
-          iconColor="text-[#658E83]"
+          iconBgColor="bg-bone"
+          iconColor="text-sage"
         />
 
         <StatCard
@@ -46,24 +46,25 @@ export function DashboardSummaryCards({
           value={stats.attendedAppointments}
           subValue={`${stats.attendedPercentage}%`}
           icon={<CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
-          iconBgColor="bg-[#E8EFEA]"
-          iconColor="text-[#234E46]"
+          iconBgColor="bg-mint-soft"
+          iconColor="text-brand"
         />
 
         <StatCard
           label="Canceladas"
           value={stats.cancelledAppointments}
+          subValue={`${stats.cancelledAppointments > 0 ? '' : ''}`}
           icon={<XCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
-          iconBgColor="bg-[#FBECE8]"
-          iconColor="text-[#C86D51]"
+          iconBgColor="bg-terracotta-soft"
+          iconColor="text-terracotta"
         />
 
         <StatCard
           label="Profesionales Activos"
           value={stats.activeProfessionals}
           icon={<StethoscopeIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
-          iconBgColor="bg-[#FBF1E6]"
-          iconColor="text-[#C86D51]"
+          iconBgColor="bg-ochre-soft"
+          iconColor="text-terracotta"
         />
       </div>
     </section>

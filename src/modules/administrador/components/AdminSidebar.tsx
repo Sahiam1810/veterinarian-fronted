@@ -77,7 +77,7 @@ export function AdminSidebar({
       {/* Mobile Backdrop Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-[#2C3A38]/30 backdrop-blur-xs lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 z-30 bg-charcoal/30 backdrop-blur-xs lg:hidden transition-opacity duration-300"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -88,7 +88,7 @@ export function AdminSidebar({
         className={`
           fixed lg:relative top-[57px] lg:top-0 bottom-0 left-0 z-40 lg:z-10
           w-60 sm:w-64 lg:w-60 xl:w-64 shrink-0 h-[calc(100vh-57px)] lg:h-full
-          bg-[#FAF5EC] border-r border-[#E8DCCF]
+          bg-bone border-r border-border-tan
           overflow-hidden select-none
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -110,10 +110,10 @@ export function AdminSidebar({
           />
         </div>
 
-        {/* Layer 2: Menú de navegación desplegable (color Warm Cream #F6EDE0, se despliega desde arriba) */}
+        {/* Layer 2: Menú de navegación desplegable (color Warm Cream, se despliega desde arriba) */}
         <div
           className={`
-            absolute inset-0 w-full h-full bg-[#F6EDE0] p-4 sm:p-5 flex flex-col justify-between overflow-y-auto
+            absolute inset-0 w-full h-full bg-cream p-4 sm:p-5 flex flex-col justify-between overflow-y-auto
             transition-all duration-500 ease-in-out transform
             ${isOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : '-translate-y-full opacity-0 pointer-events-none'}
           `}
@@ -121,11 +121,11 @@ export function AdminSidebar({
           {/* Top navigation section */}
           <div className="space-y-3.5">
             {/* Header del menú */}
-            <div className="pb-3 border-b border-[#E8DCCF]">
-              <span className="text-[11px] font-bold text-[#658E83] uppercase tracking-wider block">
+            <div className="pb-3 border-b border-border-tan">
+              <span className="text-[11px] font-bold text-sage uppercase tracking-wider block">
                 Navegación Admin
               </span>
-              <span className="text-sm font-bold text-[#2C3A38]">
+              <span className="text-sm font-bold text-charcoal">
                 Panel de Control
               </span>
             </div>
@@ -144,12 +144,12 @@ export function AdminSidebar({
                       w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer text-left
                       ${
                         isActive
-                          ? 'bg-[#234E46] text-white shadow-xs'
-                          : 'text-[#2C3A38] hover:bg-[#E8DCCF]/60 hover:text-[#234E46]'
+                          ? 'bg-brand text-white shadow-xs'
+                          : 'text-charcoal hover:bg-border-tan/60 hover:text-brand'
                       }
                     `}
                   >
-                    <span className={isActive ? 'text-white' : 'text-[#658E83]'}>
+                    <span className={isActive ? 'text-white' : 'text-sage'}>
                       {item.icon}
                     </span>
                     <span className="leading-tight">{item.label}</span>
@@ -160,7 +160,7 @@ export function AdminSidebar({
           </div>
 
           {/* Bottom section: Perfil & Cerrar Sesión buttons */}
-          <div className="pt-3 border-t border-[#E8DCCF] flex flex-col gap-1.5">
+          <div className="pt-3 border-t border-border-tan flex flex-col gap-1.5">
             {/* Botón Perfil */}
             <button
               type="button"
@@ -169,12 +169,12 @@ export function AdminSidebar({
                 w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer text-left
                 ${
                   activeRoute === 'perfil'
-                    ? 'bg-[#234E46] text-white shadow-xs'
-                    : 'text-[#2C3A38] hover:bg-[#E8DCCF]/60 hover:text-[#234E46]'
+                    ? 'bg-brand text-white shadow-xs'
+                    : 'text-charcoal hover:bg-border-tan/60 hover:text-brand'
                 }
               `}
             >
-              <span className={activeRoute === 'perfil' ? 'text-white' : 'text-[#658E83]'}>
+              <span className={activeRoute === 'perfil' ? 'text-white' : 'text-sage'}>
                 <UserAvatarIcon className="w-5 h-5 shrink-0" />
               </span>
               <span className="leading-tight">Perfil</span>
@@ -184,7 +184,7 @@ export function AdminSidebar({
             <button
               type="button"
               onClick={() => onNavigate?.('logout')}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#C86D51] hover:bg-[#FBECE8] transition-colors cursor-pointer text-left"
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-terracotta hover:bg-terracotta-soft transition-colors cursor-pointer text-left"
             >
               <LogOutIcon className="w-5 h-5 shrink-0" />
               <span>Cerrar Sesión</span>
