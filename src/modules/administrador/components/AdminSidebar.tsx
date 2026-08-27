@@ -7,7 +7,6 @@ import {
   PawIcon,
   StethoscopeIcon,
   DoctorIcon,
-  AvailabilityIcon,
   CalendarIcon,
   MedicalHistoryIcon,
   BarChartIcon,
@@ -60,12 +59,6 @@ export const adminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     moduleId: 'profesionales',
     label: 'Profesionales',
     icon: <DoctorIcon className="w-5 h-5 shrink-0" />,
-  },
-  {
-    id: 'disponibilidad',
-    moduleId: 'disponibilidad',
-    label: 'Disponibilidad',
-    icon: <AvailabilityIcon className="w-5 h-5 shrink-0" />,
   },
   {
     id: 'agenda',
