@@ -12,6 +12,11 @@ export {
 } from './roles/veterinario'
 
 export {
+  RECEP_NAV_CATALOG,
+  RECEP_DEFAULT_PERMISSIONS,
+} from './roles/recepcionista'
+
+export {
   resolveEffectivePermissions,
   filterNavCatalog,
   resolveNavCatalog,

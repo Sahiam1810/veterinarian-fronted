@@ -1,12 +1,22 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { GrantedPermissions } from '@/global/navigation'
-import type { VetDayAppointment, VetHomeDashboard } from '../types'
-import { fetchVetHomeDashboard, fetchVetNavPermissions } from '../services'
+import type {
+  RecepDayAppointment,
+  RecepHomeDashboard,
+  RecepQuickActionId,
+} from '../types'
+import { fetchRecepHomeDashboard, fetchRecepNavPermissions } from '../services'
 
-const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
+const IMPLEMENTED_ROUTES = new Set([
+  'inicio',
+  'perfil',
+  'mascotas',
+  'agenda',
+  'duenos',
+])
 
-export function useVetHome() {
-  const [dashboard, setDashboard] = useState<VetHomeDashboard | null>(null)
+export function useRecepHome(onLogout?: () => void) {
+  const [dashboard, setDashboard] = useState<RecepHomeDashboard | null>(null)
   const [grantedPermissions, setGrantedPermissions] =
     useState<GrantedPermissions>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -23,15 +33,15 @@ export function useVetHome() {
       setError(null)
       try {
         const [data, permissions] = await Promise.all([
-          fetchVetHomeDashboard(),
-          fetchVetNavPermissions(),
+          fetchRecepHomeDashboard(),
+          fetchRecepNavPermissions(),
         ])
         if (!cancelled) {
           setDashboard(data)
           setGrantedPermissions(permissions)
         }
       } catch {
-        if (!cancelled) setError('No se pudo cargar el punto de inicio')
+        if (!cancelled) setError('No se pudo cargar el resumen de recepción')
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -55,7 +65,7 @@ export function useVetHome() {
 
   const handleNavigate = (routeId: string) => {
     if (routeId === 'logout') {
-      showToast('Cerrar sesión estará disponible con autenticación')
+      onLogout?.()
       return
     }
 
@@ -66,28 +76,34 @@ export function useVetHome() {
     }
   }
 
-  const handlePrimaryAction = (actionId: string) => {
-    showToast(
-      actionId === 'nueva-atencion'
-        ? 'Nueva Atención: módulo pendiente'
-        : `Acción: ${actionId}`,
-    )
+  const handleQuickAction = (actionId: RecepQuickActionId) => {
+    if (actionId === 'agendar-cita') {
+      setActiveRoute('agenda')
+      return
+    }
+    if (actionId === 'registrar-mascota') {
+      setActiveRoute('mascotas')
+      return
+    }
+    if (actionId === 'registrar-dueno') {
+      setActiveRoute('duenos')
+      return
+    }
+
+    const labels: Record<RecepQuickActionId, string> = {
+      'agendar-cita': 'Agendar cita',
+      'registrar-dueno': 'Registrar dueño',
+      'registrar-mascota': 'Registrar mascota',
+    }
+    showToast(`${labels[actionId]}: módulo pendiente`)
   }
 
-  const handleViewFullAgenda = () => {
+  const handleViewFullMonth = () => {
     setActiveRoute('agenda')
   }
 
-  const handleAttendNow = (appointment: VetDayAppointment) => {
-    showToast(`Atender ahora: ${appointment.petName}`)
-  }
-
-  const handleViewAppointment = (appointment: VetDayAppointment) => {
-    showToast(`Ver detalle: ${appointment.petName}`)
-  }
-
-  const handleMoreActions = (appointment: VetDayAppointment) => {
-    showToast(`Más acciones: ${appointment.petName}`)
+  const handleRowAction = (appointment: RecepDayAppointment) => {
+    showToast(`Acciones: ${appointment.petName}`)
   }
 
   return {
@@ -100,12 +116,10 @@ export function useVetHome() {
     closeSidebar,
     activeRoute,
     handleNavigate,
-    handlePrimaryAction,
     activeNotification,
     showToast,
-    handleViewFullAgenda,
-    handleAttendNow,
-    handleViewAppointment,
-    handleMoreActions,
+    handleQuickAction,
+    handleViewFullMonth,
+    handleRowAction,
   }
 }

@@ -9,7 +9,8 @@ import {
   ServiciosAdmin,
   AgendaAdmin,
 } from '@/modules/administrador'
-import { PuntoInicio } from '@/modules/veterinario'
+import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
+import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 
 export default function App() {
   const {
@@ -20,7 +21,6 @@ export default function App() {
     error,
   } = useAuth()
 
-  // 1. Si no hay sesión iniciada, mostrar la pantalla de Login
   if (!currentUser) {
     return (
       <LoginPage
@@ -31,10 +31,9 @@ export default function App() {
     )
   }
 
-  // 2. Si el usuario autenticado es Veterinario, renderizar PuntoInicio (Veterinario)
   if (currentUser.role === 'veterinario') {
     return (
-      <PuntoInicio
+      <VetPuntoInicio
         userName={currentUser.name}
         userRole={currentUser.roleName}
         onLogout={logout}
@@ -42,12 +41,20 @@ export default function App() {
     )
   }
 
-  // 3. Si el usuario autenticado es Administrador, renderizar AdminApp
+  if (currentUser.role === 'recepcionista') {
+    return (
+      <RecepPuntoInicio
+        userName={currentUser.name}
+        userRole={currentUser.roleName}
+        onLogout={logout}
+      />
+    )
+  }
+
   if (currentUser.role === 'admin') {
     return <AdminApp user={currentUser} onLogout={logout} />
   }
 
-  // 4. Fallback amigable para otros roles (Recepcionista, Auxiliar)
   return <FallbackRoleApp user={currentUser} onLogout={logout} />
 }
 

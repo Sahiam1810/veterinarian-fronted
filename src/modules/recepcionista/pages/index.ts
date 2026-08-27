@@ -1,0 +1,5 @@
+export { PuntoInicio } from './puntoInicio'
+export { PerfilPage } from './perfil'
+export { MascotasPage } from './mascotas'
+export { AgendaPage } from './agenda'
+export { DuenosPage } from './duenos'

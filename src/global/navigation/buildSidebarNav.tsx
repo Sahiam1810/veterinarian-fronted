@@ -7,6 +7,7 @@ import {
   ClinicalHistoryIcon,
   PlusIcon,
   SettingsIcon,
+  OwnersIcon,
 } from '../components/Icons'
 import type { NavCatalogItem, NavIconKey } from './types'
 import type { SidebarNavItem, SidebarPrimaryAction } from '../components/Sidebar'
@@ -28,6 +29,8 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
       return <PlusIcon className={className} />
     case 'settings':
       return <SettingsIcon className={className} />
+    case 'owners':
+      return <OwnersIcon className={className} />
     default:
       return null
   }
