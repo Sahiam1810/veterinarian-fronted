@@ -8,6 +8,7 @@ import {
   ProfesionalesAdmin,
   ServiciosAdmin,
   AgendaAdmin,
+  ReportesAdmin,
 } from '@/modules/administrador'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
@@ -150,6 +151,21 @@ function AdminApp({
       <AgendaAdmin
         onNavigate={handleNavigate}
         activeRoute="agenda"
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        onCloseSidebar={closeSidebar}
+        userName={user.name}
+        userRole={user.roleName}
+        onLogout={onLogout}
+      />
+    )
+  }
+
+  if (currentRoute === 'reportes') {
+    return (
+      <ReportesAdmin
+        onNavigate={handleNavigate}
+        activeRoute="reportes"
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         onCloseSidebar={closeSidebar}

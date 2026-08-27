@@ -7,7 +7,6 @@ import {
   StethoscopeIcon,
   DoctorIcon,
   CalendarIcon,
-  MedicalHistoryIcon,
   BarChartIcon,
 } from '@/global/components'
 
@@ -59,12 +58,6 @@ export const adminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     moduleId: 'agenda',
     label: 'Agenda',
     icon: <CalendarIcon className="w-5 h-5 shrink-0" />,
-  },
-  {
-    id: 'historiaClinica',
-    moduleId: 'historiaClinica',
-    label: 'Historia Clínica',
-    icon: <MedicalHistoryIcon className="w-5 h-5 shrink-0" />,
   },
   {
     id: 'reportes',
