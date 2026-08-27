@@ -7,6 +7,7 @@ import {
   MascotasAdmin,
   ProfesionalesAdmin,
   ServiciosAdmin,
+  AgendaAdmin,
 } from '@/modules/administrador'
 import { PuntoInicio } from '@/modules/veterinario'
 
@@ -127,6 +128,21 @@ function AdminApp({
       <ServiciosAdmin
         onNavigate={handleNavigate}
         activeRoute="servicios"
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        onCloseSidebar={closeSidebar}
+        userName={user.name}
+        userRole={user.roleName}
+        onLogout={onLogout}
+      />
+    )
+  }
+
+  if (currentRoute === 'agenda') {
+    return (
+      <AgendaAdmin
+        onNavigate={handleNavigate}
+        activeRoute="agenda"
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         onCloseSidebar={closeSidebar}
