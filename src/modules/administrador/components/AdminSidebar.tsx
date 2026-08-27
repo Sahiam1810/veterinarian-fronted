@@ -3,15 +3,14 @@ import {
   type SidebarNavItem,
   HomeIcon,
   UsersIcon,
-  OwnersIcon,
   PawIcon,
   StethoscopeIcon,
   DoctorIcon,
-  AvailabilityIcon,
   CalendarIcon,
   MedicalHistoryIcon,
   BarChartIcon,
 } from '@/global/components'
+
 import type { ModuleId } from '../types'
 
 export interface AdminSidebarProps {
@@ -36,19 +35,13 @@ export const adminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     label: 'Usuarios',
     icon: <UsersIcon className="w-5 h-5 shrink-0" />,
   },
-
-  {
-    id: 'duenos',
-    moduleId: 'duenos',
-    label: 'Dueños',
-    icon: <OwnersIcon className="w-5 h-5 shrink-0" />,
-  },
   {
     id: 'mascotas',
     moduleId: 'mascotas',
     label: 'Mascotas',
     icon: <PawIcon className="w-4.5 h-4.5 shrink-0" />,
   },
+
   {
     id: 'servicios',
     moduleId: 'servicios',
@@ -60,12 +53,6 @@ export const adminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     moduleId: 'profesionales',
     label: 'Profesionales',
     icon: <DoctorIcon className="w-5 h-5 shrink-0" />,
-  },
-  {
-    id: 'disponibilidad',
-    moduleId: 'disponibilidad',
-    label: 'Disponibilidad',
-    icon: <AvailabilityIcon className="w-5 h-5 shrink-0" />,
   },
   {
     id: 'agenda',

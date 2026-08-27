@@ -133,4 +133,106 @@
   animation-delay: 250ms;
 }
 
+/* ============================================================================
+   GLOBAL MODAL, DRAWER & TOAST ANIMATIONS
+   ============================================================================ */
+
+@keyframes modalBackdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalBackdropFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalContentSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes drawerSlideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes drawerSlideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0.8;
+  }
+}
+
+@keyframes slideDownToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes tabUnderlineIn {
+  from {
+    transform: scaleX(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.modal-backdrop-animate {
+  animation: modalBackdropFadeIn 220ms ease forwards;
+}
+
+.modal-backdrop-exit {
+  animation: modalBackdropFadeOut 220ms ease forwards;
+}
+
+.modal-content-animate {
+  animation: modalContentSlideUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.drawer-slide-in {
+  animation: drawerSlideInRight 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.drawer-slide-out {
+  animation: drawerSlideOutRight 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.dashboard-toast,
+.user-toast {
+  animation: slideDownToast 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 

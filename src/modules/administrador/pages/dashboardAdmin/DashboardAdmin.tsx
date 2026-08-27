@@ -7,7 +7,6 @@ import {
   DashboardBackgroundDecoration,
 } from '../../components'
 import { useAdminDashboard } from '../../hooks'
-import './DashboardAdmin.css'
 
 interface DashboardAdminProps {
   onNavigate?: (routeId: string) => void
@@ -39,12 +38,11 @@ export function DashboardAdmin({
     activeRoute: internalActiveRoute,
     handleNavigate: internalHandleNavigate,
     activeNotification,
-    handleRegisterOwner,
-    handleRegisterPet,
     handleScheduleAppointment,
     handleViewAllAppointments,
     handleSelectAppointment,
   } = useAdminDashboard()
+
 
   const currentRoute = externalActiveRoute || internalActiveRoute
   const isSidebarOpen =
@@ -64,8 +62,17 @@ export function DashboardAdmin({
     handleNavigate('usuarios')
   }
 
+  const handleRegisterOwner = () => {
+    handleNavigate('mascotas')
+  }
+
+  const handleRegisterPet = () => {
+    handleNavigate('mascotas')
+  }
+
+
   return (
-    <div className="dashboard-admin h-screen max-h-screen overflow-hidden flex flex-col bg-bone">
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone text-slate">
       {/* Top Header - Siempre fijo y visible con z-50 y hamburguesa animada a X */}
       <AdminHeader
         isSidebarOpen={isSidebarOpen}
@@ -92,7 +99,7 @@ export function DashboardAdmin({
         {/* Central Dashboard Content with Themed Background Decorations */}
         <main
           key={currentRoute}
-          className="dashboard-admin__main-content flex-1 h-full overflow-y-auto p-5 sm:p-6 lg:p-7 xl:p-8 flex flex-col gap-6 sm:gap-7 max-w-[1600px] w-full mx-auto relative animate-view-popup"
+          className="flex-1 h-full overflow-y-auto p-5 sm:p-6 lg:p-7 xl:p-8 flex flex-col gap-6 sm:gap-7 max-w-[1600px] w-full mx-auto relative animate-view-popup"
         >
           {/* Subtle Themed Ambient Background Layer (Paws, botanical leaves & soft glow) */}
           <DashboardBackgroundDecoration />
@@ -134,7 +141,7 @@ export function DashboardAdmin({
           aria-live="polite"
           className="dashboard-toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand text-white px-5 py-2.5 rounded-full shadow-lg text-xs sm:text-sm font-medium border border-white/20 flex items-center gap-2"
         >
-          <span className="w-2 h-2 rounded-full bg-ochre animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
           <span>{activeNotification}</span>
         </div>
       )}

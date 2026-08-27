@@ -26,7 +26,6 @@ import {
   EyeIcon,
   EyeOffIcon,
 } from '@/global/components'
-import './UserAdmin.css'
 
 interface UserAdminProps {
   onNavigate?: (routeId: string) => void
@@ -1061,7 +1060,7 @@ function RolesPermissionsTab({
                           type="checkbox"
                           checked={perms.view}
                           onChange={() => onTogglePermission(mod.id, 'view')}
-                          className="custom-permission-checkbox"
+                          className="w-[1.15rem] h-[1.15rem] rounded-[0.35rem] border border-brand/40 text-brand accent-brand cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
                           aria-label={`Permiso Ver para ${mod.label}`}
                         />
                       </td>
@@ -1072,7 +1071,7 @@ function RolesPermissionsTab({
                             type="checkbox"
                             checked={perms.create}
                             onChange={() => onTogglePermission(mod.id, 'create')}
-                            className="custom-permission-checkbox"
+                            className="w-[1.15rem] h-[1.15rem] rounded-[0.35rem] border border-brand/40 text-brand accent-brand cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label={`Permiso Crear para ${mod.label}`}
                           />
                         ) : (
@@ -1086,7 +1085,7 @@ function RolesPermissionsTab({
                             type="checkbox"
                             checked={perms.edit}
                             onChange={() => onTogglePermission(mod.id, 'edit')}
-                            className="custom-permission-checkbox"
+                            className="w-[1.15rem] h-[1.15rem] rounded-[0.35rem] border border-brand/40 text-brand accent-brand cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label={`Permiso Editar para ${mod.label}`}
                           />
                         ) : (
@@ -1100,7 +1099,7 @@ function RolesPermissionsTab({
                             type="checkbox"
                             checked={perms.delete}
                             onChange={() => onTogglePermission(mod.id, 'delete')}
-                            className="custom-permission-checkbox"
+                            className="w-[1.15rem] h-[1.15rem] rounded-[0.35rem] border border-brand/40 text-brand accent-brand cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label={`Permiso Eliminar para ${mod.label}`}
                           />
                         ) : (
@@ -1214,7 +1213,7 @@ export function UserAdmin({
   }
 
   return (
-    <div className="user-admin h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative">
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-slate">
       {/* 1. Header Fijo */}
       <AdminHeader
         isSidebarOpen={isSidebarOpen}
@@ -1240,13 +1239,13 @@ export function UserAdmin({
 
         <main
           key={activeRoute}
-          className="user-admin__main-content flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
           {activeNotification && (
             <div
-              className="fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-lg border border-white/20 user-toast flex items-center gap-2 pointer-events-none"
+              className="fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-lg border border-white/20 flex items-center gap-2 pointer-events-none"
               role="alert"
             >
               <span>{activeNotification}</span>
@@ -1259,8 +1258,10 @@ export function UserAdmin({
               <button
                 type="button"
                 onClick={() => setActiveTab('usuarios')}
-                className={`user-admin__tab-btn ${
-                  activeTab === 'usuarios' ? 'user-admin__tab-btn--active' : ''
+                className={`relative font-bold text-[0.95rem] py-2 px-1 pb-3 transition-colors cursor-pointer ${
+                  activeTab === 'usuarios'
+                    ? 'text-brand after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
+                    : 'text-text-muted hover:text-brand'
                 }`}
               >
                 Usuarios
@@ -1269,8 +1270,10 @@ export function UserAdmin({
               <button
                 type="button"
                 onClick={() => setActiveTab('roles')}
-                className={`user-admin__tab-btn ${
-                  activeTab === 'roles' ? 'user-admin__tab-btn--active' : ''
+                className={`relative font-bold text-[0.95rem] py-2 px-1 pb-3 transition-colors cursor-pointer ${
+                  activeTab === 'roles'
+                    ? 'text-brand after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
+                    : 'text-text-muted hover:text-brand'
                 }`}
               >
                 Roles y Permisos
