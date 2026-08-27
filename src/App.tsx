@@ -49,8 +49,7 @@ export default function App() {
   return <FallbackRoleApp user={currentUser} onLogout={logout} />
 }
 
-
-// Shell administrador (DashboardAdmin y UserAdmin) conectado al usuario autenticado
+// Shell administrador (DashboardAdmin, UserAdmin, MascotasAdmin) conectado al usuario autenticado
 function AdminApp({
   user,
   onLogout,
@@ -134,6 +133,7 @@ function AdminApp({
     />
   )
 }
+
 
 // Vista provisional para roles adicionales (ej. Recepcionista o Auxiliar)
 function FallbackRoleApp({
