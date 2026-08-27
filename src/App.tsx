@@ -6,6 +6,7 @@ import {
   UserAdmin,
   MascotasAdmin,
   ProfesionalesAdmin,
+  ServiciosAdmin,
 } from '@/modules/administrador'
 import { PuntoInicio } from '@/modules/veterinario'
 
@@ -111,6 +112,21 @@ function AdminApp({
       <ProfesionalesAdmin
         onNavigate={handleNavigate}
         activeRoute="profesionales"
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        onCloseSidebar={closeSidebar}
+        userName={user.name}
+        userRole={user.roleName}
+        onLogout={onLogout}
+      />
+    )
+  }
+
+  if (currentRoute === 'servicios') {
+    return (
+      <ServiciosAdmin
+        onNavigate={handleNavigate}
+        activeRoute="servicios"
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         onCloseSidebar={closeSidebar}
