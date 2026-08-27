@@ -26,10 +26,10 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     id: 'usr-recep-1',
     name: 'Carlos Méndez',
     email: 'recepcion@huellitas.com',
-    password: 'recepcion123',
+    password: 'recepcion',
     role: 'recepcionista',
     roleName: 'Recepcionista',
-    description: 'Gestión de citas y atención a dueños.',
+    description: 'Gestión de citas, dueños, mascotas y agenda del día.',
     badgeColor: 'sage',
   },
 ]
@@ -47,6 +47,10 @@ const EMAIL_ALIASES: Record<string, string> = {
   'vet': 'veterinario@huellitas.com',
   'veterinario': 'veterinario@huellitas.com',
   'recepcion': 'recepcion@huellitas.com',
+  'recepcionista': 'recepcion@huellitas.com',
+  'recepcion@vetclinic.com': 'recepcion@huellitas.com',
+  'carlos.mendez@vetclinic.com': 'recepcion@huellitas.com',
+  'carlos@huellitas.com': 'recepcion@huellitas.com',
 }
 
 const AUTH_STORAGE_KEY = 'huellitas_auth_user'
@@ -66,7 +70,7 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
 
   if (!account) {
     throw new Error(
-      'Usuario no encontrado. Prueba con admin@huellitas.com o veterinario@huellitas.com'
+      'Usuario no encontrado. Prueba admin@huellitas.com, veterinario@huellitas.com o recepcion@huellitas.com',
     )
   }
 
@@ -78,6 +82,8 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
     'vet123',
     'admin',
     'vet',
+    'recepcion',
+    'recepcion123',
     'huellitas',
     'password',
   ]
