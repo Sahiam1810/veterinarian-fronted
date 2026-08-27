@@ -56,12 +56,10 @@ export function useVetHome() {
   const handleNavigate = (routeId: string) => {
     if (routeId === 'logout') {
       showToast('Cerrar sesión estará disponible con autenticación')
-      closeSidebar()
       return
     }
 
     setActiveRoute(routeId)
-    closeSidebar()
 
     if (!IMPLEMENTED_ROUTES.has(routeId)) {
       showToast('Esta sección aún no está disponible')
