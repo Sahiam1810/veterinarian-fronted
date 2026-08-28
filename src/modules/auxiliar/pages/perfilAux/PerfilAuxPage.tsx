@@ -1,5 +1,3 @@
-import { UserAvatarIcon } from '@/global/components'
-
 interface PerfilAuxPageProps {
   onNotice?: (msg: string) => void
 }

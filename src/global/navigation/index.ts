@@ -22,6 +22,11 @@ export {
 } from './roles/auxiliar'
 
 export {
+  CLIENTE_NAV_CATALOG,
+  CLIENTE_DEFAULT_PERMISSIONS,
+} from './roles/cliente'
+
+export {
   resolveEffectivePermissions,
   filterNavCatalog,
   resolveNavCatalog,
