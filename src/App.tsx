@@ -13,7 +13,7 @@ import {
 } from '@/modules/administrador'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
-import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
+import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
 import { PuntoInicio as ClientePuntoInicio } from '@/modules/cliente'
 
 export default function App() {
@@ -243,7 +243,12 @@ function AuxApp({
   onLogout: () => void
 }) {
   const [currentRoute, setCurrentRoute] = useState<string>('inicio')
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024
+    }
+    return false
+  })
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
   const handleNavigate = (routeId: string) => {
@@ -252,7 +257,9 @@ function AuxApp({
       return
     }
     setCurrentRoute(routeId)
-    setIsSidebarOpen(false)
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsSidebarOpen(false)
+    }
   }
 
   const toggleSidebar = () => {
@@ -326,7 +333,17 @@ function AuxApp({
             </ViewPopup>
           )}
 
-          {currentRoute !== 'inicio' && currentRoute !== 'agenda' && currentRoute !== 'mascotas' && currentRoute !== 'preparacion' && (
+          {currentRoute === 'perfil' && (
+            <ViewPopup animationKey="perfil" className="w-full">
+              <PerfilAux
+                userName={user.name}
+                userEmail={user.email}
+                onNotice={showToast}
+              />
+            </ViewPopup>
+          )}
+
+          {currentRoute !== 'inicio' && currentRoute !== 'agenda' && currentRoute !== 'mascotas' && currentRoute !== 'preparacion' && currentRoute !== 'perfil' && (
             <ViewPopup animationKey={currentRoute} className="w-full">
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-8 bg-white rounded-3xl border border-border-tan shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-terracotta-soft text-terracotta flex items-center justify-center mb-4">
