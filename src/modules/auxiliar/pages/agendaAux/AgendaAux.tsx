@@ -380,7 +380,6 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                   {dayAppointments.map((apt) => {
                     const isAtendido = apt.status === 'Atendido'
                     const isCancelado = apt.status === 'Cancelado'
-                    const isAgendado = apt.status === 'Agendado' || apt.status === 'Pendiente'
                     const isPreparada = apt.status === 'Preparada'
 
                     // Estilo de la píldora de estado
