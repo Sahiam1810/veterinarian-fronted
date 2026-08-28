@@ -13,7 +13,7 @@ import {
 } from '@/modules/administrador'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
-import { InicioAux, AgendaAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
+import { InicioAux, AgendaAux, MascotasAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
 import { PuntoInicio as ClientePuntoInicio } from '@/modules/cliente'
 
 export default function App() {
@@ -310,7 +310,15 @@ function AuxApp({
             </ViewPopup>
           )}
 
-          {currentRoute !== 'inicio' && currentRoute !== 'agenda' && (
+          {currentRoute === 'mascotas' && (
+            <ViewPopup animationKey="mascotas" className="w-full">
+              <MascotasAux
+                onNotice={showToast}
+              />
+            </ViewPopup>
+          )}
+
+          {currentRoute !== 'inicio' && currentRoute !== 'agenda' && currentRoute !== 'mascotas' && (
             <ViewPopup animationKey={currentRoute} className="w-full">
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-8 bg-white rounded-3xl border border-border-tan shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-terracotta-soft text-terracotta flex items-center justify-center mb-4">
