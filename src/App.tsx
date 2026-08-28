@@ -14,6 +14,7 @@ import {
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { InicioAux, AgendaAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
+import { PuntoInicio as ClientePuntoInicio } from '@/modules/cliente'
 
 export default function App() {
   const {
@@ -61,6 +62,16 @@ export default function App() {
     return (
       <AuxApp
         user={currentUser}
+        onLogout={logout}
+      />
+    )
+  }
+
+  if (role === 'cliente' || roleName.includes('cliente')) {
+    return (
+      <ClientePuntoInicio
+        userName={currentUser.name}
+        userRole={currentUser.roleName}
         onLogout={logout}
       />
     )
