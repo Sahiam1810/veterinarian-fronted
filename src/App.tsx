@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { LoginPage, useAuth, type AuthUser } from '@/modules/auth'
 import {
-  AdminHeader,
   DashboardAdmin,
   UserAdmin,
   MascotasAdmin,
@@ -14,6 +13,7 @@ import {
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { PuntoInicio as AuxPuntoInicio } from '@/modules/auxiliar'
+import { PuntoInicio as ClientePuntoInicio } from '@/modules/cliente'
 
 export default function App() {
   const {
@@ -60,6 +60,16 @@ export default function App() {
   if (role === 'auxiliar' || roleName.includes('auxiliar')) {
     return (
       <AuxPuntoInicio
+        userName={currentUser.name}
+        userRole={currentUser.roleName}
+        onLogout={logout}
+      />
+    )
+  }
+
+  if (role === 'cliente' || roleName.includes('cliente')) {
+    return (
+      <ClientePuntoInicio
         userName={currentUser.name}
         userRole={currentUser.roleName}
         onLogout={logout}
