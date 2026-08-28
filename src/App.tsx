@@ -13,6 +13,7 @@ import {
 } from '@/modules/administrador'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
+import { PuntoInicio as AuxPuntoInicio } from '@/modules/auxiliar'
 
 export default function App() {
   const {
@@ -33,7 +34,10 @@ export default function App() {
     )
   }
 
-  if (currentUser.role === 'veterinario') {
+  const role = (currentUser.role || '').toLowerCase()
+  const roleName = (currentUser.roleName || '').toLowerCase()
+
+  if (role === 'veterinario' || roleName.includes('veterinario')) {
     return (
       <VetPuntoInicio
         userName={currentUser.name}
@@ -43,7 +47,7 @@ export default function App() {
     )
   }
 
-  if (currentUser.role === 'recepcionista') {
+  if (role === 'recepcionista' || roleName.includes('recepcion')) {
     return (
       <RecepPuntoInicio
         userName={currentUser.name}
@@ -53,11 +57,27 @@ export default function App() {
     )
   }
 
-  if (currentUser.role === 'admin') {
+  if (role === 'auxiliar' || roleName.includes('auxiliar')) {
+    return (
+      <AuxPuntoInicio
+        userName={currentUser.name}
+        userRole={currentUser.roleName}
+        onLogout={logout}
+      />
+    )
+  }
+
+  if (role === 'admin' || roleName.includes('admin')) {
     return <AdminApp user={currentUser} onLogout={logout} />
   }
 
-  return <FallbackRoleApp user={currentUser} onLogout={logout} />
+  return (
+    <AuxPuntoInicio
+      userName={currentUser.name}
+      userRole={currentUser.roleName}
+      onLogout={logout}
+    />
+  )
 }
 
 // Shell administrador (DashboardAdmin, UserAdmin, MascotasAdmin) conectado al usuario autenticado
@@ -205,44 +225,3 @@ function AdminApp({
   )
 }
 
-
-// Vista provisional para roles adicionales (ej. Recepcionista o Auxiliar)
-function FallbackRoleApp({
-  user,
-  onLogout,
-}: {
-  user: AuthUser
-  onLogout: () => void
-}) {
-  return (
-    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone">
-      <AdminHeader
-        userName={user.name}
-        userRole={user.roleName}
-      />
-
-      <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md bg-white rounded-3xl p-8 border border-border-tan shadow-lg space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-terracotta-soft text-terracotta flex items-center justify-center mx-auto text-3xl">
-            🐾
-          </div>
-          <h2 className="text-xl font-bold text-brand">
-            Módulo de {user.roleName}
-          </h2>
-          <p className="text-sm text-sage">
-            Bienvenido, <strong>{user.name}</strong>. Las vistas específicas para el rol de {user.roleName} están en construcción.
-          </p>
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={onLogout}
-              className="px-5 py-2.5 rounded-xl bg-brand text-white text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
-            >
-              Cerrar sesión y cambiar de usuario
-            </button>
-          </div>
-        </div>
-      </main>
-    </div>
-  )
-}

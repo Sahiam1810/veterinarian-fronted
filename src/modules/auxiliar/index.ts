@@ -1,2 +1,3 @@
-/** Módulo de rol: auxiliar */
-export {}
+export * from './pages'
+export * from './components'
+export * from './types'

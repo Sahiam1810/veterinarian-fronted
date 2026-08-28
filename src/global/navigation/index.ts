@@ -17,6 +17,11 @@ export {
 } from './roles/recepcionista'
 
 export {
+  AUX_NAV_CATALOG,
+  AUX_DEFAULT_PERMISSIONS,
+} from './roles/auxiliar'
+
+export {
   resolveEffectivePermissions,
   filterNavCatalog,
   resolveNavCatalog,

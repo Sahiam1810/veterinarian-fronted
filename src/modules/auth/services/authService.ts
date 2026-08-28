@@ -32,6 +32,16 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     description: 'Gestión de citas, dueños, mascotas y agenda del día.',
     badgeColor: 'sage',
   },
+  {
+    id: 'usr-aux-1',
+    name: 'Laura Gómez',
+    email: 'auxiliar@huellitas.com',
+    password: 'auxiliar',
+    role: 'auxiliar',
+    roleName: 'Auxiliar',
+    description: 'Soporte clínico, asistencia en consultas y cuidado de pacientes.',
+    badgeColor: 'terracotta',
+  },
 ]
 
 /** Alias amigables de correo para facilitar las pruebas rápidas */
@@ -51,6 +61,13 @@ const EMAIL_ALIASES: Record<string, string> = {
   'recepcion@vetclinic.com': 'recepcion@huellitas.com',
   'carlos.mendez@vetclinic.com': 'recepcion@huellitas.com',
   'carlos@huellitas.com': 'recepcion@huellitas.com',
+  'auxiliar': 'auxiliar@huellitas.com',
+  'aux': 'auxiliar@huellitas.com',
+  'auxiliar@huellitas.com': 'auxiliar@huellitas.com',
+  'auxiliar@vetclinic.com': 'auxiliar@huellitas.com',
+  'laura.gomez@vetclinic.com': 'auxiliar@huellitas.com',
+  'laura@huellitas.com': 'auxiliar@huellitas.com',
+  'laura': 'auxiliar@huellitas.com',
 }
 
 const AUTH_STORAGE_KEY = 'huellitas_auth_user'
@@ -70,7 +87,7 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
 
   if (!account) {
     throw new Error(
-      'Usuario no encontrado. Prueba admin@huellitas.com, veterinario@huellitas.com o recepcion@huellitas.com',
+      'Usuario no encontrado. Prueba admin@huellitas.com, veterinario@huellitas.com, recepcion@huellitas.com o auxiliar@huellitas.com',
     )
   }
 
@@ -84,6 +101,10 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
     'vet',
     'recepcion',
     'recepcion123',
+    'auxiliar',
+    'auxiliar123',
+    'aux123',
+    'aux',
     'huellitas',
     'password',
   ]
@@ -92,7 +113,7 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
     !acceptedPasswords.includes(cleanPassword.toLowerCase()) &&
     cleanPassword !== account.password
   ) {
-    throw new Error('Contraseña incorrecta. (Prueba con "admin", "vet" o "123456")')
+    throw new Error('Contraseña incorrecta. (Prueba con "admin", "vet", "recepcion", "auxiliar" o "123456")')
   }
 
   const authUser: AuthUser = {
