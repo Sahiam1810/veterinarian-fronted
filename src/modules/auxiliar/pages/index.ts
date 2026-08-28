@@ -1,2 +1,2 @@
 export * from './inicioAux'
-export * from './puntoInicio'
+export * from './agendaAux'

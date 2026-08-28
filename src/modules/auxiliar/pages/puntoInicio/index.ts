@@ -1,1 +1,0 @@
-export { PuntoInicio } from './PuntoInicio'

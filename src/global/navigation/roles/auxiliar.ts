@@ -13,7 +13,7 @@ export const AUX_NAV_CATALOG: NavCatalogItem[] = [
   },
   {
     id: 'agenda',
-    label: 'Agenda del Día',
+    label: 'Agenda',
     permissionKey: 'aux.agenda',
     iconKey: 'calendar',
     kind: 'link',
