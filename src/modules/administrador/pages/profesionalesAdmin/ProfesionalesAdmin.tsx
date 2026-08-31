@@ -381,7 +381,7 @@ export function ProfesionalesAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-7 animate-view-popup max-w-[1600px] w-full mx-auto"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-7 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 

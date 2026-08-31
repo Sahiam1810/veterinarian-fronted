@@ -90,6 +90,14 @@ body {
 }
 
 /* Scrollbar minimalista global (Firefox + WebKit) */
+main {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+main::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--color-sage) 45%, transparent) transparent;

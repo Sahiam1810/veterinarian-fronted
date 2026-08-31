@@ -270,7 +270,7 @@ export function AgendaAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 animate-view-popup max-w-[1600px] w-full mx-auto"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -401,7 +401,7 @@ export function AgendaAdmin({
           </div>
 
           {/* Grilla de Calendario */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex flex-col min-h-[360px] max-h-[500px]">
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex flex-col min-h-[480px] max-h-[600px]">
             {/* Cabecera de Columnas */}
             <div
               className="shrink-0 grid border-b border-border-tan bg-bone/40"

@@ -621,7 +621,7 @@ function UsersTab({
       </div>
 
       {/* Tabla de Usuarios */}
-      <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-4 sm:p-5 lg:p-6 border border-border-tan shadow-[0_4px_24px_rgba(35,78,70,0.035)] relative overflow-hidden animate-pop-in stagger-2">
+      <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-4 sm:p-5 lg:p-6 border border-border-tan shadow-[0_4px_24px_rgba(35,78,70,0.035)] relative overflow-hidden animate-pop-in stagger-2 flex flex-col justify-between min-h-[440px] lg:min-h-[490px]">
         <div className="overflow-x-auto -mx-1 sm:mx-0">
           <table className="w-full text-left border-collapse min-w-[650px]">
             <thead>
@@ -743,6 +743,32 @@ function UsersTab({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Barra de Paginación / Footer */}
+        <div className="pt-4 mt-auto border-t border-border-tan/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-sage">
+          <p className="font-medium">
+            Mostrando <span className="font-bold text-charcoal">{users.length}</span> de <span className="font-bold text-charcoal">{users.length}</span> usuarios
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled
+              className="px-3 py-1.5 rounded-lg border border-border-tan text-sage/60 font-semibold bg-bone/40 cursor-not-allowed text-xs"
+            >
+              Anterior
+            </button>
+            <span className="px-3 py-1.5 rounded-lg bg-brand text-white font-bold text-xs shadow-2xs">
+              1
+            </span>
+            <button
+              type="button"
+              disabled
+              className="px-3 py-1.5 rounded-lg border border-border-tan text-sage/60 font-semibold bg-bone/40 cursor-not-allowed text-xs"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </div>
     </div>

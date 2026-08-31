@@ -1,5 +1,8 @@
+import loginBackground from '@/modules/auth/assets/login-background.jpeg'
+
 export function DashboardBackgroundDecoration() {
   return (
+    <>
     <div
       className="absolute inset-0 pointer-events-none overflow-hidden select-none z-0"
       aria-hidden="true"
@@ -114,5 +117,17 @@ export function DashboardBackgroundDecoration() {
         <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
     </div>
+
+    {/* Full Viewport Themed Background Illustration — fixed to viewport, perfectly seamless */}
+    <div
+      className="fixed inset-0 opacity-[0.22] bg-no-repeat pointer-events-none z-0"
+      aria-hidden="true"
+      style={{
+        backgroundImage: `url(${loginBackground})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center bottom',
+      }}
+    />
+    </>
   )
 }

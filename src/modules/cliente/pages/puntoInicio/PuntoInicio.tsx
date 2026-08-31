@@ -1,4 +1,4 @@
-import { AdminHeader } from '@/modules/administrador'
+import { AdminHeader, DashboardBackgroundDecoration } from '@/modules/administrador'
 import {
   ClienteHomeGreeting,
   ClienteInicioView,
@@ -67,12 +67,13 @@ export function PuntoInicio({
         />
 
         <main
-          className={`flex-1 h-full min-w-0 overflow-x-hidden flex flex-col max-w-[1400px] w-full mx-auto ${
+          className={`flex-1 h-full min-w-0 overflow-x-hidden flex flex-col max-w-[1400px] w-full mx-auto relative ${
             fillHeight
               ? 'overflow-y-hidden p-3 sm:p-4 lg:p-5 gap-3'
               : 'overflow-y-auto p-4 sm:p-5 lg:p-6 xl:p-7 gap-4 sm:gap-5'
           }`}
         >
+          <DashboardBackgroundDecoration />
           {activeRoute === 'inicio' && (
             <ViewPopup animationKey="inicio" className="flex flex-col gap-4 sm:gap-5 min-w-0">
               {isLoading && (

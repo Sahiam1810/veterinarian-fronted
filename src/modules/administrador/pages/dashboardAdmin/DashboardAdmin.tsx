@@ -99,7 +99,7 @@ export function DashboardAdmin({
         {/* Central Dashboard Content with Themed Background Decorations */}
         <main
           key={currentRoute}
-          className="flex-1 h-full overflow-y-auto p-5 sm:p-6 lg:p-7 xl:p-8 flex flex-col gap-6 sm:gap-7 max-w-[1600px] w-full mx-auto relative animate-view-popup"
+          className="flex-1 h-full overflow-y-auto p-5 sm:p-6 lg:p-7 xl:p-8 flex flex-col gap-6 sm:gap-7 relative animate-view-popup"
         >
           {/* Subtle Themed Ambient Background Layer (Paws, botanical leaves & soft glow) */}
           <DashboardBackgroundDecoration />

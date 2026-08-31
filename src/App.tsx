@@ -10,6 +10,7 @@ import {
   AgendaAdmin,
   ReportesAdmin,
   PerfilAdmin,
+  DashboardBackgroundDecoration,
 } from '@/modules/administrador'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
@@ -298,7 +299,8 @@ function AuxApp({
           onLogout={onLogout}
         />
 
-        <main className="flex-1 h-full min-w-0 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6 xl:p-7 flex flex-col gap-4 sm:gap-5 max-w-[1400px] w-full mx-auto">
+        <main className="flex-1 h-full min-w-0 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6 xl:p-7 flex flex-col gap-4 sm:gap-5 max-w-[1400px] w-full mx-auto relative">
+          <DashboardBackgroundDecoration />
           {currentRoute === 'inicio' && (
             <ViewPopup animationKey="inicio" className="w-full">
               <InicioAux
