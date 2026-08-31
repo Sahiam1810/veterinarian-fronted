@@ -270,7 +270,7 @@ export function AgendaAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-5 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -401,7 +401,7 @@ export function AgendaAdmin({
           </div>
 
           {/* Grilla de Calendario */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex flex-col min-h-[480px] max-h-[600px]">
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col min-h-[480px]">
             {/* Cabecera de Columnas */}
             <div
               className="shrink-0 grid border-b border-border-tan bg-bone/40"
@@ -585,7 +585,7 @@ export function AgendaAdmin({
           </div>
 
           {/* Panel de Detalles de la Cita Seleccionada (Debajo de la Grilla) */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_12px_rgba(35,78,70,0.03)] space-y-4">
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_12px_rgba(35,78,70,0.03)] space-y-4 mb-4 sm:mb-6 shrink-0">
             <div className="flex items-center justify-between border-b border-border-tan/50 pb-2">
               <h2 className="text-sm sm:text-base font-bold text-brand">
                 Detalles de la Cita Seleccionada

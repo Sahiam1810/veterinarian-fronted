@@ -545,7 +545,7 @@ function UsersTab({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5" onClick={closeMenu}>
+    <div className="flex-1 flex flex-col gap-4 sm:gap-5" onClick={closeMenu}>
       {/* Barra de Filtros y Acciones */}
       <div
         className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 animate-pop-in stagger-1"
@@ -621,7 +621,7 @@ function UsersTab({
       </div>
 
       {/* Tabla de Usuarios */}
-      <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-4 sm:p-5 lg:p-6 border border-border-tan shadow-[0_4px_24px_rgba(35,78,70,0.035)] relative overflow-hidden animate-pop-in stagger-2 flex flex-col justify-between min-h-[440px] lg:min-h-[490px]">
+      <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-4 sm:p-5 lg:p-6 border border-border-tan shadow-[0_4px_24px_rgba(35,78,70,0.035)] relative overflow-hidden animate-pop-in stagger-2 flex-1 flex flex-col">
         <div className="overflow-x-auto -mx-1 sm:mx-0">
           <table className="w-full text-left border-collapse min-w-[650px]">
             <thead>
@@ -746,7 +746,7 @@ function UsersTab({
         </div>
 
         {/* Barra de Paginación / Footer */}
-        <div className="pt-4 mt-auto border-t border-border-tan/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-sage">
+        <div className="pt-4 border-t border-border-tan/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-sage">
           <p className="font-medium">
             Mostrando <span className="font-bold text-charcoal">{users.length}</span> de <span className="font-bold text-charcoal">{users.length}</span> usuarios
           </p>
@@ -1265,7 +1265,7 @@ export function UserAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-5 sm:gap-6 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -1308,7 +1308,7 @@ export function UserAdmin({
           </div>
 
           {/* Contenido Dinámico de la Pestaña Activa */}
-          <div key={activeTab} className="relative z-10 animate-view-popup">
+          <div key={activeTab} className="relative z-10 animate-view-popup flex-1 flex flex-col">
             {activeTab === 'usuarios' ? (
               <UsersTab
                 users={filteredUsers}

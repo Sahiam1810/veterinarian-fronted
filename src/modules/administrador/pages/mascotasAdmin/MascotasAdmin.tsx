@@ -798,7 +798,7 @@ export function MascotasAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-5 sm:gap-6 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -844,7 +844,7 @@ export function MascotasAdmin({
           {/* TAB 1: MASCOTAS                                                   */}
           {/* ================================================================= */}
           {activeTab === 'mascotas' && (
-            <div className="space-y-4 sm:space-y-5 relative z-10 animate-view-popup">
+            <div className="flex-1 flex flex-col gap-4 sm:gap-5 relative z-10 animate-view-popup">
               {/* Barra de Filtros y Botón Registrar */}
               <div
                 className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] p-4 sm:p-5 shadow-[0_2px_12px_rgba(35,78,70,0.03)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
@@ -923,7 +923,7 @@ export function MascotasAdmin({
               </div>
 
               {/* Tabla de Mascotas */}
-              <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden min-h-[460px] flex flex-col justify-between">
+              <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
@@ -1172,7 +1172,7 @@ export function MascotasAdmin({
           {/* TAB 2: DUEÑOS                                                     */}
           {/* ================================================================= */}
           {activeTab === 'duenos' && (
-            <div className="space-y-4 sm:space-y-5 relative z-10 animate-view-popup">
+            <div className="flex-1 flex flex-col gap-4 sm:gap-5 relative z-10 animate-view-popup">
               {/* Barra de Filtros y Botón Registrar */}
               <div
                 className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] p-4 sm:p-5 shadow-[0_2px_12px_rgba(35,78,70,0.03)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
@@ -1234,7 +1234,7 @@ export function MascotasAdmin({
               </div>
 
               {/* Tabla de Dueños */}
-              <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden min-h-[460px] flex flex-col justify-between">
+              <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>

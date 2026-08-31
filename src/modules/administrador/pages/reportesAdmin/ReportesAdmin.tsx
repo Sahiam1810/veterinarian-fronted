@@ -167,7 +167,7 @@ export function ReportesAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-7 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -267,7 +267,7 @@ export function ReportesAdmin({
 
           {/* TAB 1: RESUMEN GENERAL (Estadísticas y Gráficos) */}
           {activeTab === 'resumen' && (
-            <div className="space-y-6 sm:space-y-7 animate-view-popup">
+            <div className="flex-1 flex flex-col gap-6 sm:gap-7 animate-view-popup">
               {/* Tarjetas de Estadísticas (3 Columnas) */}
               <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5 animate-pop-in stagger-2">
                 {/* Total Citas */}
@@ -437,7 +437,7 @@ export function ReportesAdmin({
 
           {/* TAB 2: DETALLES CITA (Listado Detalle de Citas Recientes) */}
           {activeTab === 'detalles' && (
-            <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-view-popup min-h-[460px] flex flex-col justify-between">
+            <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-view-popup flex-1 flex flex-col">
               {/* Header de la Tabla */}
               <div className="p-4 border-b border-border-tan/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white">
                 <h3 className="text-base font-bold text-brand">
