@@ -108,6 +108,60 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-focus) 18%, transparent);
 }
 
+.login-field__input--invalid {
+  border-color: color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+
+.login-field__input--invalid:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 16%, transparent);
+}
+
+.login-field__hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-danger);
+}
+
+.login-field__password {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-field__input--password {
+  padding-right: 2.75rem;
+}
+
+.login-field__toggle {
+  position: absolute;
+  right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+
+.login-field__toggle:hover {
+  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-brand-dark) 6%, transparent);
+}
+
+.login-field__toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-brand-focus) 35%, transparent);
+  outline-offset: 1px;
+}
+
 .login-remember {
   display: inline-flex;
   align-items: center;
@@ -208,18 +262,28 @@
 }
 
 .login-card__error-box {
-  padding: 0.65rem 0.85rem;
-  background-color: color-mix(in srgb, var(--color-danger) 10%, var(--color-white));
-  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  background-color: var(--color-danger-soft);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 22%, transparent);
   border-radius: 0.7rem;
+}
+
+.login-card__error-icon {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--color-danger);
 }
 
 .login-card__error {
   margin: 0;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 550;
+  line-height: 1.4;
   color: var(--color-danger);
-  text-align: center;
+  text-align: left;
 }
 
 

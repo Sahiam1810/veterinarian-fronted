@@ -1,2 +1,10 @@
-export type { UserRole, AuthUser, LoginCredentials, MockAccount } from './auth'
+export type {
+  UserRole,
+  AuthUser,
+  LoginCredentials,
+  MockAccount,
+  AuthenticationResponse,
+  CurrentProfileResponse,
+} from './auth'
+
 
