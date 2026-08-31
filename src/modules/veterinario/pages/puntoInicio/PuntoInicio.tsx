@@ -26,6 +26,7 @@ export function PuntoInicio({
   const {
     dashboard,
     grantedPermissions,
+    unreadNotificationsCount,
     isLoading,
     error,
     isSidebarOpen,
@@ -53,8 +54,8 @@ export function PuntoInicio({
       <AdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        unreadNotificationsCount={2}
-        userName={userName || dashboard?.profile.displayName || 'Dr. Roberto Silva'}
+        unreadNotificationsCount={unreadNotificationsCount}
+        userName={userName || dashboard?.profile.displayName || 'Veterinario'}
         userRole={userRole || 'Veterinario'}
       />
 

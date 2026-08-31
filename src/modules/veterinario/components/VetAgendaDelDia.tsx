@@ -56,15 +56,26 @@ export function VetAgendaDelDia({
             </tr>
           </thead>
           <tbody>
-            {appointments.map((appointment) => (
-              <AgendaRow
-                key={appointment.id}
-                appointment={appointment}
-                onAttendNow={onAttendNow}
-                onViewAppointment={onViewAppointment}
-                onMoreActions={onMoreActions}
-              />
-            ))}
+            {appointments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="py-10 px-4 text-center text-sm text-sage"
+                >
+                  No hay citas programadas para hoy.
+                </td>
+              </tr>
+            ) : (
+              appointments.map((appointment) => (
+                <AgendaRow
+                  key={appointment.id}
+                  appointment={appointment}
+                  onAttendNow={onAttendNow}
+                  onViewAppointment={onViewAppointment}
+                  onMoreActions={onMoreActions}
+                />
+              ))
+            )}
           </tbody>
         </table>
       </div>

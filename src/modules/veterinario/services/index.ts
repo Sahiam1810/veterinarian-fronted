@@ -1,4 +1,4 @@
-export { fetchVetHomeDashboard } from './vetHomeService'
+export { fetchVetHomeDashboard, fetchVetHomeBundle } from './vetHomeService'
 export { fetchVetNavPermissions } from './vetNavPermissionsService'
 export { fetchVetAgendaWeek } from './vetAgendaService'
 export { fetchVetMascotasDirectory } from './vetMascotasService'
