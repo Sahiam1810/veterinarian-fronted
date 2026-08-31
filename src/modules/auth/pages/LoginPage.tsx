@@ -81,7 +81,7 @@ export function LoginPage({
         aria-hidden
       />
 
-      <div className="login-page__content">
+      <div className="login-page__content animate-view-popup">
         <BrandLogo
           mark="wordmark"
           variant="transparent"

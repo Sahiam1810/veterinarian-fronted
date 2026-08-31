@@ -216,7 +216,7 @@ export function ServiciosAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-7 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -256,7 +256,7 @@ export function ServiciosAdmin({
           </div>
 
           {/* Contenedor Unificado: Filtros + Tabla */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2 min-h-[460px] flex flex-col justify-between">
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2 flex-1 flex flex-col">
             {/* Barra superior de Filtros y Buscador */}
             <div className="p-3.5 sm:p-4 border-b border-border-tan/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white">
               {/* Buscador */}
@@ -301,7 +301,7 @@ export function ServiciosAdmin({
             </div>
 
             {/* Tabla de Servicios */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto flex-1">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-bone/80 border-b border-border-tan/60 text-sage text-[0.72rem] font-bold tracking-wider uppercase">

@@ -381,7 +381,7 @@ export function ProfesionalesAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-7 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
         >
           <DashboardBackgroundDecoration />
 
@@ -409,7 +409,7 @@ export function ProfesionalesAdmin({
           </div>
 
           {/* Contenedor Unificado: Filtros + Tabla de Profesionales */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2">
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2 flex-1 flex flex-col">
             {/* Barra superior de Filtros y Buscador */}
             <div className="p-3.5 sm:p-4 border-b border-border-tan/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white">
               {/* Buscador */}
@@ -626,7 +626,7 @@ export function ProfesionalesAdmin({
           {/* SECCIÓN DE AGENDA / HORARIO DEL PROFESIONAL SELECCIONADO           */}
           {/* ================================================================= */}
           {selectedProfesional && (
-            <div className="relative z-10 space-y-4 animate-view-popup pt-2">
+            <div className="relative z-10 space-y-4 animate-view-popup pt-2 mb-4 sm:mb-6 shrink-0">
               {/* Header de la Agenda con Título y Botones */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
