@@ -1,12 +1,25 @@
-import type { AuthUser, LoginCredentials, MockAccount } from '../types'
+import type {
+  AuthUser,
+  AuthenticationResponse,
+  CurrentProfileResponse,
+  LoginCredentials,
+  MockAccount,
+  UserRole,
+} from '../types'
 
-/** Usuarios predefinidos de prueba para el sistema provisional */
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
+  || 'http://localhost:5233'
+
+const AUTH_STORAGE_KEY = 'huellitas_auth_user'
+const AUTH_TOKENS_KEY = 'huellitas_auth_tokens'
+
+// Cuentas de referencia para la UI de pruebas (mismas del seed Oracle).
 export const MOCK_ACCOUNTS: MockAccount[] = [
   {
     id: 'usr-admin-1',
-    name: 'Dr. Mario Ramírez',
+    name: 'Dr. Mario Ramirez',
     email: 'admin@huellitas.com',
-    password: 'admin',
+    password: 'Huellitas2026!',
     role: 'admin',
     roleName: 'Administrador',
     description: 'Gestión total de usuarios, roles, catálogo y dashboard administrativo.',
@@ -16,7 +29,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     id: 'usr-vet-1',
     name: 'Dr. Roberto Silva',
     email: 'veterinario@huellitas.com',
-    password: 'vet',
+    password: 'Huellitas2026!',
     role: 'veterinario',
     roleName: 'Veterinario',
     description: 'Atención de pacientes, agenda del día, historial clínico y mascotas.',
@@ -24,9 +37,9 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
   },
   {
     id: 'usr-recep-1',
-    name: 'Carlos Méndez',
+    name: 'Carlos Mendez',
     email: 'recepcion@huellitas.com',
-    password: 'recepcion',
+    password: 'Huellitas2026!',
     role: 'recepcionista',
     roleName: 'Recepcionista',
     description: 'Gestión de citas, dueños, mascotas y agenda del día.',
@@ -34,9 +47,9 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
   },
   {
     id: 'usr-aux-1',
-    name: 'Laura Gómez',
+    name: 'Laura Gomez',
     email: 'auxiliar@huellitas.com',
-    password: 'auxiliar',
+    password: 'Huellitas2026!',
     role: 'auxiliar',
     roleName: 'Auxiliar',
     description: 'Soporte clínico, asistencia en consultas y cuidado de pacientes.',
@@ -46,7 +59,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     id: 'usr-cliente-1',
     name: 'Mariana Ruiz',
     email: 'cliente@huellitas.com',
-    password: 'cliente',
+    password: 'Huellitas2026!',
     role: 'cliente',
     roleName: 'Cliente',
     description: 'Portal del dueño: mascotas, citas, historial y perfil personal.',
@@ -54,97 +67,118 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
   },
 ]
 
-/** Alias amigables de correo para facilitar las pruebas rápidas */
-const EMAIL_ALIASES: Record<string, string> = {
-  'admin@vetclinic.com': 'admin@huellitas.com',
-  'mario.ramirez@vetclinic.com': 'admin@huellitas.com',
-  'admin': 'admin@huellitas.com',
-  'admin@admin.com': 'admin@huellitas.com',
-  'vet@huellitas.com': 'veterinario@huellitas.com',
-  'vet@vetclinic.com': 'veterinario@huellitas.com',
-  'ana.silva@vetclinic.com': 'veterinario@huellitas.com',
-  'roberto.silva@vetclinic.com': 'veterinario@huellitas.com',
-  'vet': 'veterinario@huellitas.com',
-  'veterinario': 'veterinario@huellitas.com',
-  'recepcion': 'recepcion@huellitas.com',
-  'recepcionista': 'recepcion@huellitas.com',
-  'recepcion@vetclinic.com': 'recepcion@huellitas.com',
-  'carlos.mendez@vetclinic.com': 'recepcion@huellitas.com',
-  'carlos@huellitas.com': 'recepcion@huellitas.com',
-  'auxiliar': 'auxiliar@huellitas.com',
-  'aux': 'auxiliar@huellitas.com',
-  'auxiliar@huellitas.com': 'auxiliar@huellitas.com',
-  'auxiliar@vetclinic.com': 'auxiliar@huellitas.com',
-  'laura.gomez@vetclinic.com': 'auxiliar@huellitas.com',
-  'laura@huellitas.com': 'auxiliar@huellitas.com',
-  'laura': 'auxiliar@huellitas.com',
-  'cliente': 'cliente@huellitas.com',
-  'cliente@vetclinic.com': 'cliente@huellitas.com',
-  'ana.gomez@vetclinic.com': 'cliente@huellitas.com',
-  'ana@huellitas.com': 'cliente@huellitas.com',
+// Mapea el nombre de rol Oracle/API al rol de navegación del frontend.
+function mapBackendRole(roleName: string): UserRole {
+  const normalized = roleName.trim().toLowerCase()
+  if (normalized.includes('admin')) return 'admin'
+  if (normalized.includes('veterinar')) return 'veterinario'
+  if (normalized.includes('recep')) return 'recepcionista'
+  if (normalized.includes('aux')) return 'auxiliar'
+  if (normalized.includes('client')) return 'cliente'
+  return 'cliente'
 }
 
-const AUTH_STORAGE_KEY = 'huellitas_auth_user'
+async function readErrorMessage(response: Response): Promise<string> {
+  try {
+    const payload = await response.json() as { message?: string; title?: string }
+    if (payload.message) return payload.message
+    if (payload.title) return payload.title
+  } catch {
+    // Sin cuerpo JSON usable.
+  }
 
-/** Simulación de login con validación de credenciales y mock accounts */
+  if (response.status === 401) return 'Correo o contraseña incorrectos.'
+  if (response.status === 0) return 'No se pudo conectar con el backend.'
+  return `Error de autenticación (${response.status}).`
+}
+
+// Login real contra POST /api/auth/login + comprobación GET /api/auth/me.
 export async function loginRequest(credentials: LoginCredentials): Promise<AuthUser> {
-  // Pequeña latencia de red para sensación fluida y real
-  await new Promise((resolve) => setTimeout(resolve, 250))
+  if (!API_BASE_URL) {
+    throw new Error('Falta VITE_API_URL en el entorno del frontend.')
+  }
 
   const cleanEmail = (credentials.email || '').trim().toLowerCase()
-  const resolvedEmail = EMAIL_ALIASES[cleanEmail] || cleanEmail
   const cleanPassword = (credentials.password || '').trim()
 
-  const account = MOCK_ACCOUNTS.find(
-    (acc) => acc.email.toLowerCase() === resolvedEmail
-  )
+  if (!cleanEmail || !cleanPassword) {
+    throw new Error('Correo y contraseña son obligatorios.')
+  }
 
-  if (!account) {
+  let loginResponse: Response
+  try {
+    loginResponse = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+    })
+  } catch {
     throw new Error(
-      'Usuario no encontrado. Prueba admin@huellitas.com, veterinario@huellitas.com, recepcion@huellitas.com, auxiliar@huellitas.com o cliente@huellitas.com',
+      `No se pudo conectar con el backend en ${API_BASE_URL}. ¿Está corriendo la API?`,
     )
   }
 
-  // Contraseñas válidas aceptadas para facilidad durante desarrollo
-  const acceptedPasswords = [
-    account.password.toLowerCase(),
-    '123456',
-    'admin123',
-    'vet123',
-    'admin',
-    'vet',
-    'recepcion',
-    'recepcion123',
-    'auxiliar',
-    'auxiliar123',
-    'aux123',
-    'aux',
-    'cliente',
-    'cliente123',
-    'huellitas',
-    'password',
-  ]
-
-  if (
-    !acceptedPasswords.includes(cleanPassword.toLowerCase()) &&
-    cleanPassword !== account.password
-  ) {
-    throw new Error('Contraseña incorrecta. (Prueba con "admin", "vet", "recepcion", "auxiliar", "cliente" o "123456")')
+  if (!loginResponse.ok) {
+    throw new Error(await readErrorMessage(loginResponse))
   }
 
+  const tokens = await loginResponse.json() as AuthenticationResponse
+
+  const meResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${tokens.accessToken}` },
+  })
+
+  if (!meResponse.ok) {
+    throw new Error('El token se emitió, pero falló la comprobación de sesión (/api/auth/me).')
+  }
+
+  const profile = await meResponse.json() as CurrentProfileResponse
+  const role = mapBackendRole(profile.role)
+
   const authUser: AuthUser = {
-    id: account.id,
-    name: account.name,
-    email: account.email,
-    role: account.role,
-    roleName: account.roleName,
+    id: profile.userAccountId || profile.personId,
+    name: profile.fullName,
+    email: profile.email,
+    role,
+    roleName: profile.role,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
   }
 
   setStoredUser(authUser, credentials.remember ?? true)
+  setStoredTokens(tokens, credentials.remember ?? true)
   return authUser
 }
 
-/** Obtiene el usuario autenticado desde almacenamiento local/sesión */
+export function getAccessToken(): string | null {
+  const user = getStoredUser()
+  if (user?.accessToken) return user.accessToken
+
+  try {
+    const raw = localStorage.getItem(AUTH_TOKENS_KEY) || sessionStorage.getItem(AUTH_TOKENS_KEY)
+    if (!raw) return null
+    const tokens = JSON.parse(raw) as AuthenticationResponse
+    return tokens.accessToken || null
+  } catch {
+    return null
+  }
+}
+
+function setStoredTokens(tokens: AuthenticationResponse, remember: boolean): void {
+  try {
+    const serialized = JSON.stringify(tokens)
+    if (remember) {
+      localStorage.setItem(AUTH_TOKENS_KEY, serialized)
+      sessionStorage.removeItem(AUTH_TOKENS_KEY)
+    } else {
+      sessionStorage.setItem(AUTH_TOKENS_KEY, serialized)
+      localStorage.removeItem(AUTH_TOKENS_KEY)
+    }
+  } catch (err) {
+    console.error('Error al persistir tokens', err)
+  }
+}
+
 export function getStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY)
@@ -155,27 +189,28 @@ export function getStoredUser(): AuthUser | null {
   }
 }
 
-/** Guarda el usuario en el almacenamiento */
 export function setStoredUser(user: AuthUser, remember: boolean = true): void {
   try {
     const serialized = JSON.stringify(user)
     if (remember) {
       localStorage.setItem(AUTH_STORAGE_KEY, serialized)
+      sessionStorage.removeItem(AUTH_STORAGE_KEY)
     } else {
       sessionStorage.setItem(AUTH_STORAGE_KEY, serialized)
+      localStorage.removeItem(AUTH_STORAGE_KEY)
     }
   } catch (err) {
     console.error('Error al persistir sesión', err)
   }
 }
 
-/** Elimina la sesión activa */
 export function clearStoredUser(): void {
   try {
     localStorage.removeItem(AUTH_STORAGE_KEY)
     sessionStorage.removeItem(AUTH_STORAGE_KEY)
+    localStorage.removeItem(AUTH_TOKENS_KEY)
+    sessionStorage.removeItem(AUTH_TOKENS_KEY)
   } catch (err) {
     console.error('Error al limpiar sesión', err)
   }
 }
-

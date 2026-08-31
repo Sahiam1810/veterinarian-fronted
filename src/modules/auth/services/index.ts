@@ -3,6 +3,7 @@ export {
   getStoredUser,
   setStoredUser,
   clearStoredUser,
+  getAccessToken,
   MOCK_ACCOUNTS,
 } from './authService'
 
