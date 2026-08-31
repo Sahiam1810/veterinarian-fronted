@@ -6,6 +6,7 @@ import {
   clearStoredUser,
   MOCK_ACCOUNTS,
 } from '../services'
+import { toSpanishAuthError } from '../utils/toSpanishAuthError'
 
 export function useAuth() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getStoredUser())
@@ -20,9 +21,10 @@ export function useAuth() {
       setCurrentUser(user)
       return user
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al iniciar sesión'
+      const raw = err instanceof Error ? err.message : 'Error al iniciar sesión'
+      const msg = toSpanishAuthError(raw)
       setError(msg)
-      throw err
+      throw new Error(msg)
     } finally {
       setIsSubmitting(false)
     }

@@ -6,6 +6,7 @@ import type {
   MockAccount,
   UserRole,
 } from '../types'
+import { toSpanishAuthError } from '../utils/toSpanishAuthError'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
   || 'http://localhost:5233'
@@ -79,17 +80,38 @@ function mapBackendRole(roleName: string): UserRole {
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
+  let raw = ''
+
   try {
-    const payload = await response.json() as { message?: string; title?: string }
-    if (payload.message) return payload.message
-    if (payload.title) return payload.title
+    const payload = await response.json() as {
+      message?: string
+      title?: string
+      detail?: string
+      errors?: Record<string, string[] | string>
+    }
+
+    if (payload.message) raw = payload.message
+    else if (payload.detail) raw = payload.detail
+    else if (payload.errors && typeof payload.errors === 'object') {
+      // FluentValidation / ProblemDetails: primer mensaje de campo.
+      for (const value of Object.values(payload.errors)) {
+        if (Array.isArray(value) && value[0]) {
+          raw = String(value[0])
+          break
+        }
+        if (typeof value === 'string' && value) {
+          raw = value
+          break
+        }
+      }
+    } else if (payload.title) {
+      raw = payload.title
+    }
   } catch {
     // Sin cuerpo JSON usable.
   }
 
-  if (response.status === 401) return 'Correo o contraseña incorrectos.'
-  if (response.status === 0) return 'No se pudo conectar con el backend.'
-  return `Error de autenticación (${response.status}).`
+  return toSpanishAuthError(raw, response.status)
 }
 
 // Login real contra POST /api/auth/login + comprobación GET /api/auth/me.
@@ -129,7 +151,7 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
   })
 
   if (!meResponse.ok) {
-    throw new Error('El token se emitió, pero falló la comprobación de sesión (/api/auth/me).')
+    throw new Error('El token se emitió, pero no se pudo comprobar la sesión.')
   }
 
   const profile = await meResponse.json() as CurrentProfileResponse
