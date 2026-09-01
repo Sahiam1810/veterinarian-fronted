@@ -12,6 +12,7 @@ export type {
   AgendaDayColumn,
   AgendaCalendarEvent,
   AgendaWeekPayload,
+  AgendaStatusFilter,
 } from './agenda.types'
 
 export type {

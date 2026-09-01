@@ -10,6 +10,6 @@ export async function fetchVetNavPermissions(
   // return res.json()
   //
   // Para probar ocultar Agenda, el admin devolvería algo como:
-  // ['vet.nueva-atencion','vet.inicio','vet.mascotas','vet.historia-clinica','vet.perfil']
+  // ['vet.inicio','vet.mascotas','vet.perfil']
   return Promise.resolve(null)
 }

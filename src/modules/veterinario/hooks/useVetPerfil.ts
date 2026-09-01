@@ -6,7 +6,6 @@ export function useVetPerfil(enabled: boolean) {
   const [profile, setProfile] = useState<VetProfilePayload | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     if (!enabled) return
@@ -19,8 +18,12 @@ export function useVetPerfil(enabled: boolean) {
       try {
         const data = await fetchVetProfile()
         if (!cancelled) setProfile(data)
-      } catch {
-        if (!cancelled) setError('No se pudo cargar el perfil')
+      } catch (err) {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : 'No se pudo cargar el perfil'
+          setError(msg)
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -32,24 +35,9 @@ export function useVetPerfil(enabled: boolean) {
     }
   }, [enabled])
 
-  const showNotice = (message: string) => {
-    setNotice(message)
-    setTimeout(() => {
-      setNotice((current) => (current === message ? null : current))
-    }, 2800)
-  }
-
-  const handleEditProfile = () => showNotice('Editar perfil: módulo pendiente')
-  const handleChangePassword = () => showNotice('Cambiar contraseña: módulo pendiente')
-  const handleChangePhoto = () => showNotice('Cambiar foto: módulo pendiente')
-
   return {
     profile,
     isLoading,
     error,
-    notice,
-    handleEditProfile,
-    handleChangePassword,
-    handleChangePhoto,
   }
 }

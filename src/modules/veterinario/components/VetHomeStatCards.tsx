@@ -42,22 +42,22 @@ export function VetHomeStatCards({ stats }: VetHomeStatCardsProps) {
   ]
 
   return (
-    <section className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 lg:gap-5">
+    <section className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-5 min-w-0">
       {items.map((item) => (
         <article
           key={item.id}
-          className="bg-white rounded-2xl border border-border-tan shadow-[0_2px_12px_rgba(35,78,70,0.04)] px-4 py-4 sm:px-5 sm:py-5 flex items-center gap-3.5 sm:gap-4"
+          className="bg-white rounded-xl sm:rounded-2xl border border-border-tan shadow-[0_2px_12px_rgba(35,78,70,0.04)] px-2 py-2.5 sm:px-5 sm:py-5 flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-4 min-w-0 text-center sm:text-left"
         >
           <div
-            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 ${item.iconWrapClass}`}
+            className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${item.iconWrapClass}`}
           >
             {item.icon}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-[11px] sm:text-xs font-bold tracking-wide text-sage uppercase">
+            <span className="text-[9px] sm:text-xs font-bold tracking-wide text-sage uppercase truncate">
               {item.label}
             </span>
-            <span className="text-2xl sm:text-3xl font-extrabold text-charcoal leading-tight tracking-tight">
+            <span className="text-xl sm:text-3xl font-extrabold text-charcoal leading-tight tracking-tight">
               {item.value}
             </span>
           </div>

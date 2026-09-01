@@ -71,6 +71,19 @@ export interface ApiNamedCatalog {
   name: string
 }
 
+// Franja recurrente semanal del veterinario.
+export interface ApiAvailability {
+  id: string
+  veterinarianId: string
+  veterinarianLicenseNumber?: string | null
+  // Número 0-6 o nombre ("Monday") según serialización.
+  dayOfWeek: number | string
+  startTime: string
+  endTime: string
+  isActive: boolean
+  createdAt: string
+}
+
 export interface ApiNotification {
   id: string
   userId: string
@@ -82,4 +95,29 @@ export interface ApiNotification {
   type: string
   createdAt: string
   updatedAt?: string | null
+}
+
+// Historia clínica y vacunas (Staff / ClinicalHistory).
+export interface ApiMedicalRecord {
+  id: string
+  clientPetId: string
+  appointmentId: string
+  diagnosticId: string
+  diagnosticCode?: string | null
+  symptoms?: string | null
+  treatment?: string | null
+  weightAtVisit?: number | null
+  temperature?: number | null
+  createdAt: string
+}
+
+export interface ApiVaccination {
+  id: string
+  clientPetId: string
+  recordId: string
+  vaccineName: string
+  doseNumber: number
+  applicationDate: string
+  nextDoseDate?: string | null
+  createdAt: string
 }

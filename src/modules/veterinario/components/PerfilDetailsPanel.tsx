@@ -7,7 +7,7 @@ interface PerfilDetailsPanelProps {
   profile: VetProfilePayload
 }
 
-// Panel derecho compacto: define la altura que comparte la tarjeta de foto
+// Panel derecho: datos personales y profesionales del API.
 export function PerfilDetailsPanel({ profile }: PerfilDetailsPanelProps) {
   return (
     <div className="min-w-0 flex flex-col gap-3 h-full">
@@ -41,7 +41,7 @@ export function PerfilDetailsPanel({ profile }: PerfilDetailsPanelProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <TagField label="Especialidad Principal" value={profile.mainSpecialty} />
-          <TagField label="Sub-especialidad" value={profile.subSpecialty} />
+          <TagField label="Detalle / descripción" value={profile.subSpecialty} />
           <TagField label="Número de Colegiatura (CMV)" value={profile.licenseNumber} />
         </div>
       </section>

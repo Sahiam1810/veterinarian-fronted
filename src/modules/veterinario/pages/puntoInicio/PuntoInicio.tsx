@@ -34,7 +34,6 @@ export function PuntoInicio({
     closeSidebar,
     activeRoute,
     handleNavigate,
-    handlePrimaryAction,
     activeNotification,
     showToast,
     handleViewFullAgenda,
@@ -66,15 +65,16 @@ export function PuntoInicio({
           onClose={closeSidebar}
           activeRoute={activeRoute}
           onNavigate={handleNavigate}
-          onPrimaryAction={handlePrimaryAction}
           grantedPermissions={grantedPermissions}
           onLogout={onLogout}
         />
 
 
         <main
-          className={`flex-1 h-full min-w-0 overflow-x-hidden p-4 sm:p-5 lg:p-6 xl:p-7 flex flex-col gap-4 sm:gap-5 max-w-[1400px] w-full mx-auto relative ${
-            fillHeight ? 'overflow-y-hidden' : 'overflow-y-auto'
+          className={`flex-1 h-full min-w-0 overflow-x-hidden flex flex-col max-w-[1400px] w-full mx-auto relative ${
+            fillHeight
+              ? 'overflow-y-hidden p-2.5 sm:p-4 lg:p-6 xl:p-7 gap-2.5 sm:gap-4'
+              : 'overflow-y-auto p-4 sm:p-5 lg:p-6 xl:p-7 gap-4 sm:gap-5'
           }`}
         >
           <DashboardBackgroundDecoration />

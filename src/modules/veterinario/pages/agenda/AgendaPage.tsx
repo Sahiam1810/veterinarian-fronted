@@ -11,6 +11,8 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
   const {
     agenda,
     viewMode,
+    statusFilters,
+    filtersOpen,
     isLoading,
     error,
     notice,
@@ -19,6 +21,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleGoToday,
     handleChangeView,
     handleOpenFilters,
+    handleToggleStatusFilter,
     handleSelectEvent,
   } = useVetAgenda(true)
 
@@ -27,11 +30,11 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     onNotice?.(notice)
   }, [notice, onNotice])
 
-  if (isLoading) {
+  if (isLoading && !agenda) {
     return <p className="text-sm text-sage font-medium">Cargando agenda…</p>
   }
 
-  if (error) {
+  if (error && !agenda) {
     return (
       <p className="text-sm text-danger font-medium" role="alert">
         {error}
@@ -42,15 +45,28 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
   if (!agenda) return null
 
   return (
-    <div className="h-full min-h-0 min-w-0 overflow-hidden">
+    <div className="h-full min-h-0 min-w-0 overflow-hidden relative">
+      {isLoading ? (
+        <p className="absolute top-2 right-2 z-30 text-[11px] font-semibold text-sage bg-white/90 px-2 py-1 rounded-lg border border-border-tan">
+          Actualizando…
+        </p>
+      ) : null}
+      {error ? (
+        <p className="absolute top-2 left-2 z-30 text-[11px] font-semibold text-danger bg-white/90 px-2 py-1 rounded-lg border border-danger/20">
+          {error}
+        </p>
+      ) : null}
       <VetAgendaView
         agenda={agenda}
         viewMode={viewMode}
+        statusFilters={statusFilters}
+        filtersOpen={filtersOpen}
         onPrevPeriod={handlePrevPeriod}
         onNextPeriod={handleNextPeriod}
         onGoToday={handleGoToday}
         onChangeView={handleChangeView}
         onOpenFilters={handleOpenFilters}
+        onToggleStatusFilter={handleToggleStatusFilter}
         onSelectEvent={handleSelectEvent}
       />
     </div>

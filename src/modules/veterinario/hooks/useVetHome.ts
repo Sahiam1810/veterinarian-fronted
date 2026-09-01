@@ -72,14 +72,6 @@ export function useVetHome() {
     }
   }
 
-  const handlePrimaryAction = (actionId: string) => {
-    showToast(
-      actionId === 'nueva-atencion'
-        ? 'Nueva Atención: módulo pendiente'
-        : `Acción: ${actionId}`,
-    )
-  }
-
   const handleViewFullAgenda = () => {
     setActiveRoute('agenda')
   }
@@ -107,7 +99,6 @@ export function useVetHome() {
     closeSidebar,
     activeRoute,
     handleNavigate,
-    handlePrimaryAction,
     activeNotification,
     showToast,
     handleViewFullAgenda,

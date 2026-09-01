@@ -43,7 +43,7 @@ export interface SidebarProps {
   className?: string
   // illustrated = admin (imagen + menú); plain = menú siempre visible (vet)
   variant?: SidebarVariant
-  // brand = activo sólido; soft = activo terracotta-soft (mockup vet)
+  // brand = activo sólido; soft = activo con tinte brand (vet, recepción, etc.)
   activeTone?: SidebarActiveTone
   // Botón de acción primaria arriba del menú
   primaryAction?: SidebarPrimaryAction | null
@@ -104,12 +104,12 @@ export function Sidebar({
 
   const activeClasses =
     activeTone === 'soft'
-      ? 'bg-terracotta-soft text-charcoal'
+      ? 'bg-brand/12 text-brand ring-1 ring-brand/20'
       : 'bg-brand text-white shadow-xs'
 
   const inactiveClasses = 'text-charcoal hover:bg-border-tan/60 hover:text-brand'
 
-  const activeIconClass = activeTone === 'soft' ? 'text-charcoal' : 'text-white'
+  const activeIconClass = activeTone === 'soft' ? 'text-brand' : 'text-white'
   const inactiveIconClass = 'text-sage'
 
   return (
@@ -212,7 +212,9 @@ export function Sidebar({
                         className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                           isActive && activeTone === 'brand'
                             ? 'bg-white/20 text-white'
-                            : 'bg-border-tan text-sage'
+                            : isActive
+                              ? 'bg-brand/15 text-brand'
+                              : 'bg-border-tan text-sage'
                         }`}
                       >
                         {item.badge}
@@ -252,7 +254,9 @@ export function Sidebar({
                         className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                           isActive && activeTone === 'brand'
                             ? 'bg-white/20 text-white'
-                            : 'bg-border-tan text-sage'
+                            : isActive
+                              ? 'bg-brand/15 text-brand'
+                              : 'bg-border-tan text-sage'
                         }`}
                       >
                         {item.badge}

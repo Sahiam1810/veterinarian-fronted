@@ -1,6 +1,6 @@
 export { fetchVetHomeDashboard, fetchVetHomeBundle } from './vetHomeService'
 export { fetchVetNavPermissions } from './vetNavPermissionsService'
 export { fetchVetAgendaWeek } from './vetAgendaService'
-export { fetchVetMascotasDirectory } from './vetMascotasService'
+export { fetchVetMascotasDirectory, fetchVetMascotasBundle } from './vetMascotasService'
 export { fetchHistoriaClinica } from './historiaClinicaService'
 export { fetchVetProfile } from './vetProfileService'

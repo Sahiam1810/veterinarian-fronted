@@ -26,7 +26,7 @@ export function MascotaDetailPanel({
   return (
     <ViewPopup
       animationKey={detail.id}
-      className="w-full lg:w-[340px] xl:w-[360px] shrink-0 min-w-0"
+      className="h-full w-full min-w-0 min-h-0"
     >
       <aside className="h-full min-h-0 overflow-y-auto overflow-x-hidden rounded-2xl border border-border-tan bg-white shadow-[0_2px_16px_rgba(35,78,70,0.04)] p-4 sm:p-5 flex flex-col gap-4">
         <div className="flex items-start gap-3 min-w-0">
@@ -34,7 +34,7 @@ export function MascotaDetailPanel({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="text-xl font-extrabold text-brand tracking-tight truncate">
+              <h2 className="text-lg sm:text-xl font-extrabold text-brand tracking-tight truncate">
                 {detail.name}
               </h2>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -50,7 +50,7 @@ export function MascotaDetailPanel({
                 </button>
               </div>
             </div>
-            <p className="text-xs text-sage font-medium mt-0.5">ID: {detail.patientCode}</p>
+            <p className="text-xs text-sage font-medium mt-0.5 truncate">ID: {detail.patientCode}</p>
           </div>
         </div>
 

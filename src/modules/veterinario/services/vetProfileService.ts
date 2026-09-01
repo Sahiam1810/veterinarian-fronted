@@ -1,25 +1,31 @@
+import { vetApiFetch } from '../api/vetHttp'
+import type { ApiCurrentProfile, ApiVeterinarian } from '../api/apiTypes'
 import type { VetProfilePayload } from '../types'
+import { findVeterinarianForProfile } from '../utils/buildVetHomeDashboard'
+import { buildVetProfilePayload } from '../utils/buildVetProfile'
 
-// Perfil de ejemplo (mientras no exista el endpoint)
-const MOCK_PROFILE: VetProfilePayload = {
-  displayName: 'Dr. Roberto Méndez',
-  jobTitle: 'Veterinario Titular',
-  accountStatus: 'activa',
-  photoUrl: null,
-  fullName: 'Dr. Roberto Andrés Méndez Silva',
-  systemRole: 'Veterinario',
-  email: 'r.mendez@vetclinica.com',
-  phone: '+56 9 8765 4321',
-  mainSpecialty: 'Medicina Interna',
-  subSpecialty: 'Cirugía General',
-  licenseNumber: '12455-A',
+interface ApiSpecialty {
+  id: string
+  name: string
+  description?: string | null
 }
 
-// Obtiene el perfil del veterinario; sustituir por fetch al API .NET
+// Carga el perfil real del veterinario autenticado (solo lectura).
 export async function fetchVetProfile(): Promise<VetProfilePayload> {
-  // Ejemplo futuro:
-  // const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vet/profile`)
-  // if (!res.ok) throw new Error('No se pudo cargar el perfil')
-  // return res.json()
-  return Promise.resolve(MOCK_PROFILE)
+  const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
+  const [veterinarians, specialties] = await Promise.all([
+    vetApiFetch<ApiVeterinarian[]>('/api/veterinarians'),
+    vetApiFetch<ApiSpecialty[]>('/api/specialties').catch(() => [] as ApiSpecialty[]),
+  ])
+
+  const veterinarian = findVeterinarianForProfile(veterinarians, profile)
+  const specialty = specialties.find(
+    (item) => item.id.toLowerCase() === veterinarian?.specialtyId?.toLowerCase(),
+  )
+
+  return buildVetProfilePayload({
+    profile,
+    veterinarian,
+    specialtyDescription: specialty?.description,
+  })
 }
