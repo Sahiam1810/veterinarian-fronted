@@ -17,13 +17,13 @@ const AUTH_TOKENS_KEY = 'huellitas_auth_tokens'
 // Cuentas de referencia para la UI de pruebas (mismas del seed Oracle).
 export const MOCK_ACCOUNTS: MockAccount[] = [
   {
-    id: 'usr-admin-1',
+    id: 'usr-superadmin-1',
     name: 'Dr. Mario Ramirez',
-    email: 'admin@huellitas.com',
+    email: 'superadmin@huellitas.com',
     password: 'Huellitas2026!',
-    role: 'admin',
-    roleName: 'Administrador',
-    description: 'Gestión total de usuarios, roles, catálogo y dashboard administrativo.',
+    role: 'superadmin',
+    roleName: 'SuperAdministrador',
+    description: 'Gestión total de usuarios, roles, catálogo y dashboard superadministrativo.',
     badgeColor: 'brand',
   },
   {
@@ -71,7 +71,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 // Mapea el nombre de rol Oracle/API al rol de navegación del frontend.
 function mapBackendRole(roleName: string): UserRole {
   const normalized = roleName.trim().toLowerCase()
-  if (normalized.includes('admin')) return 'admin'
+  if (normalized.includes('superadmin') || normalized.includes('super admin') || normalized.includes('admin')) return 'superadmin'
   if (normalized.includes('veterinar')) return 'veterinario'
   if (normalized.includes('recep')) return 'recepcionista'
   if (normalized.includes('aux')) return 'auxiliar'

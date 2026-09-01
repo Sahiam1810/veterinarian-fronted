@@ -1,4 +1,4 @@
-import { AdminHeader, DashboardBackgroundDecoration } from '@/modules/administrador'
+import { SuperAdminHeader, DashboardBackgroundDecoration } from '@/modules/superadmin'
 import {
   RecepAgendaDelDia,
   RecepHomeGreeting,
@@ -50,7 +50,7 @@ export function PuntoInicio({
 
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
-      <AdminHeader
+      <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         unreadNotificationsCount={3}

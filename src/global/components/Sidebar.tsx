@@ -41,7 +41,7 @@ export interface SidebarProps {
   onLogout?: () => void
   footerSlot?: ReactNode
   className?: string
-  // illustrated = admin (imagen + menú); plain = menú siempre visible (vet)
+  // illustrated = superadmin (imagen + menú); plain = menú siempre visible (vet)
   variant?: SidebarVariant
   // brand = activo sólido; soft = activo terracotta-soft (mockup vet)
   activeTone?: SidebarActiveTone

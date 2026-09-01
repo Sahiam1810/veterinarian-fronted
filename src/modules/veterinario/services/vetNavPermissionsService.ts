@@ -9,7 +9,7 @@ export async function fetchVetNavPermissions(
   // const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${_userId}/nav-permissions`)
   // return res.json()
   //
-  // Para probar ocultar Agenda, el admin devolvería algo como:
+  // Para probar ocultar Agenda, el superadmin devolvería algo como:
   // ['vet.nueva-atencion','vet.inicio','vet.mascotas','vet.historia-clinica','vet.perfil']
   return Promise.resolve(null)
 }

@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { LoginPage, useAuth, type AuthUser } from '@/modules/auth'
 import {
-  AdminHeader,
-  DashboardAdmin,
-  UserAdmin,
-  MascotasAdmin,
-  ProfesionalesAdmin,
-  ServiciosAdmin,
-  AgendaAdmin,
-  ReportesAdmin,
-  PerfilAdmin,
+  SuperAdminHeader,
+  DashboardSuperAdmin,
+  UserSuperAdmin,
+  MascotasSuperAdmin,
+  ProfesionalesSuperAdmin,
+  ServiciosSuperAdmin,
+  AgendaSuperAdmin,
+  ReportesSuperAdmin,
+  PerfilSuperAdmin,
   DashboardBackgroundDecoration,
-} from '@/modules/administrador'
+} from '@/modules/superadmin'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
@@ -78,8 +78,8 @@ export default function App() {
     )
   }
 
-  if (role === 'admin' || roleName.includes('admin')) {
-    return <AdminApp user={currentUser} onLogout={logout} />
+  if (role === 'superadmin' || role === 'admin' || roleName.includes('admin') || roleName.includes('superadmin')) {
+    return <SuperAdminApp user={currentUser} onLogout={logout} />
   }
 
   return (
@@ -90,8 +90,8 @@ export default function App() {
   )
 }
 
-// Shell administrador (DashboardAdmin, UserAdmin, MascotasAdmin) conectado al usuario autenticado
-function AdminApp({
+// Shell superadministrador (DashboardSuperAdmin, UserSuperAdmin, MascotasSuperAdmin) conectado al usuario autenticado
+function SuperAdminApp({
   user,
   onLogout,
 }: {
@@ -119,7 +119,7 @@ function AdminApp({
 
   if (currentRoute === 'usuarios') {
     return (
-      <UserAdmin
+      <UserSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="usuarios"
         isSidebarOpen={isSidebarOpen}
@@ -134,7 +134,7 @@ function AdminApp({
 
   if (currentRoute === 'mascotas' || currentRoute === 'duenos') {
     return (
-      <MascotasAdmin
+      <MascotasSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="mascotas"
         isSidebarOpen={isSidebarOpen}
@@ -149,7 +149,7 @@ function AdminApp({
 
   if (currentRoute === 'profesionales') {
     return (
-      <ProfesionalesAdmin
+      <ProfesionalesSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="profesionales"
         isSidebarOpen={isSidebarOpen}
@@ -164,7 +164,7 @@ function AdminApp({
 
   if (currentRoute === 'servicios') {
     return (
-      <ServiciosAdmin
+      <ServiciosSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="servicios"
         isSidebarOpen={isSidebarOpen}
@@ -179,7 +179,7 @@ function AdminApp({
 
   if (currentRoute === 'agenda') {
     return (
-      <AgendaAdmin
+      <AgendaSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="agenda"
         isSidebarOpen={isSidebarOpen}
@@ -194,7 +194,7 @@ function AdminApp({
 
   if (currentRoute === 'reportes') {
     return (
-      <ReportesAdmin
+      <ReportesSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="reportes"
         isSidebarOpen={isSidebarOpen}
@@ -209,7 +209,7 @@ function AdminApp({
 
   if (currentRoute === 'perfil') {
     return (
-      <PerfilAdmin
+      <PerfilSuperAdmin
         onNavigate={handleNavigate}
         activeRoute="perfil"
         isSidebarOpen={isSidebarOpen}
@@ -222,7 +222,7 @@ function AdminApp({
     )
   }
   return (
-    <DashboardAdmin
+    <DashboardSuperAdmin
       onNavigate={handleNavigate}
       activeRoute={currentRoute}
       isSidebarOpen={isSidebarOpen}
@@ -281,7 +281,7 @@ function AuxApp({
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
       {/* Header Superior */}
-      <AdminHeader
+      <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         unreadNotificationsCount={3}
