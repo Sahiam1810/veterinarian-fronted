@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import type {
   SystemUser,
   RoleDefinition,
@@ -10,8 +10,33 @@ import type {
   UserFormData,
   PermissionTarget,
 } from '../types'
-
-
+import {
+  fetchUsers,
+  createFullUser as apiCreateFullUser,
+  updateUser as apiUpdateUser,
+  activateUser as apiActivateUser,
+  deactivateUser as apiDeactivateUser,
+  type ApiUserResponse,
+} from '../services/superAdminUserService'
+import {
+  fetchRoles,
+  createRole as apiCreateRole,
+  type ApiRoleResponse,
+} from '../services/superAdminRolesService'
+import {
+  fetchModules,
+  type ApiModuleResponse,
+} from '../services/superAdminModulesService'
+import {
+  fetchAllRolePermissions,
+  createRolePermission as apiCreateRolePermission,
+  updateRolePermission as apiUpdateRolePermission,
+  fetchAllUserPermissions,
+  createUserPermission as apiCreateUserPermission,
+  updateUserPermission as apiUpdateUserPermission,
+  type ApiRolePermissionResponse,
+  type ApiUserPermissionResponse,
+} from '../services/superAdminPermissionsService'
 
 export const MODULES_INFO: ModuleInfo[] = [
   { id: 'usuarios', label: 'Usuarios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
@@ -39,120 +64,59 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   reportes: { view: true, create: true, edit: true, delete: true },
 }
 
-const INITIAL_ROLES: RoleDefinition[] = [
-  {
-    id: 'superadmin',
-    name: 'SuperAdministrador',
-    description: 'Acceso total',
-    isSystem: true,
-    permissions: {
-      ...DEFAULT_PERMISSIONS_ALL,
-    },
-  },
-  {
-    id: 'veterinario',
-    name: 'Veterinario',
-    description: 'Gestión médica',
-    isSystem: true,
-    permissions: {
-      inicio: { view: true, create: false, edit: false, delete: false },
-      usuarios: { view: false, create: false, edit: false, delete: false },
-      duenos: { view: true, create: true, edit: true, delete: false },
-      mascotas: { view: true, create: true, edit: true, delete: false },
-      servicios: { view: true, create: false, edit: false, delete: false },
-      profesionales: { view: true, create: false, edit: false, delete: false },
-      disponibilidad: { view: true, create: true, edit: true, delete: false },
-      agenda: { view: true, create: true, edit: true, delete: false },
-      historiaClinica: { view: true, create: true, edit: true, delete: false },
-      reportes: { view: true, create: false, edit: false, delete: false },
-    },
-  },
-  {
-    id: 'recepcionista',
-    name: 'Recepcionista',
-    description: 'Gestión de citas y clientes',
-    isSystem: true,
-    permissions: {
-      inicio: { view: true, create: false, edit: false, delete: false },
-      usuarios: { view: false, create: false, edit: false, delete: false },
-      duenos: { view: true, create: true, edit: true, delete: false },
-      mascotas: { view: true, create: true, edit: true, delete: false },
-      servicios: { view: true, create: false, edit: false, delete: false },
-      profesionales: { view: true, create: false, edit: false, delete: false },
-      disponibilidad: { view: true, create: false, edit: false, delete: false },
-      agenda: { view: true, create: true, edit: true, delete: true },
-      historiaClinica: { view: false, create: false, edit: false, delete: false },
-      reportes: { view: false, create: false, edit: false, delete: false },
-    },
-  },
-  {
-    id: 'auxiliar',
-    name: 'Auxiliar',
-    description: 'Soporte clínico',
-    isSystem: true,
-    permissions: {
-      inicio: { view: true, create: false, edit: false, delete: false },
-      usuarios: { view: false, create: false, edit: false, delete: false },
-      duenos: { view: false, create: false, edit: false, delete: false },
-      mascotas: { view: true, create: false, edit: true, delete: false },
-      servicios: { view: true, create: false, edit: false, delete: false },
-      profesionales: { view: false, create: false, edit: false, delete: false },
-      disponibilidad: { view: false, create: false, edit: false, delete: false },
-      agenda: { view: true, create: false, edit: false, delete: false },
-      historiaClinica: { view: true, create: true, edit: false, delete: false },
-      reportes: { view: false, create: false, edit: false, delete: false },
-    },
-  },
-]
+const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
+  inicio: { view: false, create: false, edit: false, delete: false },
+  usuarios: { view: false, create: false, edit: false, delete: false },
+  duenos: { view: false, create: false, edit: false, delete: false },
+  mascotas: { view: false, create: false, edit: false, delete: false },
+  servicios: { view: false, create: false, edit: false, delete: false },
+  profesionales: { view: false, create: false, edit: false, delete: false },
+  disponibilidad: { view: false, create: false, edit: false, delete: false },
+  agenda: { view: false, create: false, edit: false, delete: false },
+  historiaClinica: { view: false, create: false, edit: false, delete: false },
+  reportes: { view: false, create: false, edit: false, delete: false },
+}
 
-const INITIAL_USERS: SystemUser[] = [
-  {
-    id: 'usr-1',
-    name: 'Dra. Ana Silva',
-    email: 'ana.silva@vetclinic.com',
-    roleId: 'veterinario',
-    roleName: 'Veterinario',
-    status: 'Activo',
-    registrationDate: '12 Oct 2023',
-  },
-  {
-    id: 'usr-2',
-    name: 'Carlos Méndez',
-    email: 'carlos.mendez@vetclinic.com',
-    roleId: 'recepcionista',
-    roleName: 'Recepcionista',
-    status: 'Activo',
-    registrationDate: '05 Nov 2023',
-  },
-  {
-    id: 'usr-3',
-    name: 'Laura Gómez',
-    email: 'laura.gomez@vetclinic.com',
-    roleId: 'auxiliar',
-    roleName: 'Auxiliar',
-    status: 'Inactivo',
-    registrationDate: '20 Sep 2023',
-  },
-  {
-    id: 'usr-4',
-    name: 'Dr. Mario Ramírez',
-    email: 'mario.ramirez@vetclinic.com',
-    roleId: 'superadmin',
-    roleName: 'SuperAdministrador',
-    status: 'Activo',
-    registrationDate: '15 Ene 2023',
-  },
-]
+function normalizeModuleName(name: string): ModuleId | null {
+  const norm = name.trim().toLowerCase()
+  if (norm.includes('usuario')) return 'usuarios'
+  if (norm.includes('mascota')) return 'mascotas'
+  if (norm.includes('dueño') || norm.includes('dueno') || norm.includes('cliente')) return 'duenos'
+  if (norm.includes('servicio')) return 'servicios'
+  if (norm.includes('profesional') || norm.includes('veterinar')) return 'profesionales'
+  if (norm.includes('disponib')) return 'disponibilidad'
+  if (norm.includes('cita') || norm.includes('agenda')) return 'agenda'
+  if (norm.includes('historial') || norm.includes('historia')) return 'historiaClinica'
+  if (norm.includes('reporte')) return 'reportes'
+  if (norm.includes('inicio')) return 'inicio'
+  return null
+}
+
+function formatDate(isoString: string): string {
+  if (!isoString) return 'Reciente'
+  const d = new Date(isoString)
+  if (Number.isNaN(d.getTime())) return isoString
+  return d.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 export function useUserSuperAdmin() {
-  const [users, setUsers] = useState<SystemUser[]>(INITIAL_USERS)
-  const [roles, setRoles] = useState<RoleDefinition[]>(INITIAL_ROLES)
+  const [users, setUsers] = useState<SystemUser[]>([])
+  const [roles, setRoles] = useState<RoleDefinition[]>([])
+  const [dbModules, setDbModules] = useState<ApiModuleResponse[]>([])
+  const [rawRolePermissions, setRawRolePermissions] = useState<ApiRolePermissionResponse[]>([])
+  const [rawUserPermissions, setRawUserPermissions] = useState<ApiUserPermissionResponse[]>([])
+
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [permissionTarget, setPermissionTarget] = useState<PermissionTarget>({
     type: 'role',
-    id: 'superadmin',
+    id: '',
   })
-  const [selectedRoleId, setSelectedRoleId] = useState<string>('superadmin')
-  const [activeRoleSimulated, setActiveRoleSimulated] = useState<string>('superadmin')
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('')
+  const [activeRoleSimulated, setActiveRoleSimulated] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'usuarios' | 'roles'>('usuarios')
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
@@ -168,12 +132,133 @@ export function useUserSuperAdmin() {
     statusFilter: 'all',
   })
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     setActiveNotification(message)
     setTimeout(() => {
       setActiveNotification((current) => (current === message ? null : current))
-    }, 3000)
-  }
+    }, 3500)
+  }, [])
+
+  // Cargar datos reales desde el backend
+  const loadData = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes] = await Promise.allSettled([
+        fetchUsers(),
+        fetchRoles(),
+        fetchModules(),
+        fetchAllRolePermissions(),
+        fetchAllUserPermissions(),
+      ])
+
+      const fetchedRoles: ApiRoleResponse[] = rolesRes.status === 'fulfilled' ? rolesRes.value : []
+      const fetchedModules: ApiModuleResponse[] = modulesRes.status === 'fulfilled' ? modulesRes.value : []
+      const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
+      const fetchedUserPerms: ApiUserPermissionResponse[] = userPermsRes.status === 'fulfilled' ? userPermsRes.value : []
+      const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
+
+      setDbModules(fetchedModules)
+      setRawRolePermissions(fetchedRolePerms)
+      setRawUserPermissions(fetchedUserPerms)
+
+      // Módulo ID a ModuleId
+      const moduleMap = new Map<string, ModuleId>()
+      fetchedModules.forEach((m) => {
+        const normalized = normalizeModuleName(m.name)
+        if (normalized) {
+          moduleMap.set(m.id.toLowerCase(), normalized)
+        }
+      })
+
+      // Mapear Roles
+      const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
+        const isSuperAdminRole = r.name.toLowerCase().includes('superadmin') || r.name.toLowerCase().includes('admin')
+        const perms: Record<ModuleId, ModulePermission> = isSuperAdminRole
+          ? { ...DEFAULT_PERMISSIONS_ALL }
+          : { ...DEFAULT_PERMISSIONS_EMPTY }
+
+        // Aplicar permisos desde la tabla ROLE_PERMISSIONS
+        const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
+        rolePerms.forEach((rp) => {
+          const modId = moduleMap.get(rp.moduleId.toLowerCase())
+          if (modId) {
+            perms[modId] = {
+              view: rp.canView,
+              create: rp.canCreate,
+              edit: rp.canEdit,
+              delete: rp.canDelete,
+            }
+          }
+        })
+
+        return {
+          id: r.id,
+          name: r.name,
+          description: r.description || 'Sin descripción',
+          isSystem: isSuperAdminRole,
+          permissions: perms,
+        }
+      })
+
+      // Mapear Usuarios
+      const rolesMap = new Map<string, string>()
+      mappedRoles.forEach((r) => rolesMap.set(r.id.toLowerCase(), r.name))
+
+      const mappedUsers: SystemUser[] = fetchedUsers.map((u) => {
+        const roleName = rolesMap.get(u.roleId.toLowerCase()) || 'Usuario'
+        const parts = u.fullName.trim().split(' ')
+        const firstName = parts[0] || ''
+        const lastName = parts.slice(1).join(' ') || ''
+
+        // Permisos personalizados de usuario
+        const userCustomPerms: Partial<Record<ModuleId, ModulePermission>> = {}
+        const userPerms = fetchedUserPerms.filter((up) => up.userId.toLowerCase() === u.id.toLowerCase())
+        userPerms.forEach((up) => {
+          const modId = moduleMap.get(up.moduleId.toLowerCase())
+          if (modId) {
+            userCustomPerms[modId] = {
+              view: up.canView,
+              create: up.canCreate,
+              edit: up.canEdit,
+              delete: up.canDelete,
+            }
+          }
+        })
+
+        return {
+          id: u.id,
+          name: u.fullName,
+          firstName,
+          lastName,
+          email: u.email,
+          roleId: u.roleId,
+          roleName,
+          status: (u.isActive ? 'Activo' : 'Inactivo') as UserStatus,
+          registrationDate: formatDate(u.createdAt),
+          customPermissions: Object.keys(userCustomPerms).length > 0 ? userCustomPerms : undefined,
+        }
+      })
+
+      setRoles(mappedRoles)
+      setUsers(mappedUsers)
+
+      if (mappedRoles.length > 0) {
+        const defaultRoleId = mappedRoles[0].id
+        setSelectedRoleId(defaultRoleId)
+        setActiveRoleSimulated(defaultRoleId)
+        setPermissionTarget({ type: 'role', id: defaultRoleId })
+      }
+    } catch (err) {
+      console.error('Error al cargar datos de usuarios y roles', err)
+      showToast('Error al conectar con la base de datos.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    void loadData()
+  }, [loadData])
 
   // Target switcher helpers
   const selectRoleTarget = (roleId: string) => {
@@ -187,7 +272,12 @@ export function useUserSuperAdmin() {
 
   // Selected role object
   const selectedRole = useMemo(() => {
-    return roles.find((r) => r.id === selectedRoleId) || roles[0]
+    return roles.find((r) => r.id === selectedRoleId) || roles[0] || {
+      id: '',
+      name: 'Sin Rol',
+      description: '',
+      permissions: DEFAULT_PERMISSIONS_EMPTY,
+    }
   }, [roles, selectedRoleId])
 
   // Selected target user (if permissionTarget.type === 'user')
@@ -209,7 +299,7 @@ export function useUserSuperAdmin() {
     if (permissionTarget.type === 'user' && selectedTargetUser) {
       const baseRole = roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
       const userCustom = selectedTargetUser.customPermissions || {}
-      const combined: Record<ModuleId, ModulePermission> = { ...baseRole.permissions }
+      const combined: Record<ModuleId, ModulePermission> = { ...(baseRole?.permissions || DEFAULT_PERMISSIONS_EMPTY) }
 
       MODULES_INFO.forEach((mod) => {
         if (userCustom[mod.id]) {
@@ -221,7 +311,7 @@ export function useUserSuperAdmin() {
     }
 
     const currentRole = roles.find((r) => r.id === permissionTarget.id) || roles[0]
-    return currentRole.permissions
+    return currentRole?.permissions || DEFAULT_PERMISSIONS_EMPTY
   }, [permissionTarget, selectedTargetUser, roles])
 
   // Whether the selected target is a user with customized overrides
@@ -284,7 +374,6 @@ export function useUserSuperAdmin() {
     permissionKey: keyof ModulePermission
   ) => {
     if (permissionTarget.type === 'user' && selectedTargetUser) {
-      // Toggle custom permission for user
       const currentCombined = activePermissions[moduleId] || {
         view: false,
         create: false,
@@ -359,12 +448,76 @@ export function useUserSuperAdmin() {
     )
   }
 
-  // Save changes in Permissions Matrix
-  const saveRolePermissions = () => {
-    if (permissionTarget.type === 'user' && selectedTargetUser) {
-      showToast(`Permisos personalizados para "${selectedTargetUser.name}" guardados correctamente`)
-    } else {
-      showToast(`Permisos para el rol "${selectedRole.name}" guardados correctamente`)
+  // Save changes in Permissions Matrix to backend
+  const saveRolePermissions = async () => {
+    try {
+      if (permissionTarget.type === 'user' && selectedTargetUser) {
+        const userCustom = selectedTargetUser.customPermissions || {}
+        for (const mod of dbModules) {
+          const norm = normalizeModuleName(mod.name)
+          if (!norm || !userCustom[norm]) continue
+
+          const perm = userCustom[norm]!
+          const existing = rawUserPermissions.find(
+            (p) => p.userId.toLowerCase() === selectedTargetUser.id.toLowerCase() && p.moduleId.toLowerCase() === mod.id.toLowerCase()
+          )
+
+          if (existing) {
+            await apiUpdateUserPermission(existing.id, {
+              canView: perm.view,
+              canCreate: perm.create,
+              canEdit: perm.edit,
+              canDelete: perm.delete,
+            })
+          } else {
+            await apiCreateUserPermission({
+              userId: selectedTargetUser.id,
+              moduleId: mod.id,
+              canView: perm.view,
+              canCreate: perm.create,
+              canEdit: perm.edit,
+              canDelete: perm.delete,
+            })
+          }
+        }
+        showToast(`Permisos personalizados para "${selectedTargetUser.name}" guardados correctamente`)
+      } else {
+        const currentRole = roles.find((r) => r.id === permissionTarget.id)
+        if (currentRole) {
+          for (const mod of dbModules) {
+            const norm = normalizeModuleName(mod.name)
+            if (!norm || !currentRole.permissions[norm]) continue
+
+            const perm = currentRole.permissions[norm]
+            const existing = rawRolePermissions.find(
+              (p) => p.roleId.toLowerCase() === currentRole.id.toLowerCase() && p.moduleId.toLowerCase() === mod.id.toLowerCase()
+            )
+
+            if (existing) {
+              await apiUpdateRolePermission(existing.id, {
+                canView: perm.view,
+                canCreate: perm.create,
+                canEdit: perm.edit,
+                canDelete: perm.delete,
+              })
+            } else {
+              await apiCreateRolePermission({
+                roleId: currentRole.id,
+                moduleId: mod.id,
+                canView: perm.view,
+                canCreate: perm.create,
+                canEdit: perm.edit,
+                canDelete: perm.delete,
+              })
+            }
+          }
+        }
+        showToast(`Permisos para el rol "${selectedRole.name}" guardados correctamente`)
+      }
+      await loadData()
+    } catch (err) {
+      console.error('Error al guardar permisos', err)
+      showToast('Error al persistir permisos en el servidor.')
     }
   }
 
@@ -387,99 +540,84 @@ export function useUserSuperAdmin() {
     }
   }
 
-
   // User CRUD Actions
-  const createUser = (data: UserFormData) => {
-    const role = roles.find((r) => r.id === data.roleId)
-    const roleName = role ? role.name : 'Usuario'
-    const fullName = `${data.firstName} ${data.lastName}`.trim()
-
-    const newUser: SystemUser = {
-      id: `usr-${Date.now()}`,
-      name: fullName,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      password: data.password,
-      roleId: data.roleId,
-      roleName,
-      status: data.status,
-      registrationDate: new Date().toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-    }
-
-    setUsers((prev) => [newUser, ...prev])
-    setIsUserModalOpen(false)
-    showToast(`Usuario "${newUser.name}" creado con éxito`)
-  }
-
-  const updateUser = (userId: string, data: UserFormData) => {
-    const role = roles.find((r) => r.id === data.roleId)
-    const roleName = role ? role.name : 'Usuario'
-    const fullName = `${data.firstName} ${data.lastName}`.trim()
-
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              name: fullName,
-              firstName: data.firstName,
-              lastName: data.lastName,
-              email: data.email,
-              password: data.password || user.password,
-              roleId: data.roleId,
-              roleName,
-              status: data.status,
-            }
-          : user
-      )
-    )
-    setIsUserModalOpen(false)
-    setEditingUser(null)
-    showToast(`Usuario "${fullName}" actualizado con éxito`)
-  }
-
-
-  const deleteUser = (userId: string) => {
-    const user = users.find((u) => u.id === userId)
-    setUsers((prev) => prev.filter((u) => u.id !== userId))
-    showToast(`Usuario "${user?.name || ''}" eliminado`)
-  }
-
-  const toggleUserStatus = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((user) => {
-        if (user.id === userId) {
-          const newStatus: UserStatus = user.status === 'Activo' ? 'Inactivo' : 'Activo'
-          showToast(`Estado de "${user.name}" cambiado a ${newStatus}`)
-          return { ...user, status: newStatus }
-        }
-        return user
+  const createUser = async (data: UserFormData) => {
+    try {
+      const fullName = `${data.firstName} ${data.lastName}`.trim()
+      await apiCreateFullUser({
+        fullName,
+        email: data.email,
+        password: data.password || 'Huellitas2026!',
+        roleId: data.roleId,
       })
-    )
+
+      await loadData()
+      setIsUserModalOpen(false)
+      showToast(`Usuario "${fullName}" creado y habilitado para iniciar sesión`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al crear usuario'
+      showToast(msg)
+    }
+  }
+
+  const updateUser = async (userId: string, data: UserFormData) => {
+    try {
+      const fullName = `${data.firstName} ${data.lastName}`.trim()
+      await apiUpdateUser(userId, {
+        fullName,
+        email: data.email,
+        roleId: data.roleId,
+      })
+
+      await loadData()
+      setIsUserModalOpen(false)
+      setEditingUser(null)
+      showToast(`Usuario "${fullName}" actualizado con éxito`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al actualizar usuario'
+      showToast(msg)
+    }
+  }
+
+  const deleteUser = (_userId: string) => {
+    showToast('La eliminación física de usuarios está restringida. Use desactivar cuenta.')
+  }
+
+  const toggleUserStatus = async (userId: string) => {
+    const user = users.find((u) => u.id === userId)
+    if (!user) return
+
+    try {
+      if (user.status === 'Activo') {
+        await apiDeactivateUser(userId)
+        showToast(`Usuario "${user.name}" desactivado`)
+      } else {
+        await apiActivateUser(userId)
+        showToast(`Usuario "${user.name}" activado`)
+      }
+      await loadData()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al cambiar estado'
+      showToast(msg)
+    }
   }
 
   // Role CRUD Actions
-  const createRole = (data: { name: string; description: string; baseRoleId?: string }) => {
-    const baseRole = roles.find((r) => r.id === data.baseRoleId)
-    const basePermissions = baseRole ? { ...baseRole.permissions } : { ...DEFAULT_PERMISSIONS_ALL }
+  const createRole = async (data: { name: string; description: string; baseRoleId?: string }) => {
+    try {
+      const res = await apiCreateRole({
+        name: data.name,
+        description: data.description,
+      })
 
-    const newRole: RoleDefinition = {
-      id: `role-${Date.now()}`,
-      name: data.name,
-      description: data.description,
-      isSystem: false,
-      permissions: basePermissions,
+      await loadData()
+      setSelectedRoleId(res.id)
+      setIsRoleModalOpen(false)
+      showToast(`Rol "${data.name}" creado con éxito en la base de datos`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al crear rol'
+      showToast(msg)
     }
-
-    setRoles((prev) => [...prev, newRole])
-    setSelectedRoleId(newRole.id)
-    setIsRoleModalOpen(false)
-    showToast(`Rol "${newRole.name}" creado con éxito`)
   }
 
   // Modal handlers
@@ -509,6 +647,7 @@ export function useUserSuperAdmin() {
   return {
     users,
     roles,
+    isLoading,
     permissionTarget,
     selectRoleTarget,
     selectUserTarget,
@@ -531,6 +670,7 @@ export function useUserSuperAdmin() {
     modulesInfo: MODULES_INFO,
     activeNotification,
     showToast,
+    loadData,
     // Permissions checkers
     canView,
     canCreate,
@@ -555,5 +695,4 @@ export function useUserSuperAdmin() {
     openCreateRoleModal,
     closeRoleModal,
   }
-
 }

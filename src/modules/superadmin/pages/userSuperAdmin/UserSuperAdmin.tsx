@@ -76,7 +76,7 @@ function UserDrawer({
         setLastName('')
         setEmail('')
         setPassword('')
-        setRoleId('superadmin')
+        setRoleId(roles[0]?.id || '')
         setStatus('Activo')
       }
       setShowPassword(false)
@@ -248,7 +248,7 @@ function UserDrawer({
             <p className="text-[11px] text-sage mt-1">
               {editingUser
                 ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
-                : 'Asigna la clave inicial para el acceso de este usuario.'}
+                : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
             </p>
           </div>
 
