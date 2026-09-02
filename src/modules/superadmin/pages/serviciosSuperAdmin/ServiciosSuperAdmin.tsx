@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
+import { useServiciosSuperAdmin } from '../../hooks'
 import type {
   ServicioSuperAdmin,
   ServicioFormData,
@@ -29,57 +30,6 @@ export interface ServiciosSuperAdminProps {
   onLogout?: () => void
 }
 
-const INITIAL_SERVICIOS: ServicioSuperAdmin[] = [
-  {
-    id: 'srv-1',
-    name: 'Consulta General',
-    description: 'Evaluación médica básica para mascotas de todas las edades.',
-    duration: 30,
-    price: 45.0,
-    status: 'Activo',
-  },
-  {
-    id: 'srv-2',
-    name: 'Vacunación Anual',
-    description: 'Aplicación de vacunas de refuerzo preventivas.',
-    duration: 15,
-    price: 35.0,
-    status: 'Activo',
-  },
-  {
-    id: 'srv-3',
-    name: 'Corte de Uñas',
-    description: 'Mantenimiento estético y preventivo de uñas.',
-    duration: 10,
-    price: 15.0,
-    status: 'Inactivo',
-  },
-  {
-    id: 'srv-4',
-    name: 'Ecografía Abdominal',
-    description: 'Estudio por imágenes no invasivo del abdomen.',
-    duration: 45,
-    price: 85.0,
-    status: 'Activo',
-  },
-  {
-    id: 'srv-5',
-    name: 'Desparasitación Interna',
-    description: 'Tratamiento preventivo oral contra parásitos intestinales comunes.',
-    duration: 15,
-    price: 20.0,
-    status: 'Activo',
-  },
-  {
-    id: 'srv-6',
-    name: 'Perfil Bioquímico',
-    description: 'Análisis de sangre completo para evaluar la función renal y hepática.',
-    duration: 20,
-    price: 60.0,
-    status: 'Activo',
-  },
-]
-
 export function ServiciosSuperAdmin({
   onNavigate,
   activeRoute = 'servicios',
@@ -99,27 +49,26 @@ export function ServiciosSuperAdmin({
   const closeSidebar =
     externalOnCloseSidebar || (() => setInternalIsSidebarOpen(false))
 
-  // Data state
-  const [servicios, setServicios] = useState<ServicioSuperAdmin[]>(INITIAL_SERVICIOS)
-
-  // Filters & Pagination
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<string>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 4
-
-  // Toast Notification
-  const [activeNotification, setActiveNotification] = useState<string | null>(null)
-  const showToast = (message: string) => {
-    setActiveNotification(message)
-    setTimeout(() => {
-      setActiveNotification(null)
-    }, 3200)
-  }
-
-  // Drawer state
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [editingServicio, setEditingServicio] = useState<ServicioSuperAdmin | null>(null)
+  const {
+    searchQuery,
+    setSearchQuery,
+    selectedStatus,
+    setSelectedStatus,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    activeNotification,
+    showToast,
+    isDrawerOpen,
+    setIsDrawerOpen,
+    editingServicio,
+    setEditingServicio,
+    totalPages,
+    paginatedServicios,
+    filteredServicios,
+    handleSaveServicio,
+    handleDeleteServicio,
+  } = useServiciosSuperAdmin()
 
   // Navigation helper
   const handleSidebarNavigate = (routeId: string) => {
@@ -127,68 +76,6 @@ export function ServiciosSuperAdmin({
       onNavigate(routeId)
     } else {
       showToast(`Navegando a: ${routeId}`)
-    }
-  }
-
-  // Filtered services
-  const filteredServicios = useMemo(() => {
-    return servicios.filter((srv) => {
-      const matchSearch =
-        srv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        srv.description.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const matchStatus =
-        selectedStatus === 'all' ||
-        srv.status.toLowerCase() === selectedStatus.toLowerCase()
-
-      return matchSearch && matchStatus
-    })
-  }, [servicios, searchQuery, selectedStatus])
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredServicios.length / itemsPerPage) || 1
-  const paginatedServicios = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return filteredServicios.slice(start, start + itemsPerPage)
-  }, [filteredServicios, currentPage, itemsPerPage])
-
-  // Save Service handler (Create / Edit)
-  const handleSaveServicio = (data: ServicioFormData) => {
-    if (editingServicio) {
-      // Edit
-      setServicios((prev) =>
-        prev.map((s) =>
-          s.id === editingServicio.id ? { ...s, ...data } : s
-        )
-      )
-      showToast(`Servicio "${data.name}" actualizado correctamente.`)
-    } else {
-      // Create
-      const newSrv: ServicioSuperAdmin = {
-        id: `srv-${Date.now()}`,
-        name: data.name,
-        description: data.description,
-        duration: data.duration,
-        price: data.price,
-        status: data.status,
-      }
-      setServicios((prev) => [newSrv, ...prev])
-      showToast(`Servicio "${data.name}" registrado correctamente.`)
-    }
-    setIsDrawerOpen(false)
-    setEditingServicio(null)
-  }
-
-  // Delete/Inactivate handler
-  const handleDeleteServicio = (id: string) => {
-    const target = servicios.find((s) => s.id === id)
-    if (!target) return
-
-    if (window.confirm(`¿Estás seguro de que deseas desactivar el servicio "${target.name}"?`)) {
-      setServicios((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, status: 'Inactivo' } : s))
-      )
-      showToast(`Servicio "${target.name}" marcado como Inactivo.`)
     }
   }
 

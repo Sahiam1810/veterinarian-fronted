@@ -19,6 +19,10 @@ export interface SuperAdminMascota {
   status: EstadoMascota
   registrationDate: string
   notes?: string
+  // IDs internos para sincronizar con la API
+  speciesId?: string
+  raceId?: string
+  clientPetId?: string
 }
 
 export interface SuperAdminDueno {

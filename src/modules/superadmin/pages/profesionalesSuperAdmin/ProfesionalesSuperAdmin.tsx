@@ -4,6 +4,7 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
+import { useProfesionalesSuperAdmin } from '../../hooks'
 import type {
   ProfesionalSuperAdmin,
   ProfesionalFormData,
@@ -90,84 +91,6 @@ const TIPOS_ATENCION_OPCIONES = [
   'Terapia y Rehabilitación',
 ]
 
-// Mock inicial basado en el diseño
-const INITIAL_PROFESIONALES: ProfesionalSuperAdmin[] = [
-  {
-    id: 'prof-1',
-    name: 'Dra. Elena Vargas',
-    cmp: '84729',
-    especialidad: 'Cirugía General',
-    email: 'evargas@vetpro.com',
-    phone: '+51 987 654 321',
-    status: 'Activo',
-    avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
-    horario: [
-      { id: 'b-1', dia: 'LUNES', horaInicio: '08:00', horaFin: '12:00', tipoAtencion: 'Cirugía Programada' },
-      { id: 'b-2', dia: 'MARTES', horaInicio: '09:00', horaFin: '14:00', tipoAtencion: 'Consulta General' },
-      { id: 'b-3', dia: 'MIÉRCOLES', horaInicio: '08:00', horaFin: '12:00', tipoAtencion: 'Cirugía Programada' },
-      { id: 'b-4', dia: 'MIÉRCOLES', horaInicio: '14:00', horaFin: '18:00', tipoAtencion: 'Consulta General' },
-      { id: 'b-5', dia: 'VIERNES', horaInicio: '10:00', horaFin: '16:00', tipoAtencion: 'Consulta General' },
-    ],
-  },
-  {
-    id: 'prof-2',
-    name: 'Dr. Martín Torres',
-    cmp: '92104',
-    especialidad: 'Medicina General',
-    email: 'mtorres@vetpro.com',
-    phone: '+51 912 345 678',
-    status: 'Activo',
-    avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
-    horario: [
-      { id: 'b-6', dia: 'LUNES', horaInicio: '14:00', horaFin: '20:00', tipoAtencion: 'Consulta General' },
-      { id: 'b-7', dia: 'JUEVES', horaInicio: '08:00', horaFin: '14:00', tipoAtencion: 'Control y Vacunación' },
-      { id: 'b-8', dia: 'SÁBADO', horaInicio: '09:00', horaFin: '15:00', tipoAtencion: 'Emergencias y Triaje' },
-    ],
-  },
-  {
-    id: 'prof-3',
-    name: 'Dra. Sofía Castro',
-    cmp: '75331',
-    especialidad: 'Comportamiento',
-    email: 'scastro@vetpro.com',
-    phone: '+51 945 678 123',
-    status: 'Inactivo',
-    avatarUrl: 'https://images.unsplash.com/photo-1594824813589-4467140f7b0f?w=150&auto=format&fit=crop&q=80',
-    horario: [
-      { id: 'b-9', dia: 'MARTES', horaInicio: '15:00', horaFin: '19:00', tipoAtencion: 'Atención Especializada' },
-      { id: 'b-10', dia: 'VIERNES', horaInicio: '14:00', horaFin: '18:00', tipoAtencion: 'Terapia y Rehabilitación' },
-    ],
-  },
-  {
-    id: 'prof-4',
-    name: 'Dr. Carlos Mendoza',
-    cmp: '61890',
-    especialidad: 'Dermatología',
-    email: 'cmendoza@vetpro.com',
-    phone: '+51 978 123 456',
-    status: 'Activo',
-    avatarUrl: '',
-    horario: [
-      { id: 'b-11', dia: 'LUNES', horaInicio: '09:00', horaFin: '13:00', tipoAtencion: 'Atención Especializada' },
-      { id: 'b-12', dia: 'MIÉRCOLES', horaInicio: '15:00', horaFin: '19:00', tipoAtencion: 'Consulta General' },
-    ],
-  },
-  {
-    id: 'prof-5',
-    name: 'Dra. Andrea Morales',
-    cmp: '88412',
-    especialidad: 'Oftalmología',
-    email: 'amorales@vetpro.com',
-    phone: '+51 933 222 111',
-    status: 'Activo',
-    avatarUrl: '',
-    horario: [
-      { id: 'b-13', dia: 'JUEVES', horaInicio: '09:00', horaFin: '15:00', tipoAtencion: 'Cirugía Programada' },
-      { id: 'b-14', dia: 'SÁBADO', horaInicio: '08:00', horaFin: '13:00', tipoAtencion: 'Atención Especializada' },
-    ],
-  },
-]
-
 function EspecialidadBadgeIcon({ especialidad, className = 'w-3.5 h-3.5' }: { especialidad: string; className?: string }) {
   const esp = especialidad.toLowerCase()
   if (esp.includes('cirug') || esp.includes('cardio') || esp.includes('oftalm')) {
@@ -198,56 +121,35 @@ export function ProfesionalesSuperAdmin({
   const closeSidebar =
     externalOnCloseSidebar || (() => setInternalIsSidebarOpen(false))
 
-  // Lista de profesionales
-  const [profesionales, setProfesionales] = useState<ProfesionalSuperAdmin[]>(INITIAL_PROFESIONALES)
-  const [selectedProfesionalId, setSelectedProfesionalId] = useState<string>(INITIAL_PROFESIONALES[0].id)
+  const {
+    searchQuery,
+    setSearchQuery,
+    selectedEspecialidad,
+    setSelectedEspecialidad,
+    selectedProfesional,
+    setSelectedProfesionalId,
+    filteredProfesionales,
+    activeNotification,
+    showToast,
+    isProfModalOpen,
+    setIsProfModalOpen,
+    editingProfesional,
+    setEditingProfesional,
+    isBlockModalOpen,
+    setIsBlockModalOpen,
+    editingBlock,
+    setEditingBlock,
+    handleSaveProfesional,
+    handleSaveBloque,
+    handleDeleteBloque,
+    handleSaveChanges,
+  } = useProfesionalesSuperAdmin()
 
-  // Filtros y paginación
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedEspecialidad, setSelectedEspecialidad] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 3
 
-  // Notificaciones Toast
-  const [activeNotification, setActiveNotification] = useState<string | null>(null)
-  const showToast = (message: string) => {
-    setActiveNotification(message)
-    setTimeout(() => {
-      setActiveNotification(null)
-    }, 3200)
-  }
-
-  // Modales
-  const [isProfModalOpen, setIsProfModalOpen] = useState(false)
-  const [editingProfesional, setEditingProfesional] = useState<ProfesionalSuperAdmin | null>(null)
-
-  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false)
   const [selectedDiaForBlock, setSelectedDiaForBlock] = useState<DiaSemana>('LUNES')
-  const [editingBlock, setEditingBlock] = useState<BloqueHorario | null>(null)
 
-  // Profesional seleccionado actualmente
-  const selectedProfesional = useMemo(
-    () => profesionales.find((p) => p.id === selectedProfesionalId) || profesionales[0],
-    [profesionales, selectedProfesionalId]
-  )
-
-  // Filtrado de profesionales
-  const filteredProfesionales = useMemo(() => {
-    return profesionales.filter((prof) => {
-      const matchSearch =
-        prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prof.cmp.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prof.email.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const matchEspecialidad =
-        selectedEspecialidad === 'all' ||
-        prof.especialidad.toLowerCase() === selectedEspecialidad.toLowerCase()
-
-      return matchSearch && matchEspecialidad
-    })
-  }, [profesionales, searchQuery, selectedEspecialidad])
-
-  // Paginación
   const totalPages = Math.ceil(filteredProfesionales.length / itemsPerPage) || 1
   const paginatedProfesionales = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
@@ -260,101 +162,6 @@ export function ProfesionalesSuperAdmin({
     } else {
       showToast(`Navegando a: ${routeId}`)
     }
-  }
-
-  // Guardar Profesional (Crear / Editar)
-  const handleSaveProfesional = (data: ProfesionalFormData) => {
-    if (editingProfesional) {
-      setProfesionales((prev) =>
-        prev.map((p) =>
-          p.id === editingProfesional.id
-            ? { ...p, ...data }
-            : p
-        )
-      )
-      showToast(`Profesional "${data.name}" actualizado correctamente.`)
-    } else {
-      const newProf: ProfesionalSuperAdmin = {
-        id: `prof-${Date.now()}`,
-        name: data.name,
-        cmp: data.cmp,
-        especialidad: data.especialidad,
-        email: data.email,
-        phone: data.phone,
-        status: data.status,
-        avatarUrl: data.avatarUrl,
-        horario: [],
-      }
-      setProfesionales((prev) => [newProf, ...prev])
-      setSelectedProfesionalId(newProf.id)
-      showToast(`Profesional "${data.name}" agregado con éxito.`)
-    }
-    setIsProfModalOpen(false)
-    setEditingProfesional(null)
-  }
-
-  // Guardar Bloque de Horario
-  const handleSaveBloque = (dia: DiaSemana, horaInicio: string, horaFin: string, tipoAtencion: string) => {
-    if (!selectedProfesional) return
-
-    if (editingBlock) {
-      setProfesionales((prev) =>
-        prev.map((p) => {
-          if (p.id !== selectedProfesional.id) return p
-          return {
-            ...p,
-            horario: p.horario.map((b) =>
-              b.id === editingBlock.id
-                ? { ...b, dia, horaInicio, horaFin, tipoAtencion }
-                : b
-            ),
-          }
-        })
-      )
-      showToast('Bloque de horario actualizado.')
-    } else {
-      const newBlock: BloqueHorario = {
-        id: `b-${Date.now()}`,
-        dia,
-        horaInicio,
-        horaFin,
-        tipoAtencion,
-      }
-      setProfesionales((prev) =>
-        prev.map((p) => {
-          if (p.id !== selectedProfesional.id) return p
-          return {
-            ...p,
-            horario: [...p.horario, newBlock],
-          }
-        })
-      )
-      showToast(`Turno agregado para el ${dia}.`)
-    }
-    setIsBlockModalOpen(false)
-    setEditingBlock(null)
-  }
-
-  // Eliminar Bloque de Horario
-  const handleDeleteBloque = (blockId: string) => {
-    if (!selectedProfesional) return
-    setProfesionales((prev) =>
-      prev.map((p) => {
-        if (p.id !== selectedProfesional.id) return p
-        return {
-          ...p,
-          horario: p.horario.filter((b) => b.id !== blockId),
-        }
-      })
-    )
-    showToast('Bloque de horario eliminado.')
-  }
-
-
-  // Guardar Cambios de Horario
-  const handleSaveChanges = () => {
-    if (!selectedProfesional) return
-    showToast(`¡Cambios de horario guardados para ${selectedProfesional.name}!`)
   }
 
   return (

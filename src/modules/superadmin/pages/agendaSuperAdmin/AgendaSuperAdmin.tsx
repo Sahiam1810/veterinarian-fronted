@@ -4,6 +4,7 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
+import { useAgendaSuperAdmin } from '../../hooks'
 import type {
   CitaSuperAdmin,
   CitaFormData,
@@ -26,99 +27,10 @@ export interface AgendaSuperAdminProps {
   onLogout?: () => void
 }
 
-const DIAS_SEMANA = [
-  { label: 'Lun', dateKey: '2023-10-16', num: 16 },
-  { label: 'Mar', dateKey: '2023-10-17', num: 17 },
-  { label: 'Mié', dateKey: '2023-10-18', num: 18 },
-  { label: 'Jue', dateKey: '2023-10-19', num: 19 },
-  { label: 'Vie', dateKey: '2023-10-20', num: 20 },
-  { label: 'Sáb', dateKey: '2023-10-21', num: 21 },
-  { label: 'Dom', dateKey: '2023-10-22', num: 22 },
-]
-
 const HORAS_MOSTRADAS = [8, 9, 10, 11, 12]
 const HOUR_START = 8
 const HOUR_END = 12
 const TOTAL_MINUTES = (HOUR_END - HOUR_START) * 60
-
-const INITIAL_CITAS: CitaSuperAdmin[] = [
-  {
-    id: 'cita-1',
-    dateKey: '2023-10-16',
-    startTime: '08:30',
-    endTime: '09:30',
-    status: 'AGENDADA',
-    petName: 'Luna',
-    petBreed: 'Golden Retriever',
-    species: 'Perro',
-    ownerName: 'Carlos Mendoza',
-    professionalId: 'prof-smith',
-    professionalName: 'Dr. Smith',
-    service: 'Vacunación Anual',
-    notes: 'Traer cartilla de vacunación anterior.',
-  },
-  {
-    id: 'cita-2',
-    dateKey: '2023-10-17',
-    startTime: '09:30',
-    endTime: '10:30',
-    status: 'EN_ESPERA', // En Curso
-    petName: 'Max',
-    petBreed: 'Beagle',
-    species: 'Perro',
-    ownerName: 'Carlos Mendoza',
-    professionalId: 'prof-garcia',
-    professionalName: 'Dra. Garcia',
-    service: 'Consulta General',
-    notes: 'Revisión por otitis recurrente.',
-  },
-  {
-    id: 'cita-3',
-    dateKey: '2023-10-18',
-    startTime: '10:30',
-    endTime: '11:15',
-    status: 'AGENDADA',
-    petName: 'Bella',
-    petBreed: 'Persa',
-    species: 'Gato',
-    ownerName: 'Sofía Castro',
-    professionalId: 'prof-smith',
-    professionalName: 'Dr. Smith',
-    service: 'Consulta General',
-    notes: 'Chequeo de rutina y control de peso.',
-  },
-  {
-    id: 'cita-4',
-    dateKey: '2023-10-20',
-    startTime: '08:30',
-    endTime: '09:30',
-    status: 'ATENDIDA',
-    petName: 'Rocky',
-    petBreed: 'Boxer',
-    species: 'Perro',
-    ownerName: 'Elena Vargas',
-    professionalId: 'prof-lopez',
-    professionalName: 'Dr. Lopez',
-    service: 'Control y Vacunación',
-    notes: 'Vacuna óctuple y desparasitación.',
-  },
-]
-
-const PROFESIONALES_OPCIONES = [
-  { id: 'prof-smith', name: 'Dr. Smith' },
-  { id: 'prof-garcia', name: 'Dra. Garcia' },
-  { id: 'prof-lopez', name: 'Dr. Lopez' },
-  { id: 'prof-vargas', name: 'Dra. Elena Vargas' },
-  { id: 'prof-torres', name: 'Dr. Martín Torres' },
-]
-
-const SERVICIOS_OPCIONES = [
-  'Consulta General',
-  'Vacunación Anual',
-  'Emergencias y Triaje',
-  'Control y Vacunación',
-  'Atención Especializada',
-]
 
 // Convierte HH:mm a minutos desde la hora de inicio
 function parseMinutes(time: string): number {
@@ -150,43 +62,31 @@ export function AgendaSuperAdmin({
   const closeSidebar =
     externalOnCloseSidebar || (() => setInternalIsSidebarOpen(false))
 
-  // Data states
-  const [citas, setCitas] = useState<CitaSuperAdmin[]>(INITIAL_CITAS)
-  const [selectedCitaId, setSelectedCitaId] = useState<string | null>(INITIAL_CITAS[0].id)
+  const {
+    weekDays: DIAS_SEMANA,
+    selectedCitaId,
+    setSelectedCitaId,
+    selectedCita,
+    filteredCitas,
+    profesionalesOpciones,
+    serviciosOpciones,
+    selectedProfessionalId,
+    setSelectedProfessionalId,
+    viewMode,
+    setViewMode,
+    activeDayIndex,
+    setActiveDayIndex,
+    activeNotification,
+    showToast,
+    isDrawerOpen,
+    setIsDrawerOpen,
+    editingCita,
+    setEditingCita,
+    handleSaveCita,
+    handleCancelCita,
+    handleStartAttention,
+  } = useAgendaSuperAdmin()
 
-  // Filters
-  const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all')
-  const [viewMode, setViewMode] = useState<'semana' | 'dia'>('semana')
-  const [activeDayIndex, setActiveDayIndex] = useState<number>(0) // For "Día" view mode
-
-  // Toast Notification
-  const [activeNotification, setActiveNotification] = useState<string | null>(null)
-  const showToast = (message: string) => {
-    setActiveNotification(message)
-    setTimeout(() => {
-      setActiveNotification(null)
-    }, 3200)
-  }
-
-  // Drawers
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [editingCita, setEditingCita] = useState<CitaSuperAdmin | null>(null)
-
-  // Get active selected appointment detail
-  const selectedCita = useMemo(() => {
-    return citas.find((c) => c.id === selectedCitaId) || null
-  }, [citas, selectedCitaId])
-
-  // Filter appointments
-  const filteredCitas = useMemo(() => {
-    return citas.filter((c) => {
-      const matchProf =
-        selectedProfessionalId === 'all' || c.professionalId === selectedProfessionalId
-      return matchProf
-    })
-  }, [citas, selectedProfessionalId])
-
-  // Simulating the current time marker at 11:00
   const nowPercent = useMemo(() => {
     return percentFromHourStart('11:00', HOUR_START)
   }, [])
@@ -197,49 +97,6 @@ export function AgendaSuperAdmin({
     } else {
       showToast(`Navegando a: ${routeId}`)
     }
-  }
-
-  // Cita Handlers
-  const handleSaveCita = (data: CitaFormData) => {
-    const profName = PROFESIONALES_OPCIONES.find((p) => p.id === data.professionalId)?.name || 'Médico'
-    if (editingCita) {
-      // Edit / Reprogram
-      setCitas((prev) =>
-        prev.map((c) =>
-          c.id === editingCita.id
-            ? { ...c, ...data, professionalName: profName }
-            : c
-        )
-      )
-      showToast(`Cita de ${data.petName} actualizada correctamente.`)
-    } else {
-      // Create
-      const newCita: CitaSuperAdmin = {
-        id: `cita-${Date.now()}`,
-        ...data,
-        professionalName: profName,
-      }
-      setCitas((prev) => [newCita, ...prev])
-      setSelectedCitaId(newCita.id)
-      showToast(`Cita de ${data.petName} registrada con éxito.`)
-    }
-    setIsDrawerOpen(false)
-    setEditingCita(null)
-  }
-
-  const handleCancelCita = (id: string) => {
-    if (window.confirm('¿Estás seguro de que deseas cancelar esta cita?')) {
-      setCitas((prev) => prev.filter((c) => c.id !== id))
-      setSelectedCitaId(null)
-      showToast('Cita cancelada correctamente.')
-    }
-  }
-
-  const handleStartAttention = (id: string) => {
-    setCitas((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: 'EN_ESPERA' } : c))
-    )
-    showToast('Atención iniciada correctamente.')
   }
 
   const handlePrint = () => {
@@ -295,7 +152,7 @@ export function AgendaSuperAdmin({
                 className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone/35 text-xs sm:text-sm text-charcoal font-semibold focus:outline-none cursor-pointer"
               >
                 <option value="all">Todos los Profesionales</option>
-                {PROFESIONALES_OPCIONES.map((p) => (
+                {profesionalesOpciones.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -723,6 +580,8 @@ export function AgendaSuperAdmin({
       <CitaDrawer
         isOpen={isDrawerOpen}
         editingCita={editingCita}
+        profesionalesOpciones={profesionalesOpciones}
+        serviciosOpciones={serviciosOpciones}
         onClose={() => {
           setIsDrawerOpen(false)
           setEditingCita(null)
@@ -739,11 +598,15 @@ export function AgendaSuperAdmin({
 function CitaDrawer({
   isOpen,
   editingCita,
+  profesionalesOpciones,
+  serviciosOpciones,
   onClose,
   onSave,
 }: {
   isOpen: boolean
   editingCita: CitaSuperAdmin | null
+  profesionalesOpciones: { id: string; name: string }[]
+  serviciosOpciones: string[]
   onClose: () => void
   onSave: (data: CitaFormData) => void
 }) {
@@ -758,7 +621,7 @@ function CitaDrawer({
   const [dateKey, setDateKey] = useState(editingCita?.dateKey || '2023-10-16')
   const [startTime, setStartTime] = useState(editingCita?.startTime || '08:00')
   const [endTime, setEndTime] = useState(editingCita?.endTime || '09:00')
-  const [professionalId, setProfessionalId] = useState(editingCita?.professionalId || 'prof-smith')
+  const [professionalId, setProfessionalId] = useState(editingCita?.professionalId || profesionalesOpciones[0]?.id || '')
   const [service, setService] = useState(editingCita?.service || 'Consulta General')
   const [notes, setNotes] = useState(editingCita?.notes || '')
   const [status, setStatus] = useState<EstadoCita>(editingCita?.status || 'AGENDADA')
@@ -775,7 +638,7 @@ function CitaDrawer({
       setDateKey(editingCita?.dateKey || '2023-10-16')
       setStartTime(editingCita?.startTime || '08:00')
       setEndTime(editingCita?.endTime || '09:00')
-      setProfessionalId(editingCita?.professionalId || 'prof-smith')
+      setProfessionalId(editingCita?.professionalId || profesionalesOpciones[0]?.id || '')
       setService(editingCita?.service || 'Consulta General')
       setNotes(editingCita?.notes || '')
       setStatus(editingCita?.status || 'AGENDADA')
@@ -976,7 +839,7 @@ function CitaDrawer({
               onChange={(e) => setProfessionalId(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
             >
-              {PROFESIONALES_OPCIONES.map((p) => (
+              {profesionalesOpciones.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -991,7 +854,7 @@ function CitaDrawer({
               onChange={(e) => setService(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
             >
-              {SERVICIOS_OPCIONES.map((srv) => (
+              {serviciosOpciones.map((srv) => (
                 <option key={srv} value={srv}>
                   {srv}
                 </option>

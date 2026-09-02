@@ -15,6 +15,11 @@ export interface CitaSuperAdmin {
   service?: string
   notes?: string
   blockLabel?: string
+  // IDs internos para sincronizar con la API
+  clientPetId?: string
+  serviceId?: string
+  statusId?: string
+  availabilityId?: string
 }
 
 export interface CitaFormData {

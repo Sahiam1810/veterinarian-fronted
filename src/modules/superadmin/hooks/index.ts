@@ -1,3 +1,6 @@
 export * from './useSuperAdminDashboard'
 export * from './useUserSuperAdmin'
 export * from './useMascotasSuperAdmin'
+export * from './useServiciosSuperAdmin'
+export * from './useProfesionalesSuperAdmin'
+export * from './useAgendaSuperAdmin'
