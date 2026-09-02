@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { GrantedPermissions } from '@/global/navigation'
+import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
+import { isNavPermissionGranted } from '@/modules/auth'
 import type {
   RecepDayAppointment,
   RecepHomeDashboard,
@@ -14,6 +15,12 @@ const IMPLEMENTED_ROUTES = new Set([
   'agenda',
   'duenos',
 ])
+
+const GATED_ROUTES: Record<string, NavPermissionKey> = {
+  mascotas: 'recep.mascotas',
+  agenda: 'recep.agenda',
+  duenos: 'recep.duenos',
+}
 
 export function useRecepHome(onLogout?: () => void) {
   const [dashboard, setDashboard] = useState<RecepHomeDashboard | null>(null)
@@ -69,6 +76,16 @@ export function useRecepHome(onLogout?: () => void) {
       return
     }
 
+    const gatedKey = GATED_ROUTES[routeId]
+    if (
+      gatedKey &&
+      !isNavPermissionGranted(grantedPermissions ?? undefined, gatedKey)
+    ) {
+      showToast('No tienes permiso para ver esta sección')
+      setActiveRoute('inicio')
+      return
+    }
+
     setActiveRoute(routeId)
 
     if (!IMPLEMENTED_ROUTES.has(routeId)) {
@@ -78,15 +95,15 @@ export function useRecepHome(onLogout?: () => void) {
 
   const handleQuickAction = (actionId: RecepQuickActionId) => {
     if (actionId === 'agendar-cita') {
-      setActiveRoute('agenda')
+      handleNavigate('agenda')
       return
     }
     if (actionId === 'registrar-mascota') {
-      setActiveRoute('mascotas')
+      handleNavigate('mascotas')
       return
     }
     if (actionId === 'registrar-dueno') {
-      setActiveRoute('duenos')
+      handleNavigate('duenos')
       return
     }
 
@@ -99,7 +116,7 @@ export function useRecepHome(onLogout?: () => void) {
   }
 
   const handleViewFullMonth = () => {
-    setActiveRoute('agenda')
+    handleNavigate('agenda')
   }
 
   const handleRowAction = (appointment: RecepDayAppointment) => {

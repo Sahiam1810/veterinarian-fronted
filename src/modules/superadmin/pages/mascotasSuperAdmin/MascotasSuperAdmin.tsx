@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
@@ -15,6 +15,7 @@ import type {
   EstadoMascota,
   SexoMascota,
 } from '../../types'
+import type { ModuleId } from '../../types'
 import {
   SearchIcon,
   PlusIcon,
@@ -37,6 +38,7 @@ export interface MascotasSuperAdminProps {
   userName?: string
   userRole?: string
   onLogout?: () => void
+  canViewModule?: (moduleId: ModuleId) => boolean
 }
 
 /* ============================================================================
@@ -48,6 +50,8 @@ interface MascotaDrawerProps {
   onSave: (data: MascotaFormData) => void
   editingMascota: SuperAdminMascota | null
   duenos: SuperAdminDueno[]
+  speciesOptions: { id: string; name: string }[]
+  raceOptions: { id: string; name: string }[]
 }
 
 function MascotaDrawer({
@@ -56,10 +60,15 @@ function MascotaDrawer({
   onSave,
   editingMascota,
   duenos,
+  speciesOptions,
+  raceOptions,
 }: MascotaDrawerProps) {
+  const defaultSpecies = (speciesOptions[0]?.name || 'Canino') as EspecieMascota
+  const defaultBreed = raceOptions[0]?.name || ''
+
   const [name, setName] = useState(editingMascota?.name || '')
-  const [species, setSpecies] = useState<EspecieMascota>(editingMascota?.species || 'Canino')
-  const [breed, setBreed] = useState(editingMascota?.breed || '')
+  const [species, setSpecies] = useState<EspecieMascota>(editingMascota?.species || defaultSpecies)
+  const [breed, setBreed] = useState(editingMascota?.breed || defaultBreed)
   const [age, setAge] = useState(editingMascota?.age || '')
   const [sex, setSex] = useState<SexoMascota>(editingMascota?.sex || 'Macho')
   const [weight, setWeight] = useState(editingMascota?.weight || '')
@@ -69,8 +78,9 @@ function MascotaDrawer({
   const [notes, setNotes] = useState(editingMascota?.notes || '')
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Sync state on open/change
-  useState(() => {
+  // Sincroniza el formulario al abrir o cambiar la mascota editada
+  useEffect(() => {
+    if (!isOpen) return
     if (editingMascota) {
       setName(editingMascota.name)
       setSpecies(editingMascota.species)
@@ -84,8 +94,8 @@ function MascotaDrawer({
       setNotes(editingMascota.notes || '')
     } else {
       setName('')
-      setSpecies('Canino')
-      setBreed('')
+      setSpecies(defaultSpecies)
+      setBreed(defaultBreed)
       setAge('')
       setSex('Macho')
       setWeight('')
@@ -94,7 +104,8 @@ function MascotaDrawer({
       setPhotoUrl('')
       setNotes('')
     }
-  })
+    setFormError(null)
+  }, [isOpen, editingMascota, duenos, defaultSpecies, defaultBreed])
 
   if (!isOpen) return null
 
@@ -105,11 +116,15 @@ function MascotaDrawer({
       return
     }
     if (!breed.trim()) {
-      setFormError('Por favor ingresa la raza de la mascota.')
+      setFormError('Por favor selecciona o ingresa la raza de la mascota.')
       return
     }
     if (!ownerId) {
       setFormError('Por favor selecciona el dueño responsable.')
+      return
+    }
+    if (speciesOptions.length === 0) {
+      setFormError('No hay especies configuradas en el sistema.')
       return
     }
 
@@ -187,12 +202,15 @@ function MascotaDrawer({
                 onChange={(e) => setSpecies(e.target.value as EspecieMascota)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               >
-                <option value="Canino">Canino</option>
-                <option value="Felino">Felino</option>
-                <option value="Ave">Ave</option>
-                <option value="Roedor">Roedor</option>
-                <option value="Exótico">Exótico</option>
-                <option value="Otro">Otro</option>
+                {speciesOptions.length === 0 ? (
+                  <option value="">Sin especies en API</option>
+                ) : (
+                  speciesOptions.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -200,14 +218,28 @@ function MascotaDrawer({
               <label className="block text-xs font-bold text-charcoal mb-1.5">
                 Raza <span className="text-terracotta">*</span>
               </label>
-              <input
-                type="text"
-                required
-                value={breed}
-                onChange={(e) => setBreed(e.target.value)}
-                placeholder="Ej: Golden Retriever"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-              />
+              {raceOptions.length > 0 ? (
+                <select
+                  value={breed}
+                  onChange={(e) => setBreed(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                >
+                  {raceOptions.map((r) => (
+                    <option key={r.id} value={r.name}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  required
+                  value={breed}
+                  onChange={(e) => setBreed(e.target.value)}
+                  placeholder="Ej: Golden Retriever"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                />
+              )}
             </div>
           </div>
 
@@ -699,6 +731,7 @@ export function MascotasSuperAdmin({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onLogout,
+  canViewModule,
 }: MascotasSuperAdminProps) {
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
@@ -709,6 +742,8 @@ export function MascotasSuperAdmin({
     activeTab,
     setActiveTab,
     duenos,
+    speciesOptions,
+    raceOptions,
     paginatedMascotas,
     paginatedDuenos,
     mascotaPage,
@@ -793,6 +828,7 @@ export function MascotasSuperAdmin({
           onClose={closeSidebar}
           activeRoute={activeRoute}
           onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
           onLogout={onLogout}
         />
 
@@ -865,11 +901,11 @@ export function MascotasSuperAdmin({
                     className="px-3.5 py-2 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer min-w-[150px]"
                   >
                     <option value="all">Todas las Especies</option>
-                    <option value="Canino">Canino</option>
-                    <option value="Felino">Felino</option>
-                    <option value="Ave">Ave</option>
-                    <option value="Roedor">Roedor</option>
-                    <option value="Exótico">Exótico</option>
+                    {speciesOptions.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name}
+                      </option>
+                    ))}
                   </select>
 
                   {/* Dropdown Estados */}
@@ -1134,9 +1170,10 @@ export function MascotasSuperAdmin({
                       type="button"
                       disabled={mascotaPage <= 1}
                       onClick={() => setMascotaPage((p) => Math.max(1, p - 1))}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      aria-label="Página anterior"
                     >
-                      ‹
+                      Anterior
                     </button>
 
                     {Array.from({ length: totalMascotaPages }, (_, i) => i + 1).map((num) => (
@@ -1158,9 +1195,10 @@ export function MascotasSuperAdmin({
                       type="button"
                       disabled={mascotaPage >= totalMascotaPages}
                       onClick={() => setMascotaPage((p) => Math.min(totalMascotaPages, p + 1))}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      aria-label="Página siguiente"
                     >
-                      ›
+                      Siguiente
                     </button>
                   </div>
                 </div>
@@ -1421,9 +1459,10 @@ export function MascotasSuperAdmin({
                       type="button"
                       disabled={duenoPage <= 1}
                       onClick={() => setDuenoPage((p) => Math.max(1, p - 1))}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      aria-label="Página anterior"
                     >
-                      ‹
+                      Anterior
                     </button>
 
                     {Array.from({ length: totalDuenoPages }, (_, i) => i + 1).map((num) => (
@@ -1445,9 +1484,10 @@ export function MascotasSuperAdmin({
                       type="button"
                       disabled={duenoPage >= totalDuenoPages}
                       onClick={() => setDuenoPage((p) => Math.min(totalDuenoPages, p + 1))}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                      aria-label="Página siguiente"
                     >
-                      ›
+                      Siguiente
                     </button>
                   </div>
                 </div>
@@ -1470,6 +1510,8 @@ export function MascotasSuperAdmin({
         }}
         editingMascota={editingMascota}
         duenos={duenos}
+        speciesOptions={speciesOptions}
+        raceOptions={raceOptions}
       />
 
       <DuenoDrawer

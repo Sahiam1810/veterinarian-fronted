@@ -12,6 +12,7 @@ import type {
   DiaSemana,
   EstadoProfesional,
 } from '../../types'
+import type { ModuleId } from '../../types'
 import {
   SearchIcon,
   PlusIcon,
@@ -60,6 +61,7 @@ export interface ProfesionalesSuperAdminProps {
   userName?: string
   userRole?: string
   onLogout?: () => void
+  canViewModule?: (moduleId: ModuleId) => boolean
 }
 
 const DIAS_SEMANA: DiaSemana[] = [
@@ -70,16 +72,6 @@ const DIAS_SEMANA: DiaSemana[] = [
   'VIERNES',
   'SÁBADO',
   'DOMINGO',
-]
-
-const ESPECIALIDADES_OPCIONES = [
-  'Cirugía General',
-  'Medicina General',
-  'Comportamiento',
-  'Dermatología',
-  'Oftalmología',
-  'Cardiología',
-  'Traumatología',
 ]
 
 const TIPOS_ATENCION_OPCIONES = [
@@ -111,6 +103,7 @@ export function ProfesionalesSuperAdmin({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onLogout,
+  canViewModule,
 }: ProfesionalesSuperAdminProps = {}) {
   // Estado de navegación y sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -143,7 +136,13 @@ export function ProfesionalesSuperAdmin({
     handleSaveBloque,
     handleDeleteBloque,
     handleSaveChanges,
+    specialties,
   } = useProfesionalesSuperAdmin()
+
+  const specialtyNames = useMemo(
+    () => (specialties.length > 0 ? specialties.map((s) => s.name) : ['Medicina General']),
+    [specialties],
+  )
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 3
@@ -183,6 +182,7 @@ export function ProfesionalesSuperAdmin({
           onClose={closeSidebar}
           activeRoute={activeRoute}
           onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
           onLogout={onLogout}
         />
 
@@ -254,7 +254,7 @@ export function ProfesionalesSuperAdmin({
                   className="w-full sm:w-auto px-4 py-2 rounded-xl border border-border-tan bg-bone/30 focus:bg-white text-xs sm:text-sm text-charcoal font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer min-w-[190px]"
                 >
                   <option value="all">Todas las especialidades</option>
-                  {ESPECIALIDADES_OPCIONES.map((esp) => (
+                  {specialtyNames.map((esp) => (
                     <option key={esp} value={esp}>
                       {esp}
                     </option>
@@ -395,10 +395,10 @@ export function ProfesionalesSuperAdmin({
                   type="button"
                   disabled={currentPage <= 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                  className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
                   aria-label="Página anterior"
                 >
-                  ‹
+                  Anterior
                 </button>
 
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
@@ -420,10 +420,10 @@ export function ProfesionalesSuperAdmin({
                   type="button"
                   disabled={currentPage >= totalPages}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
+                  className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
                   aria-label="Página siguiente"
                 >
-                  ›
+                  Siguiente
                 </button>
               </div>
             </div>
@@ -550,6 +550,7 @@ export function ProfesionalesSuperAdmin({
         <ProfesionalModal
           isOpen={isProfModalOpen}
           editingProfesional={editingProfesional}
+          specialtyOptions={specialtyNames}
           onClose={() => {
             setIsProfModalOpen(false)
             setEditingProfesional(null)
@@ -586,11 +587,13 @@ export function ProfesionalesSuperAdmin({
 function ProfesionalModal({
   isOpen,
   editingProfesional,
+  specialtyOptions,
   onClose,
   onSave,
 }: {
   isOpen: boolean
   editingProfesional: ProfesionalSuperAdmin | null
+  specialtyOptions: string[]
   onClose: () => void
   onSave: (data: ProfesionalFormData) => void
 }) {
@@ -598,7 +601,9 @@ function ProfesionalModal({
   const [isClosing, setIsClosing] = useState(false)
   const [name, setName] = useState(editingProfesional?.name || '')
   const [cmp, setCmp] = useState(editingProfesional?.cmp || '')
-  const [especialidad, setEspecialidad] = useState(editingProfesional?.especialidad || 'Cirugía General')
+  const [especialidad, setEspecialidad] = useState(
+    editingProfesional?.especialidad || specialtyOptions[0] || 'Medicina General',
+  )
   const [email, setEmail] = useState(editingProfesional?.email || '')
   const [phone, setPhone] = useState(editingProfesional?.phone || '')
   const [status, setStatus] = useState<EstadoProfesional>(editingProfesional?.status || 'Activo')
@@ -611,7 +616,9 @@ function ProfesionalModal({
       setIsClosing(false)
       setName(editingProfesional?.name || '')
       setCmp(editingProfesional?.cmp || '')
-      setEspecialidad(editingProfesional?.especialidad || 'Cirugía General')
+      setEspecialidad(
+        editingProfesional?.especialidad || specialtyOptions[0] || 'Medicina General',
+      )
       setEmail(editingProfesional?.email || '')
       setPhone(editingProfesional?.phone || '')
       setStatus(editingProfesional?.status || 'Activo')
@@ -625,7 +632,7 @@ function ProfesionalModal({
       }, 230)
       return () => clearTimeout(timer)
     }
-  }, [editingProfesional, isOpen, isRendered])
+  }, [editingProfesional, isOpen, isRendered, specialtyOptions])
 
   const handleClose = () => {
     if (isClosing) return
@@ -745,7 +752,7 @@ function ProfesionalModal({
               onChange={(e) => setEspecialidad(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
             >
-              {ESPECIALIDADES_OPCIONES.map((esp) => (
+              {specialtyOptions.map((esp) => (
                 <option key={esp} value={esp}>
                   {esp}
                 </option>

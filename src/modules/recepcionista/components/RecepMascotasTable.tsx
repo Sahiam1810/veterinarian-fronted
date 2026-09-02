@@ -1,6 +1,5 @@
 import { PawIcon } from '@/global/components'
 import type { RecepMascotaEstado, RecepMascotaListItem } from '../types'
-import { ChevronLeftIcon, ChevronRightIcon } from './RecepMascotasIcons'
 
 interface RecepMascotasTableProps {
   items: RecepMascotaListItem[]
@@ -87,18 +86,18 @@ export function RecepMascotasTable({
           <button
             type="button"
             onClick={onPrevPage}
-            className="w-8 h-8 rounded-lg border border-border-tan text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+            className="px-2.5 h-8 rounded-lg border border-border-tan text-xs font-semibold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
             aria-label="Página anterior"
           >
-            <ChevronLeftIcon className="w-4 h-4" />
+            Anterior
           </button>
           <button
             type="button"
             onClick={onNextPage}
-            className="w-8 h-8 rounded-lg border border-border-tan text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+            className="px-2.5 h-8 rounded-lg border border-border-tan text-xs font-semibold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
             aria-label="Página siguiente"
           >
-            <ChevronRightIcon className="w-4 h-4" />
+            Siguiente
           </button>
         </div>
       </footer>

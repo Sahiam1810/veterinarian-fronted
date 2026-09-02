@@ -1,6 +1,6 @@
 // Tipos de Mascotas y Dueños para el módulo de SuperAdministración
 
-export type EspecieMascota = 'Canino' | 'Felino' | 'Ave' | 'Roedor' | 'Exótico' | 'Otro'
+export type EspecieMascota = string
 export type SexoMascota = 'Macho' | 'Hembra'
 export type EstadoMascota = 'Activo' | 'Inactivo'
 

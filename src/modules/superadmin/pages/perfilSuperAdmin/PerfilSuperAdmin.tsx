@@ -4,6 +4,10 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
+import { usePerfilSuperAdmin, type SuperAdminProfileData } from '../../hooks'
+import type { ModuleId } from '../../types'
+
+export type { SuperAdminProfileData }
 
 export interface PerfilSuperAdminProps {
   onNavigate?: (routeId: string) => void
@@ -14,20 +18,7 @@ export interface PerfilSuperAdminProps {
   userName?: string
   userRole?: string
   onLogout?: () => void
-}
-
-export interface SuperAdminProfileData {
-  fullName: string
-  displayName: string
-  email: string
-  phone: string
-  photoUrl: string
-  jobTitle: string
-  systemRole: string
-  clinicName: string
-  clinicBranch: string
-  workHours: string
-  accountStatus: 'activa' | 'inactiva'
+  canViewModule?: (moduleId: ModuleId) => boolean
 }
 
 export function PerfilSuperAdmin({
@@ -39,6 +30,7 @@ export function PerfilSuperAdmin({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onLogout,
+  canViewModule,
 }: PerfilSuperAdminProps = {}) {
   // Navigation & Sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -49,40 +41,14 @@ export function PerfilSuperAdmin({
   const closeSidebar =
     externalOnCloseSidebar || (() => setInternalIsSidebarOpen(false))
 
-  // Profile data state
-  const [profile, setProfile] = useState<SuperAdminProfileData>({
-    fullName: userName,
-    displayName: userName,
-    email: 'superadmin@huellitas.com',
-    phone: '+51 987 654 321',
-    photoUrl: '', // Starts empty, will render placeholder or updated URL
-    jobTitle: 'Super Administrador de la Clínica',
-    systemRole: 'Super Administrador General',
-    clinicName: 'Veterinaria Huellitas',
-    clinicBranch: 'Sede Central',
-    workHours: 'Lun - Sáb, 08:00 - 18:00',
-    accountStatus: 'activa',
-  })
-
-  // Toast Notification
-  const [activeNotification, setActiveNotification] = useState<string | null>(null)
-  const showToast = (message: string) => {
-    setActiveNotification(message)
-    setTimeout(() => {
-      setActiveNotification(null)
-    }, 3200)
-  }
-
-  // Sync userName prop if changed
-  useEffect(() => {
-    if (userName) {
-      setProfile((prev) => ({
-        ...prev,
-        fullName: userName,
-        displayName: userName,
-      }))
-    }
-  }, [userName])
+  const {
+    profile,
+    activeNotification,
+    showToast,
+    saveProfile,
+    savePassword,
+    savePhoto,
+  } = usePerfilSuperAdmin(userName, userRole)
 
   const handleSidebarNavigate = (routeId: string) => {
     if (onNavigate) {
@@ -93,30 +59,26 @@ export function PerfilSuperAdmin({
   // Active drawer state
   const [activeDrawer, setActiveDrawer] = useState<'edit' | 'password' | 'photo' | null>(null)
 
-  // Handlers for drawer actions
-  const handleSaveProfile = (updatedData: { fullName: string; email: string; phone: string }) => {
-    setProfile((prev) => ({
-      ...prev,
-      fullName: updatedData.fullName,
-      displayName: updatedData.fullName,
-      email: updatedData.email,
-      phone: updatedData.phone,
-    }))
-    showToast('Perfil actualizado correctamente.')
+  // Guarda datos personales vía hook (API o extras locales)
+  const handleSaveProfile = async (updatedData: {
+    fullName: string
+    email: string
+    phone: string
+  }) => {
+    await saveProfile(updatedData)
     setActiveDrawer(null)
   }
 
-  const handleSavePassword = () => {
-    showToast('Contraseña cambiada exitosamente.')
+  const handleSavePassword = async (data: {
+    currentPassword: string
+    newPassword: string
+  }) => {
+    await savePassword(data)
     setActiveDrawer(null)
   }
 
-  const handleSavePhoto = (photoUrl: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      photoUrl,
-    }))
-    showToast('Foto de perfil actualizada correctamente.')
+  const handleSavePhoto = (url: string) => {
+    savePhoto(url)
     setActiveDrawer(null)
   }
 
@@ -139,6 +101,7 @@ export function PerfilSuperAdmin({
           onClose={closeSidebar}
           activeRoute={activeRoute}
           onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
           onLogout={onLogout}
         />
 
@@ -214,6 +177,11 @@ export function PerfilSuperAdmin({
                   </svg>
                   <span>Editar Perfil</span>
                 </button>
+                {profile.isPlatformSuperAdmin && (
+                  <p className="text-[10px] text-sage font-medium leading-snug px-1">
+                    SuperAdmin de plataforma: nombre y correo vienen del .env del backend.
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveDrawer('password')}
@@ -363,7 +331,7 @@ function EditProfileDrawer({
   onSave,
 }: DrawerBaseProps & {
   profile: SuperAdminProfileData
-  onSave: (data: { fullName: string; email: string; phone: string }) => void
+  onSave: (data: { fullName: string; email: string; phone: string }) => void | Promise<void>
 }) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
@@ -403,13 +371,13 @@ function EditProfileDrawer({
 
   if (!isRendered && !isOpen) return null
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!fullName.trim() || !email.trim() || !phone.trim()) {
       setError('Todos los campos son obligatorios.')
       return
     }
-    onSave({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim() })
+    await onSave({ fullName: fullName.trim(), email: email.trim(), phone: phone.trim() })
   }
 
   return (
@@ -495,7 +463,7 @@ function ChangePasswordDrawer({
   onClose,
   onSave,
 }: DrawerBaseProps & {
-  onSave: () => void
+  onSave: (data: { currentPassword: string; newPassword: string }) => void | Promise<void>
 }) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
@@ -535,7 +503,7 @@ function ChangePasswordDrawer({
 
   if (!isRendered && !isOpen) return null
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!oldPassword || !newPassword || !confirmPassword) {
       setError('Todos los campos son obligatorios.')
@@ -549,7 +517,7 @@ function ChangePasswordDrawer({
       setError('La nueva contraseña debe tener al menos 6 caracteres.')
       return
     }
-    onSave()
+    await onSave({ currentPassword: oldPassword, newPassword })
   }
 
   return (

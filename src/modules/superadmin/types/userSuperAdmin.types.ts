@@ -73,4 +73,8 @@ export interface UserFilters {
   statusFilter: string
 }
 
+export type UserSaveResult =
+  | { ok: true; email: string; mode: 'create' | 'edit' }
+  | { ok: false; error: string }
+
 

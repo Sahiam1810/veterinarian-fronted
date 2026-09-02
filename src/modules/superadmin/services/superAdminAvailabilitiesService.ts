@@ -35,6 +35,14 @@ export async function fetchAvailabilities(): Promise<ApiAvailabilityResponse[]> 
   return apiClient.get<ApiAvailabilityResponse[]>('/api/Availabilities')
 }
 
+export async function fetchAvailabilitiesByVeterinarian(
+  veterinarianId: string,
+): Promise<ApiAvailabilityResponse[]> {
+  return apiClient.get<ApiAvailabilityResponse[]>(
+    `/api/Availabilities/by-veterinarian/${veterinarianId}`,
+  )
+}
+
 export async function createAvailability(data: ApiCreateAvailabilityRequest): Promise<ApiCreateAvailabilityResponse> {
   return apiClient.post<ApiCreateAvailabilityResponse>('/api/Availabilities', data)
 }

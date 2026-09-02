@@ -7,6 +7,7 @@ import {
   DashboardBackgroundDecoration,
 } from '../../components'
 import { useSuperAdminDashboard } from '../../hooks'
+import type { ModuleId } from '../../types'
 
 export interface DashboardSuperAdminProps {
   onNavigate?: (routeId: string) => void
@@ -17,6 +18,7 @@ export interface DashboardSuperAdminProps {
   userName?: string
   userRole?: string
   onLogout?: () => void
+  canViewModule?: (moduleId: ModuleId) => boolean
 }
 
 export function DashboardSuperAdmin({
@@ -28,6 +30,7 @@ export function DashboardSuperAdmin({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onLogout,
+  canViewModule,
 }: DashboardSuperAdminProps = {}) {
   const {
     stats,
@@ -91,6 +94,7 @@ export function DashboardSuperAdmin({
           onClose={closeSidebar}
           activeRoute={currentRoute}
           onNavigate={handleNavigate}
+          canViewModule={canViewModule}
           onLogout={onLogout}
         />
 

@@ -42,6 +42,9 @@ export function useMascotasSuperAdmin() {
   const [activeTab, setActiveTab] = useState<'mascotas' | 'duenos'>('mascotas')
   const [mascotas, setMascotas] = useState<SuperAdminMascota[]>([])
   const [duenos, setDuenos] = useState<SuperAdminDueno[]>([])
+  // Catálogos de especies/razas desde la API (para filtros y formularios)
+  const [speciesOptions, setSpeciesOptions] = useState<{ id: string; name: string }[]>([])
+  const [raceOptions, setRaceOptions] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -94,6 +97,8 @@ export function useMascotasSuperAdmin() {
       const usersById = new Map(users.map((u) => [u.id, u]))
       const speciesById = new Map(species.map((s) => [s.id, s.name]))
       const racesById = new Map(races.map((r) => [r.id, r.name]))
+      setSpeciesOptions(species.map((s) => ({ id: s.id, name: s.name })))
+      setRaceOptions(races.map((r) => ({ id: r.id, name: r.name })))
 
       const duenosMapped = clients.map((client) => {
         const user = usersById.get(client.userId)
@@ -387,6 +392,8 @@ export function useMascotasSuperAdmin() {
     setActiveTab,
     mascotas,
     duenos,
+    speciesOptions,
+    raceOptions,
     isLoading,
     loadError,
     reload: loadData,

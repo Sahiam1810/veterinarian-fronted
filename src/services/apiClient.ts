@@ -1,14 +1,16 @@
-import { getAccessToken } from '@/modules/auth'
+import { getAccessToken, clearStoredUser } from '@/modules/auth'
 
 export class ApiError extends Error {
   readonly status: number
   readonly data?: unknown
+  readonly violations: string[]
 
-  constructor(message: string, status: number, data?: unknown) {
+  constructor(message: string, status: number, data?: unknown, violations: string[] = []) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.data = data
+    this.violations = violations
   }
 }
 
@@ -34,40 +36,61 @@ export function getApiUrl(endpoint: string, params?: Record<string, string | num
   return url.toString()
 }
 
-async function parseErrorMessage(response: Response): Promise<string> {
+async function parseErrorMessage(response: Response): Promise<{ message: string; violations: string[] }> {
   try {
     const payload = await response.json() as {
       message?: string
       title?: string
       detail?: string
       errors?: Record<string, string[] | string>
+      violations?: Array<{ field?: string; message?: string }>
     }
 
-    if (payload.message) return payload.message
-    if (payload.detail) return payload.detail
+    const violations: string[] = []
 
-    if (payload.errors && typeof payload.errors === 'object') {
-      for (const value of Object.values(payload.errors)) {
-        if (Array.isArray(value) && value[0]) {
-          return String(value[0])
-        }
-        if (typeof value === 'string' && value) {
-          return value
+    if (Array.isArray(payload.violations)) {
+      for (const violation of payload.violations) {
+        if (violation?.message) {
+          violations.push(String(violation.message))
         }
       }
     }
 
-    if (payload.title) return payload.title
+    if (payload.errors && typeof payload.errors === 'object') {
+      for (const value of Object.values(payload.errors)) {
+        if (Array.isArray(value)) {
+          violations.push(...value.map(String))
+        } else if (typeof value === 'string' && value) {
+          violations.push(value)
+        }
+      }
+    }
+
+    if (violations.length > 0) {
+      return { message: violations[0], violations }
+    }
+
+    if (payload.message) return { message: payload.message, violations: [] }
+    if (payload.detail) return { message: payload.detail, violations: [] }
+    if (payload.title) return { message: payload.title, violations: [] }
   } catch {
     // Sin cuerpo JSON parseable
   }
 
-  if (response.status === 401) return 'No autorizado o sesión expirada.'
-  if (response.status === 403) return 'No tienes permisos para realizar esta acción.'
-  if (response.status === 404) return 'Recurso no encontrado.'
-  if (response.status >= 500) return 'Error interno del servidor. Intenta de nuevo más tarde.'
+  if (response.status === 401) {
+    return { message: 'No autorizado o sesión expirada.', violations: [] }
+  }
+  if (response.status === 403) {
+    return { message: 'No tienes permisos para realizar esta acción.', violations: [] }
+  }
+  if (response.status === 404) {
+    return { message: 'Recurso no encontrado.', violations: [] }
+  }
+  if (response.status >= 500) {
+    return { message: 'Error interno del servidor. Intenta de nuevo más tarde.', violations: [] }
+  }
 
-  return `Error en la solicitud (${response.status})`
+  return { message: `Error en la solicitud (${response.status})`, violations: [] }
 }
 
 export async function request<T = unknown>(
@@ -111,8 +134,22 @@ export async function request<T = unknown>(
   }
 
   if (!response.ok) {
-    const message = await parseErrorMessage(response)
-    throw new ApiError(message, response.status)
+    const { message, violations } = await parseErrorMessage(response)
+
+    // Sesión inválida/expirada: limpia storage y fuerza re-login (evita listas vacías silenciosas).
+    const isAuthEndpoint =
+      endpoint.includes('/api/auth/login') ||
+      endpoint.includes('/api/auth/register') ||
+      endpoint.includes('/api/auth/refresh')
+
+    if (response.status === 401 && !isAuthEndpoint) {
+      clearStoredUser()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('huellitas:session-expired'))
+      }
+    }
+
+    throw new ApiError(message, response.status, undefined, violations)
   }
 
   if (response.status === 204) {

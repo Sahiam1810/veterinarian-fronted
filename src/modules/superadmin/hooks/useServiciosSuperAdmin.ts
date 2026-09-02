@@ -11,6 +11,7 @@ import { ApiError } from '@/services'
 
 export function useServiciosSuperAdmin() {
   const [servicios, setServicios] = useState<ServicioSuperAdmin[]>([])
+  const [typeServices, setTypeServices] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [defaultTypeServiceId, setDefaultTypeServiceId] = useState<string>('')
 
@@ -33,9 +34,10 @@ export function useServiciosSuperAdmin() {
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [services, typeServices] = await Promise.all([fetchServices(), fetchTypeServices()])
+      const [services, types] = await Promise.all([fetchServices(), fetchTypeServices()])
       setServicios(services.map(mapServiceToServicio))
-      setDefaultTypeServiceId(typeServices[0]?.id ?? '')
+      setTypeServices(types.map((t) => ({ id: t.id, name: t.name })))
+      setDefaultTypeServiceId(types[0]?.id ?? '')
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudieron cargar los servicios.'
       showToast(message)
@@ -69,7 +71,8 @@ export function useServiciosSuperAdmin() {
   }, [filteredServicios, currentPage, itemsPerPage])
 
   const handleSaveServicio = async (data: ServicioFormData) => {
-    const typeServiceId = editingServicio?.typeServiceId ?? defaultTypeServiceId
+    const typeServiceId =
+      data.typeServiceId || editingServicio?.typeServiceId || defaultTypeServiceId
     if (!typeServiceId) {
       showToast('No hay tipos de servicio configurados en el sistema.')
       return
@@ -137,6 +140,7 @@ export function useServiciosSuperAdmin() {
 
   return {
     servicios,
+    typeServices,
     isLoading,
     searchQuery,
     setSearchQuery,

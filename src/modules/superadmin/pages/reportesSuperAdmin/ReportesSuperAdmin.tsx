@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
+import { useReportesSuperAdmin } from '../../hooks'
+import type { ModuleId } from '../../types'
 
 export interface ReportesSuperAdminProps {
   onNavigate?: (routeId: string) => void
@@ -14,82 +16,8 @@ export interface ReportesSuperAdminProps {
   userName?: string
   userRole?: string
   onLogout?: () => void
+  canViewModule?: (moduleId: ModuleId) => boolean
 }
-
-interface CitaReciente {
-  id: string
-  dateStr: string
-  timeStr: string
-  professionalName: string
-  professionalAvatar?: string
-  service: string
-  petName: string
-  petBreed: string
-  status: 'Atendido' | 'Agendado' | 'Cancelado'
-}
-
-const INITIAL_CITAS_RECIENTES: CitaReciente[] = [
-  {
-    id: 'rec-1',
-    dateStr: '15 Oct 2023',
-    timeStr: '09:00 AM',
-    professionalName: 'Dr. Martínez',
-    service: 'Cirugía General',
-    petName: 'Max',
-    petBreed: 'Golden Retriever',
-    status: 'Atendido',
-  },
-  {
-    id: 'rec-2',
-    dateStr: '15 Oct 2023',
-    timeStr: '10:30 AM',
-    professionalName: 'Dra. Silva',
-    service: 'Consulta General',
-    petName: 'Luna',
-    petBreed: 'Gato Siamés',
-    status: 'Agendado',
-  },
-  {
-    id: 'rec-3',
-    dateStr: '14 Oct 2023',
-    timeStr: '11:30 AM',
-    professionalName: 'Dr. Gómez',
-    service: 'Dermatología',
-    petName: 'Rocky',
-    petBreed: 'Boxer',
-    status: 'Atendido',
-  },
-  {
-    id: 'rec-4',
-    dateStr: '14 Oct 2023',
-    timeStr: '04:00 PM',
-    professionalName: 'Dra. Ruiz',
-    service: 'Odontología',
-    petName: 'Bella',
-    petBreed: 'Persa',
-    status: 'Cancelado',
-  },
-  {
-    id: 'rec-5',
-    dateStr: '13 Oct 2023',
-    timeStr: '02:15 PM',
-    professionalName: 'Dr. Martínez',
-    service: 'Cirugía General',
-    petName: 'Coco',
-    petBreed: 'Poodle',
-    status: 'Atendido',
-  },
-  {
-    id: 'rec-6',
-    dateStr: '13 Oct 2023',
-    timeStr: '03:30 PM',
-    professionalName: 'Dra. Silva',
-    service: 'Vacunación Anual',
-    petName: 'Toby',
-    petBreed: 'Pastor Alemán',
-    status: 'Atendido',
-  },
-]
 
 export function ReportesSuperAdmin({
   onNavigate,
@@ -100,6 +28,7 @@ export function ReportesSuperAdmin({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onLogout,
+  canViewModule,
 }: ReportesSuperAdminProps = {}) {
   // Navigation & Sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -110,19 +39,20 @@ export function ReportesSuperAdmin({
   const closeSidebar =
     externalOnCloseSidebar || (() => setInternalIsSidebarOpen(false))
 
-  // Filters & State
-  const [period, setPeriod] = useState('este-mes')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'resumen' | 'detalles'>('resumen')
-
-  // Toast Notification
-  const [activeNotification, setActiveNotification] = useState<string | null>(null)
-  const showToast = (message: string) => {
-    setActiveNotification(message)
-    setTimeout(() => {
-      setActiveNotification(null)
-    }, 3200)
-  }
+  const {
+    period,
+    setPeriod,
+    searchQuery,
+    setSearchQuery,
+    activeTab,
+    setActiveTab,
+    filteredCitas,
+    kpis,
+    activeNotification,
+    showToast,
+    exportCsv,
+    isLoading,
+  } = useReportesSuperAdmin()
 
   const handleSidebarNavigate = (routeId: string) => {
     if (onNavigate) {
@@ -132,16 +62,7 @@ export function ReportesSuperAdmin({
     }
   }
 
-  // Filtered appointments list
-  const filteredCitas = useMemo(() => {
-    return INITIAL_CITAS_RECIENTES.filter((c) => {
-      const matchQuery =
-        c.professionalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.petName.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchQuery
-    })
-  }, [searchQuery])
+  const profBarColors = ['bg-brand', 'bg-brand/70', 'bg-[#7C9A94]', 'bg-border-tan', 'bg-brand/50']
 
   return (
     <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
@@ -162,6 +83,7 @@ export function ReportesSuperAdmin({
           onClose={closeSidebar}
           activeRoute={activeRoute}
           onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
           onLogout={onLogout}
         />
 
@@ -201,7 +123,15 @@ export function ReportesSuperAdmin({
                 value={period}
                 onChange={(e) => {
                   setPeriod(e.target.value)
-                  showToast(`Rango filtrado a: ${e.target.value === 'este-mes' ? 'Este Mes' : e.target.value === '30-dias' ? 'Últimos 30 días' : 'Último Año'}`)
+                  showToast(
+                    `Rango filtrado a: ${
+                      e.target.value === 'este-mes'
+                        ? 'Este Mes'
+                        : e.target.value === '30-dias'
+                          ? 'Últimos 30 días'
+                          : 'Último Año'
+                    }`,
+                  )
                 }}
                 className="px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal font-bold focus:outline-none cursor-pointer shadow-2xs"
               >
@@ -222,10 +152,10 @@ export function ReportesSuperAdmin({
                 <span>Filtros</span>
               </button>
 
-              {/* Botón Exportar */}
+              {/* Botón Exportar CSV */}
               <button
                 type="button"
-                onClick={() => showToast('Exportando reporte a PDF/Excel')}
+                onClick={exportCsv}
                 className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs active:translate-y-0.5"
               >
                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,6 +165,12 @@ export function ReportesSuperAdmin({
               </button>
             </div>
           </div>
+
+          {isLoading && (
+            <p className="relative z-10 text-sm text-sage font-medium animate-pop-in">
+              Cargando reportes...
+            </p>
+          )}
 
           {/* Barra de Pestañas (Resumen / Detalles Cita) */}
           <div className="relative z-10 border-b border-border-tan/70 flex items-center justify-between gap-4 animate-pop-in stagger-1.5">
@@ -276,9 +212,11 @@ export function ReportesSuperAdmin({
                     <span className="text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wider">
                       Total Citas
                     </span>
-                    <p className="text-3xl font-black text-brand tracking-tight">1,248</p>
-                    <p className="text-[10px] sm:text-xs text-brand font-bold flex items-center gap-1">
-                      <span>↗ +12% vs mes anterior</span>
+                    <p className="text-3xl font-black text-brand tracking-tight">
+                      {kpis.totalCitas.toLocaleString('es-ES')}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-sage font-semibold">
+                      En el período seleccionado
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-sage-soft text-brand flex items-center justify-center">
@@ -294,9 +232,14 @@ export function ReportesSuperAdmin({
                     <span className="text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wider">
                       % de Asistencia
                     </span>
-                    <p className="text-3xl font-black text-brand tracking-tight">92%</p>
+                    <p className="text-3xl font-black text-brand tracking-tight">
+                      {kpis.pctAsistencia}%
+                    </p>
                     <div className="w-full h-1.5 bg-[#F1EFEA] rounded-full overflow-hidden">
-                      <div className="h-full bg-brand rounded-full" style={{ width: '92%' }} />
+                      <div
+                        className="h-full bg-brand rounded-full"
+                        style={{ width: `${kpis.pctAsistencia}%` }}
+                      />
                     </div>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-sage-soft text-brand flex items-center justify-center shrink-0">
@@ -312,11 +255,14 @@ export function ReportesSuperAdmin({
                     <span className="text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wider">
                       Servicio +Rentable
                     </span>
-                    <p className="text-xl sm:text-2xl font-black text-[#A66D5B] tracking-tight truncate max-w-[200px]" title="Cirugía General">
-                      Cirugía General
+                    <p
+                      className="text-xl sm:text-2xl font-black text-[#A66D5B] tracking-tight truncate max-w-[200px]"
+                      title={kpis.servicioTop}
+                    >
+                      {kpis.servicioTop}
                     </p>
                     <p className="text-[10px] sm:text-xs text-sage font-semibold">
-                      35% de los ingresos
+                      {kpis.servicioTopPct}% de las citas
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-terracotta-soft text-[#A66D5B] flex items-center justify-center shrink-0">
@@ -340,38 +286,20 @@ export function ReportesSuperAdmin({
                     </button>
                   </div>
                   <div className="space-y-4 text-xs sm:text-sm">
-                    {/* Atendido */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/80">Atendido</span>
-                        <span className="font-extrabold text-charcoal">811</span>
+                    {kpis.byStatus.map((item) => (
+                      <div key={item.label} className="space-y-1.5">
+                        <div className="flex items-center justify-between font-semibold">
+                          <span className="text-charcoal/80">{item.label}</span>
+                          <span className="font-extrabold text-charcoal">{item.count}</span>
+                        </div>
+                        <div className="w-full h-2.5 bg-[#F1EFEA] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${item.color}`}
+                            style={{ width: `${item.pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full h-2.5 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-terracotta rounded-full" style={{ width: '65%' }} />
-                      </div>
-                    </div>
-
-                    {/* Agendado */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/80">Agendado</span>
-                        <span className="font-extrabold text-charcoal">250</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-brand/60 rounded-full" style={{ width: '20%' }} />
-                      </div>
-                    </div>
-
-                    {/* Cancelado */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/80">Cancelado</span>
-                        <span className="font-extrabold text-charcoal">187</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#B24C3D] rounded-full" style={{ width: '15%' }} />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
@@ -386,49 +314,26 @@ export function ReportesSuperAdmin({
                     </button>
                   </div>
                   <div className="space-y-3.5 text-xs sm:text-sm">
-                    {/* Dr. Martínez */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/85">Dr. Martínez (Cirugía)</span>
-                        <span className="font-extrabold text-charcoal">420</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-brand rounded-full" style={{ width: '70%' }} />
-                      </div>
-                    </div>
-
-                    {/* Dra. Silva */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/85">Dra. Silva (General)</span>
-                        <span className="font-extrabold text-charcoal">315</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-brand/70 rounded-full" style={{ width: '52%' }} />
-                      </div>
-                    </div>
-
-                    {/* Dr. Gómez */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/85">Dr. Gómez (Derma)</span>
-                        <span className="font-extrabold text-charcoal">210</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#7C9A94] rounded-full" style={{ width: '35%' }} />
-                      </div>
-                    </div>
-
-                    {/* Dra. Ruiz */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between font-semibold">
-                        <span className="text-charcoal/85">Dra. Ruiz (Odonto)</span>
-                        <span className="font-extrabold text-charcoal">145</span>
-                      </div>
-                      <div className="w-full h-2 bg-[#F1EFEA] rounded-full overflow-hidden">
-                        <div className="h-full bg-border-tan rounded-full" style={{ width: '24%' }} />
-                      </div>
-                    </div>
+                    {kpis.byProfessional.length === 0 ? (
+                      <p className="text-sage font-medium py-4 text-center">
+                        Sin datos de profesionales en este período.
+                      </p>
+                    ) : (
+                      kpis.byProfessional.map((item, idx) => (
+                        <div key={item.label} className="space-y-1">
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className="text-charcoal/85">{item.label}</span>
+                            <span className="font-extrabold text-charcoal">{item.count}</span>
+                          </div>
+                          <div className="w-full h-2 bg-[#F1EFEA] rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${profBarColors[idx % profBarColors.length]}`}
+                              style={{ width: `${item.pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -498,7 +403,9 @@ export function ReportesSuperAdmin({
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-full bg-sage-soft text-brand font-bold text-xs flex items-center justify-center">
-                                {c.professionalName.split(' ')[1]?.charAt(0) || 'M'}
+                                {c.professionalName.split(' ')[1]?.charAt(0) ||
+                                  c.professionalName.charAt(0) ||
+                                  'M'}
                               </div>
                               <span className="font-bold text-charcoal">{c.professionalName}</span>
                             </div>
@@ -522,8 +429,8 @@ export function ReportesSuperAdmin({
                                 c.status === 'Atendido'
                                   ? 'bg-terracotta-soft text-[#A66D5B]'
                                   : c.status === 'Agendado'
-                                  ? 'bg-[#E8F2EF] text-brand'
-                                  : 'bg-[#FBF1E6] text-ochre'
+                                    ? 'bg-[#E8F2EF] text-brand'
+                                    : 'bg-[#FBF1E6] text-ochre'
                               }`}
                             >
                               {c.status}

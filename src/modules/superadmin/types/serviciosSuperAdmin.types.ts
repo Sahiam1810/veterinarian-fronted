@@ -17,4 +17,5 @@ export interface ServicioFormData {
   duration: number
   price: number
   status: EstadoServicio
+  typeServiceId?: string
 }

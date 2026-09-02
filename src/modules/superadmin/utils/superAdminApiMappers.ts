@@ -19,7 +19,7 @@ import type { ApiVeterinarianResponse } from '../services/superAdminVeterinarian
 import type { ApiAvailabilityResponse } from '../services/superAdminAvailabilitiesService'
 import type { ApiAppointmentResponse } from '../services/superAdminAppointmentsService'
 
-const SPECIES_KEYWORDS: Record<EspecieMascota, string[]> = {
+const SPECIES_KEYWORDS: Record<string, string[]> = {
   Canino: ['canin', 'perro', 'dog'],
   Felino: ['felin', 'gato', 'cat'],
   Ave: ['ave', 'bird', 'loro'],
@@ -57,20 +57,25 @@ export function mapSexoToGender(sexo: SexoMascota): string {
   return sexo === 'Hembra' ? 'F' : 'M'
 }
 
-// Mapea nombre de especie del catálogo a tipo UI
+// Mapea nombre de especie del catálogo a etiqueta UI (conserva el nombre real si ya viene de API)
 export function mapSpeciesNameToEspecie(name: string): EspecieMascota {
+  if (!name?.trim()) return 'Otro'
   const n = name.toLowerCase()
   if (n.includes('canin') || n.includes('perro')) return 'Canino'
   if (n.includes('felin') || n.includes('gato')) return 'Felino'
   if (n.includes('ave')) return 'Ave'
   if (n.includes('roed')) return 'Roedor'
   if (n.includes('exot') || n.includes('pez')) return 'Exótico'
-  return 'Otro'
+  return name.trim()
 }
 
-// Busca ID de especie según selección del formulario
-export function findSpeciesId(especie: EspecieMascota, species: ApiSpeciesResponse[]): string {
-  const keywords = SPECIES_KEYWORDS[especie]
+// Busca ID de especie por nombre exacto o por palabras clave del formulario
+export function findSpeciesId(especie: string, species: ApiSpeciesResponse[]): string {
+  const normalized = especie.trim().toLowerCase()
+  const exact = species.find((s) => s.name.toLowerCase() === normalized)
+  if (exact) return exact.id
+
+  const keywords = SPECIES_KEYWORDS[especie as EspecieMascota] ?? []
   const match = species.find((s) => keywords.some((k) => s.name.toLowerCase().includes(k)))
   return match?.id ?? species[0]?.id ?? ''
 }
@@ -217,6 +222,8 @@ export function mapStatusToEstadoCita(statusName?: string | null): EstadoCita {
   const n = (statusName ?? '').toLowerCase()
   if (n.includes('espera') || n.includes('sala') || n.includes('curso')) return 'EN_ESPERA'
   if (n.includes('atend') || n.includes('complet')) return 'ATENDIDA'
+  if (n.includes('cancel')) return 'CANCELADA'
+  if (n.includes('no_asist') || n.includes('no asist') || n.includes('ausent')) return 'NO_ASISTIO'
   if (n.includes('bloq')) return 'BLOQUEO'
   return 'AGENDADA'
 }

@@ -1,7 +1,15 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import type { CitaSuperAdmin, CitaFormData } from '../types'
+import type {
+  CitaSuperAdmin,
+  CitaFormData,
+  AgendaPetOption,
+  AgendaServiceOption,
+} from '../types'
 import {
   fetchAppointments,
+  createAppointment,
+  updateAppointment,
+  updateAppointmentStatus,
   fetchVeterinarians,
   fetchPets,
   fetchClientsPets,
@@ -11,15 +19,25 @@ import {
   fetchRaces,
   fetchServices,
   fetchStatusAppointments,
-  deleteAppointment,
-  updateAppointment,
+  fetchAvailabilitiesByVeterinarian,
+  createAvailability,
 } from '../services'
-import {
-  mapAppointmentToCita,
-  buildCurrentWeekDays,
-  mapSpeciesNameToEspecie,
-} from '../utils/superAdminApiMappers'
+import { mapAppointmentToCita, buildCurrentWeekDays } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
+
+// DayOfWeek .NET: 0=Domingo … 6=Sábado
+function dayOfWeekFromDateKey(dateKey: string): number {
+  return new Date(`${dateKey}T12:00:00`).getDay()
+}
+
+function findStatusId(
+  statuses: { id: string; name: string }[],
+  ...keywords: string[]
+): string | undefined {
+  const lower = keywords.map((k) => k.toLowerCase())
+  const match = statuses.find((s) => lower.some((k) => s.name.toLowerCase().includes(k)))
+  return match?.id
+}
 
 export function useAgendaSuperAdmin() {
   const [citas, setCitas] = useState<CitaSuperAdmin[]>([])
@@ -28,7 +46,9 @@ export function useAgendaSuperAdmin() {
   const [weekDays] = useState(() => buildCurrentWeekDays())
 
   const [profesionalesOpciones, setProfesionalesOpciones] = useState<{ id: string; name: string }[]>([])
-  const [serviciosOpciones, setServiciosOpciones] = useState<string[]>([])
+  const [serviciosOpciones, setServiciosOpciones] = useState<AgendaServiceOption[]>([])
+  const [mascotasOpciones, setMascotasOpciones] = useState<AgendaPetOption[]>([])
+  const [statusCatalog, setStatusCatalog] = useState<{ id: string; name: string }[]>([])
 
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'semana' | 'dia'>('semana')
@@ -58,6 +78,7 @@ export function useAgendaSuperAdmin() {
         species,
         races,
         services,
+        statuses,
       ] = await Promise.all([
         fetchAppointments(),
         fetchVeterinarians(),
@@ -68,6 +89,7 @@ export function useAgendaSuperAdmin() {
         fetchSpecies(),
         fetchRaces(),
         fetchServices(),
+        fetchStatusAppointments(),
       ])
 
       const usersById = new Map(users.map((u) => [u.id, u]))
@@ -76,6 +98,8 @@ export function useAgendaSuperAdmin() {
       const speciesById = new Map(species.map((s) => [s.id, s.name]))
       const racesById = new Map(races.map((r) => [r.id, r.name]))
       const vetsById = new Map(veterinarians.map((v) => [v.id, v]))
+
+      setStatusCatalog(statuses.map((s) => ({ id: s.id, name: s.name })))
 
       const mapped = apiAppointments.map((apt) => {
         const clientPet = clientsPets.find((cp) => cp.id === apt.clientPetId)
@@ -98,13 +122,27 @@ export function useAgendaSuperAdmin() {
         veterinarians.map((v) => ({
           id: v.id,
           name: v.userFullName ?? 'Profesional',
-        }))
+        })),
       )
-      setServiciosOpciones(services.map((s) => s.name))
+      setServiciosOpciones(services.map((s) => ({ id: s.id, name: s.name })))
+      setMascotasOpciones(
+        clientsPets.map((cp) => {
+          const pet = petsById.get(cp.petId)
+          const client = clientsById.get(cp.clientId)
+          const owner = client ? usersById.get(client.userId) : undefined
+          return {
+            clientPetId: cp.id,
+            petId: cp.petId,
+            petName: pet?.name ?? 'Mascota',
+            breed: pet ? racesById.get(pet.raceId) ?? '' : '',
+            species: pet ? speciesById.get(pet.speciesId) ?? '' : '',
+            ownerName: owner?.fullName ?? 'Dueño',
+            clientId: cp.clientId,
+          }
+        }),
+      )
 
-      if (!selectedCitaId && mapped[0]) {
-        setSelectedCitaId(mapped[0].id)
-      }
+      setSelectedCitaId((prev) => prev ?? mapped[0]?.id ?? null)
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudieron cargar las citas.'
       showToast(message)
@@ -129,111 +167,178 @@ export function useAgendaSuperAdmin() {
     })
   }, [citas, selectedProfessionalId])
 
-  const handleSaveCita = async (data: CitaFormData) => {
-    const profName =
-      profesionalesOpciones.find((p) => p.id === data.professionalId)?.name || 'Médico'
+  // Resuelve availability del vet para el día; si no hay, crea una franja temporal
+  const resolveAvailabilityId = async (
+    veterinarianId: string,
+    dateKey: string,
+    startTime: string,
+    endTime: string,
+  ): Promise<string> => {
+    const day = dayOfWeekFromDateKey(dateKey)
+    let list = await fetchAvailabilitiesByVeterinarian(veterinarianId)
+    const match = list.find((a) => {
+      const dow = typeof a.dayOfWeek === 'string' ? Number(a.dayOfWeek) : a.dayOfWeek
+      return a.isActive && Number(dow) === day
+    })
+    if (match) return match.id
 
-    if (editingCita?.clientPetId && editingCita.serviceId && editingCita.statusId && editingCita.availabilityId) {
-      try {
-        const start = new Date(`${data.dateKey}T${data.startTime}:00`)
-        const end = new Date(`${data.dateKey}T${data.endTime}:00`)
+    const created = await createAvailability({
+      veterinarianId,
+      dayOfWeek: day,
+      startTime: `${startTime}:00`,
+      endTime: `${endTime}:00`,
+      isActive: true,
+    })
+    return created.id
+  }
+
+  const handleSaveCita = async (data: CitaFormData) => {
+    if (!data.clientPetId) {
+      showToast('Selecciona una mascota registrada.')
+      return
+    }
+    if (!data.serviceId) {
+      showToast('Selecciona un servicio del catálogo.')
+      return
+    }
+    if (!data.professionalId) {
+      showToast('Selecciona un profesional.')
+      return
+    }
+
+    const start = new Date(`${data.dateKey}T${data.startTime}:00`)
+    const end = new Date(`${data.dateKey}T${data.endTime}:00`)
+
+    try {
+      if (editingCita) {
+        const availabilityId =
+          editingCita.availabilityId ||
+          (await resolveAvailabilityId(
+            data.professionalId,
+            data.dateKey,
+            data.startTime,
+            data.endTime,
+          ))
 
         await updateAppointment(editingCita.id, {
-          clientPetId: editingCita.clientPetId,
+          clientPetId: data.clientPetId,
           veterinarianId: data.professionalId,
-          serviceId: editingCita.serviceId,
-          statusId: editingCita.statusId,
-          availabilityId: editingCita.availabilityId,
+          serviceId: data.serviceId,
+          statusId: editingCita.statusId || statusCatalog[0]?.id || '',
+          availabilityId,
           scheduledStart: start.toISOString(),
           scheduledEnd: end.toISOString(),
           notes: data.notes || null,
         })
 
-        showToast(`Cita de ${data.petName} actualizada correctamente.`)
-        setIsDrawerOpen(false)
-        setEditingCita(null)
-        await loadData()
-        return
-      } catch (err) {
-        const message = err instanceof ApiError ? err.message : 'No se pudo actualizar la cita.'
-        showToast(message)
-        return
-      }
-    }
+        // Si cambiaron estado en el drawer y la cita está AGENDADA, usar transición canónica
+        if (
+          editingCita.status === 'AGENDADA' &&
+          data.status !== 'AGENDADA' &&
+          data.status !== 'EN_ESPERA' &&
+          data.status !== 'BLOQUEO'
+        ) {
+          const targetId = findStatusId(statusCatalog, data.status.toLowerCase())
+          if (targetId) {
+            const needsComment = data.status === 'CANCELADA' || data.status === 'NO_ASISTIO'
+            await updateAppointmentStatus(editingCita.id, {
+              statusId: targetId,
+              comment: needsComment ? data.notes || 'Actualizado desde agenda SuperAdmin' : null,
+            })
+          }
+        }
 
-    // Creación local temporal si la API no tiene todos los IDs del formulario
-    const newCita: CitaSuperAdmin = {
-      id: `cita-${Date.now()}`,
-      ...data,
-      professionalName: profName,
-      species: mapSpeciesNameToEspecie(data.species),
+        showToast(`Cita de ${data.petName} actualizada.`)
+      } else {
+        const agendadaId = findStatusId(statusCatalog, 'agendada')
+        if (!agendadaId) {
+          showToast('No hay estado AGENDADA en el catálogo. Ejecuta el seed de estados.')
+          return
+        }
+
+        const availabilityId = await resolveAvailabilityId(
+          data.professionalId,
+          data.dateKey,
+          data.startTime,
+          data.endTime,
+        )
+
+        const created = await createAppointment({
+          clientPetId: data.clientPetId,
+          veterinarianId: data.professionalId,
+          serviceId: data.serviceId,
+          statusId: agendadaId,
+          availabilityId,
+          scheduledStart: start.toISOString(),
+          scheduledEnd: end.toISOString(),
+          notes: data.notes || null,
+        })
+
+        setSelectedCitaId(created.id)
+        showToast(`Cita de ${data.petName} creada correctamente.`)
+      }
+
+      setIsDrawerOpen(false)
+      setEditingCita(null)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo guardar la cita.'
+      showToast(message)
     }
-    setCitas((prev) => [newCita, ...prev])
-    setSelectedCitaId(newCita.id)
-    showToast('Cita registrada en vista. Para persistir en API vincula una mascota existente.')
-    setIsDrawerOpen(false)
-    setEditingCita(null)
   }
 
   const handleCancelCita = async (id: string) => {
     const target = citas.find((c) => c.id === id)
-    if (!window.confirm('¿Estás seguro de que deseas cancelar esta cita?')) return
+    if (!target) return
+    if (!window.confirm('¿Cancelar esta cita? Quedará como CANCELADA en el sistema.')) return
 
-    if (target?.clientPetId) {
-      try {
-        await deleteAppointment(id)
-        setSelectedCitaId(null)
-        showToast('Cita cancelada correctamente.')
-        await loadData()
-        return
-      } catch (err) {
-        const message = err instanceof ApiError ? err.message : 'No se pudo cancelar la cita.'
-        showToast(message)
-        return
-      }
-    }
-
-    setCitas((prev) => prev.filter((c) => c.id !== id))
-    setSelectedCitaId(null)
-    showToast('Cita eliminada de la vista.')
-  }
-
-  const handleStartAttention = async (id: string) => {
-    const target = citas.find((c) => c.id === id)
-    if (!target?.clientPetId || !target.serviceId || !target.statusId || !target.availabilityId) {
-      setCitas((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, status: 'EN_ESPERA' } : c))
-      )
-      showToast('Atención iniciada (solo vista).')
+    const cancelId = findStatusId(statusCatalog, 'cancelada')
+    if (!cancelId) {
+      showToast('No hay estado CANCELADA en el catálogo.')
       return
     }
 
     try {
-      const statuses = await fetchStatusAppointments()
-      const waitingStatus = statuses.find((s) => s.name.toLowerCase().includes('espera'))
-        ?? statuses.find((s) => s.name.toLowerCase().includes('sala'))
-        ?? statuses[0]
-
-      if (!waitingStatus) {
-        showToast('No hay estados de cita configurados.')
+      if (target.status === 'AGENDADA') {
+        await updateAppointmentStatus(id, {
+          statusId: cancelId,
+          comment: 'Cancelada desde agenda SuperAdmin',
+        })
+      } else {
+        showToast('Solo se pueden cancelar citas en estado AGENDADA.')
         return
       }
+      setSelectedCitaId(null)
+      showToast('Cita cancelada.')
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo cancelar la cita.'
+      showToast(message)
+    }
+  }
 
-      const start = new Date(`${target.dateKey}T${target.startTime}:00`)
-      const end = new Date(`${target.dateKey}T${target.endTime}:00`)
+  // Backend no tiene EN_ESPERA: "Iniciar atención" = marcar ATENDIDA
+  const handleStartAttention = async (id: string) => {
+    const target = citas.find((c) => c.id === id)
+    if (!target) return
 
-      await updateAppointment(id, {
-        clientPetId: target.clientPetId,
-        veterinarianId: target.professionalId ?? '',
-        serviceId: target.serviceId,
-        statusId: waitingStatus.id,
-        availabilityId: target.availabilityId,
-        scheduledStart: start.toISOString(),
-        scheduledEnd: end.toISOString(),
-        notes: target.notes ?? null,
+    const attendedId = findStatusId(statusCatalog, 'atendida')
+    if (!attendedId) {
+      showToast('No hay estado ATENDIDA en el catálogo.')
+      return
+    }
+
+    if (target.status !== 'AGENDADA') {
+      showToast('Solo se puede atender una cita AGENDADA.')
+      return
+    }
+
+    try {
+      await updateAppointmentStatus(id, {
+        statusId: attendedId,
+        comment: null,
       })
-
-      showToast('Cita marcada en espera.')
+      showToast('Cita marcada como ATENDIDA.')
       await loadData()
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudo actualizar el estado.'
@@ -251,6 +356,7 @@ export function useAgendaSuperAdmin() {
     filteredCitas,
     profesionalesOpciones,
     serviciosOpciones,
+    mascotasOpciones,
     selectedProfessionalId,
     setSelectedProfessionalId,
     viewMode,

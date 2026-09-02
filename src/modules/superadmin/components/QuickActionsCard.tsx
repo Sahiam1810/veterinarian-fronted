@@ -12,6 +12,7 @@ interface QuickActionsCardProps {
   onScheduleAppointment?: () => void
 }
 
+
 export function QuickActionsCard({
   onCreateUser,
   onRegisterOwner,
@@ -34,7 +35,7 @@ export function QuickActionsCard({
         <button
           type="button"
           onClick={onCreateUser}
-          className="w-full text-left bg-cream/90 hover:bg-cream border border-border-tan hover:border-terracotta/40 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-3 transition-all duration-200 cursor-pointer group shadow-2xs hover:shadow-xs hover:-translate-y-0.5"
+          className="w-full text-left bg-cream/90 hover:bg-cream border border-border-tan hover:border-terracotta/40 rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all duration-200 cursor-pointer group shadow-2xs hover:shadow-xs hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-terracotta text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
@@ -49,16 +50,13 @@ export function QuickActionsCard({
               </span>
             </div>
           </div>
-          <span className="text-xs text-sage opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 pr-1">
-            →
-          </span>
         </button>
 
         {/* 2. Registrar Dueño */}
         <button
           type="button"
           onClick={onRegisterOwner}
-          className="w-full text-left bg-cream/90 hover:bg-cream border border-border-tan hover:border-brand/40 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-3 transition-all duration-200 cursor-pointer group shadow-2xs hover:shadow-xs hover:-translate-y-0.5"
+          className="w-full text-left bg-cream/90 hover:bg-cream border border-border-tan hover:border-brand/40 rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all duration-200 cursor-pointer group shadow-2xs hover:shadow-xs hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
@@ -73,16 +71,13 @@ export function QuickActionsCard({
               </span>
             </div>
           </div>
-          <span className="text-xs text-sage opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 pr-1">
-            →
-          </span>
         </button>
 
         {/* 3. Registrar Mascota */}
         <button
           type="button"
           onClick={onRegisterPet}
-          className="w-full text-left bg-cream/90 hover:bg-cream border border-border-tan hover:border-brand/40 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-3 transition-all duration-200 cursor-pointer group shadow-2xs hover:shadow-xs hover:-translate-y-0.5"
+          className="w-full text-left bg-cream/90 hover:bg-cream border border-border-tan hover:border-brand/40 rounded-2xl p-2.5 sm:p-3 flex items-center gap-3 transition-all duration-200 cursor-pointer group shadow-2xs hover:shadow-xs hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
@@ -97,9 +92,6 @@ export function QuickActionsCard({
               </span>
             </div>
           </div>
-          <span className="text-xs text-sage opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 pr-1">
-            →
-          </span>
         </button>
 
         {/* 4. Agendar Cita (CTA Destacado) */}

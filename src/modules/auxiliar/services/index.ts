@@ -1,0 +1,1 @@
+export { fetchAuxNavPermissions } from './auxNavPermissionsService'

@@ -57,6 +57,19 @@ export async function updateAppointment(id: string, data: ApiUpdateAppointmentRe
   return apiClient.put<void>(`/api/Appointments/${id}`, data)
 }
 
+export interface ApiUpdateAppointmentStatusRequest {
+  statusId: string
+  comment?: string | null
+}
+
+// Transición canónica de estado (AGENDADA → ATENDIDA | CANCELADA | NO_ASISTIO)
+export async function updateAppointmentStatus(
+  appointmentId: string,
+  data: ApiUpdateAppointmentStatusRequest,
+): Promise<void> {
+  return apiClient.patch<void>(`/api/Appointments/${appointmentId}/status`, data)
+}
+
 export async function deleteAppointment(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/Appointments/${id}`)
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { GrantedPermissions } from '@/global/navigation'
+import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
+import { isNavPermissionGranted } from '@/modules/auth'
 import type {
   ClienteHomeDashboard,
 } from '../types'
@@ -12,6 +13,12 @@ const IMPLEMENTED_ROUTES = new Set([
   'historial',
   'perfil',
 ])
+
+const GATED_ROUTES: Record<string, NavPermissionKey> = {
+  mascotas: 'cliente.mascotas',
+  citas: 'cliente.citas',
+  historial: 'cliente.historial',
+}
 
 export function useClienteHome(onLogout?: () => void) {
   const [dashboard, setDashboard] = useState<ClienteHomeDashboard | null>(null)
@@ -67,6 +74,17 @@ export function useClienteHome(onLogout?: () => void) {
       return
     }
 
+    const gatedKey = GATED_ROUTES[routeId]
+    if (
+      gatedKey &&
+      !isNavPermissionGranted(grantedPermissions ?? undefined, gatedKey)
+    ) {
+      showToast('No tienes permiso para ver esta sección')
+      setActiveRoute('inicio')
+      closeSidebar()
+      return
+    }
+
     setActiveRoute(routeId)
     closeSidebar()
 
@@ -76,11 +94,11 @@ export function useClienteHome(onLogout?: () => void) {
   }
 
   const handleViewMascotas = () => {
-    setActiveRoute('mascotas')
+    handleNavigate('mascotas')
   }
 
   const handleViewCitas = () => {
-    setActiveRoute('citas')
+    handleNavigate('citas')
   }
 
   const handleRescheduleAppointment = (appointmentId: string) => {
@@ -88,7 +106,7 @@ export function useClienteHome(onLogout?: () => void) {
   }
 
   const handleViewAppointmentDetails = (appointmentId: string) => {
-    setActiveRoute('citas')
+    handleNavigate('citas')
     showToast(`Abriendo detalle de cita ${appointmentId}`)
   }
 

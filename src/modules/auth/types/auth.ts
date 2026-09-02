@@ -1,4 +1,4 @@
-export type UserRole = 'superadmin' | 'veterinario' | 'recepcionista' | 'auxiliar' | 'cliente'
+export type UserRole = 'superadmin' | 'admin' | 'veterinario' | 'recepcionista' | 'auxiliar' | 'cliente'
 
 export interface AuthUser {
   id: string
@@ -6,6 +6,12 @@ export interface AuthUser {
   email: string
   role: UserRole
   roleName: string
+  roleId?: string
+  // Users.Id (person) — mismo id que usa SuperAdmin al guardar excepciones
+  personId?: string
+  userAccountId?: string
+  // true solo para SuperAdmin de plataforma (claim JWT), no para Administrador de clínica
+  isPlatformSuperAdmin?: boolean
   avatarUrl?: string
   accessToken?: string
   refreshToken?: string

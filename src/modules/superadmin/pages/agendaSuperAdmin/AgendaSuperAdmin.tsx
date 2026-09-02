@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, type FormEvent } from 'react'
+﻿import { useState, useMemo, useEffect, type FormEvent } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
@@ -9,7 +9,10 @@ import type {
   CitaSuperAdmin,
   CitaFormData,
   EstadoCita,
+  AgendaPetOption,
+  AgendaServiceOption,
 } from '../../types'
+import type { ModuleId } from '../../types'
 import {
   PlusIcon,
   CalendarIcon,
@@ -25,6 +28,7 @@ export interface AgendaSuperAdminProps {
   userName?: string
   userRole?: string
   onLogout?: () => void
+  canViewModule?: (moduleId: ModuleId) => boolean
 }
 
 const HORAS_MOSTRADAS = [8, 9, 10, 11, 12]
@@ -52,6 +56,7 @@ export function AgendaSuperAdmin({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onLogout,
+  canViewModule,
 }: AgendaSuperAdminProps = {}) {
   // Navigation & Sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -70,6 +75,7 @@ export function AgendaSuperAdmin({
     filteredCitas,
     profesionalesOpciones,
     serviciosOpciones,
+    mascotasOpciones,
     selectedProfessionalId,
     setSelectedProfessionalId,
     viewMode,
@@ -122,6 +128,7 @@ export function AgendaSuperAdmin({
           onClose={closeSidebar}
           activeRoute={activeRoute}
           onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
           onLogout={onLogout}
         />
 
@@ -159,7 +166,7 @@ export function AgendaSuperAdmin({
                 ))}
               </select>
 
-              {/* Toggles Semana / Día */}
+              {/* Toggles Semana / DÃ­a */}
               <div className="flex items-center bg-bone/40 p-0.5 rounded-xl border border-border-tan/70">
                 <button
                   type="button"
@@ -181,7 +188,7 @@ export function AgendaSuperAdmin({
                       : 'text-sage hover:text-brand'
                   }`}
                 >
-                  Día
+                  DÃ­a
                 </button>
               </div>
             </div>
@@ -222,7 +229,7 @@ export function AgendaSuperAdmin({
             </div>
           </div>
 
-          {/* Rango de Fechas / Navegación */}
+          {/* Rango de Fechas / NavegaciÃ³n */}
           <div className="relative z-10 bg-white border border-border-tan rounded-2xl py-3 px-4 shadow-[0_2px_12px_rgba(35,78,70,0.03)] flex items-center justify-between">
             <button
               type="button"
@@ -235,12 +242,12 @@ export function AgendaSuperAdmin({
               }}
               className="p-1 text-sage hover:text-brand transition cursor-pointer"
             >
-              ❮
+              â®
             </button>
             <h3 className="text-base sm:text-lg font-bold text-brand text-center">
               {viewMode === 'semana'
-                ? 'Octubre 16 - 22, 2023'
-                : `Octubre ${DIAS_SEMANA[activeDayIndex].num}, 2023 (${DIAS_SEMANA[activeDayIndex].label})`}
+                ? `${DIAS_SEMANA[0].dateKey} — ${DIAS_SEMANA[6].dateKey}`
+                : `${DIAS_SEMANA[activeDayIndex].dateKey} (${DIAS_SEMANA[activeDayIndex].label})`}
             </h3>
             <button
               type="button"
@@ -253,7 +260,7 @@ export function AgendaSuperAdmin({
               }}
               className="p-1 text-sage hover:text-brand transition cursor-pointer"
             >
-              ❯
+              â¯
             </button>
           </div>
 
@@ -414,7 +421,7 @@ export function AgendaSuperAdmin({
                             {event.petName} ({event.species} - {event.petBreed})
                           </p>
                           <p className="text-[9px] sm:text-[10px] text-sage leading-none mt-1 truncate">
-                            Médico: {event.professionalName} · Servicio: {event.service}
+                            MÃ©dico: {event.professionalName} Â· Servicio: {event.service}
                           </p>
                           <p className="text-[8px] sm:text-[9px] text-charcoal/70 leading-none mt-1 italic truncate">
                             Notas: {event.notes}
@@ -459,9 +466,15 @@ export function AgendaSuperAdmin({
                 >
                   {selectedCita.status === 'AGENDADA'
                     ? 'Agendada'
+                    : selectedCita.status === 'ATENDIDA'
+                    ? 'Atendida'
+                    : selectedCita.status === 'CANCELADA'
+                    ? 'Cancelada'
+                    : selectedCita.status === 'NO_ASISTIO'
+                    ? 'No asistió'
                     : selectedCita.status === 'EN_ESPERA'
                     ? 'En Espera'
-                    : 'Atendido'}
+                    : selectedCita.status}
                 </span>
               ) : (
                 <span className="text-xs text-sage italic">Ninguna seleccionada</span>
@@ -470,10 +483,10 @@ export function AgendaSuperAdmin({
 
             {selectedCita ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs sm:text-sm">
-                {/* Paciente y Dueño */}
+                {/* Paciente y DueÃ±o */}
                 <div>
                   <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
-                    Paciente & Dueño
+                    Paciente & DueÃ±o
                   </h4>
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="w-9 h-9 rounded-full bg-mint-soft text-brand font-bold text-xs flex items-center justify-center border border-brand/20">
@@ -561,13 +574,13 @@ export function AgendaSuperAdmin({
                   Reprogramar
                 </button>
 
-                {selectedCita.status !== 'ATENDIDA' && (
+                {selectedCita.status === 'AGENDADA' && (
                   <button
                     type="button"
                     onClick={() => handleStartAttention(selectedCita.id)}
                     className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-xs"
                   >
-                    {selectedCita.status === 'AGENDADA' ? 'Iniciar Atención' : 'Marcar Atendido'}
+                    Marcar Atendida
                   </button>
                 )}
               </div>
@@ -582,6 +595,7 @@ export function AgendaSuperAdmin({
         editingCita={editingCita}
         profesionalesOpciones={profesionalesOpciones}
         serviciosOpciones={serviciosOpciones}
+        mascotasOpciones={mascotasOpciones}
         onClose={() => {
           setIsDrawerOpen(false)
           setEditingCita(null)
@@ -591,7 +605,6 @@ export function AgendaSuperAdmin({
     </div>
   )
 }
-
 /* ============================================================================
    DRAWER / PANEL LATERAL PARA AGREGAR / REPROGRAMAR CITA
    ============================================================================ */
@@ -600,46 +613,47 @@ function CitaDrawer({
   editingCita,
   profesionalesOpciones,
   serviciosOpciones,
+  mascotasOpciones,
   onClose,
   onSave,
 }: {
   isOpen: boolean
   editingCita: CitaSuperAdmin | null
   profesionalesOpciones: { id: string; name: string }[]
-  serviciosOpciones: string[]
+  serviciosOpciones: AgendaServiceOption[]
+  mascotasOpciones: AgendaPetOption[]
   onClose: () => void
   onSave: (data: CitaFormData) => void
 }) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
 
-  // Form states
-  const [petName, setPetName] = useState(editingCita?.petName || '')
-  const [petBreed, setPetBreed] = useState(editingCita?.petBreed || '')
-  const [species, setSpecies] = useState(editingCita?.species || 'Perro')
-  const [ownerName, setOwnerName] = useState(editingCita?.ownerName || '')
-  const [dateKey, setDateKey] = useState(editingCita?.dateKey || '2023-10-16')
-  const [startTime, setStartTime] = useState(editingCita?.startTime || '08:00')
-  const [endTime, setEndTime] = useState(editingCita?.endTime || '09:00')
-  const [professionalId, setProfessionalId] = useState(editingCita?.professionalId || profesionalesOpciones[0]?.id || '')
-  const [service, setService] = useState(editingCita?.service || 'Consulta General')
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const [clientPetId, setClientPetId] = useState(editingCita?.clientPetId || mascotasOpciones[0]?.clientPetId || '')
+  const [dateKey, setDateKey] = useState(editingCita?.dateKey || todayKey)
+  const [startTime, setStartTime] = useState(editingCita?.startTime || '09:00')
+  const [endTime, setEndTime] = useState(editingCita?.endTime || '09:30')
+  const [professionalId, setProfessionalId] = useState(
+    editingCita?.professionalId || profesionalesOpciones[0]?.id || '',
+  )
+  const [serviceId, setServiceId] = useState(editingCita?.serviceId || serviciosOpciones[0]?.id || '')
   const [notes, setNotes] = useState(editingCita?.notes || '')
   const [status, setStatus] = useState<EstadoCita>(editingCita?.status || 'AGENDADA')
   const [error, setError] = useState<string | null>(null)
+
+  const selectedPet = mascotasOpciones.find((m) => m.clientPetId === clientPetId)
+  const selectedService = serviciosOpciones.find((s) => s.id === serviceId)
 
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true)
       setIsClosing(false)
-      setPetName(editingCita?.petName || '')
-      setPetBreed(editingCita?.petBreed || '')
-      setSpecies(editingCita?.species || 'Perro')
-      setOwnerName(editingCita?.ownerName || '')
-      setDateKey(editingCita?.dateKey || '2023-10-16')
-      setStartTime(editingCita?.startTime || '08:00')
-      setEndTime(editingCita?.endTime || '09:00')
+      setClientPetId(editingCita?.clientPetId || mascotasOpciones[0]?.clientPetId || '')
+      setDateKey(editingCita?.dateKey || todayKey)
+      setStartTime(editingCita?.startTime || '09:00')
+      setEndTime(editingCita?.endTime || '09:30')
       setProfessionalId(editingCita?.professionalId || profesionalesOpciones[0]?.id || '')
-      setService(editingCita?.service || 'Consulta General')
+      setServiceId(editingCita?.serviceId || serviciosOpciones[0]?.id || '')
       setNotes(editingCita?.notes || '')
       setStatus(editingCita?.status || 'AGENDADA')
       setError(null)
@@ -651,7 +665,7 @@ function CitaDrawer({
       }, 230)
       return () => clearTimeout(timer)
     }
-  }, [editingCita, isOpen, isRendered])
+  }, [editingCita, isOpen, isRendered, mascotasOpciones, profesionalesOpciones, serviciosOpciones, todayKey])
 
   const handleClose = () => {
     if (isClosing) return
@@ -667,12 +681,16 @@ function CitaDrawer({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (!petName.trim()) {
-      setError('Por favor ingresa el nombre de la mascota.')
+    if (!clientPetId || !selectedPet) {
+      setError('Selecciona una mascota registrada (módulo Mascotas).')
       return
     }
-    if (!ownerName.trim()) {
-      setError('Por favor ingresa el nombre del dueño.')
+    if (!serviceId || !selectedService) {
+      setError('Selecciona un servicio del catálogo.')
+      return
+    }
+    if (!professionalId) {
+      setError('Selecciona un profesional.')
       return
     }
     if (!startTime || !endTime) {
@@ -685,15 +703,17 @@ function CitaDrawer({
     }
 
     onSave({
-      petName: petName.trim(),
-      petBreed: petBreed.trim(),
-      species,
-      ownerName: ownerName.trim(),
+      clientPetId,
+      petName: selectedPet.petName,
+      petBreed: selectedPet.breed,
+      species: selectedPet.species,
+      ownerName: selectedPet.ownerName,
       dateKey,
       startTime,
       endTime,
       professionalId,
-      service,
+      serviceId,
+      service: selectedService.name,
       notes: notes.trim(),
       status,
     })
@@ -714,7 +734,6 @@ function CitaDrawer({
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-tan/70 bg-white shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-sage-soft text-brand flex items-center justify-center">
@@ -724,7 +743,6 @@ function CitaDrawer({
               {editingCita ? 'Reprogramar Cita' : 'Nueva Cita'}
             </h3>
           </div>
-
           <button
             type="button"
             onClick={handleClose}
@@ -734,7 +752,6 @@ function CitaDrawer({
           </button>
         </div>
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs sm:text-sm">
           {error && (
             <div className="p-3.5 rounded-xl bg-terracotta-soft text-danger text-xs font-semibold border border-danger/20">
@@ -744,57 +761,28 @@ function CitaDrawer({
 
           <div>
             <label className="block font-bold text-charcoal mb-1.5">
-              Nombre de la Mascota <span className="text-terracotta">*</span>
+              Mascota / Dueño <span className="text-terracotta">*</span>
             </label>
-            <input
-              type="text"
-              required
-              value={petName}
-              onChange={(e) => setPetName(e.target.value)}
-              placeholder="Ej. Luna"
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className="block font-bold text-charcoal mb-1.5">Especie</label>
-              <select
-                value={species}
-                onChange={(e) => setSpecies(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
-              >
-                <option value="Perro">Perro</option>
-                <option value="Gato">Gato</option>
-                <option value="Ave">Ave</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-charcoal mb-1.5">Raza</label>
-              <input
-                type="text"
-                value={petBreed}
-                onChange={(e) => setPetBreed(e.target.value)}
-                placeholder="Ej. Golden"
-                className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">
-              Dueño / Propietario <span className="text-terracotta">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-              placeholder="Ej. Carlos Mendoza"
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-            />
+            <select
+              value={clientPetId}
+              onChange={(e) => setClientPetId(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
+            >
+              {mascotasOpciones.length === 0 ? (
+                <option value="">Sin mascotas en API</option>
+              ) : (
+                mascotasOpciones.map((m) => (
+                  <option key={m.clientPetId} value={m.clientPetId}>
+                    {m.petName} — {m.ownerName}
+                  </option>
+                ))
+              )}
+            </select>
+            {selectedPet && (
+              <p className="text-[11px] text-sage mt-1">
+                {selectedPet.species} · {selectedPet.breed || 'Sin raza'}
+              </p>
+            )}
           </div>
 
           <div>
@@ -819,7 +807,6 @@ function CitaDrawer({
                 className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               />
             </div>
-
             <div>
               <label className="block font-bold text-charcoal mb-1.5">Hora Fin</label>
               <input
@@ -850,13 +837,13 @@ function CitaDrawer({
           <div>
             <label className="block font-bold text-charcoal mb-1.5">Servicio</label>
             <select
-              value={service}
-              onChange={(e) => setService(e.target.value)}
+              value={serviceId}
+              onChange={(e) => setServiceId(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
             >
               {serviciosOpciones.map((srv) => (
-                <option key={srv} value={srv}>
-                  {srv}
+                <option key={srv.id} value={srv.id}>
+                  {srv.name}
                 </option>
               ))}
             </select>
@@ -873,22 +860,22 @@ function CitaDrawer({
             />
           </div>
 
-          {editingCita && (
+          {editingCita && editingCita.status === 'AGENDADA' && (
             <div>
-              <label className="block font-bold text-charcoal mb-1.5">Estado</label>
+              <label className="block font-bold text-charcoal mb-1.5">Cambiar estado</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as EstadoCita)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
               >
                 <option value="AGENDADA">Agendada</option>
-                <option value="EN_ESPERA">En Espera</option>
-                <option value="ATENDIDA">Atendido</option>
+                <option value="ATENDIDA">Atendida</option>
+                <option value="CANCELADA">Cancelada</option>
+                <option value="NO_ASISTIO">No asistió</option>
               </select>
             </div>
           )}
 
-          {/* Botones */}
           <div className="pt-4 border-t border-border-tan/60 flex items-center justify-end gap-3 shrink-0">
             <button
               type="button"
@@ -897,12 +884,11 @@ function CitaDrawer({
             >
               Cancelar
             </button>
-
             <button
               type="submit"
               className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer"
             >
-              {editingCita ? 'Guardar Cambios' : 'Registrar Cita'}
+              {editingCita ? 'Guardar cambios' : 'Crear cita'}
             </button>
           </div>
         </form>

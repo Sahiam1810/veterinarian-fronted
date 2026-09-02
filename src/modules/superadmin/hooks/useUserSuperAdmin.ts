@@ -9,7 +9,9 @@ import type {
   UserStatus,
   UserFormData,
   PermissionTarget,
+  UserSaveResult,
 } from '../types'
+import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
 import {
   fetchUsers,
   createFullUser as apiCreateFullUser,
@@ -37,6 +39,15 @@ import {
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
+import { ApiError } from '@/services'
+import {
+  clearUserUiShellOverrides,
+  getUiShellOverrides,
+  isUiShellModule,
+  setUiShellOverrides,
+  setUserUiShellOverrides,
+  UI_SHELL_MODULE_IDS,
+} from '../utils/uiShellPermissionsStorage'
 
 export const MODULES_INFO: ModuleInfo[] = [
   { id: 'usuarios', label: 'Usuarios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
@@ -92,6 +103,19 @@ function normalizeModuleName(name: string): ModuleId | null {
   return null
 }
 
+// Solo el SuperAdmin de plataforma (.env); "Administrador" es un rol normal editable
+function isPlatformSuperAdminRoleName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  return n.includes('superadmin') || n.includes('super admin')
+}
+
+// Rol Administrador (panel completo por defecto, editable por SuperAdmin)
+function isClinicAdminRoleName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  if (isPlatformSuperAdminRoleName(n)) return false
+  return n.includes('administrador') || n === 'admin' || n.startsWith('admin ')
+}
+
 function formatDate(isoString: string): string {
   if (!isoString) return 'Reciente'
   const d = new Date(isoString)
@@ -118,6 +142,7 @@ export function useUserSuperAdmin() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
   const [activeRoleSimulated, setActiveRoleSimulated] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'usuarios' | 'roles'>('usuarios')
+  const [pendingSelectUserId, setPendingSelectUserId] = useState<string | null>(null)
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
   // Modals state
@@ -151,6 +176,20 @@ export function useUserSuperAdmin() {
         fetchAllUserPermissions(),
       ])
 
+      const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes]
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+
+      if (rejected.length > 0) {
+        const first = rejected[0].reason
+        const status = first instanceof ApiError ? first.status : 0
+        if (status === 401) {
+          showToast('Sesión expirada. Cierra sesión e inicia de nuevo.')
+        } else {
+          const msg = first instanceof Error ? first.message : 'No se pudieron cargar usuarios y roles.'
+          showToast(msg)
+        }
+      }
+
       const fetchedRoles: ApiRoleResponse[] = rolesRes.status === 'fulfilled' ? rolesRes.value : []
       const fetchedModules: ApiModuleResponse[] = modulesRes.status === 'fulfilled' ? modulesRes.value : []
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
@@ -172,10 +211,13 @@ export function useUserSuperAdmin() {
 
       // Mapear Roles
       const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
-        const isSuperAdminRole = r.name.toLowerCase().includes('superadmin') || r.name.toLowerCase().includes('admin')
-        const perms: Record<ModuleId, ModulePermission> = isSuperAdminRole
-          ? { ...DEFAULT_PERMISSIONS_ALL }
-          : { ...DEFAULT_PERMISSIONS_EMPTY }
+        const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
+        const isClinicAdmin = isClinicAdminRoleName(r.name)
+        // Admin de clínica parte con todas las vistas del panel (como SuperAdmin UI)
+        const perms: Record<ModuleId, ModulePermission> =
+          isPlatformSuper || isClinicAdmin
+            ? { ...DEFAULT_PERMISSIONS_ALL }
+            : { ...DEFAULT_PERMISSIONS_EMPTY }
 
         // Aplicar permisos desde la tabla ROLE_PERMISSIONS
         const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
@@ -191,11 +233,19 @@ export function useUserSuperAdmin() {
           }
         })
 
+        // Inicio/Reportes no están en Oracle: se guardan en local hasta tener módulos reales
+        const uiRoleOverrides = getUiShellOverrides('role', r.id)
+        for (const modId of UI_SHELL_MODULE_IDS) {
+          if (uiRoleOverrides[modId]) {
+            perms[modId] = uiRoleOverrides[modId]!
+          }
+        }
+
         return {
           id: r.id,
           name: r.name,
           description: r.description || 'Sin descripción',
-          isSystem: isSuperAdminRole,
+          isSystem: isPlatformSuper,
           permissions: perms,
         }
       })
@@ -225,6 +275,17 @@ export function useUserSuperAdmin() {
           }
         })
 
+        const uiUserOverrides = getUiShellOverrides('user', u.id)
+        const uiEmailOverrides = getUiShellOverrides('email', u.email)
+        for (const modId of UI_SHELL_MODULE_IDS) {
+          if (uiEmailOverrides[modId]) {
+            userCustomPerms[modId] = uiEmailOverrides[modId]
+          }
+          if (uiUserOverrides[modId]) {
+            userCustomPerms[modId] = uiUserOverrides[modId]
+          }
+        }
+
         return {
           id: u.id,
           name: u.fullName,
@@ -242,12 +303,14 @@ export function useUserSuperAdmin() {
       setRoles(mappedRoles)
       setUsers(mappedUsers)
 
-      if (mappedRoles.length > 0) {
-        const defaultRoleId = mappedRoles[0].id
-        setSelectedRoleId(defaultRoleId)
-        setActiveRoleSimulated(defaultRoleId)
-        setPermissionTarget({ type: 'role', id: defaultRoleId })
-      }
+      // No resetear el objetivo de permisos en cada recarga (evita que se "remarquen" solos)
+      setSelectedRoleId((prev) => prev || mappedRoles[0]?.id || '')
+      setActiveRoleSimulated((prev) => prev || mappedRoles[0]?.id || '')
+      setPermissionTarget((prev) => {
+        if (prev.id) return prev
+        if (mappedRoles[0]) return { type: 'role', id: mappedRoles[0].id }
+        return prev
+      })
     } catch (err) {
       console.error('Error al cargar datos de usuarios y roles', err)
       showToast('Error al conectar con la base de datos.')
@@ -346,6 +409,51 @@ export function useUserSuperAdmin() {
       return matchesQuery && matchesRole && matchesStatus
     })
   }, [users, filters])
+
+  // Al cambiar de modo, ajusta el objetivo de permisos
+  const setAccessMode = useCallback(
+    (mode: 'usuarios' | 'roles') => {
+      setActiveTab(mode)
+      if (mode === 'roles') {
+        const roleId = selectedRoleId || roles[0]?.id
+        if (roleId) {
+          setSelectedRoleId(roleId)
+          setPermissionTarget({ type: 'role', id: roleId })
+        }
+        return
+      }
+
+      const firstUser = filteredUsers[0] || users[0]
+      if (firstUser) {
+        setPermissionTarget({ type: 'user', id: firstUser.id })
+      }
+    },
+    [filteredUsers, roles, selectedRoleId, users]
+  )
+
+  // Selecciona automáticamente el primer usuario en modo "Por usuario"
+  useEffect(() => {
+    if (activeTab !== 'usuarios') return
+
+    if (pendingSelectUserId) {
+      const pendingUser = users.find((u) => u.id === pendingSelectUserId)
+      if (pendingUser) {
+        setPermissionTarget({ type: 'user', id: pendingUser.id })
+        setPendingSelectUserId(null)
+        return
+      }
+    }
+
+    if (permissionTarget.type === 'user') {
+      const stillVisible = filteredUsers.some((u) => u.id === permissionTarget.id)
+      if (stillVisible) return
+    }
+
+    const firstUser = filteredUsers[0]
+    if (firstUser) {
+      setPermissionTarget({ type: 'user', id: firstUser.id })
+    }
+  }, [activeTab, filteredUsers, pendingSelectUserId, permissionTarget, users])
 
   // Permission Checker Methods
   const canView = (moduleId: ModuleId): boolean => {
@@ -453,9 +561,22 @@ export function useUserSuperAdmin() {
     try {
       if (permissionTarget.type === 'user' && selectedTargetUser) {
         const userCustom = selectedTargetUser.customPermissions || {}
+
+        // Persistir Inicio/Reportes en local (no hay MODULES Oracle para ellos)
+        const uiOverrides: Partial<Record<ModuleId, ModulePermission>> = {}
+        for (const modId of UI_SHELL_MODULE_IDS) {
+          if (userCustom[modId]) uiOverrides[modId] = userCustom[modId]
+        }
+        if (Object.keys(uiOverrides).length > 0) {
+          setUserUiShellOverrides(
+            { id: selectedTargetUser.id, email: selectedTargetUser.email },
+            uiOverrides,
+          )
+        }
+
         for (const mod of dbModules) {
           const norm = normalizeModuleName(mod.name)
-          if (!norm || !userCustom[norm]) continue
+          if (!norm || isUiShellModule(norm) || !userCustom[norm]) continue
 
           const perm = userCustom[norm]!
           const existing = rawUserPermissions.find(
@@ -484,9 +605,19 @@ export function useUserSuperAdmin() {
       } else {
         const currentRole = roles.find((r) => r.id === permissionTarget.id)
         if (currentRole) {
+          const uiOverrides: Partial<Record<ModuleId, ModulePermission>> = {}
+          for (const modId of UI_SHELL_MODULE_IDS) {
+            if (currentRole.permissions[modId]) {
+              uiOverrides[modId] = currentRole.permissions[modId]
+            }
+          }
+          if (Object.keys(uiOverrides).length > 0) {
+            setUiShellOverrides('role', currentRole.id, uiOverrides)
+          }
+
           for (const mod of dbModules) {
             const norm = normalizeModuleName(mod.name)
-            if (!norm || !currentRole.permissions[norm]) continue
+            if (!norm || isUiShellModule(norm) || !currentRole.permissions[norm]) continue
 
             const perm = currentRole.permissions[norm]
             const existing = rawRolePermissions.find(
@@ -526,6 +657,11 @@ export function useUserSuperAdmin() {
     const targetId = userId || selectedTargetUser?.id
     if (!targetId) return
 
+    clearUserUiShellOverrides({
+      id: targetId,
+      email: users.find((u) => u.id === targetId)?.email,
+    })
+
     setUsers((prevUsers) =>
       prevUsers.map((u) => {
         if (u.id !== targetId) return u
@@ -540,42 +676,66 @@ export function useUserSuperAdmin() {
     }
   }
 
+  // Aplica Activo/Inactivo vía endpoints dedicados (PUT /Users no cambia isActive)
+  const syncUserActiveStatus = async (userId: string, status: UserStatus) => {
+    if (status === 'Inactivo') {
+      await apiDeactivateUser(userId)
+    } else {
+      await apiActivateUser(userId)
+    }
+  }
+
   // User CRUD Actions
-  const createUser = async (data: UserFormData) => {
+  const createUser = async (data: UserFormData): Promise<UserSaveResult> => {
     try {
       const fullName = `${data.firstName} ${data.lastName}`.trim()
-      await apiCreateFullUser({
+      const email = data.email.trim()
+      const result = await apiCreateFullUser({
         fullName,
-        email: data.email,
+        email,
         password: data.password || 'Huellitas2026!',
         roleId: data.roleId,
       })
 
+      // createFullUser siempre deja la cuenta Activa; si eligieron Inactivo, desactivar
+      if (data.status === 'Inactivo') {
+        await syncUserActiveStatus(result.userId, 'Inactivo')
+      }
+
       await loadData()
-      setIsUserModalOpen(false)
-      showToast(`Usuario "${fullName}" creado y habilitado para iniciar sesión`)
+      setActiveTab('usuarios')
+      setPendingSelectUserId(result.userId)
+      setPermissionTarget({ type: 'user', id: result.userId })
+
+      return { ok: true, email, mode: 'create' }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al crear usuario'
-      showToast(msg)
+      return { ok: false, error: extractUserApiErrorMessage(err) }
     }
   }
 
-  const updateUser = async (userId: string, data: UserFormData) => {
+  const updateUser = async (userId: string, data: UserFormData): Promise<UserSaveResult> => {
     try {
       const fullName = `${data.firstName} ${data.lastName}`.trim()
+      const email = data.email.trim()
+      const current = users.find((u) => u.id === userId)
+
       await apiUpdateUser(userId, {
         fullName,
-        email: data.email,
+        email,
         roleId: data.roleId,
       })
 
+      // El dropdown de estado del drawer debe persistir con activate/deactivate
+      if (current?.status !== data.status) {
+        await syncUserActiveStatus(userId, data.status)
+      }
+
       await loadData()
-      setIsUserModalOpen(false)
       setEditingUser(null)
-      showToast(`Usuario "${fullName}" actualizado con éxito`)
+
+      return { ok: true, email, mode: 'edit' }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al actualizar usuario'
-      showToast(msg)
+      return { ok: false, error: extractUserApiErrorMessage(err) }
     }
   }
 
@@ -588,17 +748,16 @@ export function useUserSuperAdmin() {
     if (!user) return
 
     try {
-      if (user.status === 'Activo') {
-        await apiDeactivateUser(userId)
-        showToast(`Usuario "${user.name}" desactivado`)
-      } else {
-        await apiActivateUser(userId)
-        showToast(`Usuario "${user.name}" activado`)
-      }
+      const nextStatus: UserStatus = user.status === 'Activo' ? 'Inactivo' : 'Activo'
+      await syncUserActiveStatus(userId, nextStatus)
+      showToast(
+        nextStatus === 'Inactivo'
+          ? `Usuario "${user.name}" desactivado`
+          : `Usuario "${user.name}" activado`,
+      )
       await loadData()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al cambiar estado'
-      showToast(msg)
+      showToast(extractUserApiErrorMessage(err))
     }
   }
 
@@ -611,7 +770,9 @@ export function useUserSuperAdmin() {
       })
 
       await loadData()
+      setActiveTab('roles')
       setSelectedRoleId(res.id)
+      setPermissionTarget({ type: 'role', id: res.id })
       setIsRoleModalOpen(false)
       showToast(`Rol "${data.name}" creado con éxito en la base de datos`)
     } catch (err) {
@@ -664,6 +825,7 @@ export function useUserSuperAdmin() {
     currentSimulatedRole,
     activeTab,
     setActiveTab,
+    setAccessMode,
     filters,
     setFilters,
     filteredUsers,
