@@ -1,74 +1,21 @@
-import { useState, useMemo, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { ViewPopup } from '../../components'
+import { useAuxPreparacion, type PreparacionCitaItem } from '../../hooks'
 
 export interface PreparacionAuxProps {
   onNotice?: (msg: string) => void
 }
 
-interface PreparacionCitaItem {
-  id: string
-  time: string
-  petName: string
-  petBreed: string
-  petAge: string
-  ownerName: string
-  service: string
-  vetName: string
-  status: 'Pendiente' | 'En preparación' | 'Preparada'
-  lastWeight: string
-  lastTemp: string
-  avatarUrl?: string
-}
-
-const INITIAL_CITAS: PreparacionCitaItem[] = [
-  {
-    id: 'cita-1',
-    time: '09:00 AM',
-    petName: 'Max',
-    petBreed: 'Golden Retriever',
-    petAge: '3 años',
-    ownerName: 'Carlos R.',
-    service: 'Consulta General',
-    vetName: 'Dra. Elena Silva',
-    status: 'En preparación',
-    lastWeight: '32.5',
-    lastTemp: '38.2',
-    avatarUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=120&h=120',
-  },
-  {
-    id: 'cita-2',
-    time: '09:30 AM',
-    petName: 'Luna',
-    petBreed: 'Gato Siamés',
-    petAge: '2 años',
-    ownerName: 'Maria G.',
-    service: 'Vacunación',
-    vetName: 'Dr. Javier M.',
-    status: 'Pendiente',
-    lastWeight: '4.2',
-    lastTemp: '38.5',
-    avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=120&h=120',
-  },
-  {
-    id: 'cita-3',
-    time: '10:15 AM',
-    petName: 'Simba',
-    petBreed: 'Persa',
-    petAge: '4 años',
-    ownerName: 'Luis A.',
-    service: 'Revisión Post-Op',
-    vetName: 'Dra. Elena Silva',
-    status: 'Preparada',
-    lastWeight: '5.1',
-    lastTemp: '38.0',
-    avatarUrl: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=120&h=120',
-  },
-]
-
 export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
-  const [citas, setCitas] = useState<PreparacionCitaItem[]>(INITIAL_CITAS)
-  const [selectedCitaId, setSelectedCitaId] = useState<string>('cita-1')
-  const [searchTerm, setSearchTerm] = useState('')
+  const {
+    citas,
+    selectedCita,
+    selectedCitaId,
+    setSelectedCitaId,
+    searchTerm,
+    setSearchTerm,
+    savePreparada,
+  } = useAuxPreparacion()
 
   // Form states for selected appointment triaje
   const [weight, setWeight] = useState('')
@@ -76,56 +23,24 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
   const [obs, setObs] = useState('')
   const [vetNotes, setVetNotes] = useState('')
 
-  const selectedCita = useMemo(() => {
-    return citas.find((c) => c.id === selectedCitaId) || citas[0]
-  }, [citas, selectedCitaId])
-
-  const filteredCitas = useMemo(() => {
-    return citas.filter((c) => {
-      const search = searchTerm.toLowerCase()
-      return (
-        c.petName.toLowerCase().includes(search) ||
-        c.ownerName.toLowerCase().includes(search) ||
-        c.service.toLowerCase().includes(search) ||
-        c.vetName.toLowerCase().includes(search)
-      )
-    })
-  }, [citas, searchTerm])
-
   const handleSelectCita = (cita: PreparacionCitaItem) => {
     setSelectedCitaId(cita.id)
-    // Prefill or reset values
-    setWeight('')
-    setTemp('')
+    setWeight(cita.lastWeight || '')
+    setTemp(cita.lastTemp || '')
     setObs('')
     setVetNotes('')
-
-    if (cita.status === 'En preparación' || cita.status === 'Pendiente') {
-      // If selected is clicked, mark as 'En preparación' automatically if it was pending
-      if (cita.status === 'Pendiente') {
-        setCitas((prev) =>
-          prev.map((c) => (c.id === cita.id ? { ...c, status: 'En preparación' } : c))
-        )
-      }
-    }
   }
 
-  const handleSavePreparada = (e: FormEvent) => {
+  const handleSavePreparada = async (e: FormEvent) => {
     e.preventDefault()
     if (!selectedCita) return
 
-    setCitas((prev) =>
-      prev.map((c) =>
-        c.id === selectedCita.id
-          ? {
-              ...c,
-              status: 'Preparada',
-              lastWeight: weight || c.lastWeight,
-              lastTemp: temp || c.lastTemp,
-            }
-          : c
-      )
-    )
+    await savePreparada(selectedCita.id, {
+      weight,
+      temp,
+      obs,
+      vetNotes,
+    })
 
     onNotice?.(`¡Paciente ${selectedCita.petName} marcado como preparado exitosamente!`)
     
@@ -135,6 +50,7 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
     setObs('')
     setVetNotes('')
   }
+
 
   return (
     <ViewPopup animationKey="preparacion" className="w-full">
@@ -183,7 +99,7 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-tan/60 text-sm">
-                {filteredCitas.map((cita) => {
+                {citas.map((cita) => {
                   const isSelected = cita.id === selectedCitaId
                   const isPending = cita.status === 'Pendiente'
                   const isEnPrep = cita.status === 'En preparación'

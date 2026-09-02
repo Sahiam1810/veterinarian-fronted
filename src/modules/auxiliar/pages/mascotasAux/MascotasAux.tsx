@@ -1,94 +1,23 @@
 import { useState, useMemo, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { ViewPopup, CustomSelect } from '../../components'
+import { useAuxMascotas } from '../../hooks'
 
 export interface MascotasAuxProps {
   onNotice?: (msg: string) => void
 }
 
-interface MascotaAuxItem {
-  id: string
-  petId: string // e.g. "#M-8492"
-  name: string
-  specie: 'Canino' | 'Felino' | 'Exótico' | string
-  breed: string
-  age: string
-  gender: 'Hembra' | 'Macho' | string
-  weight: string
-  ownerName: string
-  ownerPhone?: string
-  nextAppointment: string // e.g. "Hoy, 14:30" or "Sin citas"
-  sterilized: 'Sí' | 'No'
-  avatarUrl?: string
-  citaActual?: {
-    service: string
-    time: string
-    vetName: string
-  } | null
-}
-
-const INITIAL_MASCOTAS: MascotaAuxItem[] = [
-  {
-    id: 'pet-1',
-    petId: '#M-8492',
-    name: 'Luna',
-    specie: 'Canino',
-    breed: 'Golden Retriever',
-    age: '3 Años',
-    gender: 'Hembra',
-    weight: '28.5',
-    ownerName: 'Carlos Mendoza',
-    ownerPhone: '+57 300 123 4567',
-    nextAppointment: 'Hoy, 14:30',
-    sterilized: 'Sí',
-    avatarUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=120&h=120',
-    citaActual: {
-      service: 'Control General (Anual)',
-      time: 'Hoy, 14:30',
-      vetName: 'Dr. Ramírez',
-    },
-  },
-  {
-    id: 'pet-2',
-    petId: '#M-8493',
-    name: 'Milo',
-    specie: 'Felino',
-    breed: 'Siamés',
-    age: '2 Años',
-    gender: 'Macho',
-    weight: '4.2',
-    ownerName: 'Ana Silva',
-    ownerPhone: '+57 312 987 6543',
-    nextAppointment: 'Mañana, 10:00',
-    sterilized: 'Sí',
-    avatarUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=120&h=120',
-    citaActual: {
-      service: 'Desparasitación',
-      time: 'Mañana, 10:00',
-      vetName: 'Dr. López',
-    },
-  },
-  {
-    id: 'pet-3',
-    petId: '#M-8494',
-    name: 'Toby',
-    specie: 'Canino',
-    breed: 'Mestizo',
-    age: '5 Años',
-    gender: 'Macho',
-    weight: '15.0',
-    ownerName: 'Roberto Gómez',
-    ownerPhone: '+57 315 456 7890',
-    nextAppointment: 'Sin citas',
-    sterilized: 'No',
-    avatarUrl: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=120&h=120',
-    citaActual: null,
-  },
-]
-
 export function MascotasAux({ onNotice }: MascotasAuxProps) {
-  const [mascotas, setMascotas] = useState<MascotaAuxItem[]>(INITIAL_MASCOTAS)
-  const [selectedPetId, setSelectedPetId] = useState<string>('pet-1')
+  const {
+    mascotas,
+    selectedPet,
+    selectedPetId,
+    setSelectedPetId,
+    speciesList,
+    racesList,
+    addPet,
+  } = useAuxMascotas()
+
   const [activeTab, setActiveTab] = useState<'Todos' | 'Perros' | 'Gatos' | 'Exóticos'>('Todos')
   
   // Slide Drawer Estado
@@ -97,7 +26,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
   // Form states for new Pet
   const [newName, setNewName] = useState('')
   const [newSpecie, setNewSpecie] = useState('Canino')
-  const [newBreed, setNewBreed] = useState('')
+  const [newBreed, setNewBreed] = useState('Mestizo')
   const [newAge, setNewAge] = useState('')
   const [newGender, setNewGender] = useState('Hembra')
   const [newWeight, setNewWeight] = useState('')
@@ -105,43 +34,42 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
   const [newPhone, setNewPhone] = useState('')
   const [newSterilized, setNewSterilized] = useState<'Sí' | 'No'>('No')
 
-  const selectedPet = useMemo(() => {
-    return mascotas.find((p) => p.id === selectedPetId) || mascotas[0]
-  }, [mascotas, selectedPetId])
+  const speciesOptions = useMemo(() => {
+    if (speciesList.length > 0) return speciesList.map((s) => s.name)
+    return ['Canino', 'Felino', 'Exótico', 'Otro']
+  }, [speciesList])
+
+  const racesOptions = useMemo(() => {
+    if (racesList.length > 0) return racesList.map((r) => r.name)
+    return ['Golden Retriever', 'Siamés', 'Bulldog Francés', 'Persa', 'Mestizo', 'Poodle']
+  }, [racesList])
 
   const filteredMascotas = useMemo(() => {
     return mascotas.filter((p) => {
       if (activeTab === 'Todos') return true
-      if (activeTab === 'Perros') return p.specie.toLowerCase() === 'canino'
-      if (activeTab === 'Gatos') return p.specie.toLowerCase() === 'felino'
-      if (activeTab === 'Exóticos') return p.specie.toLowerCase() === 'exótico'
+      if (activeTab === 'Perros') return p.specie.toLowerCase().includes('canin') || p.specie.toLowerCase().includes('perr')
+      if (activeTab === 'Gatos') return p.specie.toLowerCase().includes('felin') || p.specie.toLowerCase().includes('gat')
+      if (activeTab === 'Exóticos') return p.specie.toLowerCase().includes('exót') || p.specie.toLowerCase().includes('exot')
       return true
     })
   }, [mascotas, activeTab])
 
-  const handleAddPet = (e: FormEvent) => {
+  const handleAddPet = async (e: FormEvent) => {
     e.preventDefault()
     if (!newName.trim() || !newOwner.trim()) return
 
-    const newPetId = `#M-${Math.floor(1000 + Math.random() * 9000)}`
-    const newPet: MascotaAuxItem = {
-      id: `pet-${Date.now()}`,
-      petId: newPetId,
-      name: newName,
+    await addPet({
+      name: newName.trim(),
       specie: newSpecie,
-      breed: newBreed || 'Mestizo',
-      age: newAge || '1 Año',
+      breed: newBreed.trim() || 'Mestizo',
+      age: newAge.trim() || '1 Año',
       gender: newGender,
-      weight: newWeight || '0.0',
-      ownerName: newOwner,
-      ownerPhone: newPhone,
-      nextAppointment: 'Sin citas',
+      weight: newWeight.trim() || '5.0',
+      ownerName: newOwner.trim(),
+      ownerPhone: newPhone.trim(),
       sterilized: newSterilized,
-      citaActual: null,
-    }
+    })
 
-    setMascotas((prev) => [...prev, newPet])
-    setSelectedPetId(newPet.id)
     setIsAddDrawerOpen(false)
     onNotice?.(`¡Mascota ${newName} registrada con éxito!`)
 
@@ -156,6 +84,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     setNewPhone('')
     setNewSterilized('No')
   }
+
 
   return (
     <div className="w-full flex flex-col lg:flex-row gap-5 sm:gap-6 min-w-0">
@@ -480,20 +409,17 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                       required
                       value={newSpecie}
                       onChange={setNewSpecie}
-                      options={['Canino', 'Felino', 'Exótico', 'Otro']}
+                      options={speciesOptions}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Raza
-                    </label>
-                    <input
-                      type="text"
+                    <CustomSelect
+                      label="Raza"
+                      required
                       value={newBreed}
-                      onChange={(e) => setNewBreed(e.target.value)}
-                      placeholder="Ej. Pastor Alemán..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                      onChange={setNewBreed}
+                      options={racesOptions}
                     />
                   </div>
                 </div>
