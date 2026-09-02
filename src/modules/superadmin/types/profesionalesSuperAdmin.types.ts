@@ -27,6 +27,9 @@ export interface ProfesionalSuperAdmin {
   status: EstadoProfesional
   avatarUrl?: string
   horario: BloqueHorario[]
+  // IDs internos para sincronizar con la API
+  userId?: string
+  specialtyId?: string
 }
 
 export interface ProfesionalFormData {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import type {
   SuperAdminMascota,
   SuperAdminDueno,
@@ -8,288 +8,46 @@ import type {
   DuenoFilters,
   EstadoMascota,
 } from '../types'
-
-
-const INITIAL_DUENOS: SuperAdminDueno[] = [
-  {
-    id: 'due-1',
-    name: 'Carlos Ruiz',
-    documentId: 'CC 1098765432',
-    email: 'carlos.ruiz@gmail.com',
-    phone: '555-0192',
-    address: 'Calle 123 #45-67',
-    city: 'Bogotá',
-    status: 'Activo',
-    registrationDate: '15 Ene 2023',
-    mascotasSummary: ['Max (Canino)', 'Milo (Felino)'],
-  },
-  {
-    id: 'due-2',
-    name: 'Ana Gómez',
-    documentId: 'CC 52431987',
-    email: 'ana.gomez@hotmail.com',
-    phone: '555-0321',
-    address: 'Carrera 7 #89-12',
-    city: 'Medellín',
-    status: 'Activo',
-    registrationDate: '10 Feb 2023',
-    mascotasSummary: ['Luna (Felino)'],
-  },
-  {
-    id: 'due-3',
-    name: 'Miguel Paz',
-    documentId: 'CC 79841235',
-    email: 'miguel.paz@outlook.com',
-    phone: '555-8843',
-    address: 'Av. Siempre Viva 742',
-    city: 'Cali',
-    status: 'Inactivo',
-    registrationDate: '05 Mar 2023',
-    mascotasSummary: ['Lolo (Ave)'],
-  },
-  {
-    id: 'due-4',
-    name: 'Sofía Morales',
-    documentId: 'CC 1023456789',
-    email: 'sofia.morales@gmail.com',
-    phone: '555-9012',
-    address: 'Calle 50 #30-20',
-    city: 'Barranquilla',
-    status: 'Activo',
-    registrationDate: '22 Abr 2023',
-    mascotasSummary: ['Rocky (Canino)'],
-  },
-  {
-    id: 'due-5',
-    name: 'Elena Vargas',
-    documentId: 'CC 34567890',
-    email: 'elena.vargas@yahoo.com',
-    phone: '555-7766',
-    address: 'Transversal 22 #10-05',
-    city: 'Bucaramanga',
-    status: 'Activo',
-    registrationDate: '18 May 2023',
-    mascotasSummary: ['Bella (Canino)'],
-  },
-  {
-    id: 'due-6',
-    name: 'Valentina Cruz',
-    documentId: 'CC 1009876543',
-    email: 'valentina.cruz@gmail.com',
-    phone: '555-2211',
-    address: 'Calle 9 #15-40',
-    city: 'Cartagena',
-    status: 'Activo',
-    registrationDate: '30 Jun 2023',
-    mascotasSummary: ['Nemo (Exótico)'],
-  },
-  {
-    id: 'due-7',
-    name: 'Daniel Ortiz',
-    documentId: 'CC 98765432',
-    email: 'daniel.ortiz@gmail.com',
-    phone: '555-6677',
-    address: 'Carrera 15 #80-50',
-    city: 'Pereira',
-    status: 'Inactivo',
-    registrationDate: '12 Jul 2023',
-    mascotasSummary: ['Coco (Roedor)'],
-  },
-  {
-    id: 'due-8',
-    name: 'Andrés Mendoza',
-    documentId: 'CC 1012345678',
-    email: 'andres.mendoza@gmail.com',
-    phone: '555-3322',
-    address: 'Calle 85 #11-20',
-    city: 'Bogotá',
-    status: 'Activo',
-    registrationDate: '01 Ago 2023',
-    mascotasSummary: ['Thor (Canino)'],
-  },
-  {
-    id: 'due-9',
-    name: 'Camila Torres',
-    documentId: 'CC 53123456',
-    email: 'camila.torres@gmail.com',
-    phone: '555-1199',
-    address: 'Carrera 43A #1-50',
-    city: 'Medellín',
-    status: 'Activo',
-    registrationDate: '19 Sep 2023',
-    mascotasSummary: ['Mia (Felino)'],
-  },
-]
-
-const INITIAL_MASCOTAS: SuperAdminMascota[] = [
-  {
-    id: 'masc-1',
-    name: 'Max',
-    photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=150&auto=format&fit=crop&q=80',
-    species: 'Canino',
-    breed: 'Golden Retriever',
-    age: '3 años',
-    sex: 'Macho',
-    weight: '32 kg',
-    ownerId: 'due-1',
-    ownerName: 'Carlos Ruiz',
-    ownerPhone: '555-0192',
-    status: 'Activo',
-    registrationDate: '15 Ene 2023',
-    notes: 'Vacunas al día. Muy sociable y amigable.',
-  },
-  {
-    id: 'masc-2',
-    name: 'Luna',
-    photoUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=150&auto=format&fit=crop&q=80',
-    species: 'Felino',
-    breed: 'Siamés',
-    age: '1.5 años',
-    sex: 'Hembra',
-    weight: '4 kg',
-    ownerId: 'due-2',
-    ownerName: 'Ana Gómez',
-    ownerPhone: '555-0321',
-    status: 'Activo',
-    registrationDate: '10 Feb 2023',
-    notes: 'Esterilizada. Sensibilidad gástrica leve.',
-  },
-  {
-    id: 'masc-3',
-    name: 'Lolo',
-    photoUrl: undefined,
-    species: 'Ave',
-    breed: 'Loro Gris',
-    age: '12 años',
-    sex: 'Macho',
-    weight: '0.5 kg',
-    ownerId: 'due-3',
-    ownerName: 'Miguel Paz',
-    ownerPhone: '555-8843',
-    status: 'Inactivo',
-    registrationDate: '05 Mar 2023',
-    notes: 'Revisión periódica de pico y plumas.',
-  },
-  {
-    id: 'masc-4',
-    name: 'Rocky',
-    photoUrl: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=150&auto=format&fit=crop&q=80',
-    species: 'Canino',
-    breed: 'Bulldog Francés',
-    age: '2 años',
-    sex: 'Macho',
-    weight: '12 kg',
-    ownerId: 'due-4',
-    ownerName: 'Sofía Morales',
-    ownerPhone: '555-9012',
-    status: 'Activo',
-    registrationDate: '22 Abr 2023',
-    notes: 'Control respiratorio branquicéfalo.',
-  },
-  {
-    id: 'masc-5',
-    name: 'Milo',
-    photoUrl: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=150&auto=format&fit=crop&q=80',
-    species: 'Felino',
-    breed: 'Persa',
-    age: '4 años',
-    sex: 'Macho',
-    weight: '5 kg',
-    ownerId: 'due-1',
-    ownerName: 'Carlos Ruiz',
-    ownerPhone: '555-0192',
-    status: 'Activo',
-    registrationDate: '12 May 2023',
-    notes: 'Cepillado frecuente requerido.',
-  },
-  {
-    id: 'masc-6',
-    name: 'Bella',
-    photoUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=150&auto=format&fit=crop&q=80',
-    species: 'Canino',
-    breed: 'Poodle',
-    age: '5 años',
-    sex: 'Hembra',
-    weight: '7 kg',
-    ownerId: 'due-5',
-    ownerName: 'Elena Vargas',
-    ownerPhone: '555-7766',
-    status: 'Activo',
-    registrationDate: '18 May 2023',
-    notes: 'Excelente estado de salud.',
-  },
-  {
-    id: 'masc-7',
-    name: 'Nemo',
-    photoUrl: undefined,
-    species: 'Exótico',
-    breed: 'Pez Payaso',
-    age: '1 año',
-    sex: 'Macho',
-    weight: '0.1 kg',
-    ownerId: 'due-6',
-    ownerName: 'Valentina Cruz',
-    ownerPhone: '555-2211',
-    status: 'Activo',
-    registrationDate: '30 Jun 2023',
-    notes: 'Parámetros de acuario estables.',
-  },
-  {
-    id: 'masc-8',
-    name: 'Coco',
-    photoUrl: undefined,
-    species: 'Roedor',
-    breed: 'Hámster Sirio',
-    age: '8 meses',
-    sex: 'Macho',
-    weight: '0.2 kg',
-    ownerId: 'due-7',
-    ownerName: 'Daniel Ortiz',
-    ownerPhone: '555-6677',
-    status: 'Inactivo',
-    registrationDate: '12 Jul 2023',
-    notes: 'Dieta balanceada con semillas.',
-  },
-  {
-    id: 'masc-9',
-    name: 'Thor',
-    photoUrl: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5455?w=150&auto=format&fit=crop&q=80',
-    species: 'Canino',
-    breed: 'Pastor Alemán',
-    age: '4 años',
-    sex: 'Macho',
-    weight: '35 kg',
-    ownerId: 'due-8',
-    ownerName: 'Andrés Mendoza',
-    ownerPhone: '555-3322',
-    status: 'Activo',
-    registrationDate: '01 Ago 2023',
-    notes: 'Entrenamiento canino avanzado.',
-  },
-  {
-    id: 'masc-10',
-    name: 'Mia',
-    photoUrl: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=150&auto=format&fit=crop&q=80',
-    species: 'Felino',
-    breed: 'Angora',
-    age: '2 años',
-    sex: 'Hembra',
-    weight: '3.8 kg',
-    ownerId: 'due-9',
-    ownerName: 'Camila Torres',
-    ownerPhone: '555-1199',
-    status: 'Activo',
-    registrationDate: '19 Sep 2023',
-    notes: 'Desparasitación al día.',
-  },
-]
+import {
+  fetchClients,
+  fetchPets,
+  fetchClientsPets,
+  createPet,
+  updatePet,
+  deletePet,
+  createClientPet,
+  deleteClientPet,
+  createClient,
+  updateClient,
+  deleteClient,
+  fetchUsers,
+  createFullUser,
+  updateUser,
+  fetchRoles,
+  fetchSpecies,
+  fetchRaces,
+} from '../services'
+import {
+  mapClientToDueno,
+  mapPetToMascota,
+  findSpeciesId,
+  findRaceId,
+  parseAgeToInt,
+  parseWeightToDecimal,
+  mapSexoToGender,
+} from '../utils/superAdminApiMappers'
+import { ApiError } from '@/services'
 
 export function useMascotasSuperAdmin() {
   const [activeTab, setActiveTab] = useState<'mascotas' | 'duenos'>('mascotas')
-  const [mascotas, setMascotas] = useState<SuperAdminMascota[]>(INITIAL_MASCOTAS)
-  const [duenos, setDuenos] = useState<SuperAdminDueno[]>(INITIAL_DUENOS)
+  const [mascotas, setMascotas] = useState<SuperAdminMascota[]>([])
+  const [duenos, setDuenos] = useState<SuperAdminDueno[]>([])
+  // Catálogos de especies/razas desde la API (para filtros y formularios)
+  const [speciesOptions, setSpeciesOptions] = useState<{ id: string; name: string }[]>([])
+  const [raceOptions, setRaceOptions] = useState<{ id: string; name: string }[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Filters
   const [mascotaFilters, setMascotaFilters] = useState<MascotaFilters>({
     searchQuery: '',
     speciesFilter: 'all',
@@ -301,12 +59,10 @@ export function useMascotasSuperAdmin() {
     statusFilter: 'all',
   })
 
-  // Pagination
   const [mascotaPage, setMascotaPage] = useState(1)
   const [duenoPage, setDuenoPage] = useState(1)
   const itemsPerPage = 5
 
-  // Modals & Drawers
   const [isMascotaModalOpen, setIsMascotaModalOpen] = useState(false)
   const [editingMascota, setEditingMascota] = useState<SuperAdminMascota | null>(null)
   const [isDuenoModalOpen, setIsDuenoModalOpen] = useState(false)
@@ -316,17 +72,78 @@ export function useMascotasSuperAdmin() {
     data: SuperAdminMascota | SuperAdminDueno
   } | null>(null)
 
-  // Notification Toast
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     setActiveNotification(message)
     setTimeout(() => {
       setActiveNotification((curr) => (curr === message ? null : curr))
     }, 3000)
-  }
+  }, [])
 
-  // Filtered Mascotas
+  const loadData = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const [clients, users, pets, clientsPets, species, races] = await Promise.all([
+        fetchClients(),
+        fetchUsers(),
+        fetchPets(),
+        fetchClientsPets(),
+        fetchSpecies(),
+        fetchRaces(),
+      ])
+
+      const usersById = new Map(users.map((u) => [u.id, u]))
+      const speciesById = new Map(species.map((s) => [s.id, s.name]))
+      const racesById = new Map(races.map((r) => [r.id, r.name]))
+      setSpeciesOptions(species.map((s) => ({ id: s.id, name: s.name })))
+      setRaceOptions(races.map((r) => ({ id: r.id, name: r.name })))
+
+      const duenosMapped = clients.map((client) => {
+        const user = usersById.get(client.userId)
+        const petLinks = clientsPets.filter((cp) => cp.clientId === client.id)
+        const summary = petLinks
+          .map((link) => {
+            const pet = pets.find((p) => p.id === link.petId)
+            if (!pet) return null
+            const speciesName = speciesById.get(pet.speciesId) ?? ''
+            return `${pet.name} (${mapPetToMascota({ pet, speciesName }).species})`
+          })
+          .filter((s): s is string => Boolean(s))
+        return mapClientToDueno(client, user, summary)
+      })
+
+      const duenosById = new Map(duenosMapped.map((d) => [d.id, d]))
+      const clientPetByPetId = new Map(clientsPets.map((cp) => [cp.petId, cp]))
+
+      const mascotasMapped = pets.map((pet) => {
+        const clientPet = clientPetByPetId.get(pet.id)
+        const owner = clientPet ? duenosById.get(clientPet.clientId) : undefined
+        return mapPetToMascota({
+          pet,
+          clientPet,
+          owner,
+          speciesName: speciesById.get(pet.speciesId),
+          raceName: racesById.get(pet.raceId),
+        })
+      })
+
+      setDuenos(duenosMapped)
+      setMascotas(mascotasMapped)
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudieron cargar mascotas y dueños.'
+      setLoadError(message)
+      showToast(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    void loadData()
+  }, [loadData])
+
   const filteredMascotas = useMemo(() => {
     return mascotas.filter((m) => {
       const q = mascotaFilters.searchQuery.toLowerCase().trim()
@@ -349,7 +166,6 @@ export function useMascotasSuperAdmin() {
     })
   }, [mascotas, mascotaFilters])
 
-  // Filtered Dueños
   const filteredDuenos = useMemo(() => {
     return duenos.filter((d) => {
       const q = duenoFilters.searchQuery.toLowerCase().trim()
@@ -368,7 +184,6 @@ export function useMascotasSuperAdmin() {
     })
   }, [duenos, duenoFilters])
 
-  // Mascotas Pagination Slice
   const totalMascotas = filteredMascotas.length
   const totalMascotaPages = Math.ceil(totalMascotas / itemsPerPage) || 1
   const paginatedMascotas = useMemo(() => {
@@ -376,7 +191,6 @@ export function useMascotasSuperAdmin() {
     return filteredMascotas.slice(start, start + itemsPerPage)
   }, [filteredMascotas, mascotaPage, itemsPerPage])
 
-  // Dueños Pagination Slice
   const totalDuenos = filteredDuenos.length
   const totalDuenoPages = Math.ceil(totalDuenos / itemsPerPage) || 1
   const paginatedDuenos = useMemo(() => {
@@ -384,156 +198,175 @@ export function useMascotasSuperAdmin() {
     return filteredDuenos.slice(start, start + itemsPerPage)
   }, [filteredDuenos, duenoPage, itemsPerPage])
 
-  // CRUD Mascotas
-  const createMascota = (data: MascotaFormData) => {
-    const owner = duenos.find((d) => d.id === data.ownerId)
-    const newMascota: SuperAdminMascota = {
-      id: `masc-${Date.now()}`,
-      name: data.name.trim(),
-      species: data.species,
-      breed: data.breed.trim(),
-      age: data.age.trim(),
-      sex: data.sex,
-      weight: data.weight.trim(),
-      ownerId: data.ownerId,
-      ownerName: owner ? owner.name : 'Sin asignar',
-      ownerPhone: owner ? owner.phone : '',
-      status: data.status,
-      photoUrl: data.photoUrl?.trim() || undefined,
-      notes: data.notes?.trim() || undefined,
-      registrationDate: new Date().toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
+  const createMascota = async (data: MascotaFormData) => {
+    try {
+      const [species, races] = await Promise.all([fetchSpecies(), fetchRaces()])
+      const speciesId = findSpeciesId(data.species, species)
+      const raceId = findRaceId(data.breed, races)
+
+      const created = await createPet({
+        name: data.name.trim(),
+        age: parseAgeToInt(data.age),
+        gender: mapSexoToGender(data.sex),
+        weight: parseWeightToDecimal(data.weight),
+        observations: data.notes?.trim() || null,
+        speciesId,
+        raceId,
+      })
+
+      await createClientPet({
+        clientId: data.ownerId,
+        petId: created.id,
+        isPrimaryOwner: true,
+      })
+
+      setIsMascotaModalOpen(false)
+      showToast(`Mascota "${data.name}" registrada con éxito`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo registrar la mascota.'
+      showToast(message)
     }
-
-    setMascotas((prev) => [newMascota, ...prev])
-    setIsMascotaModalOpen(false)
-    showToast(`Mascota "${newMascota.name}" registrada con éxito`)
   }
 
-  const updateMascota = (id: string, data: MascotaFormData) => {
-    const owner = duenos.find((d) => d.id === data.ownerId)
-    setMascotas((prev) =>
-      prev.map((m) =>
-        m.id === id
-          ? {
-              ...m,
-              name: data.name.trim(),
-              species: data.species,
-              breed: data.breed.trim(),
-              age: data.age.trim(),
-              sex: data.sex,
-              weight: data.weight.trim(),
-              ownerId: data.ownerId,
-              ownerName: owner ? owner.name : m.ownerName,
-              ownerPhone: owner ? owner.phone : m.ownerPhone,
-              status: data.status,
-              photoUrl: data.photoUrl?.trim() || undefined,
-              notes: data.notes?.trim() || undefined,
-            }
-          : m
-      )
-    )
-    setIsMascotaModalOpen(false)
-    setEditingMascota(null)
-    showToast(`Mascota "${data.name}" actualizada con éxito`)
+  const updateMascota = async (id: string, data: MascotaFormData) => {
+    try {
+      const [species, races] = await Promise.all([fetchSpecies(), fetchRaces()])
+      const speciesId = findSpeciesId(data.species, species)
+      const raceId = findRaceId(data.breed, races)
+
+      await updatePet(id, {
+        name: data.name.trim(),
+        age: parseAgeToInt(data.age),
+        gender: mapSexoToGender(data.sex),
+        weight: parseWeightToDecimal(data.weight),
+        observations: data.notes?.trim() || null,
+        speciesId,
+        raceId,
+      })
+
+      setIsMascotaModalOpen(false)
+      setEditingMascota(null)
+      showToast(`Mascota "${data.name}" actualizada con éxito`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo actualizar la mascota.'
+      showToast(message)
+    }
   }
 
-  const deleteMascota = (id: string) => {
+  const deleteMascota = async (id: string) => {
     const item = mascotas.find((m) => m.id === id)
-    setMascotas((prev) => prev.filter((m) => m.id !== id))
-    showToast(`Mascota "${item?.name || ''}" eliminada`)
+    try {
+      if (item?.clientPetId) {
+        await deleteClientPet(item.clientPetId)
+      }
+      await deletePet(id)
+      showToast(`Mascota "${item?.name || ''}" eliminada`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo eliminar la mascota.'
+      showToast(message)
+    }
   }
 
   const toggleMascotaStatus = (id: string) => {
-    setMascotas((prev) =>
-      prev.map((m) => {
-        if (m.id === id) {
-          const newStatus: EstadoMascota = m.status === 'Activo' ? 'Inactivo' : 'Activo'
-          showToast(`Estado de "${m.name}" cambiado a ${newStatus}`)
-          return { ...m, status: newStatus }
-        }
-        return m
+    const item = mascotas.find((m) => m.id === id)
+    showToast(`El estado de "${item?.name ?? 'mascota'}" se gestiona desde el backend.`)
+  }
+
+  const createDueno = async (data: DuenoFormData) => {
+    try {
+      const roles = await fetchRoles()
+      const clientRole = roles.find((r) => {
+        const n = r.name.toLowerCase()
+        return n.includes('client') || n.includes('cliente')
       })
-    )
-  }
+      if (!clientRole) {
+        showToast('No se encontró el rol de cliente en el sistema.')
+        return
+      }
 
-  // CRUD Dueños
-  const createDueno = (data: DuenoFormData) => {
-    const newDueno: SuperAdminDueno = {
-      id: `due-${Date.now()}`,
-      name: data.name.trim(),
-      documentId: data.documentId.trim(),
-      email: data.email.trim(),
-      phone: data.phone.trim(),
-      address: data.address.trim(),
-      city: data.city.trim(),
-      status: data.status,
-      registrationDate: new Date().toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      mascotasSummary: [],
+      const tempPassword = `Tmp${Date.now().toString(36)}!`
+      const { userId } = await createFullUser({
+        fullName: data.name.trim(),
+        email: data.email.trim(),
+        password: tempPassword,
+        roleId: clientRole.id,
+      })
+
+      await createClient({
+        userId,
+        identificationNumber: data.documentId.trim(),
+        address: data.address.trim() || null,
+      })
+
+      setIsDuenoModalOpen(false)
+      showToast(`Dueño "${data.name}" registrado con éxito`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo registrar el dueño.'
+      showToast(message)
     }
-
-    setDuenos((prev) => [newDueno, ...prev])
-    setIsDuenoModalOpen(false)
-    showToast(`Dueño "${newDueno.name}" registrado con éxito`)
   }
 
-  const updateDueno = (id: string, data: DuenoFormData) => {
-    setDuenos((prev) =>
-      prev.map((d) =>
-        d.id === id
-          ? {
-              ...d,
-              name: data.name.trim(),
-              documentId: data.documentId.trim(),
-              email: data.email.trim(),
-              phone: data.phone.trim(),
-              address: data.address.trim(),
-              city: data.city.trim(),
-              status: data.status,
-            }
-          : d
-      )
-    )
-    // Update owner names on associated mascotas
-    setMascotas((prev) =>
-      prev.map((m) =>
-        m.ownerId === id
-          ? { ...m, ownerName: data.name.trim(), ownerPhone: data.phone.trim() }
-          : m
-      )
-    )
-    setIsDuenoModalOpen(false)
-    setEditingDueno(null)
-    showToast(`Dueño "${data.name}" actualizado con éxito`)
+  const updateDueno = async (id: string, data: DuenoFormData) => {
+    try {
+      const client = await fetchClients().then((list) => list.find((c) => c.id === id))
+      if (!client) {
+        showToast('Dueño no encontrado.')
+        return
+      }
+
+      const roles = await fetchRoles()
+      const clientRole = roles.find((r) => {
+        const n = r.name.toLowerCase()
+        return n.includes('client') || n.includes('cliente')
+      })
+
+      await updateClient(id, {
+        userId: client.userId,
+        identificationNumber: data.documentId.trim(),
+        address: data.address.trim() || null,
+        registrationDate: client.registrationDate,
+      })
+
+      if (clientRole) {
+        await updateUser(client.userId, {
+          fullName: data.name.trim(),
+          email: data.email.trim(),
+          roleId: clientRole.id,
+        })
+      }
+
+      setIsDuenoModalOpen(false)
+      setEditingDueno(null)
+      showToast(`Dueño "${data.name}" actualizado con éxito`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo actualizar el dueño.'
+      showToast(message)
+    }
   }
 
-  const deleteDueno = (id: string) => {
+  const deleteDueno = async (id: string) => {
     const item = duenos.find((d) => d.id === id)
-    setDuenos((prev) => prev.filter((d) => d.id !== id))
-    showToast(`Dueño "${item?.name || ''}" eliminado`)
+    try {
+      await deleteClient(id)
+      showToast(`Dueño "${item?.name || ''}" eliminado`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo eliminar el dueño.'
+      showToast(message)
+    }
   }
 
   const toggleDuenoStatus = (id: string) => {
-    setDuenos((prev) =>
-      prev.map((d) => {
-        if (d.id === id) {
-          const newStatus: EstadoMascota = d.status === 'Activo' ? 'Inactivo' : 'Activo'
-          showToast(`Estado de "${d.name}" cambiado a ${newStatus}`)
-          return { ...d, status: newStatus }
-        }
-        return d
-      })
-    )
+    const item = duenos.find((d) => d.id === id)
+    const newStatus: EstadoMascota = item?.status === 'Activo' ? 'Inactivo' : 'Activo'
+    showToast(`Activa o desactiva a "${item?.name ?? 'dueño'}" desde el módulo de usuarios (${newStatus}).`)
   }
 
-  // Modal actions
   const openCreateMascota = () => {
     setEditingMascota(null)
     setIsMascotaModalOpen(true)
@@ -559,6 +392,11 @@ export function useMascotasSuperAdmin() {
     setActiveTab,
     mascotas,
     duenos,
+    speciesOptions,
+    raceOptions,
+    isLoading,
+    loadError,
+    reload: loadData,
     filteredMascotas,
     filteredDuenos,
     paginatedMascotas,
@@ -576,7 +414,6 @@ export function useMascotasSuperAdmin() {
     setMascotaFilters,
     duenoFilters,
     setDuenoFilters,
-    // Modals
     isMascotaModalOpen,
     setIsMascotaModalOpen,
     editingMascota,
@@ -585,7 +422,6 @@ export function useMascotasSuperAdmin() {
     editingDueno,
     detailItem,
     setDetailItem,
-    // Actions
     createMascota,
     updateMascota,
     deleteMascota,
@@ -598,7 +434,6 @@ export function useMascotasSuperAdmin() {
     toggleDuenoStatus,
     openCreateDueno,
     openEditDueno,
-    // Notifications
     activeNotification,
     showToast,
   }

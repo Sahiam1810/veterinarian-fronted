@@ -113,7 +113,7 @@ export async function createFullUser(params: CreateFullUserParams): Promise<Crea
     userId,
     username,
     mail: params.email,
-    status: 'Active',
+    status: 'Activo',
   })
 
   if (!accountRes || !accountRes.id) {

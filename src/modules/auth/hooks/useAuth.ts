@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { AuthUser, LoginCredentials, MockAccount, UserRole } from '../types'
 import {
   loginRequest,
@@ -46,6 +46,16 @@ export function useAuth() {
     clearStoredUser()
     setCurrentUser(null)
     setError(null)
+  }, [])
+
+  // Si el API responde 401, apiClient limpia tokens y dispara este evento.
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setCurrentUser(null)
+      setError('Tu sesión expiró. Inicia sesión de nuevo.')
+    }
+    window.addEventListener('huellitas:session-expired', onSessionExpired)
+    return () => window.removeEventListener('huellitas:session-expired', onSessionExpired)
   }, [])
 
   return {

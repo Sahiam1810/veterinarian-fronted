@@ -1,5 +1,4 @@
 import type { AgendaViewMode } from '../types'
-import { ChevronLeftIcon, ChevronRightIcon } from './AgendaIcons'
 
 interface AgendaToolbarProps {
   monthLabel: string
@@ -32,10 +31,10 @@ export function AgendaToolbar({
         <button
           type="button"
           onClick={onPrevPeriod}
-          className="p-2 rounded-lg text-sage hover:text-brand hover:bg-bone transition cursor-pointer"
+          className="px-2.5 py-2 rounded-lg text-xs font-bold text-sage hover:text-brand hover:bg-bone transition cursor-pointer"
           aria-label="Periodo anterior"
         >
-          <ChevronLeftIcon className="w-4 h-4" />
+          Anterior
         </button>
         <span className="min-w-[8.5rem] text-center text-sm font-bold text-charcoal px-1">
           {monthLabel}
@@ -43,10 +42,10 @@ export function AgendaToolbar({
         <button
           type="button"
           onClick={onNextPeriod}
-          className="p-2 rounded-lg text-sage hover:text-brand hover:bg-bone transition cursor-pointer"
+          className="px-2.5 py-2 rounded-lg text-xs font-bold text-sage hover:text-brand hover:bg-bone transition cursor-pointer"
           aria-label="Periodo siguiente"
         >
-          <ChevronRightIcon className="w-4 h-4" />
+          Siguiente
         </button>
       </div>
 

@@ -7,6 +7,8 @@ export interface ServicioSuperAdmin {
   duration: number // in minutes
   price: number
   status: EstadoServicio
+  // ID interno para actualizar en la API
+  typeServiceId?: string
 }
 
 export interface ServicioFormData {
@@ -15,4 +17,5 @@ export interface ServicioFormData {
   duration: number
   price: number
   status: EstadoServicio
+  typeServiceId?: string
 }

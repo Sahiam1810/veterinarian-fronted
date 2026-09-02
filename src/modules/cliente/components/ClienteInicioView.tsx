@@ -169,7 +169,7 @@ function ClienteMascotasSummaryCard({
         onClick={onViewMascotas}
         className="mt-auto pt-4 text-left text-sm font-bold text-ochre hover:text-ochre-soft transition cursor-pointer relative z-10"
       >
-        Ver mis mascotas →
+        Ver mis mascotas
       </button>
     </article>
   )
@@ -201,7 +201,7 @@ function ClienteCitasPendientesCard({
         onClick={onViewCitas}
         className="mt-auto pt-4 text-left text-sm font-bold text-brand hover:text-brand-hover transition cursor-pointer"
       >
-        Ver mis citas →
+        Ver mis citas
       </button>
     </article>
   )
