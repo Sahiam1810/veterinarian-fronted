@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import type { AuxDayAppointment } from '../../types'
+import { useAuxAgenda, type AgendaAppointmentItem } from '../../hooks'
 import {
   ViewPopup,
   NuevaCitaDrawer,
@@ -14,21 +15,6 @@ export interface AgendaAuxProps {
   onNewAppointment?: () => void
 }
 
-interface AgendaAppointmentItem {
-  id: string
-  dateKey: string // YYYY-MM-DD
-  startTime: string // "09:00"
-  endTime: string // "09:30"
-  status: 'Agendado' | 'Atendido' | 'Cancelado' | 'Preparada' | 'Pendiente'
-  petName: string
-  petBreed: string
-  species: string
-  ownerName: string
-  professional: string
-  service: string
-  notes?: string
-}
-
 interface DayColumn {
   label: string
   num: number
@@ -36,124 +22,81 @@ interface DayColumn {
   isToday?: boolean
 }
 
-const WEEKS_DATA = [
-  {
-    weekLabel: 'Oct 16 - Oct 22',
-    days: [
-      { label: 'LUN', num: 16, dateKey: '2023-10-16' },
-      { label: 'MAR', num: 17, dateKey: '2023-10-17', isToday: true },
-      { label: 'MIÉ', num: 18, dateKey: '2023-10-18' },
-      { label: 'JUE', num: 19, dateKey: '2023-10-19' },
-      { label: 'VIE', num: 20, dateKey: '2023-10-20' },
-      { label: 'SÁB', num: 21, dateKey: '2023-10-21' },
-      { label: 'DOM', num: 22, dateKey: '2023-10-22' },
-    ] as DayColumn[],
-  },
-  {
-    weekLabel: 'Oct 23 - Oct 29',
-    days: [
-      { label: 'LUN', num: 23, dateKey: '2023-10-23' },
-      { label: 'MAR', num: 24, dateKey: '2023-10-24' },
-      { label: 'MIÉ', num: 25, dateKey: '2023-10-25' },
-      { label: 'JUE', num: 26, dateKey: '2023-10-26' },
-      { label: 'VIE', num: 27, dateKey: '2023-10-27' },
-      { label: 'SÁB', num: 28, dateKey: '2023-10-28' },
-      { label: 'DOM', num: 29, dateKey: '2023-10-29' },
-    ] as DayColumn[],
-  },
-]
+// Generador dinámico de semanas para el calendario
+function getDynamicWeeks(): { weekLabel: string; days: DayColumn[] }[] {
+  const now = new Date()
+  const currentDay = now.getDay() // 0 is Sun, 1 is Mon
+  const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay
 
-const INITIAL_AGENDA_ITEMS: AgendaAppointmentItem[] = [
-  {
-    id: 'apt-lun-1',
-    dateKey: '2023-10-16',
-    startTime: '09:00',
-    endTime: '09:30',
-    status: 'Atendido',
-    petName: 'Max',
-    petBreed: 'Golden Retriever',
-    species: 'Perro',
-    ownerName: 'Carlos Morales',
-    professional: 'Dra. Martínez',
-    service: 'Vacunación',
-    notes: 'Vacuna séxtuple aplicada con éxito. Paciente estable.',
-  },
-  {
-    id: 'apt-mar-1',
-    dateKey: '2023-10-17',
-    startTime: '11:00',
-    endTime: '11:45',
-    status: 'Agendado',
-    petName: 'Luna',
-    petBreed: 'Gato Siamés',
-    species: 'Gato',
-    ownerName: 'Ana S.',
-    professional: 'Dra. Martínez',
-    service: 'Control General',
-    notes: 'Revisión semestral preventiva y pesaje.',
-  },
-  {
-    id: 'apt-mar-2',
-    dateKey: '2023-10-17',
-    startTime: '14:00',
-    endTime: '15:00',
-    status: 'Agendado',
-    petName: 'Toby',
-    petBreed: 'Beagle',
-    species: 'Perro',
-    ownerName: 'Luis F.',
-    professional: 'Dr. Roberto Silva',
-    service: 'Retiro de Puntos',
-    notes: 'Retiro de sutura postoperatoria en extremidad posterior derecha.',
-  },
-  {
-    id: 'apt-mie-1',
-    dateKey: '2023-10-18',
-    startTime: '10:00',
-    endTime: '10:30',
-    status: 'Cancelado',
-    petName: 'Coco',
-    petBreed: 'Poodle',
-    species: 'Perro',
-    ownerName: 'Mariana Ríos',
-    professional: 'Dr. López',
-    service: 'Desparasitación',
-    notes: 'Cancelado por el dueño con 24h de anticipación.',
-  },
-  {
-    id: 'apt-jue-1',
-    dateKey: '2023-10-19',
-    startTime: '09:30',
-    endTime: '10:15',
-    status: 'Agendado',
-    petName: 'Simba',
-    petBreed: 'Persa',
-    species: 'Gato',
-    ownerName: 'Sofía Valenzuela',
-    professional: 'Dr. López',
-    service: 'Control Dermatológico',
-    notes: 'Chequeo de piel y pelaje por alergia estacional.',
-  },
-  {
-    id: 'apt-vie-1',
-    dateKey: '2023-10-20',
-    startTime: '11:30',
-    endTime: '12:30',
-    status: 'Agendado',
-    petName: 'Rocky',
-    petBreed: 'Bulldog Francés',
-    species: 'Perro',
-    ownerName: 'Javier Castillo',
-    professional: 'Dra. Martínez',
-    service: 'Limpieza Dental',
-    notes: 'Preparación previa con ayuno de 8 horas verificado.',
-  },
-]
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diffToMonday)
+
+  const daysThisWeek: DayColumn[] = []
+  const daysNextWeek: DayColumn[] = []
+
+  const dayLabels = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    const dateKey = d.toISOString().split('T')[0]
+    const isToday = d.toDateString() === now.toDateString()
+
+    daysThisWeek.push({
+      label: dayLabels[i],
+      num: d.getDate(),
+      dateKey,
+      isToday,
+    })
+
+    const nextD = new Date(monday)
+    nextD.setDate(monday.getDate() + i + 7)
+    daysNextWeek.push({
+      label: dayLabels[i],
+      num: nextD.getDate(),
+      dateKey: nextD.toISOString().split('T')[0],
+      isToday: false,
+    })
+  }
+
+  const formatWeekRange = (start: Date, end: Date) => {
+    const sMonth = start.toLocaleDateString('es-ES', { month: 'short' })
+    const eMonth = end.toLocaleDateString('es-ES', { month: 'short' })
+    return `${start.getDate()} ${sMonth} - ${end.getDate()} ${eMonth}`
+  }
+
+  const endThisWeek = new Date(monday)
+  endThisWeek.setDate(monday.getDate() + 6)
+
+  const startNextWeek = new Date(monday)
+  startNextWeek.setDate(monday.getDate() + 7)
+  const endNextWeek = new Date(monday)
+  endNextWeek.setDate(monday.getDate() + 13)
+
+  return [
+    {
+      weekLabel: formatWeekRange(monday, endThisWeek),
+      days: daysThisWeek,
+    },
+    {
+      weekLabel: formatWeekRange(startNextWeek, endNextWeek),
+      days: daysNextWeek,
+    },
+  ]
+}
+
+const WEEKS_DATA = getDynamicWeeks()
 
 export function AgendaAux({ onNotice }: AgendaAuxProps) {
   const [weekIndex, setWeekIndex] = useState(0)
-  const [selectedProfessional, setSelectedProfessional] = useState('Todos los profesionales')
-  const [appointments, setAppointments] = useState<AgendaAppointmentItem[]>(INITIAL_AGENDA_ITEMS)
+  const {
+    appointments: filteredAppointments,
+    professionals,
+    selectedProfessional,
+    setSelectedProfessional,
+    showToast,
+    loadData,
+  } = useAuxAgenda()
 
   // Modales / Drawers
   const [selectedAppointment, setSelectedAppointment] = useState<AuxDayAppointment | null>(null)
@@ -162,14 +105,6 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
 
   const currentWeek = WEEKS_DATA[weekIndex] || WEEKS_DATA[0]
 
-  const professionals = [
-    'Todos los profesionales',
-    'Dra. Martínez',
-    'Dr. López',
-    'Dr. Roberto Silva',
-    'Dra. Ana Silva',
-  ]
-
   const handlePrevWeek = () => {
     setWeekIndex((prev) => Math.max(0, prev - 1))
   }
@@ -177,18 +112,6 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
   const handleNextWeek = () => {
     setWeekIndex((prev) => Math.min(WEEKS_DATA.length - 1, prev + 1))
   }
-
-  const filteredAppointments = useMemo(() => {
-    return appointments.filter((apt) => {
-      if (
-        selectedProfessional !== 'Todos los profesionales' &&
-        apt.professional !== selectedProfessional
-      ) {
-        return false
-      }
-      return true
-    })
-  }, [appointments, selectedProfessional])
 
   const handleCardClick = (apt: AgendaAppointmentItem) => {
     const auxApt: AuxDayAppointment = {
@@ -212,47 +135,22 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
     setPrepAppointment(auxApt)
   }
 
-  const handleSavePreparation = (
-    appointmentId: string,
-    data: { weight: string; temp: string; notes?: string }
+  const handleSavePreparation = async (
+    _appointmentId: string,
+    _data: { weight: string; temp: string; notes?: string }
   ) => {
-    setAppointments((prev) =>
-      prev.map((item) =>
-        item.id === appointmentId
-          ? {
-              ...item,
-              status: 'Preparada',
-              notes: data.notes || item.notes,
-            }
-          : item
-      )
-    )
     setPrepAppointment(null)
+    showToast('¡Paciente preparado y marcado como listo para el veterinario!')
     onNotice?.('¡Paciente preparado y marcado como listo para el veterinario!')
+    await loadData()
   }
 
-  const handleSaveNewAppointment = (newApt: AuxDayAppointment) => {
-    const timeParts = newApt.time.split(' ')
-    const startTime = timeParts[0] || '10:00'
-
-    const newItem: AgendaAppointmentItem = {
-      id: newApt.id,
-      dateKey: currentWeek.days[1]?.dateKey || '2023-10-17',
-      startTime: startTime,
-      endTime: '11:00',
-      status: 'Agendado',
-      petName: newApt.petName,
-      petBreed: newApt.speciesBreed,
-      species: newApt.speciesBreed.includes('Gato') ? 'Gato' : 'Perro',
-      ownerName: newApt.ownerName || 'Propietario',
-      professional: newApt.professional,
-      service: newApt.service,
-      notes: newApt.notes,
-    }
-
-    setAppointments((prev) => [newItem, ...prev])
-    onNotice?.(`¡Cita agendada para ${newApt.petName} exitosamente!`)
+  const handleSaveNewAppointment = async (_newApt: AuxDayAppointment) => {
+    showToast('¡Cita registrada correctamente en el sistema!')
+    onNotice?.('¡Cita registrada correctamente en el sistema!')
+    await loadData()
   }
+
 
   return (
     <div className="w-full flex flex-col gap-5 sm:gap-6 min-w-0">
