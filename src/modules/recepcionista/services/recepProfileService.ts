@@ -1,18 +1,31 @@
-import type { RecepProfilePayload } from '../types'
+import { apiClient } from '@/services'
+import type { CurrentProfileResponse } from '@/modules/auth/types'
+import type { RecepProfilePayload, ChangeRecepPasswordPayload } from '../types'
 
-const MOCK_PROFILE: RecepProfilePayload = {
-  displayName: 'Laura Martínez',
-  jobTitle: 'Recepcionista',
-  accountStatus: 'activa',
-  photoUrl: null,
-  fullName: 'Laura Martínez Silva',
-  email: 'laura.m@terravet.com',
-  phone: '+34 600 123 456',
-  employeeId: 'TV-REC-042',
-  hireDateLabel: '15 de Marzo, 2022',
-  passwordUpdatedLabel: 'Última actualización hace 3 meses',
+// Carga el perfil real del recepcionista autenticado desde el backend
+export async function fetchRecepProfile(): Promise<RecepProfilePayload> {
+  const profile = await apiClient.get<CurrentProfileResponse>('/api/auth/me')
+
+  return {
+    personId: profile.personId,
+    userAccountId: profile.userAccountId,
+    displayName: profile.fullName,
+    fullName: profile.fullName,
+    userName: profile.userName,
+    email: profile.email,
+    role: profile.role || 'Recepcionista',
+    jobTitle: profile.role || 'Recepcionista',
+    accountStatus: profile.accountStatus || 'Activo',
+    initials: profile.initials || profile.fullName.slice(0, 2).toUpperCase(),
+    photoUrl: null,
+    passwordUpdatedLabel: 'Gestionada de forma segura',
+  }
 }
 
-export async function fetchRecepProfile(): Promise<RecepProfilePayload> {
-  return Promise.resolve(MOCK_PROFILE)
+// Cambia la contraseña propia del usuario autenticado
+export async function changeRecepPassword(data: ChangeRecepPasswordPayload): Promise<void> {
+  return apiClient.patch<void>('/api/auth/me/password', {
+    currentPassword: data.currentPassword,
+    newPassword: data.newPassword,
+  })
 }

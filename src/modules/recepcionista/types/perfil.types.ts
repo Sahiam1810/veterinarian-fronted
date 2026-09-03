@@ -1,14 +1,21 @@
-// Perfil del recepcionista (contrato futuro con API)
+// Perfil del recepcionista (datos reales de /api/auth/me)
 
 export interface RecepProfilePayload {
+  personId: string
+  userAccountId: string
   displayName: string
-  jobTitle: string
-  accountStatus: 'activa' | 'inactiva'
-  photoUrl?: string | null
   fullName: string
+  userName: string
   email: string
-  phone: string
-  employeeId: string
-  hireDateLabel: string
-  passwordUpdatedLabel: string
+  role: string
+  jobTitle: string
+  accountStatus: string
+  initials: string
+  photoUrl?: string | null
+  passwordUpdatedLabel?: string
+}
+
+export interface ChangeRecepPasswordPayload {
+  currentPassword: string
+  newPassword: string
 }
