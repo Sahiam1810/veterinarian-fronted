@@ -1,19 +1,18 @@
 import type { ReactNode } from 'react'
-import { UserAvatarIcon } from '@/global/components'
 import type { RecepProfilePayload } from '../types'
-import { BadgeIcon, CameraIcon, MailIcon, PhoneIcon } from './PerfilIcons'
+import { BadgeIcon, CameraIcon, MailIcon, UserOutlineIcon } from './PerfilIcons'
 
 interface RecepPerfilSummaryCardProps {
   profile: RecepProfilePayload
   onChangePhoto?: () => void
 }
 
-// Tarjeta izquierda del perfil (foto, estado y datos de contacto)
+// Tarjeta izquierda del perfil (foto/avatar, estado y datos de contacto)
 export function RecepPerfilSummaryCard({
   profile,
   onChangePhoto,
 }: RecepPerfilSummaryCardProps) {
-  const isActive = profile.accountStatus === 'activa'
+  const isActive = profile.accountStatus?.toLowerCase().includes('activ') ?? true
 
   return (
     <aside className="w-full h-full rounded-2xl border border-border-tan bg-white p-5 flex flex-col shadow-[0_2px_16px_rgba(35,78,70,0.04)]">
@@ -23,11 +22,11 @@ export function RecepPerfilSummaryCard({
             <img
               src={profile.photoUrl}
               alt={profile.displayName}
-              className="w-24 h-24 rounded-full object-cover border border-border-tan"
+              className="w-24 h-24 rounded-full object-cover border border-border-tan shadow-xs"
             />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-cream text-sage border border-border-tan flex items-center justify-center">
-              <UserAvatarIcon className="w-11 h-11" />
+            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand to-emerald-700 text-white font-black text-2xl border-4 border-bone shadow-md flex items-center justify-center">
+              {profile.initials}
             </div>
           )}
           <button
@@ -44,36 +43,41 @@ export function RecepPerfilSummaryCard({
         <h2 className="text-lg font-extrabold text-charcoal tracking-tight leading-tight px-1">
           {profile.displayName}
         </h2>
-        <p className="text-sm text-sage font-medium mt-0.5">{profile.jobTitle}</p>
+        <p className="text-xs text-charcoal/70 font-semibold mt-0.5">
+          @{profile.userName}
+        </p>
+        <p className="text-xs sm:text-sm text-sage font-semibold mt-1">
+          {profile.jobTitle || 'Recepcionista'}
+        </p>
 
         <span
           className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
-            isActive ? 'bg-sage-soft text-brand' : 'bg-terracotta-soft text-terracotta'
+            isActive ? 'bg-sage-soft text-brand border border-brand/10' : 'bg-terracotta-soft text-terracotta'
           }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand' : 'bg-terracotta'}`}
+            className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-brand animate-pulse' : 'bg-terracotta'}`}
             aria-hidden
           />
           {isActive ? 'Cuenta Activa' : 'Cuenta Inactiva'}
         </span>
       </div>
 
-      <div className="mt-5 pt-4 border-t border-border-tan flex flex-col gap-4">
+      <div className="mt-5 pt-4 border-t border-border-tan/60 flex flex-col gap-3.5">
         <ContactRow
           icon={<MailIcon className="w-4 h-4" />}
           label="Correo electrónico"
           value={profile.email}
         />
         <ContactRow
-          icon={<PhoneIcon className="w-4 h-4" />}
-          label="Teléfono"
-          value={profile.phone}
+          icon={<UserOutlineIcon className="w-4 h-4" />}
+          label="Nombre de usuario"
+          value={`@${profile.userName}`}
         />
         <ContactRow
           icon={<BadgeIcon className="w-4 h-4" />}
-          label="ID Empleado"
-          value={profile.employeeId}
+          label="Rol en el sistema"
+          value={profile.role || 'Recepcionista'}
         />
       </div>
     </aside>
@@ -94,7 +98,7 @@ function ContactRow({
       <span className="mt-0.5 text-sage shrink-0">{icon}</span>
       <div className="min-w-0">
         <p className="text-[10px] font-bold uppercase tracking-wide text-sage">{label}</p>
-        <p className="text-sm font-semibold text-charcoal truncate" title={value}>
+        <p className="text-xs sm:text-sm font-semibold text-charcoal truncate" title={value}>
           {value}
         </p>
       </div>

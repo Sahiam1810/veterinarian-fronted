@@ -3,7 +3,7 @@ export {
   fetchRecepNavPermissions,
 } from './recepHomeService'
 
-export { fetchRecepProfile } from './recepProfileService'
+export * from './recepProfileService'
 
 export { fetchRecepMascotasDirectory } from './recepMascotasService'
 

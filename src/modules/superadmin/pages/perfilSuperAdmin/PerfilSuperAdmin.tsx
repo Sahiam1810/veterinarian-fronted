@@ -56,7 +56,6 @@ export function PerfilSuperAdmin({
   const {
     profile,
     activeNotification,
-    showToast,
     saveProfile,
     savePassword,
     savePhoto,

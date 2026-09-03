@@ -7,7 +7,7 @@ export type {
   RecepQuickActionId,
 } from './home.types'
 
-export type { RecepProfilePayload } from './perfil.types'
+export * from './perfil.types'
 
 export type {
   RecepMascotaEstado,

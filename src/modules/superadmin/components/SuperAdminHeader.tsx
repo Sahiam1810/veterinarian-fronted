@@ -7,6 +7,7 @@ export interface SuperAdminHeaderProps {
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
   notifications?: NotificacionSuperAdmin[]
+  unreadNotificationsCount?: number
   isLoadingNotifications?: boolean
   notificationsError?: string | null
   onMarkNotificationRead?: (id: string) => void
@@ -21,6 +22,7 @@ export function SuperAdminHeader({
   isSidebarOpen = false,
   onToggleSidebar,
   notifications = [],
+  unreadNotificationsCount,
   isLoadingNotifications = false,
   notificationsError = null,
   onMarkNotificationRead,
@@ -31,7 +33,10 @@ export function SuperAdminHeader({
   onProfileClick,
 }: SuperAdminHeaderProps) {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const unreadCount =
+    unreadNotificationsCount !== undefined
+      ? unreadNotificationsCount
+      : notifications.filter((n) => !n.isRead).length
 
   return (
     <header className="sticky top-0 z-50 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-bone border-b border-border-tan transition-all duration-200">
