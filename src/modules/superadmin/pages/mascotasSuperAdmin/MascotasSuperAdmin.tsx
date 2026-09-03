@@ -782,7 +782,6 @@ export function MascotasSuperAdmin({
     createMascota,
     updateMascota,
     deleteMascota,
-    toggleMascotaStatus,
     openCreateMascota,
     openEditMascota,
     createDueno,
@@ -1135,22 +1134,6 @@ export function MascotasSuperAdmin({
                                     <span>Editar</span>
                                   </button>
 
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      toggleMascotaStatus(m.id)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone font-semibold transition cursor-pointer"
-                                  >
-                                    <span
-                                      className={`w-2 h-2 rounded-full ${
-                                        m.status === 'Activo' ? 'bg-sage' : 'bg-brand'
-                                      }`}
-                                    />
-                                    <span>{m.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
-                                  </button>
 
                                   <div className="my-1 border-t border-border-tan/50" />
 

@@ -6,7 +6,6 @@ import type {
   DuenoFormData,
   MascotaFilters,
   DuenoFilters,
-  EstadoMascota,
 } from '../types'
 import {
   fetchClients,
@@ -23,6 +22,8 @@ import {
   fetchUsers,
   createFullUser,
   updateUser,
+  activateUser,
+  deactivateUser,
   fetchRoles,
   fetchSpecies,
   fetchRaces,
@@ -270,11 +271,6 @@ export function useMascotasSuperAdmin() {
     }
   }
 
-  const toggleMascotaStatus = (id: string) => {
-    const item = mascotas.find((m) => m.id === id)
-    showToast(`El estado de "${item?.name ?? 'mascota'}" se gestiona desde el backend.`)
-  }
-
   const createDueno = async (data: DuenoFormData) => {
     try {
       const roles = await fetchRoles()
@@ -361,10 +357,28 @@ export function useMascotasSuperAdmin() {
     }
   }
 
-  const toggleDuenoStatus = (id: string) => {
+  const toggleDuenoStatus = async (id: string) => {
     const item = duenos.find((d) => d.id === id)
-    const newStatus: EstadoMascota = item?.status === 'Activo' ? 'Inactivo' : 'Activo'
-    showToast(`Activa o desactiva a "${item?.name ?? 'dueño'}" desde el módulo de usuarios (${newStatus}).`)
+    if (!item) return
+    try {
+      const client = await fetchClients().then((list) => list.find((c) => c.id === id))
+      if (!client) {
+        showToast('Dueño no encontrado.')
+        return
+      }
+
+      if (item.status === 'Activo') {
+        await deactivateUser(client.userId)
+      } else {
+        await activateUser(client.userId)
+      }
+
+      showToast(`Dueño "${item.name}" ${item.status === 'Activo' ? 'desactivado' : 'activado'} con éxito`)
+      await loadData()
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo actualizar el estado del dueño.'
+      showToast(message)
+    }
   }
 
   const openCreateMascota = () => {
@@ -425,7 +439,6 @@ export function useMascotasSuperAdmin() {
     createMascota,
     updateMascota,
     deleteMascota,
-    toggleMascotaStatus,
     openCreateMascota,
     openEditMascota,
     createDueno,
