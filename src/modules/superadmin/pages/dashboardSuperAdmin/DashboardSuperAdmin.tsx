@@ -3,7 +3,6 @@ import {
   SuperAdminSidebar,
   DashboardSummaryCards,
   UpcomingAppointmentsTable,
-  QuickActionsCard,
   DashboardBackgroundDecoration,
 } from '../../components'
 import { useSuperAdminDashboard } from '../../hooks'
@@ -53,11 +52,9 @@ export function DashboardSuperAdmin({
     activeRoute: internalActiveRoute,
     handleNavigate: internalHandleNavigate,
     activeNotification,
-    handleScheduleAppointment,
     handleViewAllAppointments,
     handleSelectAppointment,
   } = useSuperAdminDashboard()
-
 
   const currentRoute = externalActiveRoute || internalActiveRoute
   const isSidebarOpen =
@@ -72,19 +69,6 @@ export function DashboardSuperAdmin({
       internalHandleNavigate(routeId)
     }
   }
-
-  const handleCreateUser = () => {
-    handleNavigate('usuarios')
-  }
-
-  const handleRegisterOwner = () => {
-    handleNavigate('mascotas')
-  }
-
-  const handleRegisterPet = () => {
-    handleNavigate('mascotas')
-  }
-
 
   return (
     <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone text-slate">
@@ -102,7 +86,6 @@ export function DashboardSuperAdmin({
         userRole={userRole}
       />
 
-
       {/* Main Body with Left Sidebar & Content */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Vertical Illustration Sidebar with Animated Reveal Menu */}
@@ -114,8 +97,6 @@ export function DashboardSuperAdmin({
           canViewModule={canViewModule}
           onLogout={onLogout}
         />
-
-
 
         {/* Central Dashboard Content with Themed Background Decorations */}
         <main
@@ -130,29 +111,15 @@ export function DashboardSuperAdmin({
             <DashboardSummaryCards stats={stats} />
           </div>
 
-          {/* Section 2: Split Layout (Próximas Citas & Accesos Rápidos) */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-7 items-start relative z-10">
-            {/* Left: Próximas Citas Table */}
-            <div className="lg:col-span-8 xl:col-span-8 animate-pop-in stagger-2">
-              <UpcomingAppointmentsTable
-                appointments={appointments}
-                onViewAll={handleViewAllAppointments}
-                onSelectAppointment={handleSelectAppointment}
-              />
-            </div>
-
-            {/* Right: Accesos Rápidos Buttons */}
-            <div className="lg:col-span-4 xl:col-span-4 animate-pop-in stagger-3">
-              <QuickActionsCard
-                onCreateUser={handleCreateUser}
-                onRegisterOwner={handleRegisterOwner}
-                onRegisterPet={handleRegisterPet}
-                onScheduleAppointment={handleScheduleAppointment}
-              />
-            </div>
+          {/* Section 2: Próximas Citas Table (Full Width) */}
+          <section className="relative z-10 w-full animate-pop-in stagger-2">
+            <UpcomingAppointmentsTable
+              appointments={appointments}
+              onViewAll={handleViewAllAppointments}
+              onSelectAppointment={handleSelectAppointment}
+            />
           </section>
         </main>
-
       </div>
 
       {/* Interactive Toast Notification Feedback */}
