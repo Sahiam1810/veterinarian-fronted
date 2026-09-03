@@ -1,68 +1,78 @@
+import { vetApiFetch } from '../api/vetHttp'
+import type {
+  ApiAppointment,
+  ApiClient,
+  ApiClientPet,
+  ApiCurrentProfile,
+  ApiNamedCatalog,
+  ApiNotification,
+  ApiPet,
+  ApiVeterinarian,
+} from '../api/apiTypes'
 import type { VetHomeDashboard } from '../types'
+import {
+  buildVetHomeDashboard,
+  findVeterinarianForProfile,
+} from '../utils/buildVetHomeDashboard'
 
-// Datos de ejemplo mientras no exista el endpoint del backend
-const MOCK_VET_HOME: VetHomeDashboard = {
-  profile: {
-    displayName: 'Dr. Roberto Silva',
-    titlePrefix: 'Hola,',
-  },
-  formattedDate: 'Jueves, 26 de Octubre 2023',
-  stats: {
-    citasHoy: 8,
-    pendientes: 3,
-    atendidas: 5,
-  },
-  appointments: [
-    {
-      id: 'vet-apt-1',
-      time: '09:00',
-      petName: 'Luna',
-      petPhotoUrl: null,
-      speciesBreed: 'Canino - Poodle',
-      ownerName: 'Juan Pérez',
-      service: 'Vacunación Anual',
-      status: 'ATENDIDO',
-    },
-    {
-      id: 'vet-apt-2',
-      time: '10:00',
-      petName: 'Max',
-      petPhotoUrl: null,
-      speciesBreed: 'Canino - Golden Ret.',
-      ownerName: 'María Gómez',
-      service: 'Consulta General',
-      status: 'EN ESPERA',
-      isHighlighted: true,
-    },
-    {
-      id: 'vet-apt-3',
-      time: '11:30',
-      petName: 'Milo',
-      petPhotoUrl: null,
-      speciesBreed: 'Felino - Siamés',
-      ownerName: 'Carlos Ruiz',
-      service: 'Control Post-Op',
-      status: 'AGENDADO',
-    },
-    {
-      id: 'vet-apt-4',
-      time: '12:15',
-      petName: 'Thor',
-      petPhotoUrl: null,
-      speciesBreed: 'Canino - Bulldog',
-      ownerName: 'Ana Silva',
-      service: 'Dermatología',
-      status: 'AGENDADO',
-    },
-  ],
-  totalAppointmentsToday: 11,
+export interface VetHomeLoadResult {
+  dashboard: VetHomeDashboard
+  unreadNotificationsCount: number
 }
 
-// Obtiene el dashboard de inicio; sustituir el mock por fetch al API .NET
+function countUnreadNotifications(items: ApiNotification[]): number {
+  return items.filter((item) => {
+    const status = (item.status || '').toLowerCase()
+    return status === 'unread' || status === 'pendiente' || status === 'nueva' || status === 'new'
+  }).length
+}
+
+// Carga el inicio del veterinario desde endpoints Staff existentes.
 export async function fetchVetHomeDashboard(): Promise<VetHomeDashboard> {
-  // Ejemplo futuro:
-  // const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vet/home`)
-  // if (!res.ok) throw new Error('No se pudo cargar el inicio')
-  // return res.json()
-  return Promise.resolve(MOCK_VET_HOME)
+  const result = await fetchVetHomeBundle()
+  return result.dashboard
+}
+
+export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
+  const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
+
+  const [
+    veterinarians,
+    appointments,
+    pets,
+    clients,
+    clientPets,
+    species,
+    races,
+    notifications,
+  ] = await Promise.all([
+    vetApiFetch<ApiVeterinarian[]>('/api/veterinarians'),
+    vetApiFetch<ApiAppointment[]>('/api/appointments'),
+    vetApiFetch<ApiPet[]>('/api/pets'),
+    vetApiFetch<ApiClient[]>('/api/clients'),
+    vetApiFetch<ApiClientPet[]>('/api/clientspets'),
+    vetApiFetch<ApiNamedCatalog[]>('/api/species'),
+    vetApiFetch<ApiNamedCatalog[]>('/api/races'),
+    vetApiFetch<ApiNotification[]>(`/api/notifications/user/${profile.personId}`).catch(
+      () => [] as ApiNotification[],
+    ),
+  ])
+
+  const veterinarian = findVeterinarianForProfile(veterinarians, profile)
+
+  const dashboard = buildVetHomeDashboard({
+    profile,
+    veterinarian,
+    appointments,
+    pets,
+    clients,
+    clientPets,
+    species,
+    races,
+  })
+
+  return {
+    dashboard,
+    unreadNotificationsCount: countUnreadNotifications(notifications),
+  }
 }

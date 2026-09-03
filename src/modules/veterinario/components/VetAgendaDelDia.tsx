@@ -12,7 +12,7 @@ interface VetAgendaDelDiaProps {
   onMoreActions?: (appointment: VetDayAppointment) => void
 }
 
-// Tabla Agenda del Día; consume el arreglo tipado del endpoint
+// Agenda del día: cards en móvil, tabla desde md.
 export function VetAgendaDelDia({
   appointments,
   totalAppointmentsToday,
@@ -22,9 +22,9 @@ export function VetAgendaDelDia({
   onMoreActions,
 }: VetAgendaDelDiaProps) {
   return (
-    <section className="bg-white rounded-2xl sm:rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(35,78,70,0.04)] overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-5 lg:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4">
-        <div className="flex items-center gap-2.5 min-w-0">
+    <section className="bg-white rounded-2xl sm:rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(35,78,70,0.04)] overflow-hidden min-w-0">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-5 lg:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <span className="text-brand shrink-0">
             <ListBulletIcon className="w-5 h-5" />
           </span>
@@ -37,12 +37,34 @@ export function VetAgendaDelDia({
           onClick={onViewFullAgenda}
           className="text-xs sm:text-sm font-semibold text-brand hover:text-brand-hover transition cursor-pointer flex items-center gap-1 shrink-0 group"
         >
-          Ver agenda completa
+
+          <span className="hidden sm:inline">Ver agenda completa</span>
+          <span className="sm:hidden">Ver agenda</span>
+          <span className="transition-transform group-hover:translate-x-0.5">→</span>
+
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[760px]">
+      {/* Móvil: lista de tarjetas */}
+      <div className="md:hidden px-3 pb-3 space-y-2.5">
+        {appointments.length === 0 ? (
+          <p className="py-8 text-center text-sm text-sage">No hay citas programadas para hoy.</p>
+        ) : (
+          appointments.map((appointment) => (
+            <MobileAgendaCard
+              key={appointment.id}
+              appointment={appointment}
+              onAttendNow={onAttendNow}
+              onViewAppointment={onViewAppointment}
+              onMoreActions={onMoreActions}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[640px]">
           <thead>
             <tr className="border-y border-border-tan/70 bg-bone/60 text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wide">
               <th className="py-3 px-4 sm:px-5 font-bold">Hora</th>
@@ -55,23 +77,81 @@ export function VetAgendaDelDia({
             </tr>
           </thead>
           <tbody>
-            {appointments.map((appointment) => (
-              <AgendaRow
-                key={appointment.id}
-                appointment={appointment}
-                onAttendNow={onAttendNow}
-                onViewAppointment={onViewAppointment}
-                onMoreActions={onMoreActions}
-              />
-            ))}
+            {appointments.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-10 px-4 text-center text-sm text-sage">
+                  No hay citas programadas para hoy.
+                </td>
+              </tr>
+            ) : (
+              appointments.map((appointment) => (
+                <AgendaRow
+                  key={appointment.id}
+                  appointment={appointment}
+                  onAttendNow={onAttendNow}
+                  onViewAppointment={onViewAppointment}
+                  onMoreActions={onMoreActions}
+                />
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
-      <p className="text-center text-xs sm:text-sm text-sage/90 py-3.5 sm:py-4 px-4 border-t border-border-tan/60">
+      <p className="text-center text-xs sm:text-sm text-sage/90 py-3 sm:py-4 px-3 sm:px-4 border-t border-border-tan/60">
         Mostrando {appointments.length} de {totalAppointmentsToday} citas programadas para hoy.
       </p>
     </section>
+  )
+}
+
+function MobileAgendaCard({
+  appointment,
+  onAttendNow,
+  onViewAppointment,
+  onMoreActions,
+}: AgendaRowProps) {
+  const highlighted = Boolean(appointment.isHighlighted)
+
+  return (
+    <article
+      className={`relative rounded-xl border border-border-tan p-3 min-w-0 ${
+        highlighted ? 'bg-bone/70 border-brand/25' : 'bg-white'
+      }`}
+    >
+      {highlighted && (
+        <span
+          className="absolute left-0 top-2 bottom-2 w-[3px] bg-brand rounded-r-full"
+          aria-hidden="true"
+        />
+      )}
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <PetAvatar name={appointment.petName} photoUrl={appointment.petPhotoUrl} />
+          <div className="min-w-0">
+            <p className="font-bold text-charcoal text-sm truncate">{appointment.petName}</p>
+            <p className="text-[11px] text-sage font-medium truncate">{appointment.speciesBreed}</p>
+          </div>
+        </div>
+        <span className="text-sm font-bold text-charcoal tabular-nums shrink-0">{appointment.time}</span>
+      </div>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-charcoal/80 font-medium">
+        <span className="truncate max-w-full">{appointment.ownerName}</span>
+        <span className="text-border-tan">·</span>
+        <span className="truncate max-w-full">{appointment.service}</span>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <AppointmentStatusBadge status={appointment.status} />
+        <RowActions
+          appointment={appointment}
+          onAttendNow={onAttendNow}
+          onViewAppointment={onViewAppointment}
+          onMoreActions={onMoreActions}
+        />
+      </div>
+    </article>
   )
 }
 
@@ -82,7 +162,6 @@ interface AgendaRowProps {
   onMoreActions?: (appointment: VetDayAppointment) => void
 }
 
-// Fila de cita; resalta la pendiente activa con barra brand
 function AgendaRow({
   appointment,
   onAttendNow,
@@ -142,13 +221,7 @@ function AgendaRow({
   )
 }
 
-interface PetAvatarProps {
-  name: string
-  photoUrl?: string | null
-}
-
-// Avatar de mascota; usa foto del API o ícono global de respaldo
-function PetAvatar({ name, photoUrl }: PetAvatarProps) {
+function PetAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
   if (photoUrl) {
     return (
       <img
@@ -166,20 +239,12 @@ function PetAvatar({ name, photoUrl }: PetAvatarProps) {
   )
 }
 
-interface RowActionsProps {
-  appointment: VetDayAppointment
-  onAttendNow?: (appointment: VetDayAppointment) => void
-  onViewAppointment?: (appointment: VetDayAppointment) => void
-  onMoreActions?: (appointment: VetDayAppointment) => void
-}
-
-// Acciones según estado: ver, atender ahora u opciones
 function RowActions({
   appointment,
   onAttendNow,
   onViewAppointment,
   onMoreActions,
-}: RowActionsProps) {
+}: AgendaRowProps) {
   if (appointment.status === 'EN ESPERA') {
     return (
       <button

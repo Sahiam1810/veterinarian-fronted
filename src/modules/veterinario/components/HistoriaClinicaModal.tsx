@@ -8,11 +8,11 @@ interface HistoriaClinicaModalProps {
   onClose: () => void
 }
 
-// Modal centrado sobre toda la UI; sin scroll (info compacta)
+// Modal de historia clínica; scrollea en pantallas pequeñas.
 export function HistoriaClinicaModal({ historia, onClose }: HistoriaClinicaModalProps) {
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-5 overflow-hidden"
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-5 overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label={`Historia clínica de ${historia.displayName}`}
@@ -26,9 +26,9 @@ export function HistoriaClinicaModal({ historia, onClose }: HistoriaClinicaModal
 
       <ViewPopup
         animationKey={historia.petId}
-        className="relative z-10 w-full max-w-5xl max-h-[min(92vh,880px)] min-h-0"
+        className="relative z-10 w-full max-w-5xl h-[min(94dvh,920px)] sm:h-auto sm:max-h-[min(92vh,880px)] min-h-0"
       >
-        <div className="bg-bone border border-border-tan rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[min(92vh,880px)]">
+        <div className="bg-bone border border-border-tan rounded-t-2xl sm:rounded-2xl shadow-xl overflow-hidden flex flex-col h-full max-h-[min(94dvh,920px)] sm:max-h-[min(92vh,880px)]">
           <header className="shrink-0 flex items-start gap-3 sm:gap-4 p-3 sm:p-4 border-b border-border-tan bg-white">
             <PhotoBlock name={historia.displayName} sexLabel={historia.sexLabel} photoUrl={historia.photoUrl} />
 
@@ -64,98 +64,106 @@ export function HistoriaClinicaModal({ historia, onClose }: HistoriaClinicaModal
             </div>
           </header>
 
-          <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-5 gap-3 p-3 sm:p-4 overflow-hidden">
-            {/* Consultas */}
-            <section className="lg:col-span-3 min-h-0 min-w-0 overflow-hidden flex flex-col gap-2">
-              <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage shrink-0">
-                Historial de Consultas
-              </h3>
-              <div className="min-h-0 flex-1 overflow-hidden flex flex-col gap-2">
-                {historia.consultas.map((consulta) => (
-                  <article
-                    key={consulta.id}
-                    className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3 min-w-0 overflow-hidden"
-                  >
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1.5">
-                      <span className="text-xs font-extrabold text-brand">{consulta.dateLabel}</span>
-                      <span className="text-xs font-bold text-charcoal">{consulta.typeLabel}</span>
-                      {consulta.veterinarian && (
-                        <span className="text-[11px] text-sage font-medium">
-                          · {consulta.veterinarian}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] sm:text-xs text-charcoal/85 leading-snug line-clamp-2">
-                      <span className="font-bold text-sage">Motivo: </span>
-                      {consulta.motivo}
-                    </p>
-                    {consulta.diagnostico && (
-                      <p className="text-[11px] sm:text-xs text-charcoal/85 leading-snug mt-1 line-clamp-2">
-                        <span className="font-bold text-sage">Diagnóstico: </span>
-                        {consulta.diagnostico}
-                      </p>
-                    )}
-                    {consulta.tratamientoIndicaciones.length > 0 && (
-                      <ul className="mt-1.5 space-y-0.5">
-                        {consulta.tratamientoIndicaciones.map((item) => (
-                          <li
-                            key={item}
-                            className="text-[11px] sm:text-xs text-charcoal/80 leading-snug line-clamp-1 pl-2 relative before:content-['•'] before:absolute before:left-0 before:text-brand"
-                          >
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            {/* Vacunas + signos */}
-            <section className="lg:col-span-2 min-h-0 min-w-0 overflow-hidden flex flex-col gap-3">
-              <div className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3 overflow-hidden shrink-0">
-                <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage mb-2">
-                  Control Vacunas
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 p-3 sm:p-4">
+              <section className="lg:col-span-3 min-w-0 flex flex-col gap-2">
+                <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage shrink-0">
+                  Historial de Consultas
                 </h3>
-                <table className="w-full text-left table-fixed">
-                  <thead>
-                    <tr className="text-[10px] uppercase tracking-wide text-sage border-b border-border-tan">
-                      <th className="py-1 pr-1 font-bold">Vacuna</th>
-                      <th className="py-1 px-1 font-bold">Aplicada</th>
-                      <th className="py-1 pl-1 font-bold">Próxima</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historia.vacunas.map((vacuna) => (
-                      <tr key={vacuna.id} className="border-b border-border-tan/50 last:border-b-0">
-                        <td className="py-1.5 pr-1 text-[11px] sm:text-xs font-bold text-charcoal truncate">
-                          {vacuna.name}
-                        </td>
-                        <td className="py-1.5 px-1 text-[11px] sm:text-xs text-charcoal/80 whitespace-nowrap">
-                          {vacuna.appliedLabel}
-                        </td>
-                        <td className="py-1.5 pl-1 text-[11px] sm:text-xs text-charcoal/80 whitespace-nowrap">
-                          {vacuna.nextLabel}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3 overflow-hidden flex-1 min-h-0">
-                <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage mb-2">
-                  Últimos Signos Vitales
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <VitalItem label="Temp" value={historia.signosVitales.temperatura} />
-                  <VitalItem label="F.C." value={historia.signosVitales.frecuenciaCardiaca} />
-                  <VitalItem label="F.R." value={historia.signosVitales.frecuenciaRespiratoria} />
-                  <VitalItem label="Mucosas" value={historia.signosVitales.mucosas} />
+                <div className="flex flex-col gap-2">
+                  {historia.consultas.length === 0 ? (
+                    <p className="text-sm text-sage py-4">Sin consultas registradas.</p>
+                  ) : (
+                    historia.consultas.map((consulta) => (
+                      <article
+                        key={consulta.id}
+                        className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3 min-w-0 overflow-hidden"
+                      >
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1.5">
+                          <span className="text-xs font-extrabold text-brand">{consulta.dateLabel}</span>
+                          <span className="text-xs font-bold text-charcoal">{consulta.typeLabel}</span>
+                          {consulta.veterinarian && (
+                            <span className="text-[11px] text-sage font-medium">
+                              · {consulta.veterinarian}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] sm:text-xs text-charcoal/85 leading-snug">
+                          <span className="font-bold text-sage">Motivo: </span>
+                          {consulta.motivo}
+                        </p>
+                        {consulta.diagnostico && (
+                          <p className="text-[11px] sm:text-xs text-charcoal/85 leading-snug mt-1">
+                            <span className="font-bold text-sage">Diagnóstico: </span>
+                            {consulta.diagnostico}
+                          </p>
+                        )}
+                        {consulta.tratamientoIndicaciones.length > 0 && (
+                          <ul className="mt-1.5 space-y-0.5">
+                            {consulta.tratamientoIndicaciones.map((item) => (
+                              <li
+                                key={item}
+                                className="text-[11px] sm:text-xs text-charcoal/80 leading-snug pl-2 relative before:content-['•'] before:absolute before:left-0 before:text-brand"
+                              >
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </article>
+                    ))
+                  )}
                 </div>
-              </div>
-            </section>
+              </section>
+
+              <section className="lg:col-span-2 min-w-0 flex flex-col gap-3">
+                <div className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3 overflow-x-auto">
+                  <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage mb-2">
+                    Control Vacunas
+                  </h3>
+                  {historia.vacunas.length === 0 ? (
+                    <p className="text-sm text-sage py-2">Sin vacunas registradas.</p>
+                  ) : (
+                    <table className="w-full text-left min-w-[16rem]">
+                      <thead>
+                        <tr className="text-[10px] uppercase tracking-wide text-sage border-b border-border-tan">
+                          <th className="py-1 pr-1 font-bold">Vacuna</th>
+                          <th className="py-1 px-1 font-bold">Aplicada</th>
+                          <th className="py-1 pl-1 font-bold">Próxima</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historia.vacunas.map((vacuna) => (
+                          <tr key={vacuna.id} className="border-b border-border-tan/50 last:border-b-0">
+                            <td className="py-1.5 pr-1 text-[11px] sm:text-xs font-bold text-charcoal">
+                              {vacuna.name}
+                            </td>
+                            <td className="py-1.5 px-1 text-[11px] sm:text-xs text-charcoal/80 whitespace-nowrap">
+                              {vacuna.appliedLabel}
+                            </td>
+                            <td className="py-1.5 pl-1 text-[11px] sm:text-xs text-charcoal/80 whitespace-nowrap">
+                              {vacuna.nextLabel}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3">
+                  <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage mb-2">
+                    Últimos Signos Vitales
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    <VitalItem label="Temp" value={historia.signosVitales.temperatura} />
+                    <VitalItem label="F.C." value={historia.signosVitales.frecuenciaCardiaca} />
+                    <VitalItem label="F.R." value={historia.signosVitales.frecuenciaRespiratoria} />
+                    <VitalItem label="Mucosas" value={historia.signosVitales.mucosas} />
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       </ViewPopup>
@@ -178,11 +186,11 @@ function PhotoBlock({
         <img
           src={photoUrl}
           alt={name}
-          className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-border-tan"
+          className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl object-cover border border-border-tan"
         />
       ) : (
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-cream text-sage flex items-center justify-center border border-border-tan">
-          <PawIcon className="w-7 h-7" />
+        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-cream text-sage flex items-center justify-center border border-border-tan">
+          <PawIcon className="w-6 h-6 sm:w-7 sm:h-7" />
         </div>
       )}
       <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full bg-brand text-white text-[9px] sm:text-[10px] font-bold shadow-sm">

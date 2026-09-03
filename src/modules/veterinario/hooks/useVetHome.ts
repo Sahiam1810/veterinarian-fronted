@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
 import { isNavPermissionGranted } from '@/modules/auth'
 import type { VetDayAppointment, VetHomeDashboard } from '../types'
-import { fetchVetHomeDashboard, fetchVetNavPermissions } from '../services'
+import { fetchVetHomeBundle, fetchVetNavPermissions } from '../services'
 
 const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
 
@@ -15,6 +15,7 @@ export function useVetHome() {
   const [dashboard, setDashboard] = useState<VetHomeDashboard | null>(null)
   const [grantedPermissions, setGrantedPermissions] =
     useState<GrantedPermissions>(null)
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -28,16 +29,21 @@ export function useVetHome() {
       setIsLoading(true)
       setError(null)
       try {
-        const [data, permissions] = await Promise.all([
-          fetchVetHomeDashboard(),
+        const [home, permissions] = await Promise.all([
+          fetchVetHomeBundle(),
           fetchVetNavPermissions(),
         ])
         if (!cancelled) {
-          setDashboard(data)
+          setDashboard(home.dashboard)
+          setUnreadNotificationsCount(home.unreadNotificationsCount)
           setGrantedPermissions(permissions)
         }
-      } catch {
-        if (!cancelled) setError('No se pudo cargar el punto de inicio')
+      } catch (err) {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error ? err.message : 'No se pudo cargar el punto de inicio'
+          setError(msg)
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -82,14 +88,6 @@ export function useVetHome() {
     }
   }
 
-  const handlePrimaryAction = (actionId: string) => {
-    showToast(
-      actionId === 'nueva-atencion'
-        ? 'Nueva Atención: módulo pendiente'
-        : `Acción: ${actionId}`,
-    )
-  }
-
   const handleViewFullAgenda = () => {
     handleNavigate('agenda')
   }
@@ -109,6 +107,7 @@ export function useVetHome() {
   return {
     dashboard,
     grantedPermissions,
+    unreadNotificationsCount,
     isLoading,
     error,
     isSidebarOpen,
@@ -116,7 +115,6 @@ export function useVetHome() {
     closeSidebar,
     activeRoute,
     handleNavigate,
-    handlePrimaryAction,
     activeNotification,
     showToast,
     handleViewFullAgenda,

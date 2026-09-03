@@ -1,69 +1,74 @@
-import type { AgendaWeekPayload } from '../types'
+import { vetApiFetch } from '../api/vetHttp'
+import type {
+  ApiAppointment,
+  ApiAvailability,
+  ApiClientPet,
+  ApiCurrentProfile,
+  ApiNamedCatalog,
+  ApiPet,
+  ApiVeterinarian,
+} from '../api/apiTypes'
+import type { AgendaViewMode, AgendaWeekPayload } from '../types'
+import { findVeterinarianForProfile } from '../utils/buildVetHomeDashboard'
+import { buildVetAgendaPayload } from '../utils/buildVetAgenda'
 
-// Datos de ejemplo de la vista semana (mientras no exista el endpoint)
-const MOCK_AGENDA_WEEK: AgendaWeekPayload = {
-  monthLabel: 'Octubre 2023',
-  viewMode: 'semana',
-  currentTime: '11:40',
-  currentDateKey: '2023-10-18',
-  hourStart: 8,
-  hourEnd: 17,
-  days: [
-    { dateKey: '2023-10-16', weekdayLabel: 'LUN', dayNumber: 16 },
-    { dateKey: '2023-10-17', weekdayLabel: 'MAR', dayNumber: 17 },
-    { dateKey: '2023-10-18', weekdayLabel: 'MIÉ', dayNumber: 18, isToday: true },
-    { dateKey: '2023-10-19', weekdayLabel: 'JUE', dayNumber: 19 },
-    { dateKey: '2023-10-20', weekdayLabel: 'VIE', dayNumber: 20 },
-    { dateKey: '2023-10-21', weekdayLabel: 'SÁB', dayNumber: 21 },
-    { dateKey: '2023-10-22', weekdayLabel: 'DOM', dayNumber: 22 },
-  ],
-  events: [
-    {
-      id: 'evt-1',
-      dateKey: '2023-10-16',
-      startTime: '15:00',
-      endTime: '16:30',
-      status: 'ATENDIDA',
-      petName: 'Toby',
-      species: 'Canino',
-      service: 'Cirugía Menor - Extracción de...',
-    },
-    {
-      id: 'evt-2',
-      dateKey: '2023-10-17',
-      startTime: '10:00',
-      endTime: '11:00',
-      status: 'AGENDADA',
-      petName: 'Max',
-      species: 'Canino',
-      service: 'Vacunación A...',
-    },
-    {
-      id: 'evt-3',
-      dateKey: '2023-10-18',
-      startTime: '11:15',
-      endTime: '12:00',
-      status: 'EN_ESPERA',
-      petName: 'Luna',
-      species: 'Felino',
-      service: 'Control Dental',
-    },
-    {
-      id: 'evt-4',
-      dateKey: '2023-10-19',
-      startTime: '13:00',
-      endTime: '14:00',
-      status: 'BLOQUEO',
-      blockLabel: 'Bloqueo - Almuerzo',
-    },
-  ],
+export interface FetchVetAgendaParams {
+  viewMode: AgendaViewMode
+  anchorDate: Date
 }
 
-// Obtiene la agenda semanal; sustituir por fetch al API .NET
-export async function fetchVetAgendaWeek(): Promise<AgendaWeekPayload> {
-  // Ejemplo futuro:
-  // const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vet/agenda/week`)
-  // if (!res.ok) throw new Error('No se pudo cargar la agenda')
-  // return res.json()
-  return Promise.resolve(MOCK_AGENDA_WEEK)
+// Carga la agenda del veterinario autenticado (citas + disponibilidad).
+export async function fetchVetAgendaWeek(
+  params: FetchVetAgendaParams = {
+    viewMode: 'semana',
+    anchorDate: new Date(),
+  },
+): Promise<AgendaWeekPayload> {
+  const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
+  const veterinarians = await vetApiFetch<ApiVeterinarian[]>('/api/veterinarians')
+  const veterinarian = findVeterinarianForProfile(veterinarians, profile)
+
+  if (!veterinarian) {
+    return buildVetAgendaPayload({
+      viewMode: params.viewMode,
+      anchorDate: params.anchorDate,
+      appointments: [],
+      availabilities: [],
+      pets: [],
+      clientPets: [],
+      species: [],
+    })
+  }
+
+  const [appointments, availabilitiesRaw, pets, clientPets, species] = await Promise.all([
+    vetApiFetch<ApiAppointment[]>('/api/appointments'),
+    vetApiFetch<ApiAvailability[]>(
+      `/api/availabilities/by-veterinarian/${veterinarian.id}`,
+    ).catch(async () => {
+      // Fallback si la ruta específica falla: filtrar en cliente.
+      const all = await vetApiFetch<ApiAvailability[]>('/api/availabilities')
+      return all.filter(
+        (item) => item.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
+      )
+    }),
+    vetApiFetch<ApiPet[]>('/api/pets'),
+    vetApiFetch<ApiClientPet[]>('/api/clientspets'),
+    vetApiFetch<ApiNamedCatalog[]>('/api/species'),
+  ])
+
+  const availabilities = availabilitiesRaw
+
+  const mine = appointments.filter(
+    (apt) => apt.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
+  )
+
+  return buildVetAgendaPayload({
+    viewMode: params.viewMode,
+    anchorDate: params.anchorDate,
+    appointments: mine,
+    availabilities,
+    pets,
+    clientPets,
+    species,
+  })
 }

@@ -28,7 +28,7 @@ interface VetMascotasViewProps {
   onNextPage?: () => void
 }
 
-// Vista Mascotas: tabla + detalle + modal de historia clínica
+// Vista Mascotas: en móvil el detalle cubre la lista; en desktop va al lado.
 export function VetMascotasView({
   items,
   selectedDetail,
@@ -57,7 +57,7 @@ export function VetMascotasView({
         animationKey="mascotas"
         className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden"
       >
-        <div className="shrink-0 min-w-0">
+        <div className={`shrink-0 min-w-0 ${selectedDetail ? 'hidden lg:block' : ''}`}>
           <MascotasToolbar
             search={search}
             speciesFilter={speciesFilter}
@@ -68,26 +68,34 @@ export function VetMascotasView({
           />
         </div>
 
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden">
-          <MascotasTable
-            items={items}
-            selectedId={selectedDetail?.id ?? null}
-            pageStart={pageStart}
-            pageEnd={pageEnd}
-            totalCount={totalCount}
-            onSelect={onSelect}
-            onPrevPage={onPrevPage}
-            onNextPage={onNextPage}
-          />
-
-          {selectedDetail && (
-            <MascotaDetailPanel
-              detail={selectedDetail}
-              onClose={onCloseDetail}
-              onViewClinicalHistory={onViewClinicalHistory}
-              isHistoryLoading={isHistoriaLoading}
+        <div className="relative flex-1 min-h-0 min-w-0 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden">
+          <div
+            className={`min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden ${
+              selectedDetail ? 'hidden lg:flex' : 'flex'
+            }`}
+          >
+            <MascotasTable
+              items={items}
+              selectedId={selectedDetail?.id ?? null}
+              pageStart={pageStart}
+              pageEnd={pageEnd}
+              totalCount={totalCount}
+              onSelect={onSelect}
+              onPrevPage={onPrevPage}
+              onNextPage={onNextPage}
             />
-          )}
+          </div>
+
+          {selectedDetail ? (
+            <div className="absolute inset-0 z-20 lg:static lg:inset-auto lg:z-auto lg:w-[340px] xl:w-[360px] lg:shrink-0 min-h-0 min-w-0">
+              <MascotaDetailPanel
+                detail={selectedDetail}
+                onClose={onCloseDetail}
+                onViewClinicalHistory={onViewClinicalHistory}
+                isHistoryLoading={isHistoriaLoading}
+              />
+            </div>
+          ) : null}
         </div>
       </ViewPopup>
 

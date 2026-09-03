@@ -1,15 +1,7 @@
 import type { NavCatalogItem, NavPermissionKey } from '../types'
 
-// Catálogo completo de opciones del rol veterinario (fuente de verdad)
+// Catálogo del veterinario: agenda, atención e historia; no agenda citas (eso es recepción).
 export const VET_NAV_CATALOG: NavCatalogItem[] = [
-  {
-    id: 'nueva-atencion',
-    label: 'Nueva Atención',
-    permissionKey: 'vet.nueva-atencion',
-    iconKey: 'plus',
-    kind: 'action',
-    order: 0,
-  },
   {
     id: 'inicio',
     label: 'Inicio',

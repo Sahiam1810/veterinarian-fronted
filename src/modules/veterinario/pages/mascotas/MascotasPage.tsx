@@ -16,6 +16,9 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     setSearch,
     speciesFilter,
     setSpeciesFilter,
+    pageStart,
+    pageEnd,
+    totalCount,
     isLoading,
     error,
     notice,
@@ -36,11 +39,11 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     onNotice?.(notice)
   }, [notice, onNotice])
 
-  if (isLoading) {
+  if (isLoading && !directory) {
     return <p className="text-sm text-sage font-medium">Cargando mascotas…</p>
   }
 
-  if (error) {
+  if (error && !directory) {
     return (
       <p className="text-sm text-danger font-medium" role="alert">
         {error}
@@ -51,16 +54,21 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
   if (!directory) return null
 
   return (
-    <div className="h-full min-h-0 min-w-0 overflow-hidden">
+    <div className="h-full min-h-0 min-w-0 overflow-hidden relative">
+      {isLoading ? (
+        <p className="absolute top-2 right-2 z-30 text-[11px] font-semibold text-sage bg-white/90 px-2 py-1 rounded-lg border border-border-tan">
+          Actualizando…
+        </p>
+      ) : null}
       <VetMascotasView
         items={filteredItems}
         selectedDetail={selectedDetail}
         search={search}
         speciesFilter={speciesFilter}
         speciesOptions={directory.speciesOptions}
-        pageStart={directory.pageStart}
-        pageEnd={Math.min(directory.pageEnd, filteredItems.length || directory.pageEnd)}
-        totalCount={directory.totalCount}
+        pageStart={pageStart}
+        pageEnd={pageEnd}
+        totalCount={totalCount}
         historia={historia}
         isHistoriaOpen={isHistoriaOpen}
         isHistoriaLoading={isHistoriaLoading}

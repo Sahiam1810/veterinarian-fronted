@@ -1,27 +1,9 @@
-import { useEffect } from 'react'
 import { VetPerfilView } from '../../components'
 import { useVetPerfil } from '../../hooks'
 
-interface PerfilPageProps {
-  onNotice?: (message: string) => void
-}
-
-// Página Perfil del veterinario
-export function PerfilPage({ onNotice }: PerfilPageProps) {
-  const {
-    profile,
-    isLoading,
-    error,
-    notice,
-    handleEditProfile,
-    handleChangePassword,
-    handleChangePhoto,
-  } = useVetPerfil(true)
-
-  useEffect(() => {
-    if (!notice) return
-    onNotice?.(notice)
-  }, [notice, onNotice])
+// Página Perfil del veterinario (datos reales de la API).
+export function PerfilPage(_props: { onNotice?: (message: string) => void } = {}) {
+  const { profile, isLoading, error } = useVetPerfil(true)
 
   if (isLoading) {
     return <p className="text-sm text-sage font-medium">Cargando perfil…</p>
@@ -39,12 +21,7 @@ export function PerfilPage({ onNotice }: PerfilPageProps) {
 
   return (
     <div className="min-w-0 overflow-x-hidden">
-      <VetPerfilView
-        profile={profile}
-        onEditProfile={handleEditProfile}
-        onChangePassword={handleChangePassword}
-        onChangePhoto={handleChangePhoto}
-      />
+      <VetPerfilView profile={profile} />
     </div>
   )
 }
