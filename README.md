@@ -21,7 +21,7 @@ pnpm dev
 ```
 src/modules/
   auth/                 # login / sesión (compartido)
-  administrador/
+  superadmin/
   veterinario/
   recepcionista/
   auxiliar/

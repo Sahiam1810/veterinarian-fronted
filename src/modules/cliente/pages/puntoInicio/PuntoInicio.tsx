@@ -1,4 +1,4 @@
-import { AdminHeader, DashboardBackgroundDecoration } from '@/modules/administrador'
+import { SuperAdminHeader, DashboardBackgroundDecoration } from '@/modules/superadmin'
 import {
   ClienteHomeGreeting,
   ClienteInicioView,
@@ -48,7 +48,7 @@ export function PuntoInicio({
 
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
-      <AdminHeader
+      <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
         unreadNotificationsCount={1}

@@ -9,7 +9,7 @@ import {
 import type { RecepAgendaDayAppointment } from '../types'
 import { isRecepAppointmentEditable } from '../types'
 import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
-import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from './RecepMascotasIcons'
+import { CloseIcon } from './RecepMascotasIcons'
 
 interface RecepDayCalendarPanelProps {
   isOpen: boolean
@@ -144,10 +144,10 @@ export function RecepDayCalendarPanel({
               <button
                 type="button"
                 onClick={() => onChangeDate(shiftIsoDate(dateValue, -1))}
-                className="w-8 h-8 rounded-lg border border-border-tan text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+                className="px-2.5 h-8 rounded-lg border border-border-tan text-xs font-semibold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
                 aria-label="Día anterior"
               >
-                <ChevronLeftIcon className="w-4 h-4" />
+                Anterior
               </button>
               <button
                 type="button"
@@ -166,10 +166,10 @@ export function RecepDayCalendarPanel({
               <button
                 type="button"
                 onClick={() => onChangeDate(shiftIsoDate(dateValue, 1))}
-                className="w-8 h-8 rounded-lg border border-border-tan text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+                className="px-2.5 h-8 rounded-lg border border-border-tan text-xs font-semibold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
                 aria-label="Día siguiente"
               >
-                <ChevronRightIcon className="w-4 h-4" />
+                Siguiente
               </button>
               <button
                 type="button"

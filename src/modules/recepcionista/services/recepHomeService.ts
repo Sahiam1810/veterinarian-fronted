@@ -1,4 +1,11 @@
 import type { RecepHomeDashboard } from '../types'
+import {
+  fetchMyModulePermissions,
+  filterNavKeysByModuleView,
+  RECEP_ALWAYS_VISIBLE_NAV,
+  RECEP_MODULE_TO_NAV,
+} from '@/modules/auth'
+import { RECEP_DEFAULT_PERMISSIONS } from '@/global/navigation'
 
 // Mock del home de recepción (sustituir por API .NET)
 const MOCK_RECEP_HOME: RecepHomeDashboard = {
@@ -77,6 +84,20 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
   return Promise.resolve(MOCK_RECEP_HOME)
 }
 
+// Permisos de menú del recepcionista desde GET /api/auth/permissions
 export async function fetchRecepNavPermissions() {
-  return Promise.resolve(null)
+  try {
+    const permissions = await fetchMyModulePermissions()
+    return filterNavKeysByModuleView(
+      RECEP_DEFAULT_PERMISSIONS,
+      permissions,
+      RECEP_MODULE_TO_NAV,
+      RECEP_ALWAYS_VISIBLE_NAV,
+    )
+  } catch (err) {
+    console.error('No se pudieron cargar permisos de navegación del recepcionista', err)
+    return RECEP_ALWAYS_VISIBLE_NAV.filter((key) =>
+      RECEP_DEFAULT_PERMISSIONS.includes(key),
+    )
+  }
 }

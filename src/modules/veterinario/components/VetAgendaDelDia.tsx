@@ -37,9 +37,11 @@ export function VetAgendaDelDia({
           onClick={onViewFullAgenda}
           className="text-xs sm:text-sm font-semibold text-brand hover:text-brand-hover transition cursor-pointer flex items-center gap-1 shrink-0 group"
         >
+
           <span className="hidden sm:inline">Ver agenda completa</span>
           <span className="sm:hidden">Ver agenda</span>
           <span className="transition-transform group-hover:translate-x-0.5">→</span>
+
         </button>
       </div>
 

@@ -14,8 +14,8 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   'password is required.': 'Ingresa tu contraseña.',
   "'password' must not be empty.": 'Ingresa tu contraseña.',
   'password must not be empty.': 'Ingresa tu contraseña.',
-  'user is inactive.': 'Tu cuenta está inactiva. Contacta al administrador.',
-  'user is locked.': 'Tu cuenta está bloqueada. Contacta al administrador.',
+  'user is inactive.': 'Tu cuenta está inactiva. Contacta al superadministrador.',
+  'user is locked.': 'Tu cuenta está bloqueada. Contacta al superadministrador.',
   'token expired.': 'La sesión expiró. Inicia sesión de nuevo.',
   'refresh token is invalid.': 'La sesión ya no es válida. Inicia sesión de nuevo.',
 }

@@ -17,13 +17,13 @@ const AUTH_TOKENS_KEY = 'huellitas_auth_tokens'
 // Cuentas de referencia para la UI de pruebas (mismas del seed Oracle).
 export const MOCK_ACCOUNTS: MockAccount[] = [
   {
-    id: 'usr-admin-1',
+    id: 'usr-superadmin-1',
     name: 'Dr. Mario Ramirez',
-    email: 'admin@huellitas.com',
+    email: 'superadmin@huellitas.com',
     password: 'Huellitas2026!',
-    role: 'admin',
-    roleName: 'Administrador',
-    description: 'Gestión total de usuarios, roles, catálogo y dashboard administrativo.',
+    role: 'superadmin',
+    roleName: 'SuperAdministrador',
+    description: 'Gestión total de usuarios, roles, catálogo y dashboard superadministrativo.',
     badgeColor: 'brand',
   },
   {
@@ -71,12 +71,37 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 // Mapea el nombre de rol Oracle/API al rol de navegación del frontend.
 function mapBackendRole(roleName: string): UserRole {
   const normalized = roleName.trim().toLowerCase()
-  if (normalized.includes('admin')) return 'admin'
+  if (normalized.includes('superadmin') || normalized.includes('super admin')) return 'superadmin'
+  if (normalized.includes('administrador') || normalized === 'admin') return 'admin'
   if (normalized.includes('veterinar')) return 'veterinario'
   if (normalized.includes('recep')) return 'recepcionista'
   if (normalized.includes('aux')) return 'auxiliar'
   if (normalized.includes('client')) return 'cliente'
   return 'cliente'
+}
+
+// Lee claim super_admin del JWT de plataforma
+function readJwtPayload(accessToken: string): Record<string, unknown> | null {
+  try {
+    const payloadPart = accessToken.split('.')[1]
+    if (!payloadPart) return null
+    const json = atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(json) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+function readPlatformSuperAdminClaim(accessToken: string): boolean {
+  const payload = readJwtPayload(accessToken)
+  if (!payload) return false
+  return payload.super_admin === true || payload.super_admin === 'true'
+}
+
+function readRoleIdClaim(accessToken: string): string | undefined {
+  const payload = readJwtPayload(accessToken)
+  const roleId = payload?.role_id
+  return typeof roleId === 'string' && roleId ? roleId : undefined
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -156,13 +181,21 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
 
   const profile = await meResponse.json() as CurrentProfileResponse
   const role = mapBackendRole(profile.role)
+  const isPlatformSuperAdmin = readPlatformSuperAdminClaim(tokens.accessToken)
+  const roleId = readRoleIdClaim(tokens.accessToken)
+  // personId = Users.Id (coincide con lista de SuperAdmin / UserPermissions)
+  const personId = profile.personId || profile.userAccountId
 
   const authUser: AuthUser = {
-    id: profile.userAccountId || profile.personId,
+    id: personId,
     name: profile.fullName,
     email: profile.email,
-    role,
-    roleName: profile.role,
+    role: isPlatformSuperAdmin ? 'superadmin' : role,
+    roleName: isPlatformSuperAdmin ? 'SuperAdministrador' : profile.role,
+    roleId,
+    personId: profile.personId,
+    userAccountId: profile.userAccountId,
+    isPlatformSuperAdmin,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { AuxDayAppointment, AuxStatSummary } from '../../types'
+import type { AuxDayAppointment } from '../../types'
+import { useAuxDashboard } from '../../hooks'
 import {
   ViewPopup,
   NuevaCitaDrawer,
@@ -16,81 +17,6 @@ export interface InicioAuxProps {
   onViewAppointment?: (appointment: AuxDayAppointment) => void
 }
 
-const INITIAL_STATS: AuxStatSummary = {
-  citasDelDia: 12,
-  pendientesPrep: 3,
-  proximas: 4,
-  preparadas: 5,
-}
-
-const INITIAL_APPOINTMENTS: AuxDayAppointment[] = [
-  {
-    id: 'apt-1',
-    time: '09:00 AM',
-    petName: 'Luna',
-    petInitial: 'L',
-    avatarColor: 'peach',
-    speciesBreed: 'Perro / Golden Retriever',
-    service: 'Consulta General',
-    professional: 'Dra. Martínez',
-    status: 'Pendiente',
-    ownerName: 'Andrea Gómez',
-    notes: 'Revisión periódica y control de vacunas anuales.',
-  },
-  {
-    id: 'apt-2',
-    time: '09:45 AM',
-    petName: 'Simba',
-    petInitial: 'S',
-    avatarColor: 'brand',
-    speciesBreed: 'Gato / Siamés',
-    service: 'Vacunación',
-    professional: 'Dr. López',
-    status: 'Preparada',
-    ownerName: 'Carlos Morales',
-    notes: 'Dosis refuerzo de vacuna triple felina.',
-  },
-  {
-    id: 'apt-3',
-    time: '10:30 AM',
-    petName: 'Rocky',
-    petInitial: 'R',
-    avatarColor: 'peach',
-    speciesBreed: 'Perro / Bulldog Francés',
-    service: 'Limpieza Dental',
-    professional: 'Dra. Martínez',
-    status: 'Pendiente',
-    ownerName: 'Sofía Valenzuela',
-    notes: 'Requiere preparación previa y verificación de ayuno.',
-  },
-  {
-    id: 'apt-4',
-    time: '11:15 AM',
-    petName: 'Milo',
-    petInitial: 'M',
-    avatarColor: 'brand',
-    speciesBreed: 'Gato / Persa',
-    service: 'Control Dermatológico',
-    professional: 'Dr. López',
-    status: 'Preparada',
-    ownerName: 'Javier Castillo',
-    notes: 'Alergia en piel bajo tratamiento.',
-  },
-  {
-    id: 'apt-5',
-    time: '12:00 PM',
-    petName: 'Coco',
-    petInitial: 'C',
-    avatarColor: 'peach',
-    speciesBreed: 'Perro / Poodle',
-    service: 'Desparasitación',
-    professional: 'Dr. Roberto Silva',
-    status: 'Pendiente',
-    ownerName: 'Mariana Ríos',
-    notes: 'Control semestral de parásitos internos y externos.',
-  },
-]
-
 export function InicioAux({
   userName = 'Laura',
   onNotice,
@@ -98,21 +24,19 @@ export function InicioAux({
   onPrepareAppointment,
   onViewAppointment,
 }: InicioAuxProps) {
-  const [appointments, setAppointments] = useState<AuxDayAppointment[]>(INITIAL_APPOINTMENTS)
-  const [stats, setStats] = useState<AuxStatSummary>(INITIAL_STATS)
+  const {
+    appointments,
+    stats,
+    isLoading,
+    savePreparation,
+    createNewAppointment,
+    activeNotification,
+  } = useAuxDashboard()
+
   const [selectedAppointment, setSelectedAppointment] = useState<AuxDayAppointment | null>(null)
   const [prepAppointment, setPrepAppointment] = useState<AuxDayAppointment | null>(null)
   const [isNewAppointmentDrawerOpen, setIsNewAppointmentDrawerOpen] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'TODAS' | 'Pendiente' | 'Preparada'>('TODAS')
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
-
-  const showLocalToast = (msg: string) => {
-    setToastMessage(msg)
-    if (onNotice) onNotice(msg)
-    setTimeout(() => {
-      setToastMessage((curr) => (curr === msg ? null : curr))
-    }, 3500)
-  }
 
   const handleOpenPrepare = (apt: AuxDayAppointment) => {
     if (onPrepareAppointment) {
@@ -122,32 +46,12 @@ export function InicioAux({
     setPrepAppointment(apt)
   }
 
-  const handleSavePreparation = (
+  const handleSavePreparation = async (
     appointmentId: string,
     data: { weight: string; temp: string; notes?: string }
   ) => {
-    const targetApt = appointments.find((a) => a.id === appointmentId)
-
-    setAppointments((prev) =>
-      prev.map((item) =>
-        item.id === appointmentId
-          ? {
-              ...item,
-              status: 'Preparada',
-              notes: data.notes || item.notes,
-            }
-          : item
-      )
-    )
-
-    setStats((prev) => ({
-      ...prev,
-      pendientesPrep: Math.max(0, prev.pendientesPrep - 1),
-      preparadas: prev.preparadas + 1,
-    }))
-
-    const petName = targetApt?.petName || 'Paciente'
-    showLocalToast(`¡Mascota ${petName} marcada como Preparada con éxito!`)
+    await savePreparation(appointmentId, data)
+    onNotice?.('¡Paciente preparado y guardado con éxito!')
     setPrepAppointment(null)
   }
 
@@ -167,21 +71,25 @@ export function InicioAux({
     setIsNewAppointmentDrawerOpen(true)
   }
 
-  const handleSaveNewAppointment = (newApt: AuxDayAppointment) => {
-    setAppointments((prev) => [newApt, ...prev])
-    setStats((prev) => ({
-      ...prev,
-      citasDelDia: prev.citasDelDia + 1,
-      pendientesPrep: prev.pendientesPrep + 1,
-    }))
-
-    showLocalToast(`¡Cita agendada para ${newApt.petName} exitosamente!`)
+  const handleSaveNewAppointment = async (newApt: AuxDayAppointment) => {
+    await createNewAppointment(newApt)
+    onNotice?.(`¡Cita agendada para ${newApt.petName} exitosamente!`)
   }
 
   const filteredAppointments = appointments.filter((apt) => {
     if (filterStatus === 'TODAS') return true
     return apt.status === filterStatus
   })
+
+  const formattedCurrentDate = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date())
+
+  const formattedDateCapitalized =
+    formattedCurrentDate.charAt(0).toUpperCase() + formattedCurrentDate.slice(1)
 
   return (
     <div className="w-full flex flex-col gap-5 sm:gap-6">
@@ -193,7 +101,7 @@ export function InicioAux({
               Buenos días, {userName}
             </h1>
             <p className="text-xs sm:text-sm text-sage font-medium mt-0.5">
-              Viernes, 24 de Noviembre de 2023
+              {formattedDateCapitalized}
             </p>
           </div>
 
@@ -209,6 +117,7 @@ export function InicioAux({
           </div>
         </header>
       </ViewPopup>
+
 
       {/* 2. Tarjetas de Estadísticas con efecto cascada (Staggered Pop-up) */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -343,7 +252,18 @@ export function InicioAux({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-tan/60 text-sm">
-                    {filteredAppointments.length === 0 ? (
+                    {isLoading ? (
+                      <tr className="animate-in fade-in duration-200">
+                        <td colSpan={6} className="py-12 text-center text-sage">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+                            <span className="font-semibold text-xs sm:text-sm text-sage">
+                              Cargando citas del servidor...
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredAppointments.length === 0 ? (
                       <tr className="animate-in fade-in duration-200">
                         <td colSpan={6} className="py-12 text-center text-sage">
                           <div className="flex flex-col items-center justify-center gap-2">
@@ -505,13 +425,13 @@ export function InicioAux({
       />
 
       {/* Notificación flotante / Toast */}
-      {toastMessage &&
+      {activeNotification &&
         typeof document !== 'undefined' &&
         createPortal(
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)]">
             <div className="view-popup bg-brand text-white px-5 py-2.5 rounded-full shadow-lg text-xs sm:text-sm font-medium border border-white/20 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-ochre animate-pulse shrink-0" />
-              <span className="truncate">{toastMessage}</span>
+              <span className="truncate">{activeNotification}</span>
             </div>
           </div>,
           document.body

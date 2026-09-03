@@ -1,21 +1,47 @@
-import { useState } from 'react'
-import { LoginPage, useAuth, type AuthUser } from '@/modules/auth'
+import { useEffect, useState } from 'react'
 import {
-  AdminHeader,
-  DashboardAdmin,
-  UserAdmin,
-  MascotasAdmin,
-  ProfesionalesAdmin,
-  ServiciosAdmin,
-  AgendaAdmin,
-  ReportesAdmin,
-  PerfilAdmin,
+  LoginPage,
+  useAuth,
+  isNavPermissionGranted,
+  type AuthUser,
+} from '@/modules/auth'
+import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
+import type { ModuleId } from '@/modules/superadmin/types'
+import {
+  SuperAdminHeader,
+  DashboardSuperAdmin,
+  UserSuperAdmin,
+  MascotasSuperAdmin,
+  ProfesionalesSuperAdmin,
+  ServiciosSuperAdmin,
+  AgendaSuperAdmin,
+  ReportesSuperAdmin,
+  PerfilSuperAdmin,
   DashboardBackgroundDecoration,
-} from '@/modules/administrador'
+} from '@/modules/superadmin'
+import { useAdminShellAccess, useNotificationsSuperAdmin } from '@/modules/superadmin/hooks'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
+import { fetchAuxNavPermissions } from '@/modules/auxiliar/services'
 import { PuntoInicio as ClientePuntoInicio } from '@/modules/cliente'
+
+const AUX_GATED_ROUTES: Record<string, NavPermissionKey> = {
+  agenda: 'aux.agenda',
+  mascotas: 'aux.mascotas',
+  preparacion: 'aux.preparacion',
+}
+
+const ROUTE_TO_MODULE: Record<string, ModuleId> = {
+  inicio: 'inicio',
+  usuarios: 'usuarios',
+  mascotas: 'mascotas',
+  duenos: 'duenos',
+  servicios: 'servicios',
+  profesionales: 'profesionales',
+  agenda: 'agenda',
+  reportes: 'reportes',
+}
 
 export default function App() {
   const {
@@ -78,8 +104,8 @@ export default function App() {
     )
   }
 
-  if (role === 'admin' || roleName.includes('admin')) {
-    return <AdminApp user={currentUser} onLogout={logout} />
+  if (role === 'superadmin' || role === 'admin' || roleName.includes('admin') || roleName.includes('superadmin')) {
+    return <SuperAdminApp user={currentUser} onLogout={logout} />
   }
 
   return (
@@ -90,20 +116,48 @@ export default function App() {
   )
 }
 
-// Shell administrador (DashboardAdmin, UserAdmin, MascotasAdmin) conectado al usuario autenticado
-function AdminApp({
+// Shell superadministrador / administrador de clínica
+function SuperAdminApp({
   user,
   onLogout,
 }: {
   user: AuthUser
   onLogout: () => void
 }) {
+  const isPlatformSuperAdmin = !!user.isPlatformSuperAdmin
+  const { canViewModule, firstAllowedRoute } = useAdminShellAccess({
+    personId: user.personId || user.id,
+    accountId: user.userAccountId,
+    email: user.email,
+    roleId: user.roleId,
+    isPlatformSuperAdmin,
+  })
+  const {
+    notifications,
+    isLoading: isLoadingNotifications,
+    error: notificationsError,
+    markAsRead: onMarkNotificationRead,
+    markAllAsRead: onMarkAllNotificationsRead,
+    reload: onReloadNotifications,
+  } = useNotificationsSuperAdmin(user.personId || user.id)
+
   const [currentRoute, setCurrentRoute] = useState<string>('inicio')
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
+
+  useEffect(() => {
+    const moduleId = ROUTE_TO_MODULE[currentRoute]
+    if (moduleId && !canViewModule(moduleId)) {
+      setCurrentRoute(firstAllowedRoute)
+    }
+  }, [canViewModule, currentRoute, firstAllowedRoute])
 
   const handleNavigate = (routeId: string) => {
     if (routeId === 'logout') {
       onLogout()
+      return
+    }
+    const moduleId = ROUTE_TO_MODULE[routeId]
+    if (moduleId && !canViewModule(moduleId)) {
       return
     }
     setCurrentRoute(routeId)
@@ -117,120 +171,90 @@ function AdminApp({
     setIsSidebarOpen(false)
   }
 
+  const shellProps = {
+    onNavigate: handleNavigate,
+    isSidebarOpen,
+    onToggleSidebar: toggleSidebar,
+    onCloseSidebar: closeSidebar,
+    userName: user.name,
+    userRole: user.roleName,
+    onLogout,
+    canViewModule,
+    notifications,
+    isLoadingNotifications,
+    notificationsError,
+    onMarkNotificationRead,
+    onMarkAllNotificationsRead,
+    onReloadNotifications,
+  }
+
   if (currentRoute === 'usuarios') {
     return (
-      <UserAdmin
-        onNavigate={handleNavigate}
+      <UserSuperAdmin
+        {...shellProps}
         activeRoute="usuarios"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
+        canManagePermissions={isPlatformSuperAdmin}
       />
     )
   }
 
   if (currentRoute === 'mascotas' || currentRoute === 'duenos') {
     return (
-      <MascotasAdmin
-        onNavigate={handleNavigate}
+      <MascotasSuperAdmin
+        {...shellProps}
         activeRoute="mascotas"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
       />
     )
   }
 
   if (currentRoute === 'profesionales') {
     return (
-      <ProfesionalesAdmin
-        onNavigate={handleNavigate}
+      <ProfesionalesSuperAdmin
+        {...shellProps}
         activeRoute="profesionales"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
       />
     )
   }
 
   if (currentRoute === 'servicios') {
     return (
-      <ServiciosAdmin
-        onNavigate={handleNavigate}
+      <ServiciosSuperAdmin
+        {...shellProps}
         activeRoute="servicios"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
       />
     )
   }
 
   if (currentRoute === 'agenda') {
     return (
-      <AgendaAdmin
-        onNavigate={handleNavigate}
+      <AgendaSuperAdmin
+        {...shellProps}
         activeRoute="agenda"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
       />
     )
   }
 
   if (currentRoute === 'reportes') {
     return (
-      <ReportesAdmin
-        onNavigate={handleNavigate}
+      <ReportesSuperAdmin
+        {...shellProps}
         activeRoute="reportes"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
       />
     )
   }
 
   if (currentRoute === 'perfil') {
     return (
-      <PerfilAdmin
-        onNavigate={handleNavigate}
+      <PerfilSuperAdmin
+        {...shellProps}
         activeRoute="perfil"
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onCloseSidebar={closeSidebar}
-        userName={user.name}
-        userRole={user.roleName}
-        onLogout={onLogout}
       />
     )
   }
   return (
-    <DashboardAdmin
-      onNavigate={handleNavigate}
+    <DashboardSuperAdmin
+      {...shellProps}
       activeRoute={currentRoute}
-      isSidebarOpen={isSidebarOpen}
-      onToggleSidebar={toggleSidebar}
-      onCloseSidebar={closeSidebar}
-      userName={user.name}
-      userRole={user.roleName}
-      onLogout={onLogout}
     />
   )
 }
@@ -244,6 +268,8 @@ function AuxApp({
   onLogout: () => void
 }) {
   const [currentRoute, setCurrentRoute] = useState<string>('inicio')
+  const [grantedPermissions, setGrantedPermissions] =
+    useState<GrantedPermissions>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth >= 1024
@@ -252,11 +278,40 @@ function AuxApp({
   })
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
+  useEffect(() => {
+    let cancelled = false
+    void fetchAuxNavPermissions().then((permissions) => {
+      if (!cancelled) setGrantedPermissions(permissions)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const handleNavigate = (routeId: string) => {
     if (routeId === 'logout') {
       onLogout()
       return
     }
+
+    const gatedKey = AUX_GATED_ROUTES[routeId]
+    if (
+      gatedKey &&
+      !isNavPermissionGranted(grantedPermissions ?? undefined, gatedKey)
+    ) {
+      setActiveNotification('No tienes permiso para ver esta sección')
+      setTimeout(() => {
+        setActiveNotification((curr) =>
+          curr === 'No tienes permiso para ver esta sección' ? null : curr,
+        )
+      }, 3500)
+      setCurrentRoute('inicio')
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setIsSidebarOpen(false)
+      }
+      return
+    }
+
     setCurrentRoute(routeId)
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setIsSidebarOpen(false)
@@ -281,10 +336,9 @@ function AuxApp({
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
       {/* Header Superior */}
-      <AdminHeader
+      <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        unreadNotificationsCount={3}
         userName={user.name}
         userRole={user.roleName || 'Auxiliar'}
       />
@@ -296,6 +350,7 @@ function AuxApp({
           onClose={closeSidebar}
           activeRoute={currentRoute}
           onNavigate={handleNavigate}
+          grantedPermissions={grantedPermissions}
           onLogout={onLogout}
         />
 

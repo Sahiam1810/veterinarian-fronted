@@ -1,9 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
-import type { GrantedPermissions } from '@/global/navigation'
+import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
+import { isNavPermissionGranted } from '@/modules/auth'
 import type { VetDayAppointment, VetHomeDashboard } from '../types'
 import { fetchVetHomeBundle, fetchVetNavPermissions } from '../services'
 
 const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
+
+const GATED_ROUTES: Record<string, NavPermissionKey> = {
+  mascotas: 'vet.mascotas',
+  agenda: 'vet.agenda',
+}
 
 export function useVetHome() {
   const [dashboard, setDashboard] = useState<VetHomeDashboard | null>(null)
@@ -65,6 +71,16 @@ export function useVetHome() {
       return
     }
 
+    const gatedKey = GATED_ROUTES[routeId]
+    if (
+      gatedKey &&
+      !isNavPermissionGranted(grantedPermissions ?? undefined, gatedKey)
+    ) {
+      showToast('No tienes permiso para ver esta sección')
+      setActiveRoute('inicio')
+      return
+    }
+
     setActiveRoute(routeId)
 
     if (!IMPLEMENTED_ROUTES.has(routeId)) {
@@ -73,7 +89,7 @@ export function useVetHome() {
   }
 
   const handleViewFullAgenda = () => {
-    setActiveRoute('agenda')
+    handleNavigate('agenda')
   }
 
   const handleAttendNow = (appointment: VetDayAppointment) => {

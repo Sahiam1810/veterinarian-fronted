@@ -24,8 +24,7 @@ export function RecepAgendaDelDia({
           onClick={onViewFullMonth}
           className="text-xs sm:text-sm font-semibold text-sage hover:text-brand transition cursor-pointer flex items-center gap-1 shrink-0 group"
         >
-          <span>Ver todo el mes</span>
-          <span className="transition-transform group-hover:translate-x-0.5">›</span>
+          Ver todo el mes
         </button>
       </div>
 
