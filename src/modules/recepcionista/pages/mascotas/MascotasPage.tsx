@@ -6,7 +6,7 @@ interface MascotasPageProps {
   onNotice?: (message: string) => void
 }
 
-// Página Mascotas del recepcionista
+// Página Mascotas del recepcionista (conectada al backend real)
 export function MascotasPage({ onNotice }: MascotasPageProps) {
   const {
     directory,
@@ -14,6 +14,9 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     selectedDetail,
     search,
     setSearch,
+    pageStart,
+    pageEnd,
+    totalCount,
     isLoading,
     error,
     notice,
@@ -31,15 +34,22 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     onNotice?.(notice)
   }, [notice, onNotice])
 
-  if (isLoading) {
-    return <p className="text-sm text-sage font-medium">Cargando mascotas…</p>
+  if (isLoading && !directory) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 gap-3 min-h-[300px]">
+        <div className="w-8 h-8 border-3 border-brand/20 border-t-brand rounded-full animate-spin" />
+        <p className="text-sm text-sage font-medium">Cargando directorio de mascotas…</p>
+      </div>
+    )
   }
 
-  if (error) {
+  if (error && !directory) {
     return (
-      <p className="text-sm text-danger font-medium" role="alert">
-        {error}
-      </p>
+      <div className="p-6 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex flex-col items-center gap-3 text-center my-4">
+        <p className="text-sm font-semibold" role="alert">
+          {error}
+        </p>
+      </div>
     )
   }
 
@@ -51,9 +61,9 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         items={filteredItems}
         selectedDetail={selectedDetail}
         search={search}
-        pageStart={directory.pageStart}
-        pageEnd={Math.min(directory.pageEnd, filteredItems.length || directory.pageEnd)}
-        totalCount={directory.totalCount}
+        pageStart={pageStart}
+        pageEnd={pageEnd}
+        totalCount={totalCount}
         onSearchChange={setSearch}
         onOpenFilters={handleOpenFilters}
         onNewPet={handleNewPet}
