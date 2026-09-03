@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import type {
   RecepDuenoDetail,
   RecepDuenoStatusFilter,
   RecepDuenosDirectoryPayload,
 } from '../types'
 import { fetchRecepDuenosDirectory } from '../services'
+
+const ITEMS_PER_PAGE = 8
 
 export function useRecepDuenos(enabled: boolean) {
   const [directory, setDirectory] = useState<RecepDuenosDirectoryPayload | null>(null)
@@ -14,34 +16,42 @@ export function useRecepDuenos(enabled: boolean) {
   const [statusFilter, setStatusFilter] = useState<RecepDuenoStatusFilter>('todos')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const showNotice = useCallback((message: string) => {
+    setNotice(message)
+    setTimeout(() => {
+      setNotice((current) => (current === message ? null : current))
+    }, 3000)
+  }, [])
+
+  const loadDirectory = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await fetchRecepDuenosDirectory()
+      setDirectory(data)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo cargar el directorio de dueños'
+      setError(msg)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!enabled) return
-
-    let cancelled = false
-
-    async function loadDirectory() {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const data = await fetchRecepDuenosDirectory()
-        if (!cancelled) setDirectory(data)
-      } catch {
-        if (!cancelled) setError('No se pudo cargar el directorio de dueños')
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
     void loadDirectory()
-    return () => {
-      cancelled = true
-    }
-  }, [enabled])
+  }, [enabled, loadDirectory])
 
   useEffect(() => {
     if (!enabled) setSelectedId(null)
   }, [enabled])
+
+  // Reiniciar a la página 1 cuando cambia el filtro o la búsqueda
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, statusFilter])
 
   const filteredItems = useMemo(() => {
     if (!directory) return []
@@ -65,27 +75,39 @@ export function useRecepDuenos(enabled: boolean) {
     })
   }, [directory, search, statusFilter])
 
+  // Paginación calculada
+  const totalCount = filteredItems.length
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE))
+  const pageStart = totalCount === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1
+  const pageEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalCount)
+
+  const paginatedItems = useMemo(() => {
+    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredItems.slice(startIdx, startIdx + ITEMS_PER_PAGE)
+  }, [filteredItems, currentPage])
+
   const selectedDetail: RecepDuenoDetail | null =
     directory && selectedId ? directory.detailsById[selectedId] ?? null : null
 
-  const showNotice = (message: string) => {
-    setNotice(message)
-    setTimeout(() => {
-      setNotice((current) => (current === message ? null : current))
-    }, 2800)
-  }
-
   const handleSelect = (ownerId: string) => setSelectedId(ownerId)
   const handleCloseDetail = () => setSelectedId(null)
-  const handleNewOwner = () => showNotice('Nuevo dueño: módulo pendiente')
-  const handlePrevPage = () => showNotice('Paginación: pendiente de API')
-  const handleNextPage = () => showNotice('Paginación: pendiente de API')
-  const handleGoToPage = (page: number) =>
-    showNotice(`Ir a página ${page}: pendiente de API`)
+  const handleNewOwner = () => showNotice('Para registrar dueños nuevos, usa la sección de Usuarios o el módulo administrativo.')
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1)
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage((prev) => prev + 1)
+  }
+
+  const handleGoToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page)
+  }
 
   return {
     directory,
-    filteredItems,
+    filteredItems: paginatedItems,
     selectedDetail,
     search,
     setSearch,
@@ -94,6 +116,12 @@ export function useRecepDuenos(enabled: boolean) {
     isLoading,
     error,
     notice,
+    currentPage,
+    totalPages,
+    pageStart,
+    pageEnd,
+    totalCount,
+    reloadDirectory: loadDirectory,
     handleSelect,
     handleCloseDetail,
     handleNewOwner,

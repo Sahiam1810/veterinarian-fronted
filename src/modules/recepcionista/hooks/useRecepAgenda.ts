@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import type {
   RecepAgendaCatalogPayload,
   RecepAgendaDayAppointment,
@@ -6,16 +6,20 @@ import type {
   RecepAgendaOwnerOption,
   RecepAgendaPetOption,
 } from '../types'
-import { fetchRecepAgendaCatalog, fetchRecepDayAppointments } from '../services'
+import {
+  fetchRecepAgendaCatalog,
+  fetchRecepDayAppointments,
+  createRecepAppointment,
+} from '../services'
 
 const EMPTY_FORM: RecepAgendaFormState = {
   ownerQuery: '',
   ownerId: '',
   petId: '',
-  serviceId: 'srv-general',
-  professionalId: 'pro-roberto',
+  serviceId: '',
+  professionalId: '',
   dateValue: '',
-  timeSlotId: '09:30',
+  timeSlotId: '09:00',
   notes: '',
 }
 
@@ -56,82 +60,65 @@ function formatDayTitle(dateValue: string): string {
 export function useRecepAgenda(enabled: boolean) {
   const [catalog, setCatalog] = useState<RecepAgendaCatalogPayload | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<RecepAgendaFormState>(EMPTY_FORM)
   const [notice, setNotice] = useState<string | null>(null)
   const [isDayPanelOpen, setIsDayPanelOpen] = useState(false)
-  const [dayAppointments, setDayAppointments] = useState<RecepAgendaDayAppointment[]>(
-    [],
-  )
+  const [dayAppointments, setDayAppointments] = useState<RecepAgendaDayAppointment[]>([])
   const [isDayLoading, setIsDayLoading] = useState(false)
   const [dayPanelDate, setDayPanelDate] = useState('')
 
-  useEffect(() => {
-    if (!enabled) return
-
-    let cancelled = false
-
-    async function loadCatalog() {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const data = await fetchRecepAgendaCatalog()
-        if (!cancelled) setCatalog(data)
-      } catch {
-        if (!cancelled) setError('No se pudo cargar Agenda y Citas')
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
-    void loadCatalog()
-    return () => {
-      cancelled = true
-    }
-  }, [enabled])
-
-  useEffect(() => {
-    if (!enabled) {
-      setForm(EMPTY_FORM)
-      setIsDayPanelOpen(false)
-      setDayAppointments([])
-      setDayPanelDate('')
-    }
-  }, [enabled])
-
-  const showNotice = (message: string) => {
+  const showNotice = useCallback((message: string) => {
     setNotice(message)
     setTimeout(() => {
       setNotice((current) => (current === message ? null : current))
-    }, 2800)
-  }
+    }, 3200)
+  }, [])
 
-  // Recarga citas al abrir el panel o al cambiar la fecha consultada
+  const loadCatalog = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await fetchRecepAgendaCatalog()
+      setCatalog(data)
+      setForm((prev) => ({
+        ...prev,
+        serviceId: prev.serviceId || data.services[0]?.id || '',
+        professionalId: prev.professionalId || data.professionals[0]?.id || '',
+        dateValue: prev.dateValue || todayIsoDate(),
+      }))
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo cargar Agenda y Citas'
+      setError(msg)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!enabled) return
+    void loadCatalog()
+  }, [enabled, loadCatalog])
+
+  const loadDayAppointments = useCallback(async (targetDate: string) => {
+    if (!targetDate) return
+    setIsDayLoading(true)
+    try {
+      const list = await fetchRecepDayAppointments(targetDate)
+      setDayAppointments(list)
+    } catch {
+      setDayAppointments([])
+      showNotice('No se pudieron cargar las citas del día seleccionado')
+    } finally {
+      setIsDayLoading(false)
+    }
+  }, [showNotice])
+
   useEffect(() => {
     if (!enabled || !isDayPanelOpen || !dayPanelDate) return
-
-    let cancelled = false
-
-    async function loadDay() {
-      setIsDayLoading(true)
-      try {
-        const list = await fetchRecepDayAppointments(dayPanelDate)
-        if (!cancelled) setDayAppointments(list)
-      } catch {
-        if (!cancelled) {
-          setDayAppointments([])
-          setNotice('No se pudieron cargar las citas del día')
-        }
-      } finally {
-        if (!cancelled) setIsDayLoading(false)
-      }
-    }
-
-    void loadDay()
-    return () => {
-      cancelled = true
-    }
-  }, [enabled, isDayPanelOpen, dayPanelDate])
+    void loadDayAppointments(dayPanelDate)
+  }, [enabled, isDayPanelOpen, dayPanelDate, loadDayAppointments])
 
   const matchedOwners = useMemo(() => {
     if (!catalog) return [] as RecepAgendaOwnerOption[]
@@ -151,7 +138,7 @@ export function useRecepAgenda(enabled: boolean) {
 
   const petsForOwner = useMemo(() => {
     if (!catalog || !form.ownerId) return [] as RecepAgendaPetOption[]
-    return catalog.pets.filter((pet) => pet.ownerId === form.ownerId)
+    return catalog.pets.filter((pet) => pet.ownerId.toLowerCase() === form.ownerId.toLowerCase())
   }, [catalog, form.ownerId])
 
   const selectedPet = useMemo(() => {
@@ -189,12 +176,10 @@ export function useRecepAgenda(enabled: boolean) {
   ) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value }
-      // Al cambiar dueño se limpia la mascota seleccionada
       if (key === 'ownerId') next.petId = ''
       return next
     })
 
-    // Si cambia la fecha con el panel abierto, sincroniza la consulta
     if (key === 'dateValue' && typeof value === 'string' && isDayPanelOpen) {
       setDayPanelDate(value || todayIsoDate())
     }
@@ -225,16 +210,51 @@ export function useRecepAgenda(enabled: boolean) {
     }))
   }
 
-  const handleConfirm = () => {
-    if (!form.ownerId || !form.petId) {
-      showNotice('Selecciona dueño y mascota')
+  const handleConfirm = async () => {
+    if (!form.ownerId) {
+      showNotice('Por favor selecciona un dueño de la lista')
+      return
+    }
+    if (!form.petId) {
+      showNotice('Por favor selecciona la mascota del dueño')
+      return
+    }
+    if (!form.serviceId) {
+      showNotice('Por favor selecciona un servicio')
+      return
+    }
+    if (!form.professionalId) {
+      showNotice('Por favor selecciona un profesional veterinario')
       return
     }
     if (!form.dateValue || !form.timeSlotId) {
-      showNotice('Selecciona fecha y horario')
+      showNotice('Por favor selecciona fecha y horario para la cita')
       return
     }
-    showNotice('Cita agendada (mock)')
+
+    setIsSubmitting(true)
+    try {
+      await createRecepAppointment(form)
+      showNotice('¡Cita agendada exitosamente en el sistema!')
+      
+      // Limpiar y resetear el form
+      setForm({
+        ...EMPTY_FORM,
+        serviceId: catalog?.services[0]?.id ?? '',
+        professionalId: catalog?.professionals[0]?.id ?? '',
+        dateValue: form.dateValue || todayIsoDate(),
+        timeSlotId: '09:00',
+      })
+
+      if (isDayPanelOpen && dayPanelDate) {
+        await loadDayAppointments(dayPanelDate)
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al agendar la cita'
+      showNotice(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleCancel = () => {
@@ -242,12 +262,12 @@ export function useRecepAgenda(enabled: boolean) {
       ...EMPTY_FORM,
       serviceId: catalog?.services[0]?.id ?? '',
       professionalId: catalog?.professionals[0]?.id ?? '',
-      timeSlotId: catalog?.timeSlots.find((s) => s.available)?.id ?? '',
+      dateValue: todayIsoDate(),
+      timeSlotId: '09:00',
     })
     showNotice('Formulario limpiado')
   }
 
-  // Abre el calendario flotante con citas del día (fecha del form o hoy)
   const handleOpenDayPanel = () => {
     const targetDate = form.dateValue || todayIsoDate()
     if (!form.dateValue) {
@@ -259,14 +279,12 @@ export function useRecepAgenda(enabled: boolean) {
 
   const handleCloseDayPanel = () => setIsDayPanelOpen(false)
 
-  // Cambia el día mostrado en el calendario flotante
   const handleChangeDayPanelDate = (nextDate: string) => {
     if (!nextDate) return
     setDayPanelDate(nextDate)
     setForm((prev) => ({ ...prev, dateValue: nextDate }))
   }
 
-  // Carga la cita en el formulario para editarla (solo pendientes / en curso)
   const handleEditAppointment = (appointment: RecepAgendaDayAppointment) => {
     if (!catalog) return
     if (appointment.status === 'ATENDIDO' || appointment.status === 'CANCELADO') {
@@ -308,6 +326,7 @@ export function useRecepAgenda(enabled: boolean) {
     catalog,
     form,
     isLoading,
+    isSubmitting,
     error,
     notice,
     matchedOwners,
@@ -332,5 +351,6 @@ export function useRecepAgenda(enabled: boolean) {
     handleCloseDayPanel,
     handleChangeDayPanelDate,
     handleEditAppointment,
+    reloadAppointments: () => loadDayAppointments(dayPanelDate || todayIsoDate()),
   }
 }
