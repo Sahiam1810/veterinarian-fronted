@@ -12,7 +12,7 @@ import type {
   AgendaPetOption,
   AgendaServiceOption,
 } from '../../types'
-import type { ModuleId } from '../../types'
+import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 import {
   PlusIcon,
   CalendarIcon,
@@ -29,6 +29,12 @@ export interface AgendaSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  notifications?: NotificacionSuperAdmin[]
+  isLoadingNotifications?: boolean
+  notificationsError?: string | null
+  onMarkNotificationRead?: (id: string) => void
+  onMarkAllNotificationsRead?: () => void
+  onReloadNotifications?: () => void
 }
 
 const HORAS_MOSTRADAS = [8, 9, 10, 11, 12]
@@ -57,6 +63,12 @@ export function AgendaSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  notifications,
+  isLoadingNotifications,
+  notificationsError,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onReloadNotifications,
 }: AgendaSuperAdminProps = {}) {
   // Navigation & Sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -117,7 +129,12 @@ export function AgendaSuperAdmin({
         onToggleSidebar={toggleSidebar}
         userName={userName}
         userRole={userRole}
-        onNotificationClick={() => showToast('Tienes 2 notificaciones del sistema')}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
         onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
       />
 

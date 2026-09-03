@@ -21,6 +21,8 @@ import type { ApiAppointmentResponse } from '../services/superAdminAppointmentsS
 import type { ApiMedicalRecordResponse } from '../services/superAdminMedicalRecordsService'
 import type { ApiVaccinationResponse } from '../services/superAdminVaccinationsService'
 import type { HistoriaConsulta, HistoriaVacuna } from '../types/historiaClinicaSuperAdmin.types'
+import type { ApiNotificationResponse } from '../services/superAdminNotificationsService'
+import type { NotificacionSuperAdmin } from '../types/notificacionesSuperAdmin.types'
 
 const SPECIES_KEYWORDS: Record<string, string[]> = {
   Canino: ['canin', 'perro', 'dog'],
@@ -386,6 +388,27 @@ export function mapVaccinationToVacuna(vaccination: ApiVaccinationResponse): His
     name: vaccination.vaccineName ?? 'Vacuna',
     appliedLabel: formatDateShortEs(vaccination.applicationDate),
     nextLabel: vaccination.nextDoseDate ? formatDateShortEs(vaccination.nextDoseDate) : 'No programada',
+  }
+}
+
+// La API no expone un catálogo de estados para notificaciones: "status" es texto libre
+// que la propia app define. Este es el valor que la app escribe al marcar como leída.
+export const NOTIFICATION_READ_STATUS = 'Leída'
+
+function isNotificationRead(status?: string | null): boolean {
+  const normalized = (status ?? '').trim().toLowerCase()
+  return normalized === 'leída' || normalized === 'leida' || normalized === 'read'
+}
+
+// Mapea notificación API a modelo UI
+export function mapNotificationToNotificacion(notification: ApiNotificationResponse): NotificacionSuperAdmin {
+  return {
+    id: notification.id,
+    message: notification.message ?? 'Notificación del sistema.',
+    dateLabel: formatDateEs(notification.sentAt ?? notification.createdAt),
+    type: notification.type ?? 'General',
+    isRead: isNotificationRead(notification.status),
+    appointmentId: notification.appointmentId,
   }
 }
 

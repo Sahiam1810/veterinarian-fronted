@@ -15,7 +15,7 @@ import type {
   EstadoMascota,
   SexoMascota,
 } from '../../types'
-import type { ModuleId } from '../../types'
+import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 import {
   SearchIcon,
   PlusIcon,
@@ -39,6 +39,12 @@ export interface MascotasSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  notifications?: NotificacionSuperAdmin[]
+  isLoadingNotifications?: boolean
+  notificationsError?: string | null
+  onMarkNotificationRead?: (id: string) => void
+  onMarkAllNotificationsRead?: () => void
+  onReloadNotifications?: () => void
 }
 
 /* ============================================================================
@@ -732,6 +738,12 @@ export function MascotasSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  notifications,
+  isLoadingNotifications,
+  notificationsError,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onReloadNotifications,
 }: MascotasSuperAdminProps) {
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
@@ -817,7 +829,12 @@ export function MascotasSuperAdmin({
         onToggleSidebar={toggleSidebar}
         userName={userName}
         userRole={userRole}
-        onNotificationClick={() => showToast('Tienes 2 notificaciones del sistema')}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
         onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
       />
 

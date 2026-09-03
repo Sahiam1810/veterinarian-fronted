@@ -19,7 +19,7 @@ import {
   PerfilSuperAdmin,
   DashboardBackgroundDecoration,
 } from '@/modules/superadmin'
-import { useAdminShellAccess } from '@/modules/superadmin/hooks'
+import { useAdminShellAccess, useNotificationsSuperAdmin } from '@/modules/superadmin/hooks'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
@@ -132,6 +132,14 @@ function SuperAdminApp({
     roleId: user.roleId,
     isPlatformSuperAdmin,
   })
+  const {
+    notifications,
+    isLoading: isLoadingNotifications,
+    error: notificationsError,
+    markAsRead: onMarkNotificationRead,
+    markAllAsRead: onMarkAllNotificationsRead,
+    reload: onReloadNotifications,
+  } = useNotificationsSuperAdmin(user.personId || user.id)
 
   const [currentRoute, setCurrentRoute] = useState<string>('inicio')
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
@@ -172,6 +180,12 @@ function SuperAdminApp({
     userRole: user.roleName,
     onLogout,
     canViewModule,
+    notifications,
+    isLoadingNotifications,
+    notificationsError,
+    onMarkNotificationRead,
+    onMarkAllNotificationsRead,
+    onReloadNotifications,
   }
 
   if (currentRoute === 'usuarios') {
@@ -325,7 +339,6 @@ function AuxApp({
       <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        unreadNotificationsCount={3}
         userName={user.name}
         userRole={user.roleName || 'Auxiliar'}
       />

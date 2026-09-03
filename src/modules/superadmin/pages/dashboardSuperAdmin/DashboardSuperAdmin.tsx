@@ -7,7 +7,7 @@ import {
   DashboardBackgroundDecoration,
 } from '../../components'
 import { useSuperAdminDashboard } from '../../hooks'
-import type { ModuleId } from '../../types'
+import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 
 export interface DashboardSuperAdminProps {
   onNavigate?: (routeId: string) => void
@@ -19,6 +19,12 @@ export interface DashboardSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  notifications?: NotificacionSuperAdmin[]
+  isLoadingNotifications?: boolean
+  notificationsError?: string | null
+  onMarkNotificationRead?: (id: string) => void
+  onMarkAllNotificationsRead?: () => void
+  onReloadNotifications?: () => void
 }
 
 export function DashboardSuperAdmin({
@@ -31,6 +37,12 @@ export function DashboardSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  notifications,
+  isLoadingNotifications,
+  notificationsError,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onReloadNotifications,
 }: DashboardSuperAdminProps = {}) {
   const {
     stats,
@@ -80,7 +92,12 @@ export function DashboardSuperAdmin({
       <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        unreadNotificationsCount={2}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
         userName={userName}
         userRole={userRole}
       />

@@ -10,7 +10,7 @@ import type {
   ServicioFormData,
   EstadoServicio,
 } from '../../types'
-import type { ModuleId } from '../../types'
+import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 import {
   SearchIcon,
   PlusIcon,
@@ -30,6 +30,12 @@ export interface ServiciosSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  notifications?: NotificacionSuperAdmin[]
+  isLoadingNotifications?: boolean
+  notificationsError?: string | null
+  onMarkNotificationRead?: (id: string) => void
+  onMarkAllNotificationsRead?: () => void
+  onReloadNotifications?: () => void
 }
 
 export function ServiciosSuperAdmin({
@@ -42,6 +48,12 @@ export function ServiciosSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  notifications,
+  isLoadingNotifications,
+  notificationsError,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onReloadNotifications,
 }: ServiciosSuperAdminProps = {}) {
   // Navigation & Sidebar state
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -91,7 +103,12 @@ export function ServiciosSuperAdmin({
         onToggleSidebar={toggleSidebar}
         userName={userName}
         userRole={userRole}
-        onNotificationClick={() => showToast('Tienes 2 notificaciones del sistema')}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
         onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
       />
 

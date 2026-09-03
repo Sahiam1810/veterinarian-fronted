@@ -16,6 +16,7 @@ import type {
   ModuleId,
   PermissionTarget,
   UserSaveResult,
+  NotificacionSuperAdmin,
 } from '../../types'
 
 import {
@@ -1128,6 +1129,12 @@ export interface UserSuperAdminProps {
   canViewModule?: (moduleId: ModuleId) => boolean
   // Solo SuperAdmin de plataforma puede editar matriz / excepciones de vistas
   canManagePermissions?: boolean
+  notifications?: NotificacionSuperAdmin[]
+  isLoadingNotifications?: boolean
+  notificationsError?: string | null
+  onMarkNotificationRead?: (id: string) => void
+  onMarkAllNotificationsRead?: () => void
+  onReloadNotifications?: () => void
 }
 
 /* ============================================================================
@@ -1144,6 +1151,12 @@ export function UserSuperAdmin({
   onLogout,
   canViewModule: shellCanViewModule,
   canManagePermissions = true,
+  notifications,
+  isLoadingNotifications,
+  notificationsError,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onReloadNotifications,
 }: UserSuperAdminProps) {
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
 
@@ -1208,7 +1221,12 @@ export function UserSuperAdmin({
         onToggleSidebar={toggleSidebar}
         userName={userName}
         userRole={userRole}
-        onNotificationClick={() => showToast('Tienes 3 notificaciones del sistema')}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
         onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
       />
 
