@@ -18,6 +18,9 @@ import type { ApiServiceResponse } from '../services/superAdminVetServicesServic
 import type { ApiVeterinarianResponse } from '../services/superAdminVeterinariansService'
 import type { ApiAvailabilityResponse } from '../services/superAdminAvailabilitiesService'
 import type { ApiAppointmentResponse } from '../services/superAdminAppointmentsService'
+import type { ApiMedicalRecordResponse } from '../services/superAdminMedicalRecordsService'
+import type { ApiVaccinationResponse } from '../services/superAdminVaccinationsService'
+import type { HistoriaConsulta, HistoriaVacuna } from '../types/historiaClinicaSuperAdmin.types'
 
 const SPECIES_KEYWORDS: Record<string, string[]> = {
   Canino: ['canin', 'perro', 'dog'],
@@ -336,6 +339,53 @@ export function buildDashboardStats(
       day: 'numeric',
       month: 'long',
     }),
+  }
+}
+
+function formatDateShortEs(isoString?: string | null): string {
+  if (!isoString) return 'No registrada'
+  const d = new Date(isoString)
+  if (Number.isNaN(d.getTime())) return 'No registrada'
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = String(d.getFullYear()).slice(-2)
+  return `${day}/${month}/${year}`
+}
+
+// Mapea historia médica API con contexto (cita, veterinario, diagnóstico) a consulta UI
+export function mapMedicalRecordToConsulta(
+  record: ApiMedicalRecordResponse,
+  context: {
+    serviceName?: string | null
+    veterinarianName?: string | null
+    diagnosticLabel?: string | null
+  } = {}
+): HistoriaConsulta {
+  const tratamientoIndicaciones = record.treatment
+    ? record.treatment
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+    : []
+
+  return {
+    id: record.id,
+    dateLabel: formatDateEs(record.createdAt),
+    typeLabel: context.serviceName ?? 'Consulta General',
+    veterinarian: context.veterinarianName ?? undefined,
+    motivo: record.symptoms ?? 'Sin síntomas registrados.',
+    diagnostico: context.diagnosticLabel ?? undefined,
+    tratamientoIndicaciones,
+  }
+}
+
+// Mapea vacunación API a fila de la tabla de vacunas
+export function mapVaccinationToVacuna(vaccination: ApiVaccinationResponse): HistoriaVacuna {
+  return {
+    id: vaccination.id,
+    name: vaccination.vaccineName ?? 'Vacuna',
+    appliedLabel: formatDateShortEs(vaccination.applicationDate),
+    nextLabel: vaccination.nextDoseDate ? formatDateShortEs(vaccination.nextDoseDate) : 'No programada',
   }
 }
 

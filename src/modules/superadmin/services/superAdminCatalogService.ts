@@ -32,6 +32,16 @@ export interface ApiStatusAppointmentResponse {
   createdAt: string
 }
 
+export interface ApiDiagnosticResponse {
+  id: string
+  code?: string | null
+  name?: string | null
+  description?: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt?: string | null
+}
+
 export async function fetchSpecies(): Promise<ApiSpeciesResponse[]> {
   return apiClient.get<ApiSpeciesResponse[]>('/api/Species')
 }
@@ -50,4 +60,9 @@ export async function fetchTypeServices(): Promise<ApiTypeServiceResponse[]> {
 
 export async function fetchStatusAppointments(): Promise<ApiStatusAppointmentResponse[]> {
   return apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments')
+}
+
+// onlyActive=false para incluir diagnósticos inactivos referenciados por historias antiguas
+export async function fetchDiagnostics(onlyActive = false): Promise<ApiDiagnosticResponse[]> {
+  return apiClient.get<ApiDiagnosticResponse[]>('/api/Diagnostics', { params: { onlyActive } })
 }
