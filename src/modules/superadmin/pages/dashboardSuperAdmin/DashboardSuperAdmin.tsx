@@ -52,8 +52,6 @@ export function DashboardSuperAdmin({
     activeRoute: internalActiveRoute,
     handleNavigate: internalHandleNavigate,
     activeNotification,
-    handleViewAllAppointments,
-    handleSelectAppointment,
   } = useSuperAdminDashboard()
 
   const currentRoute = externalActiveRoute || internalActiveRoute
@@ -115,8 +113,8 @@ export function DashboardSuperAdmin({
           <section className="relative z-10 w-full animate-pop-in stagger-2">
             <UpcomingAppointmentsTable
               appointments={appointments}
-              onViewAll={handleViewAllAppointments}
-              onSelectAppointment={handleSelectAppointment}
+              onViewAll={() => handleNavigate('agenda')}
+              onSelectAppointment={() => handleNavigate('agenda')}
             />
           </section>
         </main>

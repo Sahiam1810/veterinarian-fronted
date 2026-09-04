@@ -36,9 +36,62 @@ export function getApiUrl(endpoint: string, params?: Record<string, string | num
   return url.toString()
 }
 
+/**
+ * Detecta y repara cadenas UTF-8 que fueron interpretadas o guardadas incorrectamente como ISO-8859-1 / Windows-1252 (Mojibake).
+ */
+export function fixEncoding(text: string): string {
+  if (!text || typeof text !== 'string') return text
+
+  // Comprueba si contiene caracteres líderes típicos de secuencias multibyte UTF-8 mal interpretadas
+  if (!/[\u00C2-\u00C5\u00E2\u00C3]/.test(text)) {
+    return text
+  }
+
+  try {
+    const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0))
+    const decoded = new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+    if (!decoded.includes('\uFFFD')) {
+      return decoded
+    }
+  } catch {
+    // Si falla la decodificación, mantiene el texto original
+  }
+
+  return text
+}
+
+/**
+ * Sanitiza recursivamente cualquier objeto, arreglo o cadena recibida de la API.
+ */
+export function sanitizeEncoding<T>(data: T): T {
+  if (data === null || data === undefined) return data
+
+  if (typeof data === 'string') {
+    return fixEncoding(data) as unknown as T
+  }
+
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeEncoding(item)) as unknown as T
+  }
+
+  if (typeof data === 'object') {
+    if (data instanceof Blob || data instanceof FormData || data instanceof Date) {
+      return data
+    }
+    const sanitized: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      sanitized[key] = sanitizeEncoding(value)
+    }
+    return sanitized as unknown as T
+  }
+
+  return data
+}
+
 async function parseErrorMessage(response: Response): Promise<{ message: string; violations: string[] }> {
   try {
-    const payload = await response.json() as {
+    const rawPayload = await response.json()
+    const payload = sanitizeEncoding(rawPayload) as {
       message?: string
       title?: string
       detail?: string
@@ -158,10 +211,12 @@ export async function request<T = unknown>(
 
   const contentType = response.headers.get('content-type')
   if (contentType && contentType.includes('application/json')) {
-    return (await response.json()) as T
+    const rawJson = await response.json()
+    return sanitizeEncoding(rawJson) as T
   }
 
-  return (await response.text()) as unknown as T
+  const rawText = await response.text()
+  return fixEncoding(rawText) as unknown as T
 }
 
 export const apiClient = {

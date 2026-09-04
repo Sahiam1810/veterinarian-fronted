@@ -22,7 +22,7 @@ import {
   fetchAvailabilitiesByVeterinarian,
   createAvailability,
 } from '../services'
-import { mapAppointmentToCita, buildCurrentWeekDays } from '../utils/superAdminApiMappers'
+import { mapAppointmentToCita, buildWeekDays } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 
 // DayOfWeek .NET: 0=Domingo … 6=Sábado
@@ -43,7 +43,8 @@ export function useAgendaSuperAdmin() {
   const [citas, setCitas] = useState<CitaSuperAdmin[]>([])
   const [selectedCitaId, setSelectedCitaId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [weekDays] = useState(() => buildCurrentWeekDays())
+  const [baseDate, setBaseDate] = useState<Date>(() => new Date())
+  const weekDays = useMemo(() => buildWeekDays(baseDate), [baseDate])
 
   const [profesionalesOpciones, setProfesionalesOpciones] = useState<{ id: string; name: string }[]>([])
   const [serviciosOpciones, setServiciosOpciones] = useState<AgendaServiceOption[]>([])
@@ -52,7 +53,10 @@ export function useAgendaSuperAdmin() {
 
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'semana' | 'dia'>('semana')
-  const [activeDayIndex, setActiveDayIndex] = useState<number>(0)
+  const [activeDayIndex, setActiveDayIndex] = useState<number>(() => {
+    const day = new Date().getDay()
+    return day === 0 ? 6 : day - 1
+  })
 
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -64,6 +68,54 @@ export function useAgendaSuperAdmin() {
       setActiveNotification(null)
     }, 3200)
   }, [])
+
+  const goToPrevious = useCallback(() => {
+    if (viewMode === 'dia') {
+      setActiveDayIndex((prev) => {
+        if (prev > 0) return prev - 1
+        setBaseDate((d) => {
+          const next = new Date(d)
+          next.setDate(next.getDate() - 7)
+          return next
+        })
+        return 6
+      })
+    } else {
+      setBaseDate((d) => {
+        const next = new Date(d)
+        next.setDate(next.getDate() - 7)
+        return next
+      })
+    }
+  }, [viewMode])
+
+  const goToNext = useCallback(() => {
+    if (viewMode === 'dia') {
+      setActiveDayIndex((prev) => {
+        if (prev < 6) return prev + 1
+        setBaseDate((d) => {
+          const next = new Date(d)
+          next.setDate(next.getDate() + 7)
+          return next
+        })
+        return 0
+      })
+    } else {
+      setBaseDate((d) => {
+        const next = new Date(d)
+        next.setDate(next.getDate() + 7)
+        return next
+      })
+    }
+  }, [viewMode])
+
+  const goToToday = useCallback(() => {
+    const now = new Date()
+    setBaseDate(now)
+    const day = now.getDay()
+    setActiveDayIndex(day === 0 ? 6 : day - 1)
+  }, [])
+
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -349,7 +401,12 @@ export function useAgendaSuperAdmin() {
   return {
     citas,
     isLoading,
+    baseDate,
+    setBaseDate,
     weekDays,
+    goToPrevious,
+    goToNext,
+    goToToday,
     selectedCitaId,
     setSelectedCitaId,
     selectedCita,
@@ -375,3 +432,4 @@ export function useAgendaSuperAdmin() {
     reload: loadData,
   }
 }
+
