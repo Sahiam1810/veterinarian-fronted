@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { PawCheckbox } from '@/global/components'
 import type { AuxDayAppointment } from '../types'
 
 export interface PrepararCitaDrawerProps {
@@ -230,11 +231,9 @@ export function PrepararCitaDrawer({
             </h3>
 
             <label className="flex items-center gap-3 p-2.5 rounded-xl border border-border-tan/70 hover:bg-bone/40 transition cursor-pointer">
-              <input
-                type="checkbox"
+              <PawCheckbox
                 checked={instrumentsReady}
                 onChange={(e) => setInstrumentsReady(e.target.checked)}
-                className="w-4 h-4 rounded text-brand focus:ring-brand/30 border-border-tan"
               />
               <span className="text-xs font-medium text-charcoal">
                 Instrumental esterilizado y preparado para {appointment.service}
@@ -242,11 +241,9 @@ export function PrepararCitaDrawer({
             </label>
 
             <label className="flex items-center gap-3 p-2.5 rounded-xl border border-border-tan/70 hover:bg-bone/40 transition cursor-pointer">
-              <input
-                type="checkbox"
+              <PawCheckbox
                 checked={historyChecked}
                 onChange={(e) => setHistoryChecked(e.target.checked)}
-                className="w-4 h-4 rounded text-brand focus:ring-brand/30 border-border-tan"
               />
               <span className="text-xs font-medium text-charcoal">
                 Historial médico y vacunación previa revisados
@@ -254,11 +251,9 @@ export function PrepararCitaDrawer({
             </label>
 
             <label className="flex items-center gap-3 p-2.5 rounded-xl border border-border-tan/70 hover:bg-bone/40 transition cursor-pointer">
-              <input
-                type="checkbox"
+              <PawCheckbox
                 checked={petCalm}
                 onChange={(e) => setPetCalm(e.target.checked)}
-                className="w-4 h-4 rounded text-brand focus:ring-brand/30 border-border-tan"
               />
               <span className="text-xs font-medium text-charcoal">
                 Mascota acondicionada y lista para ingreso con el profesional

@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { BrandLogo } from '@/global/components'
+import { BrandLogo, PawCheckbox } from '@/global/components'
 import { useAuth } from '../hooks'
 import type { LoginCredentials, AuthUser } from '../types'
 import { hasLoginFieldErrors, validateLoginFields, type LoginFieldErrors } from '../utils/validateLogin'
@@ -172,15 +172,11 @@ export function LoginPage({
             </label>
 
             <div className="login-row-remember">
-              <label className="login-remember">
-                <span className="login-remember__control">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                  />
-                  <PawIcon className="login-remember__paw" />
-                </span>
+              <label className="login-remember flex items-center gap-2 cursor-pointer">
+                <PawCheckbox
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
                 <span>Recordarme</span>
               </label>
             </div>
@@ -206,23 +202,6 @@ export function LoginPage({
   )
 }
 
-function PawIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      width="14"
-      height="14"
-      aria-hidden
-      fill="currentColor"
-    >
-      <ellipse cx="6.2" cy="8.2" rx="2.1" ry="2.6" />
-      <ellipse cx="12" cy="5.8" rx="2.1" ry="2.6" />
-      <ellipse cx="17.8" cy="8.2" rx="2.1" ry="2.6" />
-      <path d="M12 10.4c-3.6 0-6.2 2.4-6.2 5.4 0 2.2 1.9 3.6 4.1 3.6 1.1 0 1.6-.4 2.1-.4s1 .4 2.1.4c2.2 0 4.1-1.4 4.1-3.6 0-3-2.6-5.4-6.2-5.4Z" />
-    </svg>
-  )
-}
 
 // Icono outline para mostrar contraseña.
 function EyeIcon() {

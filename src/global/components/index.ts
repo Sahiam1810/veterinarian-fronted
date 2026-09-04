@@ -9,3 +9,4 @@ export type {
   SidebarActiveTone,
 } from './Sidebar'
 export * from './Icons'
+export * from './PawCheckbox'

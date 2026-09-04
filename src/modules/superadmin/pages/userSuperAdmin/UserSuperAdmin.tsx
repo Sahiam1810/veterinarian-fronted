@@ -27,6 +27,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   CheckIcon,
+  PawCheckbox,
 } from '@/global/components'
 
 
@@ -655,21 +656,17 @@ function PermissionMatrixPanel({
                     {mod.label}
                   </td>
                   <td className="py-1.5 px-1 text-center">
-                    <input
-                      type="checkbox"
+                    <PawCheckbox
                       checked={perms.view}
                       onChange={() => onTogglePermission(mod.id, 'view')}
-                      className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer"
                       aria-label={`Permiso Ver para ${mod.label}`}
                     />
                   </td>
                   <td className="py-1.5 px-1 text-center">
                     {mod.supportsCreate !== false ? (
-                      <input
-                        type="checkbox"
+                      <PawCheckbox
                         checked={perms.create}
                         onChange={() => onTogglePermission(mod.id, 'create')}
-                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer"
                         aria-label={`Permiso Crear para ${mod.label}`}
                       />
                     ) : (
@@ -678,11 +675,9 @@ function PermissionMatrixPanel({
                   </td>
                   <td className="py-1.5 px-1 text-center">
                     {mod.supportsEdit !== false ? (
-                      <input
-                        type="checkbox"
+                      <PawCheckbox
                         checked={perms.edit}
                         onChange={() => onTogglePermission(mod.id, 'edit')}
-                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer"
                         aria-label={`Permiso Editar para ${mod.label}`}
                       />
                     ) : (
@@ -691,11 +686,9 @@ function PermissionMatrixPanel({
                   </td>
                   <td className="py-1.5 px-1 text-center">
                     {mod.supportsDelete !== false ? (
-                      <input
-                        type="checkbox"
+                      <PawCheckbox
                         checked={perms.delete}
                         onChange={() => onTogglePermission(mod.id, 'delete')}
-                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer"
                         aria-label={`Permiso Eliminar para ${mod.label}`}
                       />
                     ) : (
