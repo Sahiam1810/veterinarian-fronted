@@ -45,6 +45,42 @@ function hasCustomPermissions(user: SystemUser): boolean {
   return !!user.customPermissions && Object.keys(user.customPermissions).length > 0
 }
 
+function ChevronLeftIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M15 18l-6-6 6-6" />
+    </svg>
+  )
+}
+
+function ChevronRightIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  )
+}
+
 
 
 
@@ -912,10 +948,11 @@ function ByUserModeView({
                 type="button"
                 disabled={safeCurrentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold text-sage bg-transparent border border-border-tan/60 hover:not-disabled:bg-bone hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-sage bg-transparent border border-border-tan/60 hover:not-disabled:bg-bone hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer active:scale-95"
                 aria-label="Página anterior"
+                title="Página anterior"
               >
-                Anterior
+                <ChevronLeftIcon className="w-3 h-3" />
               </button>
 
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
@@ -940,10 +977,11 @@ function ByUserModeView({
                 type="button"
                 disabled={safeCurrentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold text-sage bg-transparent border border-border-tan/60 hover:not-disabled:bg-bone hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-sage bg-transparent border border-border-tan/60 hover:not-disabled:bg-bone hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer active:scale-95"
                 aria-label="Página siguiente"
+                title="Página siguiente"
               >
-                Siguiente
+                <ChevronRightIcon className="w-3 h-3" />
               </button>
             </div>
           </div>
