@@ -212,12 +212,20 @@ export function useUserSuperAdmin() {
       // Mapear Roles
       const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
         const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
+        if (isPlatformSuper) {
+          return {
+            id: r.id,
+            name: r.name,
+            description: r.description || 'SuperAdministrador con acceso total permanente.',
+            isSystem: true,
+            permissions: { ...DEFAULT_PERMISSIONS_ALL },
+          }
+        }
+
         const isClinicAdmin = isClinicAdminRoleName(r.name)
-        // Admin de clínica parte con todas las vistas del panel (como SuperAdmin UI)
-        const perms: Record<ModuleId, ModulePermission> =
-          isPlatformSuper || isClinicAdmin
-            ? { ...DEFAULT_PERMISSIONS_ALL }
-            : { ...DEFAULT_PERMISSIONS_EMPTY }
+        const perms: Record<ModuleId, ModulePermission> = isClinicAdmin
+          ? { ...DEFAULT_PERMISSIONS_ALL }
+          : { ...DEFAULT_PERMISSIONS_EMPTY }
 
         // Aplicar permisos desde la tabla ROLE_PERMISSIONS
         const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
@@ -245,7 +253,7 @@ export function useUserSuperAdmin() {
           id: r.id,
           name: r.name,
           description: r.description || 'Sin descripción',
-          isSystem: isPlatformSuper,
+          isSystem: false,
           permissions: perms,
         }
       })
@@ -277,12 +285,15 @@ export function useUserSuperAdmin() {
 
         const uiUserOverrides = getUiShellOverrides('user', u.id)
         const uiEmailOverrides = getUiShellOverrides('email', u.email)
-        for (const modId of UI_SHELL_MODULE_IDS) {
-          if (uiEmailOverrides[modId]) {
-            userCustomPerms[modId] = uiEmailOverrides[modId]
-          }
-          if (uiUserOverrides[modId]) {
-            userCustomPerms[modId] = uiUserOverrides[modId]
+        const isSuperAdminAccount = isPlatformSuperAdminRoleName(roleName)
+        if (!isSuperAdminAccount) {
+          for (const modId of UI_SHELL_MODULE_IDS) {
+            if (uiEmailOverrides[modId]) {
+              userCustomPerms[modId] = uiEmailOverrides[modId]
+            }
+            if (uiUserOverrides[modId]) {
+              userCustomPerms[modId] = uiUserOverrides[modId]
+            }
           }
         }
 
@@ -296,7 +307,10 @@ export function useUserSuperAdmin() {
           roleName,
           status: (u.isActive ? 'Activo' : 'Inactivo') as UserStatus,
           registrationDate: formatDate(u.createdAt),
-          customPermissions: Object.keys(userCustomPerms).length > 0 ? userCustomPerms : undefined,
+          customPermissions:
+            !isSuperAdminAccount && Object.keys(userCustomPerms).length > 0
+              ? userCustomPerms
+              : undefined,
         }
       })
 
@@ -560,6 +574,23 @@ export function useUserSuperAdmin() {
   const saveRolePermissions = async () => {
     try {
       if (permissionTarget.type === 'user' && selectedTargetUser) {
+        const isSuperAdminUser =
+          isPlatformSuperAdminRoleName(selectedTargetUser.roleName) ||
+          isPlatformSuperAdminRoleName(activeTargetRole.name) ||
+          selectedTargetUser.roleName.toLowerCase().includes('superadmin')
+
+        if (isSuperAdminUser) {
+          showToast('No se pueden modificar ni eliminar los permisos del usuario SuperAdmin.')
+          setUsers((prevUsers) =>
+            prevUsers.map((u) => {
+              if (u.id !== selectedTargetUser.id) return u
+              const { customPermissions: _, ...rest } = u
+              return rest
+            })
+          )
+          return
+        }
+
         const userCustom = selectedTargetUser.customPermissions || {}
 
         // Persistir Inicio/Reportes en local (no hay MODULES Oracle para ellos)
@@ -605,6 +636,18 @@ export function useUserSuperAdmin() {
       } else {
         const currentRole = roles.find((r) => r.id === permissionTarget.id)
         if (currentRole) {
+          if (isPlatformSuperAdminRoleName(currentRole.name)) {
+            showToast('No se pueden modificar ni eliminar los permisos del rol SuperAdmin.')
+            setRoles((prevRoles) =>
+              prevRoles.map((r) =>
+                r.id === currentRole.id
+                  ? { ...r, permissions: { ...DEFAULT_PERMISSIONS_ALL } }
+                  : r
+              )
+            )
+            return
+          }
+
           const uiOverrides: Partial<Record<ModuleId, ModulePermission>> = {}
           for (const modId of UI_SHELL_MODULE_IDS) {
             if (currentRole.permissions[modId]) {
