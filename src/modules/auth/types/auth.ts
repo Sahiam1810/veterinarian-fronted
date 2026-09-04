@@ -10,7 +10,7 @@ export interface AuthUser {
   // Users.Id (person) — mismo id que usa SuperAdmin al guardar excepciones
   personId?: string
   userAccountId?: string
-  // true solo para SuperAdmin de plataforma (claim JWT), no para Administrador de clínica
+  // Compatibilidad de UI: true solo para el role_id canónico SuperAdmin persistido.
   isPlatformSuperAdmin?: boolean
   avatarUrl?: string
   accessToken?: string

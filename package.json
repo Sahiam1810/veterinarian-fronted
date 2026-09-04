@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "tsc -b --pretty false"
+    "lint": "tsc -b --pretty false",
+    "test:auth": "node --test --experimental-strip-types tests/auth/systemRoles.test.ts"
   },
   "dependencies": {
     "react": "^19.1.1",
