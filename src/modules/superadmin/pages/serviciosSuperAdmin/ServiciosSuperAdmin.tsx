@@ -132,7 +132,7 @@ export function ServiciosSuperAdmin({
           {/* Toast Notification */}
           {activeNotification && (
             <div
-              className="fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-lg border border-white/20 flex items-center gap-2 pointer-events-none"
+              className="toast-pop-up fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-xl border border-white/20 flex items-center gap-2 pointer-events-none"
               role="alert"
             >
               <CheckIcon className="w-4 h-4 text-ochre shrink-0" />

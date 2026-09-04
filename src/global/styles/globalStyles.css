@@ -188,16 +188,36 @@
   }
 }
 
-@keyframes slideDownToast {
-  from {
+@keyframes toastPopUp {
+  0% {
     opacity: 0;
-    transform: translate(-50%, -16px);
+    transform: translate(-50%, -24px) scale(0.85);
   }
-  to {
+  65% {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translate(-50%, 3px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
   }
 }
+
+@keyframes toastPopUpBottom {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 24px) scale(0.85);
+  }
+  65% {
+    opacity: 1;
+    transform: translate(-50%, -3px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 
 @keyframes tabUnderlineIn {
   from {
@@ -230,10 +250,18 @@
   animation: drawerSlideOutRight 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.dashboard-toast,
+.toast-pop-up,
 .user-toast {
-  animation: slideDownToast 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: toastPopUp 340ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transform-origin: center top;
 }
+
+.toast-pop-up-bottom,
+.dashboard-toast {
+  animation: toastPopUpBottom 340ms cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transform-origin: center bottom;
+}
+
 
 @keyframes rowPopIn {
   from {

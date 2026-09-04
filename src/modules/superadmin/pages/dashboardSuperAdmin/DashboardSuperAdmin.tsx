@@ -125,7 +125,7 @@ export function DashboardSuperAdmin({
         <div
           role="status"
           aria-live="polite"
-          className="dashboard-toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand text-white px-5 py-2.5 rounded-full shadow-lg text-xs sm:text-sm font-medium border border-white/20 flex items-center gap-2"
+          className="toast-pop-up-bottom dashboard-toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand text-white px-5 py-2.5 rounded-full shadow-xl text-xs sm:text-sm font-medium border border-white/20 flex items-center gap-2"
         >
           <span className="w-2 h-2 rounded-full bg-ochre animate-pulse" />
           <span>{activeNotification}</span>
