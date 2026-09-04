@@ -12,13 +12,16 @@ interface AgendaWeekGridProps {
 }
 
 function parseMinutes(time: string): number {
+  if (!time) return 0
   const [h, m] = time.split(':').map(Number)
-  return h * 60 + m
+  return (h || 0) * 60 + (m || 0)
 }
 
 function percentFromHourStart(time: string, hourStart: number, totalMinutes: number): number {
-  return ((parseMinutes(time) - hourStart * 60) / totalMinutes) * 100
+  const diff = parseMinutes(time) - hourStart * 60
+  return Math.max(0, Math.min(100, (diff / totalMinutes) * 100))
 }
+
 
 // Grid semanal: en móvil hace scroll horizontal para no aplastar columnas.
 export function AgendaWeekGrid({

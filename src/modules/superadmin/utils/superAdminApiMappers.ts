@@ -243,7 +243,14 @@ export function mapStatusToAppointmentStatus(statusName?: string | null): Appoin
 }
 
 function toDateKey(iso: string): string {
+  if (!iso) return ''
+  if (iso.includes('T')) {
+    return iso.slice(0, 10)
+  }
+  const match = iso.match(/^\d{4}-\d{2}-\d{2}/)
+  if (match) return match[0]
   const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10)
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
@@ -251,12 +258,30 @@ function toDateKey(iso: string): string {
 }
 
 function toTimeLabel(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+  if (!iso) return '08:00 AM'
+  const time24 = toTime24(iso)
+  const [hStr, mStr] = time24.split(':')
+  const hNum = Number.parseInt(hStr, 10) || 0
+  const ampm = hNum >= 12 ? 'PM' : 'AM'
+  const h12 = hNum % 12 || 12
+  return `${String(h12).padStart(2, '0')}:${mStr} ${ampm}`
 }
 
 function toTime24(iso: string): string {
+  if (!iso) return '08:00'
+  if (iso.includes('T')) {
+    const timePart = iso.slice(iso.indexOf('T') + 1)
+    const match = timePart.match(/^(\d{1,2}):(\d{2})/)
+    if (match) {
+      return `${match[1].padStart(2, '0')}:${match[2]}`
+    }
+  }
+  const match = iso.match(/^(\d{1,2}):(\d{2})/)
+  if (match) {
+    return `${match[1].padStart(2, '0')}:${match[2]}`
+  }
   const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '08:00'
   const h = String(d.getHours()).padStart(2, '0')
   const m = String(d.getMinutes()).padStart(2, '0')
   return `${h}:${m}`
@@ -412,22 +437,28 @@ export function mapNotificationToNotificacion(notification: ApiNotificationRespo
   }
 }
 
-// Genera los 7 días de la semana actual para la vista de agenda
-export function buildCurrentWeekDays(): { label: string; dateKey: string; num: number }[] {
-  const today = new Date()
-  const day = today.getDay()
+// Genera los 7 días de la semana (Lunes a Domingo) para cualquier fecha base
+export function buildWeekDays(baseDate: Date = new Date()): { label: string; dateKey: string; num: number; isToday: boolean }[] {
+  const day = baseDate.getDay()
   const mondayOffset = day === 0 ? -6 : 1 - day
-  const monday = new Date(today)
-  monday.setDate(today.getDate() + mondayOffset)
+  const monday = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + mondayOffset)
+
+  const today = new Date()
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
   return labels.map((label, index) => {
-    const d = new Date(monday)
-    d.setDate(monday.getDate() + index)
+    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index)
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
     const num = d.getDate()
     const dateKey = `${y}-${m}-${String(num).padStart(2, '0')}`
-    return { label, dateKey, num }
+    return { label, dateKey, num, isToday: dateKey === todayKey }
   })
 }
+
+// Genera los 7 días de la semana actual para la vista de agenda
+export function buildCurrentWeekDays(): { label: string; dateKey: string; num: number; isToday: boolean }[] {
+  return buildWeekDays(new Date())
+}
+
