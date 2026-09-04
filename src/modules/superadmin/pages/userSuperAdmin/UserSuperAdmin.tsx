@@ -777,6 +777,17 @@ function ByUserModeView({
   showPermissionMatrix = true,
 }: ByUserModeViewProps) {
   const [showMobileDetail, setShowMobileDetail] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters.searchQuery, filters.roleFilter, filters.statusFilter])
+
+  const totalPages = Math.max(1, Math.ceil(users.length / ITEMS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE
+  const paginatedUsers = users.slice(startIndex, startIndex + ITEMS_PER_PAGE)
 
   const handleSelectUser = (userId: string) => {
     onSelectUser(userId)
@@ -831,11 +842,11 @@ function ByUserModeView({
             </select>
           </div>
 
-          <div className="space-y-1 flex-1 min-h-0 overflow-hidden mt-2">
-            {users.length === 0 ? (
+          <div className="space-y-1 flex-1 min-h-0 overflow-y-auto mt-2 pr-0.5">
+            {paginatedUsers.length === 0 ? (
               <p className="text-xs text-sage text-center py-6">No se encontraron usuarios</p>
             ) : (
-              users.map((user) => {
+              paginatedUsers.map((user) => {
                 const isSelected = selectedUserId === user.id
                 const customized = hasCustomPermissions(user)
 
@@ -843,7 +854,7 @@ function ByUserModeView({
                   <div
                     key={user.id}
                     onClick={() => handleSelectUser(user.id)}
-                    className={`group relative rounded-lg py-1.5 px-2 cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 ${
+                    className={`group relative rounded-lg py-1.5 px-2 cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 active:scale-[0.98] ${
                       isSelected
                         ? 'bg-cream border border-brand/50 shadow-2xs'
                         : 'bg-bone/60 hover:bg-bone border border-border-tan/50'
@@ -896,9 +907,53 @@ function ByUserModeView({
             )}
           </div>
 
-          <p className="text-[10px] text-sage font-medium px-1 pt-1.5 border-t border-border-tan/40 shrink-0">
-            Mostrando {users.length} usuario{users.length === 1 ? '' : 's'}
-          </p>
+          {/* Barra de Paginación siempre visible con límite de 10 */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 px-1 pt-2 border-t border-border-tan/40 shrink-0 text-[10px] text-sage">
+            <span className="truncate">
+              Mostrando {users.length === 0 ? 0 : startIndex + 1} -{' '}
+              {Math.min(startIndex + ITEMS_PER_PAGE, users.length)} de {users.length}
+            </span>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                disabled={safeCurrentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold text-sage bg-transparent border border-border-tan/60 hover:not-disabled:bg-bone hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Página anterior"
+              >
+                Anterior
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  disabled={totalPages <= 1}
+                  onClick={() => setCurrentPage(num)}
+                  className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] transition ${
+                    safeCurrentPage === num
+                      ? 'bg-brand text-white font-bold'
+                      : totalPages <= 1
+                        ? 'text-sage/60 cursor-default opacity-60'
+                        : 'font-semibold text-sage hover:bg-bone hover:text-brand cursor-pointer'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={safeCurrentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[10px] font-semibold text-sage bg-transparent border border-border-tan/60 hover:not-disabled:bg-bone hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition cursor-pointer"
+                aria-label="Página siguiente"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -908,7 +963,10 @@ function ByUserModeView({
         }`}
       >
         {selectedTargetUser ? (
-          <>
+          <div
+            key={selectedTargetUser.id}
+            className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden animate-view-popup"
+          >
             <button
               type="button"
               onClick={() => setShowMobileDetail(false)}
@@ -917,7 +975,7 @@ function ByUserModeView({
               Volver a la lista
             </button>
 
-            <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-3 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] shrink-0">
+            <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-3 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] shrink-0 animate-pop-in stagger-1">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-mint-soft text-brand border border-brand/15 flex items-center justify-center text-xs font-bold shrink-0">
@@ -957,7 +1015,7 @@ function ByUserModeView({
                   <button
                     type="button"
                     onClick={() => onOpenEditModal(selectedTargetUser)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs active:scale-95"
                   >
                     <EditIcon className="w-3 h-3" />
                     <span>Editar</span>
@@ -965,14 +1023,14 @@ function ByUserModeView({
                   <button
                     type="button"
                     onClick={() => onToggleStatus(selectedTargetUser.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs active:scale-95"
                   >
                     <span>{selectedTargetUser.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => onDeleteUser(selectedTargetUser.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-terracotta/20 bg-terracotta-soft text-terracotta text-[11px] font-semibold transition cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-terracotta/20 bg-terracotta-soft text-terracotta text-[11px] font-semibold transition cursor-pointer shadow-2xs active:scale-95"
                   >
                     <TrashIcon className="w-3 h-3" />
                     <span>Eliminar</span>
@@ -981,30 +1039,30 @@ function ByUserModeView({
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            {showPermissionMatrix ? (
-            <PermissionMatrixPanel
-              permissionTarget={permissionTarget}
-              selectedRole={activeTargetRole}
-              selectedTargetUser={selectedTargetUser}
-              activeTargetRole={activeTargetRole}
-              activePermissions={activePermissions}
-              isUserTargetCustomized={isUserTargetCustomized}
-              modulesInfo={modulesInfo}
-              onTogglePermission={onTogglePermission}
-              onSavePermissions={onSavePermissions}
-              onResetUserPermissions={onResetUserPermissions}
-            />
-            ) : (
-              <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-border-tan text-sm text-sage">
-                Como administrador de clínica puedes crear y gestionar cuentas, pero no puedes
-                cambiar permisos ni bloquear vistas. Eso solo lo hace el SuperAdmin.
-              </div>
-            )}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-pop-in stagger-2">
+              {showPermissionMatrix ? (
+                <PermissionMatrixPanel
+                  permissionTarget={permissionTarget}
+                  selectedRole={activeTargetRole}
+                  selectedTargetUser={selectedTargetUser}
+                  activeTargetRole={activeTargetRole}
+                  activePermissions={activePermissions}
+                  isUserTargetCustomized={isUserTargetCustomized}
+                  modulesInfo={modulesInfo}
+                  onTogglePermission={onTogglePermission}
+                  onSavePermissions={onSavePermissions}
+                  onResetUserPermissions={onResetUserPermissions}
+                />
+              ) : (
+                <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-border-tan text-sm text-sage">
+                  Como administrador de clínica puedes crear y gestionar cuentas, pero no puedes
+                  cambiar permisos ni bloquear vistas. Eso solo lo hace el SuperAdmin.
+                </div>
+              )}
             </div>
-          </>
+          </div>
         ) : (
-          <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-8 border border-border-tan text-center text-sage text-sm">
+          <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-8 border border-border-tan text-center text-sage text-sm animate-pop-in">
             Selecciona un usuario de la lista para ver su ficha y permisos.
           </div>
         )}
@@ -1099,7 +1157,10 @@ function ByRoleModeView({
         </div>
       </div>
 
-      <div className="lg:col-span-8 h-full min-h-0 min-w-0 flex flex-col overflow-hidden animate-pop-in stagger-2">
+      <div
+        key={selectedRole.id}
+        className="lg:col-span-8 h-full min-h-0 min-w-0 flex flex-col overflow-hidden animate-view-popup"
+      >
         <PermissionMatrixPanel
           permissionTarget={permissionTarget}
           selectedRole={selectedRole}
