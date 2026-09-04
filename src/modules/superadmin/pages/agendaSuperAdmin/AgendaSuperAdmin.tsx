@@ -130,7 +130,6 @@ export function AgendaSuperAdmin({
     viewMode,
     setViewMode,
     activeDayIndex,
-    setActiveDayIndex,
     activeNotification,
     showToast,
     isDrawerOpen,

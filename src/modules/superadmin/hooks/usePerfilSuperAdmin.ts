@@ -122,15 +122,16 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
   const saveProfile = async (data: { fullName: string; email: string; phone: string }) => {
     writeExtras(data.email || profile.email, { phone: data.phone })
 
-    // SuperAdmin de plataforma no tiene fila en Users: solo extras locales
+    // Los datos identificadores del SuperAdmin están protegidos por el backend;
+    // los complementos visuales continúan siendo locales.
     if (profile.isPlatformSuperAdmin) {
       setProfile((prev) => ({
         ...prev,
         phone: data.phone,
-        // nombre/email vienen de .env vía /me — no se pueden persistir
+        // nombre y correo no se modifican desde el endpoint administrativo
       }))
       showToast(
-        'Teléfono guardado localmente. Nombre y correo del SuperAdmin de plataforma se definen en el .env del backend.',
+        'Teléfono guardado localmente. Por seguridad, el nombre y correo del SuperAdmin no se modifican desde este panel.',
       )
       return { ok: true as const }
     }
@@ -177,13 +178,6 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
     currentPassword: string
     newPassword: string
   }) => {
-    if (profile.isPlatformSuperAdmin) {
-      showToast(
-        'La contraseña del SuperAdmin de plataforma se cambia en el .env (SuperAdmin__PasswordHash), no vía API.',
-      )
-      return { ok: false as const }
-    }
-
     try {
       await changeMyPassword(data)
       showToast('Contraseña cambiada exitosamente.')

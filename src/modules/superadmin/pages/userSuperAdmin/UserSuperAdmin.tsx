@@ -1127,7 +1127,7 @@ export interface UserSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
-  // Solo SuperAdmin de plataforma puede editar matriz / excepciones de vistas
+  // Solo el SuperAdmin persistido puede editar la matriz y las excepciones.
   canManagePermissions?: boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean

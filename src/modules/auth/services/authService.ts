@@ -7,6 +7,7 @@ import type {
   UserRole,
 } from '../types'
 import { toSpanishAuthError } from '../utils/toSpanishAuthError'
+import { resolvePersistedRoleIdentity } from '../utils/systemRoles'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
   || 'http://localhost:5233'
@@ -80,7 +81,6 @@ function mapBackendRole(roleName: string): UserRole {
   return 'cliente'
 }
 
-// Lee claim super_admin del JWT de plataforma
 function readJwtPayload(accessToken: string): Record<string, unknown> | null {
   try {
     const payloadPart = accessToken.split('.')[1]
@@ -90,12 +90,6 @@ function readJwtPayload(accessToken: string): Record<string, unknown> | null {
   } catch {
     return null
   }
-}
-
-function readPlatformSuperAdminClaim(accessToken: string): boolean {
-  const payload = readJwtPayload(accessToken)
-  if (!payload) return false
-  return payload.super_admin === true || payload.super_admin === 'true'
 }
 
 function readRoleIdClaim(accessToken: string): string | undefined {
@@ -181,8 +175,8 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
 
   const profile = await meResponse.json() as CurrentProfileResponse
   const role = mapBackendRole(profile.role)
-  const isPlatformSuperAdmin = readPlatformSuperAdminClaim(tokens.accessToken)
   const roleId = readRoleIdClaim(tokens.accessToken)
+  const resolvedIdentity = resolvePersistedRoleIdentity(roleId, role)
   // personId = Users.Id (coincide con lista de SuperAdmin / UserPermissions)
   const personId = profile.personId || profile.userAccountId
 
@@ -190,12 +184,12 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
     id: personId,
     name: profile.fullName,
     email: profile.email,
-    role: isPlatformSuperAdmin ? 'superadmin' : role,
-    roleName: isPlatformSuperAdmin ? 'SuperAdministrador' : profile.role,
+    role: resolvedIdentity.role,
+    roleName: profile.role,
     roleId,
     personId: profile.personId,
     userAccountId: profile.userAccountId,
-    isPlatformSuperAdmin,
+    isPlatformSuperAdmin: resolvedIdentity.isPlatformSuperAdmin,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
   }
@@ -238,7 +232,14 @@ export function getStoredUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw) as AuthUser
+    const stored = JSON.parse(raw) as AuthUser
+    const resolvedIdentity = resolvePersistedRoleIdentity(stored.roleId, stored.role)
+
+    return {
+      ...stored,
+      role: resolvedIdentity.role,
+      isPlatformSuperAdmin: resolvedIdentity.isPlatformSuperAdmin,
+    }
   } catch {
     return null
   }

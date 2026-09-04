@@ -195,7 +195,7 @@ export function PerfilSuperAdmin({
                 </button>
                 {profile.isPlatformSuperAdmin && (
                   <p className="text-[10px] text-sage font-medium leading-snug px-1">
-                    SuperAdmin de plataforma: nombre y correo vienen del .env del backend.
+                    Cuenta SuperAdmin persistida: nombre y correo están protegidos por las reglas de seguridad del backend.
                   </p>
                 )}
                 <button
