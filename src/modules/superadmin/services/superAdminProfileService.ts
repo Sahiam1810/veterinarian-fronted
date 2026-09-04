@@ -1,7 +1,7 @@
 import { apiClient } from '@/services'
 import type { CurrentProfileResponse } from '@/modules/auth/types'
 
-// Perfil del usuario autenticado (incluye SuperAdmin de plataforma)
+// Perfil persistido del usuario autenticado, incluido SuperAdmin.
 export async function fetchCurrentProfile(): Promise<CurrentProfileResponse> {
   return apiClient.get<CurrentProfileResponse>('/api/auth/me')
 }

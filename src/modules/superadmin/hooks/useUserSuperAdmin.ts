@@ -103,7 +103,7 @@ function normalizeModuleName(name: string): ModuleId | null {
   return null
 }
 
-// Solo el SuperAdmin de plataforma (.env); "Administrador" es un rol normal editable
+// SuperAdmin es un rol de sistema persistido y no se ofrece como rol administrable.
 function isPlatformSuperAdminRoleName(name: string): boolean {
   const n = name.trim().toLowerCase()
   return n.includes('superadmin') || n.includes('super admin')
