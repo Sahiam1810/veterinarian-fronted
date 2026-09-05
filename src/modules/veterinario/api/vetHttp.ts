@@ -1,5 +1,6 @@
 // Cliente HTTP autenticado para el módulo veterinario.
 import { getAccessToken } from '@/modules/auth'
+import { fetchWithSession } from '@/services/apiClient'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
   || 'http://localhost:5233'
@@ -16,12 +17,11 @@ export async function vetApiFetch<T>(path: string, init: RequestInit = {}): Prom
 
   let response: Response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetchWithSession(`${API_BASE_URL}${path}`, {
       ...init,
       headers: {
         Accept: 'application/json',
         ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-        Authorization: `Bearer ${token}`,
         ...(init.headers || {}),
       },
     })

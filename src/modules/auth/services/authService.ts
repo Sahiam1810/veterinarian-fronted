@@ -5,11 +5,11 @@ import type {
   LoginCredentials,
   MockAccount,
   UserRole,
-} from '../types'
-import { toSpanishAuthError } from '../utils/toSpanishAuthError'
-import { resolvePersistedRoleIdentity } from '../utils/systemRoles'
+} from '../types/index.ts'
+import { toSpanishAuthError } from '../utils/toSpanishAuthError.ts'
+import { resolvePersistedRoleIdentity } from '../utils/systemRoles.ts'
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
   || 'http://localhost:5233'
 
 const AUTH_STORAGE_KEY = 'huellitas_auth_user'
@@ -96,6 +96,11 @@ function readRoleIdClaim(accessToken: string): string | undefined {
   const payload = readJwtPayload(accessToken)
   const roleId = payload?.role_id
   return typeof roleId === 'string' && roleId ? roleId : undefined
+}
+
+function readStringClaim(accessToken: string, claim: string): string | undefined {
+  const value = readJwtPayload(accessToken)?.[claim]
+  return typeof value === 'string' && value ? value : undefined
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -226,6 +231,94 @@ function setStoredTokens(tokens: AuthenticationResponse, remember: boolean): voi
   } catch (err) {
     console.error('Error al persistir tokens', err)
   }
+}
+
+function readStoredTokens(): { tokens: AuthenticationResponse; remember: boolean } | null {
+  try {
+    const localTokens = localStorage.getItem(AUTH_TOKENS_KEY)
+    if (localTokens) {
+      return {
+        tokens: JSON.parse(localTokens) as AuthenticationResponse,
+        remember: true,
+      }
+    }
+
+    const sessionTokens = sessionStorage.getItem(AUTH_TOKENS_KEY)
+    if (!sessionTokens) return null
+
+    return {
+      tokens: JSON.parse(sessionTokens) as AuthenticationResponse,
+      remember: false,
+    }
+  } catch {
+    return null
+  }
+}
+
+let activeRefresh: Promise<string> | null = null
+
+async function executeSessionRefresh(): Promise<string> {
+  const storedTokens = readStoredTokens()
+  const storedUser = getStoredUser()
+  const refreshToken = storedTokens?.tokens.refreshToken || storedUser?.refreshToken
+
+  if (!refreshToken || !storedUser) {
+    throw new Error('No hay una sesión renovable. Inicia sesión de nuevo.')
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    })
+  } catch {
+    throw new Error(`No se pudo renovar la sesión con el backend en ${API_BASE_URL}.`)
+  }
+
+  if (!response.ok) {
+    await readErrorMessage(response)
+    throw new Error('Tu sesión expiró. Inicia sesión de nuevo.')
+  }
+
+  const tokens = await response.json() as AuthenticationResponse
+  const roleName = readStringClaim(tokens.accessToken, 'role') || storedUser.roleName
+  const roleId = readRoleIdClaim(tokens.accessToken) || storedUser.roleId
+  const role = mapBackendRole(roleName)
+  const resolvedIdentity = resolvePersistedRoleIdentity(roleId, role)
+  const remember = storedTokens?.remember ?? Boolean(localStorage.getItem(AUTH_STORAGE_KEY))
+  const refreshedUser: AuthUser = {
+    ...storedUser,
+    email: readStringClaim(tokens.accessToken, 'email') || storedUser.email,
+    role: resolvedIdentity.role,
+    roleName,
+    roleId,
+    isPlatformSuperAdmin: resolvedIdentity.isPlatformSuperAdmin,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+  }
+
+  setStoredTokens(tokens, remember)
+  setStoredUser(refreshedUser, remember)
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent<AuthUser>('huellitas:session-refreshed', {
+      detail: refreshedUser,
+    }))
+  }
+
+  return tokens.accessToken
+}
+
+export function refreshSession(): Promise<string> {
+  if (!activeRefresh) {
+    activeRefresh = executeSessionRefresh().finally(() => {
+      activeRefresh = null
+    })
+  }
+
+  return activeRefresh
 }
 
 export function getStoredUser(): AuthUser | null {

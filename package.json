@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc -b --pretty false",
-    "test:auth": "node --test --experimental-strip-types tests/auth/systemRoles.test.ts"
+    "test:auth": "node --test --experimental-strip-types tests/auth/systemRoles.test.ts tests/auth/sessionRefresh.test.ts"
   },
   "dependencies": {
     "react": "^19.1.1",

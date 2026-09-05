@@ -6,6 +6,7 @@ export {
   setStoredUser,
   clearStoredUser,
   getAccessToken,
+  refreshSession,
   MOCK_ACCOUNTS,
   fetchMyModulePermissions,
   filterNavKeysByModuleView,

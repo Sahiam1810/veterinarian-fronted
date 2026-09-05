@@ -1,4 +1,8 @@
-import { getAccessToken, clearStoredUser } from '@/modules/auth'
+import {
+  clearStoredUser,
+  getAccessToken,
+  refreshSession,
+} from '../modules/auth/services/authService.ts'
 
 export class ApiError extends Error {
   readonly status: number
@@ -19,7 +23,7 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:5233'
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:5233'
 
 export function getApiUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): string {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
@@ -86,6 +90,59 @@ export function sanitizeEncoding<T>(data: T): T {
   }
 
   return data
+}
+
+function isAuthenticationUrl(url: string): boolean {
+  return url.includes('/api/auth/login')
+    || url.includes('/api/auth/register')
+    || url.includes('/api/auth/refresh')
+}
+
+function expireStoredSession(): void {
+  const hadSession = Boolean(getAccessToken())
+  clearStoredUser()
+
+  if (hadSession && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('huellitas:session-expired'))
+  }
+}
+
+/**
+ * Renueva la sesión ante un 401 y reintenta exactamente una vez.
+ * La renovación concurrente se deduplica dentro de `refreshSession`.
+ */
+export async function fetchWithSession(
+  url: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const explicitHeaders = new Headers(init.headers)
+  const hasExplicitAuthorization = explicitHeaders.has('Authorization')
+
+  const execute = (accessToken: string | null): Promise<Response> => {
+    const headers = new Headers(init.headers)
+    if (accessToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${accessToken}`)
+    }
+
+    return fetch(url, { ...init, headers })
+  }
+
+  const response = await execute(getAccessToken())
+  const canRefresh = response.status === 401
+    && !hasExplicitAuthorization
+    && !isAuthenticationUrl(url)
+
+  if (!canRefresh) return response
+
+  try {
+    const refreshedAccessToken = await refreshSession()
+    const retriedResponse = await execute(refreshedAccessToken)
+    if (retriedResponse.status === 401) expireStoredSession()
+    return retriedResponse
+  } catch {
+    expireStoredSession()
+    return response
+  }
 }
 
 async function parseErrorMessage(response: Response): Promise<{ message: string; violations: string[] }> {
@@ -155,11 +212,6 @@ export async function request<T = unknown>(
 
   const headers = new Headers(customHeaders)
 
-  const token = getAccessToken()
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
-
   let requestBody: BodyInit | undefined = undefined
 
   if (body !== undefined && body !== null) {
@@ -173,7 +225,7 @@ export async function request<T = unknown>(
 
   let response: Response
   try {
-    response = await fetch(url, {
+    response = await fetchWithSession(url, {
       ...restOptions,
       headers,
       body: requestBody,
@@ -188,19 +240,6 @@ export async function request<T = unknown>(
 
   if (!response.ok) {
     const { message, violations } = await parseErrorMessage(response)
-
-    // Sesión inválida/expirada: limpia storage y fuerza re-login (evita listas vacías silenciosas).
-    const isAuthEndpoint =
-      endpoint.includes('/api/auth/login') ||
-      endpoint.includes('/api/auth/register') ||
-      endpoint.includes('/api/auth/refresh')
-
-    if (response.status === 401 && !isAuthEndpoint) {
-      clearStoredUser()
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('huellitas:session-expired'))
-      }
-    }
 
     throw new ApiError(message, response.status, undefined, violations)
   }
