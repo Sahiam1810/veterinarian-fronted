@@ -54,8 +54,16 @@ export function useAuth() {
       setCurrentUser(null)
       setError('Tu sesión expiró. Inicia sesión de nuevo.')
     }
+    const onSessionRefreshed = (event: Event) => {
+      const refreshedUser = (event as CustomEvent<AuthUser>).detail
+      if (refreshedUser) setCurrentUser(refreshedUser)
+    }
     window.addEventListener('huellitas:session-expired', onSessionExpired)
-    return () => window.removeEventListener('huellitas:session-expired', onSessionExpired)
+    window.addEventListener('huellitas:session-refreshed', onSessionRefreshed)
+    return () => {
+      window.removeEventListener('huellitas:session-expired', onSessionExpired)
+      window.removeEventListener('huellitas:session-refreshed', onSessionRefreshed)
+    }
   }, [])
 
   return {
