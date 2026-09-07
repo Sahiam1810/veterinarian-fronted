@@ -5,6 +5,8 @@ export {
   clearStoredUser,
   getAccessToken,
   refreshSession,
+  isStaffRole,
+  mapBackendRole,
   MOCK_ACCOUNTS,
 } from './authService'
 export {

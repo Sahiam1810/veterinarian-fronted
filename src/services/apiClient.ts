@@ -6,15 +6,23 @@ import {
 
 export class ApiError extends Error {
   readonly status: number
+  readonly code?: string
   readonly data?: unknown
   readonly violations: string[]
 
-  constructor(message: string, status: number, data?: unknown, violations: string[] = []) {
+  constructor(
+    message: string,
+    status: number,
+    data?: unknown,
+    violations: string[] = [],
+    code?: string,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.data = data
     this.violations = violations
+    this.code = code
   }
 }
 
@@ -145,10 +153,12 @@ export async function fetchWithSession(
   }
 }
 
-async function parseErrorMessage(response: Response): Promise<{ message: string; violations: string[] }> {
+export async function parseErrorMessage(response: Response): Promise<{ message: string; violations: string[]; code?: string }> {
   try {
     const rawPayload = await response.json()
     const payload = sanitizeEncoding(rawPayload) as {
+      code?: string
+      errorCode?: string
       message?: string
       title?: string
       detail?: string
@@ -156,6 +166,7 @@ async function parseErrorMessage(response: Response): Promise<{ message: string;
       violations?: Array<{ field?: string; message?: string }>
     }
 
+    const code = payload.code || payload.errorCode
     const violations: string[] = []
 
     if (Array.isArray(payload.violations)) {
@@ -176,13 +187,24 @@ async function parseErrorMessage(response: Response): Promise<{ message: string;
       }
     }
 
+    let message = ''
     if (violations.length > 0) {
-      return { message: violations[0], violations }
+      message = violations[0]
+    } else if (payload.message) {
+      message = payload.message
+    } else if (payload.detail) {
+      message = payload.detail
+    } else if (payload.title) {
+      message = payload.title
+    } else if (code) {
+      message = code
     }
 
-    if (payload.message) return { message: payload.message, violations: [] }
-    if (payload.detail) return { message: payload.detail, violations: [] }
-    if (payload.title) return { message: payload.title, violations: [] }
+    return {
+      message: message || `Error en la solicitud (${response.status})`,
+      violations,
+      code,
+    }
   } catch {
     // Sin cuerpo JSON parseable
   }
@@ -239,9 +261,9 @@ export async function request<T = unknown>(
   }
 
   if (!response.ok) {
-    const { message, violations } = await parseErrorMessage(response)
+    const { message, violations, code } = await parseErrorMessage(response)
 
-    throw new ApiError(message, response.status, undefined, violations)
+    throw new ApiError(message, response.status, undefined, violations, code)
   }
 
   if (response.status === 204) {

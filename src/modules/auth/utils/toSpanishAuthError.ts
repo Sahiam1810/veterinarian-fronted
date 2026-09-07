@@ -1,46 +1,162 @@
-// Traduce mensajes de auth del API (inglés) a español solo en UI.
-const AUTH_ERROR_MAP: Record<string, string> = {
-  'authentication failed.': 'Correo o contraseña incorrectos.',
-  'authentication failed': 'Correo o contraseña incorrectos.',
-  'invalid credentials.': 'Correo o contraseña incorrectos.',
-  'invalid credentials': 'Correo o contraseña incorrectos.',
-  'unauthorized': 'No autorizado. Inicia sesión de nuevo.',
-  'unauthorized.': 'No autorizado. Inicia sesión de nuevo.',
-  'one or more validation errors occurred.': 'Revisa los datos del formulario.',
-  'email is required.': 'Ingresa tu correo electrónico.',
-  "'email' must not be empty.": 'Ingresa tu correo electrónico.',
-  'email must not be empty.': 'Ingresa tu correo electrónico.',
-  "'email' is not a valid email address.": 'El correo no tiene un formato válido.',
-  'password is required.': 'Ingresa tu contraseña.',
-  "'password' must not be empty.": 'Ingresa tu contraseña.',
-  'password must not be empty.': 'Ingresa tu contraseña.',
-  'user is inactive.': 'Tu cuenta está inactiva. Contacta al superadministrador.',
-  'user is locked.': 'Tu cuenta está bloqueada. Contacta al superadministrador.',
-  'token expired.': 'La sesión expiró. Inicia sesión de nuevo.',
-  'refresh token is invalid.': 'La sesión ya no es válida. Inicia sesión de nuevo.',
-}
+/**
+ * Traduce códigos de error y respuestas del API (.NET ProblemDetails) a mensajes de usuario en español.
+ */
+export function translateApiError(
+  code?: string | null,
+  status?: number,
+  rawMessage?: string | null,
+): string {
+  const cleanCode = (code || '').trim()
+  const cleanMessage = (rawMessage || '').trim()
 
-export function toSpanishAuthError(raw: string | null | undefined, status?: number): string {
-  const message = (raw || '').trim()
-  if (!message) {
-    if (status === 401) return 'Correo o contraseña incorrectos.'
-    if (status === 400) return 'Revisa los datos del formulario.'
-    return 'No se pudo iniciar sesión.'
+  // 1. Manejo exacto por código de dominio del backend (.NET Result / ProblemDetails)
+  if (
+    cleanCode === 'Authentication.PlatformAccessDenied' ||
+    cleanCode === 'PlatformAccessDenied' ||
+    cleanCode === 'Platform.AccessDenied' ||
+    cleanCode === 'AccessDenied'
+  ) {
+    return 'Este correo no tiene permitido acceder.'
   }
 
-  const mapped = AUTH_ERROR_MAP[message.toLowerCase()]
-  if (mapped) return mapped
-
-  // Si el backend ya mandó español, lo respetamos.
-  if (/[áéíóúñ¿¡]/i.test(message) || /\b(correo|contraseña|sesión|formulario)\b/i.test(message)) {
-    return message
+  if (
+    cleanCode === 'Authentication.InvalidCredentials' ||
+    cleanCode === 'InvalidCredentials' ||
+    cleanCode === 'Invalid_Credentials' ||
+    cleanCode === 'Authentication.Failed'
+  ) {
+    return 'Correo o contraseña incorrectos.'
   }
 
-  // Fallback por status cuando el texto sigue en inglés desconocido.
+  if (
+    cleanCode === 'Client.IdentificationAlreadyExists' ||
+    cleanCode === 'IdentificationAlreadyExists' ||
+    cleanCode === 'IdentificationConflict' ||
+    cleanCode === 'DuplicateIdentification'
+  ) {
+    return 'Ya existe un cliente con este número de identificación o cédula.'
+  }
+
+  if (
+    cleanCode === 'User.EmailAlreadyInUse' ||
+    cleanCode === 'EmailAlreadyInUse' ||
+    cleanCode === 'EmailConflict' ||
+    cleanCode === 'DuplicateEmail'
+  ) {
+    return 'Ya existe un usuario con este correo electrónico.'
+  }
+
+  if (
+    cleanCode === 'User.PhoneAlreadyInUse' ||
+    cleanCode === 'PhoneAlreadyInUse' ||
+    cleanCode === 'PhoneConflict' ||
+    cleanCode === 'DuplicatePhone'
+  ) {
+    return 'Ya existe un usuario con este número de teléfono.'
+  }
+
+  if (
+    cleanCode === 'Authentication.UserInactive' ||
+    cleanCode === 'User.Inactive' ||
+    cleanCode === 'UserInactive'
+  ) {
+    return 'Tu cuenta está inactiva. Contacta al administrador.'
+  }
+
+  if (
+    cleanCode === 'Authentication.UserLocked' ||
+    cleanCode === 'User.Locked' ||
+    cleanCode === 'UserLocked'
+  ) {
+    return 'Tu cuenta está bloqueada. Contacta al administrador.'
+  }
+
+  if (
+    cleanCode === 'Authentication.TokenExpired' ||
+    cleanCode === 'TokenExpired'
+  ) {
+    return 'La sesión expiró. Inicia sesión de nuevo.'
+  }
+
+  // 2. Si hay mensaje de texto (rawMessage)
+  if (cleanMessage) {
+    const normalized = cleanMessage.toLowerCase()
+
+    if (
+      normalized.includes('platformaccessdenied') ||
+      normalized.includes('platform access denied') ||
+      normalized.includes('no tiene permitido acceder')
+    ) {
+      return 'Este correo no tiene permitido acceder.'
+    }
+
+    if (
+      normalized.includes('invalid credentials') ||
+      normalized.includes('authentication failed')
+    ) {
+      return 'Correo o contraseña incorrectos.'
+    }
+
+    if (
+      (normalized.includes('identification') || normalized.includes('cedula') || normalized.includes('cédula')) &&
+      (normalized.includes('already exists') || normalized.includes('duplicate') || normalized.includes('ya existe'))
+    ) {
+      return 'Ya existe un cliente con este número de identificación o cédula.'
+    }
+
+    if (
+      normalized.includes('email') &&
+      (normalized.includes('already in use') || normalized.includes('already exists') || normalized.includes('duplicate') || normalized.includes('ya existe'))
+    ) {
+      return 'Ya existe un usuario con este correo electrónico.'
+    }
+
+    if (
+      normalized.includes('phone') &&
+      (normalized.includes('already in use') || normalized.includes('already exists') || normalized.includes('duplicate') || normalized.includes('ya existe'))
+    ) {
+      return 'Ya existe un usuario con este número de teléfono.'
+    }
+
+    if (normalized.includes('user is inactive') || normalized.includes('cuenta inactiva')) {
+      return 'Tu cuenta está inactiva. Contacta al administrador.'
+    }
+
+    if (normalized.includes('user is locked') || normalized.includes('cuenta bloqueada')) {
+      return 'Tu cuenta está bloqueada. Contacta al administrador.'
+    }
+
+    if (
+      normalized.includes('unauthorized') ||
+      normalized.includes('no autorizado')
+    ) {
+      return 'No autorizado o sesión expirada.'
+    }
+
+    // Si ya es un texto en español con sentido completo
+    if (
+      /[áéíóúñ¿¡]/i.test(cleanMessage) ||
+      /\b(correo|contraseña|sesión|formulario|usuario|cliente|cédula|teléfono)\b/i.test(cleanMessage)
+    ) {
+      return cleanMessage
+    }
+  }
+
+  // 3. Fallbacks por código de estado HTTP
   if (status === 401) return 'Correo o contraseña incorrectos.'
+  if (status === 403) return 'Este correo no tiene permitido acceder.'
   if (status === 400) return 'Revisa los datos del formulario.'
-  if (status === 403) return 'No tienes permiso para iniciar sesión.'
-  if (status !== undefined && status >= 500) return 'El servidor no respondió correctamente. Intenta más tarde.'
+  if (status === 404) return 'Recurso no encontrado.'
+  if (status !== undefined && status >= 500) return 'Error interno del servidor. Intenta de nuevo más tarde.'
 
-  return 'No se pudo iniciar sesión. Intenta de nuevo.'
+  return cleanMessage || 'No se pudo completar la operación.'
 }
+
+export function toSpanishAuthError(
+  raw: string | null | undefined,
+  status?: number,
+  code?: string | null,
+): string {
+  return translateApiError(code, status, raw)
+}
+

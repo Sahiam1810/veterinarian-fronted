@@ -108,7 +108,7 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
       patientCode,
       weightLabel: `${pet.weight || 5} kg`,
       microchip: `981020${pet.id.slice(0, 6).toUpperCase()}`,
-      ownerPhone: '+57 300 123 4567',
+      ownerPhone: client?.phoneNumber || '',
       allergyAlert: pet.observations || null,
     }
   })

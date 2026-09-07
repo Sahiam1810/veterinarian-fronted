@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
@@ -13,6 +13,7 @@ import type {
 } from '../../types'
 import {
   CalendarIcon,
+  CheckIcon,
 } from '@/global/components'
 
 export interface AgendaSuperAdminProps {
