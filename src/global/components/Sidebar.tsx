@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import defaultIllustration from '@/assets/branding/sidebar-illustration.jpg'
 import { UserAvatarIcon, LogOutIcon } from './Icons'
+import { SidebarBackgroundTexture } from './SidebarBackgroundTexture'
 
 export interface SidebarNavItem {
   id: string
@@ -154,7 +155,7 @@ export function Sidebar({
         {/* Menú: siempre visible en plain; animado en illustrated */}
         <div
           className={`
-            absolute inset-0 w-full h-full bg-cream p-4 sm:p-5 flex flex-col justify-between overflow-y-auto
+            absolute inset-0 w-full h-full bg-cream p-4 sm:p-5 flex flex-col justify-between overflow-y-auto relative overflow-hidden
             transition-all duration-500 ease-in-out transform
             ${
               isPlain
@@ -165,7 +166,10 @@ export function Sidebar({
             }
           `}
         >
-          <div className="space-y-3.5">
+          {/* Textura de fondo para la sidebar */}
+          <SidebarBackgroundTexture />
+
+          <div className="relative z-10 space-y-3.5">
             {showPanelHeader && (
               <div className="pb-3 border-b border-border-tan">
                 <span className="text-[11px] font-bold text-sage uppercase tracking-wider block">
@@ -230,7 +234,7 @@ export function Sidebar({
             showProfileButton ||
             showLogoutButton ||
             footerNavItems.length > 0) && (
-            <div className="pt-3 border-t border-border-tan flex flex-col gap-1.5">
+            <div className="relative z-10 pt-3 border-t border-border-tan flex flex-col gap-1.5">
               {footerNavItems.map((item) => {
                 const isActive = activeRoute === item.id
                 return (

@@ -56,6 +56,7 @@ export function PuntoInicio({
         unreadNotificationsCount={3}
         userName={userName || dashboard?.profile.displayName || 'Carlos Méndez'}
         userRole={userRole || 'Recepcionista'}
+        onProfileClick={() => handleNavigate('perfil')}
       />
 
       <div className="flex flex-1 h-[calc(100vh-57px)] overflow-hidden overflow-x-hidden relative min-w-0">

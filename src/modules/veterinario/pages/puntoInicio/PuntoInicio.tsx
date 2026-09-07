@@ -56,6 +56,7 @@ export function PuntoInicio({
         unreadNotificationsCount={unreadNotificationsCount}
         userName={userName || dashboard?.profile.displayName || 'Veterinario'}
         userRole={userRole || 'Veterinario'}
+        onProfileClick={() => handleNavigate('perfil')}
       />
 
 

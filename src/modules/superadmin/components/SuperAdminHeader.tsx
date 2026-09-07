@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BrandLogo } from '@/global/components'
+import { BrandLogo, HeaderBackgroundTexture } from '@/global/components'
 import { BellPlusIcon, UserAvatarIcon, CheckIcon } from './DashboardIcons'
 import type { NotificacionSuperAdmin } from '../types'
 
@@ -39,9 +39,12 @@ export function SuperAdminHeader({
       : notifications.filter((n) => !n.isRead).length
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-bone border-b border-border-tan transition-all duration-200">
+    <header className="sticky top-0 z-50 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-bone border-b border-border-tan relative overflow-hidden transition-all duration-200">
+      {/* Texture & Ambient Lighting Layer */}
+      <HeaderBackgroundTexture />
+
       {/* Left side: Animated Hamburger / Close X Toggle & Logo */}
-      <div className="flex items-center gap-3 sm:gap-6">
+      <div className="relative z-10 flex items-center gap-3 sm:gap-6">
         <button
           type="button"
           onClick={onToggleSidebar}
@@ -80,7 +83,7 @@ export function SuperAdminHeader({
       </div>
 
       {/* Right side: Notifications & Profile Avatar */}
-      <div className="flex items-center gap-2.5 sm:gap-4">
+      <div className="relative z-10 flex items-center gap-2.5 sm:gap-4">
         {/* Notifications Button + Panel */}
         <div className="relative">
           <button
