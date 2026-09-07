@@ -7,6 +7,20 @@ export type EstadoCita =
   | 'NO_ASISTIO'
   | 'BLOQUEO'
 
+export const CONSULTORIOS_DISPONIBLES = [
+  'Consultorio 1',
+  'Consultorio 2',
+  'Consultorio 3',
+  'Consultorio 4',
+  'Quirófano',
+] as const
+
+export type ConsultorioNombre = typeof CONSULTORIOS_DISPONIBLES[number]
+
+// Rango de horario permitido: 07:00 a 17:00 (7 AM a 5 PM)
+export const HORARIO_APERTURA = '07:00'
+export const HORARIO_CIERRE = '17:00'
+
 export interface CitaSuperAdmin {
   id: string
   dateKey: string // YYYY-MM-DD
@@ -20,6 +34,7 @@ export interface CitaSuperAdmin {
   professionalId?: string
   professionalName?: string
   service?: string
+  consultorio?: string
   notes?: string
   blockLabel?: string
   // IDs internos para sincronizar con la API
@@ -41,6 +56,7 @@ export interface CitaFormData {
   professionalId: string
   serviceId: string
   service: string
+  consultorio: string
   notes: string
   status: EstadoCita
 }

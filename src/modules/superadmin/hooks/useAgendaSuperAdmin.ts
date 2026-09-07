@@ -22,7 +22,7 @@ import {
   fetchAvailabilitiesByVeterinarian,
   createAvailability,
 } from '../services'
-import { mapAppointmentToCita, buildWeekDays } from '../utils/superAdminApiMappers'
+import { mapAppointmentToCita, buildWeekDays, formatNotesWithConsultorio } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 
 // DayOfWeek .NET: 0=Domingo … 6=Sábado
@@ -272,6 +272,8 @@ export function useAgendaSuperAdmin() {
             data.endTime,
           ))
 
+        const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
+
         await updateAppointment(editingCita.id, {
           clientPetId: data.clientPetId,
           veterinarianId: data.professionalId,
@@ -280,7 +282,7 @@ export function useAgendaSuperAdmin() {
           availabilityId,
           scheduledStart: start.toISOString(),
           scheduledEnd: end.toISOString(),
-          notes: data.notes || null,
+          notes: formattedNotes,
         })
 
         // Si cambiaron estado en el drawer y la cita está AGENDADA, usar transición canónica
@@ -315,6 +317,8 @@ export function useAgendaSuperAdmin() {
           data.endTime,
         )
 
+        const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
+
         const created = await createAppointment({
           clientPetId: data.clientPetId,
           veterinarianId: data.professionalId,
@@ -323,7 +327,7 @@ export function useAgendaSuperAdmin() {
           availabilityId,
           scheduledStart: start.toISOString(),
           scheduledEnd: end.toISOString(),
-          notes: data.notes || null,
+          notes: formattedNotes,
         })
 
         setSelectedCitaId(created.id)

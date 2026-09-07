@@ -3,6 +3,7 @@ import {
   SuperAdminHeader,
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
+  CitaDrawer,
 } from '../../components'
 import { useProfesionalesSuperAdmin } from '../../hooks'
 import type {
@@ -144,6 +145,13 @@ export function ProfesionalesSuperAdmin({
     setIsBlockModalOpen,
     editingBlock,
     setEditingBlock,
+    profesionalesOpciones,
+    mascotasOpciones,
+    serviciosOpciones,
+    citas,
+    isCitaDrawerOpen,
+    setIsCitaDrawerOpen,
+    handleCreateCita,
     handleSaveProfesional,
     handleSaveBloque,
     handleDeleteBloque,
@@ -220,15 +228,26 @@ export function ProfesionalesSuperAdmin({
             </div>
           )}
 
-          {/* Header de la Vista: Título y Subtítulo */}
+          {/* Header de la Vista: Título y Subtítulo + Botón Nueva Cita */}
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
                 Gestión de Profesionales
               </h1>
               <p className="text-xs sm:text-sm text-sage font-medium mt-1">
-                Administra el equipo médico y sus horarios de atención.
+                Administra el equipo médico, sus horarios y agenda nuevas citas.
               </p>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsCitaDrawerOpen(true)}
+                className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-sm active:translate-y-0.5"
+              >
+                <PlusIcon className="w-4 h-4 text-white" />
+                <span>Nueva Cita</span>
+              </button>
             </div>
           </div>
 
@@ -463,6 +482,15 @@ export function ProfesionalesSuperAdmin({
                 <div className="flex items-center gap-2.5 self-start sm:self-auto">
                   <button
                     type="button"
+                    onClick={() => setIsCitaDrawerOpen(true)}
+                    className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs active:translate-y-0.5"
+                  >
+                    <PlusIcon className="w-4 h-4 text-white" />
+                    <span>Agendar Cita</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleSaveChanges}
                     className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-xs active:translate-y-0.5"
                   >
@@ -561,6 +589,21 @@ export function ProfesionalesSuperAdmin({
       </div>
 
       {/* ===================================================================== */}
+      {/* DRAWER: NUEVA CITA CONECTADA CON LA AGENDA                            */}
+      {/* ===================================================================== */}
+      <CitaDrawer
+        isOpen={isCitaDrawerOpen}
+        onClose={() => setIsCitaDrawerOpen(false)}
+        onSave={handleCreateCita}
+        editingCita={null}
+        mascotasOpciones={mascotasOpciones}
+        profesionalesOpciones={profesionalesOpciones}
+        serviciosOpciones={serviciosOpciones}
+        existingCitas={citas}
+        defaultProfessionalId={selectedProfesional?.id}
+      />
+
+      {/* ===================================================================== */}
       {/* MODAL / DRAWER: AGREGAR / EDITAR PROFESIONAL                           */}
       {/* ===================================================================== */}
       {isProfModalOpen && (
@@ -625,6 +668,12 @@ function ProfesionalModal({
   const [phone, setPhone] = useState(editingProfesional?.phone || '')
   const [status, setStatus] = useState<EstadoProfesional>(editingProfesional?.status || 'Activo')
   const [avatarUrl, setAvatarUrl] = useState(editingProfesional?.avatarUrl || '')
+
+  // Parámetro: Definir Horario (Hora Inicio y Hora Fin)
+  const [horaInicio, setHoraInicio] = useState('07:00')
+  const [horaFin, setHoraFin] = useState('17:00')
+  const [selectedDias, setSelectedDias] = useState<DiaSemana[]>(['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'])
+
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -640,6 +689,18 @@ function ProfesionalModal({
       setPhone(editingProfesional?.phone || '')
       setStatus(editingProfesional?.status || 'Activo')
       setAvatarUrl(editingProfesional?.avatarUrl || '')
+
+      if (editingProfesional && editingProfesional.horario && editingProfesional.horario.length > 0) {
+        setHoraInicio(editingProfesional.horario[0]?.horaInicio || '07:00')
+        setHoraFin(editingProfesional.horario[0]?.horaFin || '17:00')
+        const dias = Array.from(new Set(editingProfesional.horario.map((h) => h.dia)))
+        setSelectedDias(dias.length > 0 ? dias : ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'])
+      } else {
+        setHoraInicio('07:00')
+        setHoraFin('17:00')
+        setSelectedDias(['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'])
+      }
+
       setError(null)
     } else if (isRendered) {
       setIsClosing(true)
@@ -677,6 +738,18 @@ function ProfesionalModal({
       setError('Por favor ingresa un correo electrónico válido.')
       return
     }
+    if (!horaInicio || !horaFin) {
+      setError('Por favor selecciona hora de inicio y fin para el horario.')
+      return
+    }
+    if (horaInicio < '07:00' || horaFin > '17:00') {
+      setError('El horario de atención reglamentario debe estar entre las 07:00 y las 17:00.')
+      return
+    }
+    if (horaInicio >= horaFin) {
+      setError('La hora de inicio debe ser anterior a la hora de fin.')
+      return
+    }
 
     onSave({
       name: name.trim(),
@@ -686,6 +759,12 @@ function ProfesionalModal({
       phone: phone.trim() || undefined,
       status,
       avatarUrl: avatarUrl.trim() || undefined,
+      horarioConfig: {
+        enabled: true,
+        dias: selectedDias,
+        horaInicio,
+        horaFin,
+      },
     })
   }
 
@@ -816,8 +895,60 @@ function ProfesionalModal({
             </select>
           </div>
 
-          {/* Botones */}
+          {/* Parámetro: Definir Horario (Hora Inicio y Hora Fin) */}
+          <div className="pt-2 border-t border-border-tan/60 space-y-3">
+            <div>
+              <label className="block font-bold text-charcoal mb-0.5">
+                Definir Horario
+              </label>
+              <p className="text-[11px] text-sage">
+                Rango de atención del profesional (07:00 a 17:00)
+              </p>
+            </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-charcoal mb-1">
+                  Hora Inicio <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  type="time"
+                  required
+                  min="07:00"
+                  max="17:00"
+                  value={horaInicio}
+                  onChange={(e) => {
+                    setHoraInicio(e.target.value)
+                    setError(null)
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-charcoal mb-1">
+                  Hora Fin <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  type="time"
+                  required
+                  min="07:00"
+                  max="17:00"
+                  value={horaFin}
+                  onChange={(e) => {
+                    setHoraFin(e.target.value)
+                    setError(null)
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-medium"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-sage -mt-1">
+              Horario de atención permitido: <strong>07:00</strong> a <strong>17:00</strong> (7:00 AM - 5:00 PM).
+            </p>
+          </div>
+
+          {/* Botones */}
           <div className="pt-4 border-t border-border-tan/60 flex items-center justify-end gap-3 shrink-0">
             <button
               type="button"

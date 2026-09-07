@@ -287,6 +287,42 @@ function toTime24(iso: string): string {
   return `${h}:${m}`
 }
 
+// Extrae consultorio y notas limpias de la cadena de texto de la API
+export function extractConsultorioAndNotes(rawNotes?: string | null): { consultorio: string; cleanNotes: string } {
+  if (!rawNotes) {
+    return { consultorio: 'Consultorio 1', cleanNotes: '' }
+  }
+
+  const match = rawNotes.match(/\[(?:Consultorio:\s*)?([^\]]+)\]\s*(.*)/i)
+  if (match) {
+    return {
+      consultorio: match[1].trim(),
+      cleanNotes: match[2].trim(),
+    }
+  }
+
+  // Si notas contiene directamente "Consultorio X"
+  const directMatch = rawNotes.match(/^(Consultorio\s*\d+|Quir[oó]fano)(?:\s*[-–:]\s*(.*))?$/i)
+  if (directMatch) {
+    return {
+      consultorio: directMatch[1].trim(),
+      cleanNotes: (directMatch[2] || '').trim(),
+    }
+  }
+
+  return {
+    consultorio: 'Consultorio 1',
+    cleanNotes: rawNotes.trim(),
+  }
+}
+
+// Formatea las notas para persistir el consultorio asignado en el backend
+export function formatNotesWithConsultorio(consultorio: string, userNotes?: string | null): string {
+  const clean = (userNotes || '').trim()
+  const cons = consultorio.trim() || 'Consultorio 1'
+  return clean ? `[Consultorio: ${cons}] ${clean}` : `[Consultorio: ${cons}]`
+}
+
 // Mapea cita API con datos enriquecidos a modelo de agenda
 export function mapAppointmentToCita(
   apt: ApiAppointmentResponse,
@@ -298,6 +334,8 @@ export function mapAppointmentToCita(
     professionalName?: string
   } = {}
 ): CitaSuperAdmin {
+  const { consultorio, cleanNotes } = extractConsultorioAndNotes(apt.notes)
+
   return {
     id: apt.id,
     dateKey: toDateKey(apt.scheduledStart),
@@ -311,7 +349,8 @@ export function mapAppointmentToCita(
     professionalId: apt.veterinarianId,
     professionalName: context.professionalName,
     service: apt.serviceName ?? undefined,
-    notes: apt.notes ?? undefined,
+    consultorio,
+    notes: cleanNotes || undefined,
     clientPetId: apt.clientPetId,
     serviceId: apt.serviceId,
     statusId: apt.statusId,

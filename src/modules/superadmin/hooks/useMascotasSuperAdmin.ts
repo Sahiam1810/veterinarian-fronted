@@ -86,14 +86,47 @@ export function useMascotasSuperAdmin() {
     setIsLoading(true)
     setLoadError(null)
     try {
-      const [clients, users, pets, clientsPets, species, races] = await Promise.all([
+      const [clients, users, pets, clientsPets, species, races, roles] = await Promise.all([
         fetchClients(),
         fetchUsers(),
         fetchPets(),
         fetchClientsPets(),
         fetchSpecies(),
         fetchRaces(),
+        fetchRoles(),
       ])
+
+      // Auto-sincronizar usuarios creados con rol Cliente que aún no tengan registro en Clients
+      const clientRoles = roles.filter((r) => {
+        const n = r.name.toLowerCase()
+        return n.includes('client') || n.includes('cliente') || n.includes('dueño') || n.includes('dueno')
+      })
+      const clientRoleIds = new Set(clientRoles.map((r) => r.id.toLowerCase()))
+      const existingClientUserIds = new Set(clients.map((c) => c.userId.toLowerCase()))
+      const unlinkedClientUsers = users.filter(
+        (u) => u.roleId && clientRoleIds.has(u.roleId.toLowerCase()) && !existingClientUserIds.has(u.id.toLowerCase()),
+      )
+
+      if (unlinkedClientUsers.length > 0) {
+        for (const u of unlinkedClientUsers) {
+          try {
+            const createdClient = await createClient({
+              userId: u.id,
+              identificationNumber: 'DOC-PENDIENTE',
+            })
+            clients.push({
+              id: createdClient.id,
+              userId: u.id,
+              identificationNumber: 'DOC-PENDIENTE',
+              address: '',
+              registrationDate: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+            })
+          } catch (err) {
+            console.error('Error auto-sincronizando perfil de cliente:', err)
+          }
+        }
+      }
 
       const usersById = new Map(users.map((u) => [u.id, u]))
       const speciesById = new Map(species.map((s) => [s.id, s.name]))
