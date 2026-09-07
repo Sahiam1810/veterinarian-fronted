@@ -32,6 +32,13 @@ export interface ProfesionalSuperAdmin {
   specialtyId?: string
 }
 
+export interface ProfesionalHorarioConfig {
+  enabled: boolean
+  dias: DiaSemana[]
+  horaInicio: string // e.g. "07:00"
+  horaFin: string    // e.g. "17:00"
+}
+
 export interface ProfesionalFormData {
   name: string
   cmp: string
@@ -40,6 +47,7 @@ export interface ProfesionalFormData {
   phone?: string
   status: EstadoProfesional
   avatarUrl?: string
+  horarioConfig?: ProfesionalHorarioConfig
 }
 
 export interface BloqueHorarioFormData {

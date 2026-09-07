@@ -1,22 +1,18 @@
-import { useState, useMemo, useEffect, type FormEvent } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
+  CitaDrawer,
 } from '../../components'
 import { useAgendaSuperAdmin } from '../../hooks'
 import type {
   CitaSuperAdmin,
-  CitaFormData,
-  EstadoCita,
-  AgendaPetOption,
-  AgendaServiceOption,
+  ModuleId,
+  NotificacionSuperAdmin,
 } from '../../types'
-import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 import {
-  PlusIcon,
   CalendarIcon,
-  CheckIcon,
 } from '@/global/components'
 
 export interface AgendaSuperAdminProps {
@@ -297,18 +293,6 @@ export function AgendaSuperAdmin({
                 </svg>
                 <span>Imprimir</span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingCita(null)
-                  setIsDrawerOpen(true)
-                }}
-                className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs active:translate-y-0.5"
-              >
-                <PlusIcon className="w-4 h-4 text-white" />
-                <span>Nueva Cita</span>
-              </button>
             </div>
           </div>
 
@@ -476,9 +460,12 @@ export function AgendaSuperAdmin({
                               </p>
                             </div>
                             {!isCompact && (
-                              <p className="text-[8px] sm:text-[9px] text-sage leading-tight truncate font-medium mt-0.5 border-t border-border-tan/30 pt-0.5">
-                                {event.service}
-                              </p>
+                              <div className="flex items-center justify-between gap-1 text-[8px] sm:text-[9px] text-sage leading-tight truncate font-medium mt-0.5 border-t border-border-tan/30 pt-0.5">
+                                <span className="truncate">{event.service}</span>
+                                <span className="text-[7.5px] font-bold text-brand bg-[#F4EBE0] px-1 py-0.2 rounded border border-border-tan/60 shrink-0">
+                                  {event.consultorio || 'Consultorio 1'}
+                                </span>
+                              </div>
                             )}
                           </button>
                         )
@@ -536,7 +523,12 @@ export function AgendaSuperAdmin({
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-sage mt-1 pt-1 border-t border-border-tan/30 truncate">
                             <span className="font-semibold text-charcoal/80 truncate">{event.service}</span>
-                            <span className="truncate ml-2">{event.professionalName}</span>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              <span className="text-[10px] font-bold text-brand bg-mint-soft px-1.5 py-0.5 rounded border border-brand/15">
+                                {event.consultorio || 'Consultorio 1'}
+                              </span>
+                              <span className="truncate">{event.professionalName}</span>
+                            </div>
                           </div>
                         </button>
                       )
@@ -649,8 +641,20 @@ export function AgendaSuperAdmin({
                   </div>
                 </div>
 
-                {/* Notas */}
+                {/* Consultorio Asignado */}
                 <div>
+                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
+                    Consultorio Asignado
+                  </h4>
+                  <div className="mt-1.5">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-mint-soft text-brand font-bold text-xs border border-brand/20">
+                      🏢 {selectedCita.consultorio || 'Consultorio 1'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notas */}
+                <div className="sm:col-span-2 md:col-span-4">
                   <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
                     Notas
                   </h4>
@@ -702,310 +706,21 @@ export function AgendaSuperAdmin({
         </main>
       </div>
 
-      {/* Drawer para Crear / Reprogramar Cita */}
+      {/* Drawer para Reprogramar / Editar Cita */}
       <CitaDrawer
         isOpen={isDrawerOpen}
         editingCita={editingCita}
         profesionalesOpciones={profesionalesOpciones}
         serviciosOpciones={serviciosOpciones}
         mascotasOpciones={mascotasOpciones}
+        existingCitas={filteredCitas}
+        defaultProfessionalId={selectedProfessionalId !== 'all' ? selectedProfessionalId : undefined}
         onClose={() => {
           setIsDrawerOpen(false)
           setEditingCita(null)
         }}
         onSave={handleSaveCita}
       />
-    </div>
-  )
-}
-/* ============================================================================
-   DRAWER / PANEL LATERAL PARA AGREGAR / REPROGRAMAR CITA
-   ============================================================================ */
-function CitaDrawer({
-  isOpen,
-  editingCita,
-  profesionalesOpciones,
-  serviciosOpciones,
-  mascotasOpciones,
-  onClose,
-  onSave,
-}: {
-  isOpen: boolean
-  editingCita: CitaSuperAdmin | null
-  profesionalesOpciones: { id: string; name: string }[]
-  serviciosOpciones: AgendaServiceOption[]
-  mascotasOpciones: AgendaPetOption[]
-  onClose: () => void
-  onSave: (data: CitaFormData) => void
-}) {
-  const [isRendered, setIsRendered] = useState(isOpen)
-  const [isClosing, setIsClosing] = useState(false)
-
-  const todayKey = new Date().toISOString().slice(0, 10)
-  const [clientPetId, setClientPetId] = useState(editingCita?.clientPetId || mascotasOpciones[0]?.clientPetId || '')
-  const [dateKey, setDateKey] = useState(editingCita?.dateKey || todayKey)
-  const [startTime, setStartTime] = useState(editingCita?.startTime || '09:00')
-  const [endTime, setEndTime] = useState(editingCita?.endTime || '09:30')
-  const [professionalId, setProfessionalId] = useState(
-    editingCita?.professionalId || profesionalesOpciones[0]?.id || '',
-  )
-  const [serviceId, setServiceId] = useState(editingCita?.serviceId || serviciosOpciones[0]?.id || '')
-  const [notes, setNotes] = useState(editingCita?.notes || '')
-  const [status, setStatus] = useState<EstadoCita>(editingCita?.status || 'AGENDADA')
-  const [error, setError] = useState<string | null>(null)
-
-  const selectedPet = mascotasOpciones.find((m) => m.clientPetId === clientPetId)
-  const selectedService = serviciosOpciones.find((s) => s.id === serviceId)
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsRendered(true)
-      setIsClosing(false)
-      setClientPetId(editingCita?.clientPetId || mascotasOpciones[0]?.clientPetId || '')
-      setDateKey(editingCita?.dateKey || todayKey)
-      setStartTime(editingCita?.startTime || '09:00')
-      setEndTime(editingCita?.endTime || '09:30')
-      setProfessionalId(editingCita?.professionalId || profesionalesOpciones[0]?.id || '')
-      setServiceId(editingCita?.serviceId || serviciosOpciones[0]?.id || '')
-      setNotes(editingCita?.notes || '')
-      setStatus(editingCita?.status || 'AGENDADA')
-      setError(null)
-    } else if (isRendered) {
-      setIsClosing(true)
-      const timer = setTimeout(() => {
-        setIsRendered(false)
-        setIsClosing(false)
-      }, 230)
-      return () => clearTimeout(timer)
-    }
-  }, [editingCita, isOpen, isRendered, mascotasOpciones, profesionalesOpciones, serviciosOpciones, todayKey])
-
-  const handleClose = () => {
-    if (isClosing) return
-    setIsClosing(true)
-    setTimeout(() => {
-      onClose()
-      setIsRendered(false)
-      setIsClosing(false)
-    }, 230)
-  }
-
-  if (!isRendered && !isOpen) return null
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (!clientPetId || !selectedPet) {
-      setError('Selecciona una mascota registrada (módulo Mascotas).')
-      return
-    }
-    if (!serviceId || !selectedService) {
-      setError('Selecciona un servicio del catálogo.')
-      return
-    }
-    if (!professionalId) {
-      setError('Selecciona un profesional.')
-      return
-    }
-    if (!startTime || !endTime) {
-      setError('Por favor selecciona hora de inicio y fin.')
-      return
-    }
-    if (startTime >= endTime) {
-      setError('La hora de inicio debe ser anterior a la de fin.')
-      return
-    }
-
-    onSave({
-      clientPetId,
-      petName: selectedPet.petName,
-      petBreed: selectedPet.breed,
-      species: selectedPet.species,
-      ownerName: selectedPet.ownerName,
-      dateKey,
-      startTime,
-      endTime,
-      professionalId,
-      serviceId,
-      service: selectedService.name,
-      notes: notes.trim(),
-      status,
-    })
-  }
-
-  return (
-    <div
-      className={`fixed inset-0 z-50 overflow-hidden bg-charcoal/40 backdrop-blur-xs flex justify-end ${
-        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-animate'
-      }`}
-      onClick={handleClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className={`w-full sm:w-[420px] lg:w-[450px] bg-white h-full shadow-2xl border-l border-border-tan flex flex-col justify-between overflow-hidden relative ${
-          isClosing ? 'drawer-slide-out' : 'drawer-slide-in'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-tan/70 bg-white shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-sage-soft text-brand flex items-center justify-center">
-              <CalendarIcon className="w-5 h-5" />
-            </div>
-            <h3 className="text-xl font-bold text-brand">
-              {editingCita ? 'Reprogramar Cita' : 'Nueva Cita'}
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="text-charcoal/70 hover:text-charcoal p-1.5 rounded-lg hover:bg-bone transition cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs sm:text-sm">
-          {error && (
-            <div className="p-3.5 rounded-xl bg-terracotta-soft text-danger text-xs font-semibold border border-danger/20">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">
-              Mascota / Dueño <span className="text-terracotta">*</span>
-            </label>
-            <select
-              value={clientPetId}
-              onChange={(e) => setClientPetId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
-            >
-              {mascotasOpciones.length === 0 ? (
-                <option value="">Sin mascotas en API</option>
-              ) : (
-                mascotasOpciones.map((m) => (
-                  <option key={m.clientPetId} value={m.clientPetId}>
-                    {m.petName} — {m.ownerName}
-                  </option>
-                ))
-              )}
-            </select>
-            {selectedPet && (
-              <p className="text-[11px] text-sage mt-1">
-                {selectedPet.species} · {selectedPet.breed || 'Sin raza'}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">Fecha</label>
-            <input
-              type="date"
-              required
-              value={dateKey}
-              onChange={(e) => setDateKey(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div>
-              <label className="block font-bold text-charcoal mb-1.5">Hora Inicio</label>
-              <input
-                type="time"
-                required
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-              />
-            </div>
-            <div>
-              <label className="block font-bold text-charcoal mb-1.5">Hora Fin</label>
-              <input
-                type="time"
-                required
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">Médico Profesional</label>
-            <select
-              value={professionalId}
-              onChange={(e) => setProfessionalId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
-            >
-              {profesionalesOpciones.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">Servicio</label>
-            <select
-              value={serviceId}
-              onChange={(e) => setServiceId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
-            >
-              {serviciosOpciones.map((srv) => (
-                <option key={srv.id} value={srv.id}>
-                  {srv.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">Notas de la Cita</label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej. Traer cartilla de vacunación anterior."
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition resize-none"
-            />
-          </div>
-
-          {editingCita && editingCita.status === 'AGENDADA' && (
-            <div>
-              <label className="block font-bold text-charcoal mb-1.5">Cambiar estado</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as EstadoCita)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
-              >
-                <option value="AGENDADA">Agendada</option>
-                <option value="ATENDIDA">Atendida</option>
-                <option value="CANCELADA">Cancelada</option>
-                <option value="NO_ASISTIO">No asistió</option>
-              </select>
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-border-tan/60 flex items-center justify-end gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2.5 rounded-xl border border-border-tan text-sage font-bold hover:bg-bone hover:text-charcoal transition cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer"
-            >
-              {editingCita ? 'Guardar cambios' : 'Crear cita'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }

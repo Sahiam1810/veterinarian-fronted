@@ -35,10 +35,16 @@ import {
   updateRolePermission as apiUpdateRolePermission,
   fetchAllUserPermissions,
   createUserPermission as apiCreateUserPermission,
-  updateUserPermission as apiUpdateUserPermission,
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
+import {
+  fetchSpecialties,
+  createVeterinarian,
+  fetchVeterinarians,
+  createClient,
+  fetchClients,
+} from '../services'
 import { ApiError } from '@/services'
 import {
   clearUserUiShellOverrides,
@@ -745,6 +751,41 @@ export function useUserSuperAdmin() {
         await syncUserActiveStatus(result.userId, 'Inactivo')
       }
 
+      // Si el rol creado es Veterinario, crear perfil en /api/Veterinarians
+      const targetRole = roles.find((r) => r.id === data.roleId)
+      const roleNameLower = (targetRole?.name || '').toLowerCase()
+
+      if (
+        roleNameLower.includes('vet') ||
+        roleNameLower.includes('veterin') ||
+        roleNameLower.includes('profesional') ||
+        roleNameLower.includes('médico') ||
+        roleNameLower.includes('medico')
+      ) {
+        try {
+          const specialties = await fetchSpecialties()
+          const defaultSpecId = specialties[0]?.id || ''
+          if (defaultSpecId) {
+            await createVeterinarian({
+              userId: result.userId,
+              specialtyId: defaultSpecId,
+              licenseNumber: 'CMP-PENDIENTE',
+            })
+          }
+        } catch (vetErr) {
+          console.error('Error creando perfil de veterinario para nuevo usuario:', vetErr)
+        }
+      } else if (roleNameLower.includes('client') || roleNameLower.includes('cliente')) {
+        try {
+          await createClient({
+            userId: result.userId,
+            identificationNumber: 'DOC-PENDIENTE',
+          })
+        } catch (clientErr) {
+          console.error('Error creando perfil de cliente para nuevo usuario:', clientErr)
+        }
+      }
+
       await loadData()
       setActiveTab('usuarios')
       setPendingSelectUserId(result.userId)
@@ -771,6 +812,49 @@ export function useUserSuperAdmin() {
       // El dropdown de estado del drawer debe persistir con activate/deactivate
       if (current?.status !== data.status) {
         await syncUserActiveStatus(userId, data.status)
+      }
+
+      // Si cambió de rol a Veterinario o Cliente, asegurar que existan los perfiles
+      if (current?.roleId !== data.roleId) {
+        const targetRole = roles.find((r) => r.id === data.roleId)
+        const roleNameLower = (targetRole?.name || '').toLowerCase()
+
+        if (
+          roleNameLower.includes('vet') ||
+          roleNameLower.includes('veterin') ||
+          roleNameLower.includes('profesional') ||
+          roleNameLower.includes('médico') ||
+          roleNameLower.includes('medico')
+        ) {
+          try {
+            const existingVets = await fetchVeterinarians()
+            if (!existingVets.some((v) => v.userId.toLowerCase() === userId.toLowerCase())) {
+              const specialties = await fetchSpecialties()
+              const defaultSpecId = specialties[0]?.id || ''
+              if (defaultSpecId) {
+                await createVeterinarian({
+                  userId,
+                  specialtyId: defaultSpecId,
+                  licenseNumber: 'CMP-PENDIENTE',
+                })
+              }
+            }
+          } catch (vetErr) {
+            console.error('Error actualizando perfil de veterinario:', vetErr)
+          }
+        } else if (roleNameLower.includes('client') || roleNameLower.includes('cliente')) {
+          try {
+            const existingClients = await fetchClients()
+            if (!existingClients.some((c) => c.userId.toLowerCase() === userId.toLowerCase())) {
+              await createClient({
+                userId,
+                identificationNumber: 'DOC-PENDIENTE',
+              })
+            }
+          } catch (clientErr) {
+            console.error('Error actualizando perfil de cliente:', clientErr)
+          }
+        }
       }
 
       await loadData()
