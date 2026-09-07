@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { PawIcon, UserAvatarIcon } from '@/global/components'
+import { PawIcon, UserAvatarIcon, EditIcon } from '@/global/components'
 import type { RecepDuenoDetail, RecepDuenoEstado } from '../types'
 import { ViewPopup } from './ViewPopup'
 import { CloseIcon, PhoneIcon } from './RecepMascotasIcons'
@@ -8,10 +8,11 @@ import { MailIcon } from './PerfilIcons'
 interface RecepDuenoDetailPanelProps {
   detail: RecepDuenoDetail
   onClose: () => void
+  onEdit?: (detail: RecepDuenoDetail) => void
 }
 
 // Panel derecho: info del dueño + mascotas registradas (solo al seleccionar)
-export function RecepDuenoDetailPanel({ detail, onClose }: RecepDuenoDetailPanelProps) {
+export function RecepDuenoDetailPanel({ detail, onClose, onEdit }: RecepDuenoDetailPanelProps) {
   return (
     <ViewPopup
       animationKey={detail.id}
@@ -32,6 +33,17 @@ export function RecepDuenoDetailPanel({ detail, onClose }: RecepDuenoDetailPanel
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <EstadoPill estado={detail.estado} />
+                {onEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(detail)}
+                    className="w-8 h-8 rounded-lg border border-border-tan text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+                    aria-label="Editar dueño"
+                    title="Editar dueño"
+                  >
+                    <EditIcon className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onClose}
@@ -44,6 +56,7 @@ export function RecepDuenoDetailPanel({ detail, onClose }: RecepDuenoDetailPanel
             </div>
           </div>
         </div>
+
 
         <div className="rounded-xl bg-bone/80 border border-border-tan/70 p-3 flex flex-col gap-2.5">
           <InfoRow icon={<UserAvatarIcon className="w-3.5 h-3.5" />} label="Documento" value={detail.documentId} />

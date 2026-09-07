@@ -15,6 +15,7 @@ interface RecepDuenosViewProps {
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: RecepDuenoStatusFilter) => void
   onNewOwner?: () => void
+  onEditOwner?: (detail: RecepDuenoDetail) => void
   onSelect: (ownerId: string) => void
   onCloseDetail: () => void
   onPrevPage?: () => void
@@ -34,6 +35,7 @@ export function RecepDuenosView({
   onSearchChange,
   onStatusFilterChange,
   onNewOwner,
+  onEditOwner,
   onSelect,
   onCloseDetail,
   onPrevPage,
@@ -69,9 +71,14 @@ export function RecepDuenosView({
         />
 
         {selectedDetail && (
-          <RecepDuenoDetailPanel detail={selectedDetail} onClose={onCloseDetail} />
+          <RecepDuenoDetailPanel
+            detail={selectedDetail}
+            onClose={onCloseDetail}
+            onEdit={onEditOwner}
+          />
         )}
       </div>
     </ViewPopup>
   )
 }
+

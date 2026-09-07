@@ -35,5 +35,7 @@ export type {
   RecepDuenoPetSummary,
   RecepDuenoListItem,
   RecepDuenoDetail,
+  RecepDuenoFormData,
   RecepDuenosDirectoryPayload,
 } from './duenos.types'
+
