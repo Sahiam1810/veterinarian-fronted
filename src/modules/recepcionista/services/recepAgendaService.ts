@@ -199,7 +199,7 @@ export async function fetchRecepDayAppointments(
       petName,
       breed,
       ownerName,
-      ownerPhone: '+57 300 000 0000',
+      ownerPhone: client?.phoneNumber || '',
       professionalName,
       service,
       notes: apt.notes || undefined,

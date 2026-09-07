@@ -32,7 +32,12 @@ export function useAuth() {
 
   const loginAs = useCallback(
     async (role: UserRole): Promise<AuthUser> => {
-      const account = MOCK_ACCOUNTS.find((a) => a.role === role) || MOCK_ACCOUNTS[0]
+      const account = MOCK_ACCOUNTS.find((a) => a.role === role)
+      if (!account) {
+        const msg = 'Este correo no tiene permitido acceder.'
+        setError(msg)
+        throw new Error(msg)
+      }
       return login({
         email: account.email,
         password: account.password,

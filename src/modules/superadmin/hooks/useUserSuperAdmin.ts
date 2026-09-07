@@ -35,6 +35,7 @@ import {
   updateRolePermission as apiUpdateRolePermission,
   fetchAllUserPermissions,
   createUserPermission as apiCreateUserPermission,
+  updateUserPermission as apiUpdateUserPermission,
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'

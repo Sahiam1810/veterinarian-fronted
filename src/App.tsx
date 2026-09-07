@@ -24,7 +24,6 @@ import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
 import { fetchAuxNavPermissions } from '@/modules/auxiliar/services'
-import { PuntoInicio as ClientePuntoInicio } from '@/modules/cliente'
 
 const AUX_GATED_ROUTES: Record<string, NavPermissionKey> = {
   agenda: 'aux.agenda',
@@ -94,24 +93,17 @@ export default function App() {
     )
   }
 
-  if (role === 'cliente' || roleName.includes('cliente')) {
-    return (
-      <ClientePuntoInicio
-        userName={currentUser.name}
-        userRole={currentUser.roleName}
-        onLogout={logout}
-      />
-    )
-  }
-
   if (role === 'superadmin' || role === 'admin' || roleName.includes('admin') || roleName.includes('superadmin')) {
     return <SuperAdminApp user={currentUser} onLogout={logout} />
   }
 
+  // Si no es un rol Staff autorizado (ej. Cliente o desconocido), cerrar sesión y denegar acceso
+  logout()
   return (
-    <AuxApp
-      user={currentUser}
-      onLogout={logout}
+    <LoginPage
+      onLogin={login}
+      isSubmitting={isSubmitting}
+      error="Este correo no tiene permitido acceder."
     />
   )
 }

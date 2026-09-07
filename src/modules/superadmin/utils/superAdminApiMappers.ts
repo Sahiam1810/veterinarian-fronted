@@ -119,7 +119,7 @@ export function mapClientToDueno(
     name: user?.fullName ?? 'Sin nombre',
     documentId: client.identificationNumber,
     email: user?.email ?? '',
-    phone: '',
+    phone: client.phoneNumber || '',
     address: client.address ?? '',
     city: '',
     status,

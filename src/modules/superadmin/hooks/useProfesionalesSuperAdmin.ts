@@ -185,7 +185,7 @@ export function useProfesionalesSuperAdmin() {
 
       // Catálogo de mascotas / dueños para agendar
       const petOptions: AgendaPetOption[] = clientsPets
-        .filter((cp) => cp.isActive)
+        .filter((cp) => Boolean(cp))
         .map((cp) => {
           const pet = petsById.get(cp.petId)
           const client = clientsById.get(cp.clientId)

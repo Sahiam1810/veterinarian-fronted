@@ -396,6 +396,10 @@ function DuenoDrawer({
       setFormError('Por favor ingresa el nombre completo del dueño.')
       return
     }
+    if (!documentId.trim()) {
+      setFormError('Por favor ingresa la cédula / documento de identidad.')
+      return
+    }
     if (!phone.trim()) {
       setFormError('Por favor ingresa el teléfono de contacto.')
       return
@@ -403,11 +407,11 @@ function DuenoDrawer({
 
     onSave({
       name: name.trim(),
-      documentId: documentId.trim() || `CC ${Math.floor(10000000 + Math.random() * 90000000)}`,
-      email: email.trim() || 'cliente@huellitas.com',
+      documentId: documentId.trim(),
+      email: email.trim(),
       phone: phone.trim(),
-      address: address.trim() || 'No registrada',
-      city: city.trim() || 'Bogotá',
+      address: address.trim(),
+      city: city.trim(),
       status,
     })
   }
@@ -464,12 +468,15 @@ function DuenoDrawer({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">Documento / Cédula</label>
+              <label className="block text-xs font-bold text-charcoal mb-1.5">
+                Cédula / Documento <span className="text-terracotta">*</span>
+              </label>
               <input
                 type="text"
+                required
                 value={documentId}
                 onChange={(e) => setDocumentId(e.target.value)}
-                placeholder="CC 1098765432"
+                placeholder="1098765432"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               />
             </div>
@@ -483,14 +490,14 @@ function DuenoDrawer({
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Ej: 555-0192"
+                placeholder="Ej: 3001234567"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-charcoal mb-1.5">Correo Electrónico</label>
+            <label className="block text-xs font-bold text-charcoal mb-1.5">Correo Electrónico (Opcional)</label>
             <input
               type="email"
               value={email}

@@ -7,6 +7,8 @@ export {
   clearStoredUser,
   getAccessToken,
   refreshSession,
+  isStaffRole,
+  mapBackendRole,
   MOCK_ACCOUNTS,
   fetchMyModulePermissions,
   filterNavKeysByModuleView,
@@ -20,6 +22,10 @@ export {
   CLIENTE_MODULE_TO_NAV,
   CLIENTE_ALWAYS_VISIBLE_NAV,
 } from './services'
+export {
+  translateApiError,
+  toSpanishAuthError,
+} from './utils/toSpanishAuthError'
 export type {
   UserRole,
   AuthUser,
@@ -27,4 +33,5 @@ export type {
   MockAccount,
 } from './types'
 export type { MyModulePermission, MyPermissionsMap } from './services'
+
 

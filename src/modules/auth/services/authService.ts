@@ -6,7 +6,7 @@ import type {
   MockAccount,
   UserRole,
 } from '../types/index.ts'
-import { toSpanishAuthError } from '../utils/toSpanishAuthError.ts'
+import { translateApiError } from '../utils/toSpanishAuthError.ts'
 import { resolvePersistedRoleIdentity } from '../utils/systemRoles.ts'
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
@@ -15,7 +15,7 @@ const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.repl
 const AUTH_STORAGE_KEY = 'huellitas_auth_user'
 const AUTH_TOKENS_KEY = 'huellitas_auth_tokens'
 
-// Cuentas de referencia para la UI de pruebas (mismas del seed Oracle).
+// Cuentas de referencia para la UI de pruebas exclusivas para Staff (mismas del seed Oracle).
 export const MOCK_ACCOUNTS: MockAccount[] = [
   {
     id: 'usr-superadmin-1',
@@ -57,28 +57,29 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     description: 'Soporte clínico, asistencia en consultas y cuidado de pacientes.',
     badgeColor: 'terracotta',
   },
-  {
-    id: 'usr-cliente-1',
-    name: 'Mariana Ruiz',
-    email: 'cliente@huellitas.com',
-    password: 'Huellitas2026!',
-    role: 'cliente',
-    roleName: 'Cliente',
-    description: 'Portal del dueño: mascotas, citas, historial y perfil personal.',
-    badgeColor: 'ochre',
-  },
 ]
 
-// Mapea el nombre de rol Oracle/API al rol de navegación del frontend.
-function mapBackendRole(roleName: string): UserRole {
-  const normalized = roleName.trim().toLowerCase()
+export function isStaffRole(role: string | undefined | null): boolean {
+  const normalized = (role || '').trim().toLowerCase()
+  return (
+    normalized === 'superadmin' ||
+    normalized === 'admin' ||
+    normalized === 'veterinario' ||
+    normalized === 'recepcionista' ||
+    normalized === 'auxiliar'
+  )
+}
+
+// Mapea el nombre de rol Oracle/API al rol del frontend.
+export function mapBackendRole(roleName: string | undefined | null): UserRole | 'unknown' {
+  const normalized = (roleName || '').trim().toLowerCase()
   if (normalized.includes('superadmin') || normalized.includes('super admin')) return 'superadmin'
   if (normalized.includes('administrador') || normalized === 'admin') return 'admin'
   if (normalized.includes('veterinar')) return 'veterinario'
   if (normalized.includes('recep')) return 'recepcionista'
   if (normalized.includes('aux')) return 'auxiliar'
   if (normalized.includes('client')) return 'cliente'
-  return 'cliente'
+  return 'unknown'
 }
 
 function readJwtPayload(accessToken: string): Record<string, unknown> | null {
@@ -105,18 +106,21 @@ function readStringClaim(accessToken: string, claim: string): string | undefined
 
 async function readErrorMessage(response: Response): Promise<string> {
   let raw = ''
+  let code = ''
 
   try {
     const payload = await response.json() as {
+      code?: string
+      errorCode?: string
       message?: string
       title?: string
       detail?: string
       errors?: Record<string, string[] | string>
     }
 
-    if (payload.message) raw = payload.message
-    else if (payload.detail) raw = payload.detail
-    else if (payload.errors && typeof payload.errors === 'object') {
+    code = payload.code || payload.errorCode || ''
+
+    if (payload.errors && typeof payload.errors === 'object') {
       // FluentValidation / ProblemDetails: primer mensaje de campo.
       for (const value of Object.values(payload.errors)) {
         if (Array.isArray(value) && value[0]) {
@@ -128,6 +132,10 @@ async function readErrorMessage(response: Response): Promise<string> {
           break
         }
       }
+    } else if (payload.message) {
+      raw = payload.message
+    } else if (payload.detail) {
+      raw = payload.detail
     } else if (payload.title) {
       raw = payload.title
     }
@@ -135,7 +143,7 @@ async function readErrorMessage(response: Response): Promise<string> {
     // Sin cuerpo JSON usable.
   }
 
-  return toSpanishAuthError(raw, response.status)
+  return translateApiError(code, response.status, raw)
 }
 
 // Login real contra POST /api/auth/login + comprobación GET /api/auth/me.
@@ -175,13 +183,23 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
   })
 
   if (!meResponse.ok) {
+    clearStoredUser()
     throw new Error('El token se emitió, pero no se pudo comprobar la sesión.')
   }
 
   const profile = await meResponse.json() as CurrentProfileResponse
-  const role = mapBackendRole(profile.role)
+  const mappedRole = mapBackendRole(profile.role)
+
+  // VALIDACIÓN ESTRICTA DE STAFF:
+  // La aplicación web es exclusiva para SuperAdmin, Admin, Veterinario, Recepcionista y Auxiliar.
+  // El rol Cliente y roles desconocidos son rechazados inmediatamente sin persistir sesión.
+  if (mappedRole === 'cliente' || mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
+    clearStoredUser()
+    throw new Error('Este correo no tiene permitido acceder.')
+  }
+
   const roleId = readRoleIdClaim(tokens.accessToken)
-  const resolvedIdentity = resolvePersistedRoleIdentity(roleId, role)
+  const resolvedIdentity = resolvePersistedRoleIdentity(roleId, mappedRole as UserRole)
   // personId = Users.Id (coincide con lista de SuperAdmin / UserPermissions)
   const personId = profile.personId || profile.userAccountId
 
@@ -279,14 +297,21 @@ async function executeSessionRefresh(): Promise<string> {
 
   if (!response.ok) {
     await readErrorMessage(response)
+    clearStoredUser()
     throw new Error('Tu sesión expiró. Inicia sesión de nuevo.')
   }
 
   const tokens = await response.json() as AuthenticationResponse
   const roleName = readStringClaim(tokens.accessToken, 'role') || storedUser.roleName
   const roleId = readRoleIdClaim(tokens.accessToken) || storedUser.roleId
-  const role = mapBackendRole(roleName)
-  const resolvedIdentity = resolvePersistedRoleIdentity(roleId, role)
+  const mappedRole = mapBackendRole(roleName)
+
+  if (mappedRole === 'cliente' || mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
+    clearStoredUser()
+    throw new Error('Este correo no tiene permitido acceder.')
+  }
+
+  const resolvedIdentity = resolvePersistedRoleIdentity(roleId, mappedRole as UserRole)
   const remember = storedTokens?.remember ?? Boolean(localStorage.getItem(AUTH_STORAGE_KEY))
   const refreshedUser: AuthUser = {
     ...storedUser,
@@ -326,7 +351,15 @@ export function getStoredUser(): AuthUser | null {
     const raw = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
     const stored = JSON.parse(raw) as AuthUser
-    const resolvedIdentity = resolvePersistedRoleIdentity(stored.roleId, stored.role)
+    const mappedRole = mapBackendRole(stored.roleName || stored.role)
+
+    // Si la sesión almacenada es Cliente o rol desconocido, invalidar y limpiar
+    if (mappedRole === 'cliente' || mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
+      clearStoredUser()
+      return null
+    }
+
+    const resolvedIdentity = resolvePersistedRoleIdentity(stored.roleId, mappedRole as UserRole)
 
     return {
       ...stored,

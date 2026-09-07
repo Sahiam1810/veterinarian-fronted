@@ -6,10 +6,13 @@ import type {
   RecepDuenosDirectoryPayload,
 } from '../types'
 import type { ApiClientResponse, ApiCreateClientRequest, ApiUpdateClientRequest } from '@/modules/superadmin/services/superAdminClientsService'
+import { lookupOwner, createOwnerWithoutLogin } from '@/modules/superadmin/services/superAdminClientsService'
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
 import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
 import type { ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
 import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
+
+export { lookupOwner, createOwnerWithoutLogin }
 
 function formatDateLabel(dateStr?: string | null): string {
   if (!dateStr) return 'Fecha no registrada'
@@ -54,7 +57,7 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
   clientPets.forEach((cp) => {
     const clientId = cp.clientId?.toLowerCase()
     if (!clientId) return
-
+ 
     const pet = petsMap.get(cp.petId?.toLowerCase())
     if (!pet) return
 
@@ -81,9 +84,9 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
     const clientPetSummaries = petsByClientId.get(client.id.toLowerCase()) || []
 
     const fullName = user?.fullName || 'Cliente Sin Nombre'
-    const documentId = client.identificationNumber || `DOC-${index + 1}`
-    const email = user?.email || 'sin-correo@huellitas.com'
-    const phone = '+57 300 000 0000'
+    const documentId = client.identificationNumber || ''
+    const email = user?.email || ''
+    const phone = client.phoneNumber || ''
     const estado = user ? (user.isActive ? 'Activo' : 'Inactivo') : 'Activo'
     const code = String(index + 1).padStart(3, '0')
 
@@ -127,3 +130,4 @@ export async function createRecepClient(data: ApiCreateClientRequest): Promise<{
 export async function updateRecepClient(id: string, data: ApiUpdateClientRequest): Promise<void> {
   return apiClient.put<void>(`/api/Clients/${id}`, data)
 }
+

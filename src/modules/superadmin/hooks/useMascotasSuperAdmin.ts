@@ -17,10 +17,10 @@ import {
   createClientPet,
   deleteClientPet,
   createClient,
+  createOwnerWithoutLogin,
   updateClient,
   deleteClient,
   fetchUsers,
-  createFullUser,
   updateUser,
   activateUser,
   deactivateUser,
@@ -209,6 +209,7 @@ export function useMascotasSuperAdmin() {
         d.documentId.toLowerCase().includes(q) ||
         d.phone.toLowerCase().includes(q) ||
         d.email.toLowerCase().includes(q) ||
+        d.address.toLowerCase().includes(q) ||
         d.city.toLowerCase().includes(q)
 
       const matchesStatus =
@@ -306,28 +307,12 @@ export function useMascotasSuperAdmin() {
 
   const createDueno = async (data: DuenoFormData) => {
     try {
-      const roles = await fetchRoles()
-      const clientRole = roles.find((r) => {
-        const n = r.name.toLowerCase()
-        return n.includes('client') || n.includes('cliente')
-      })
-      if (!clientRole) {
-        showToast('No se encontró el rol de cliente en el sistema.')
-        return
-      }
-
-      const tempPassword = `Tmp${Date.now().toString(36)}!`
-      const { userId } = await createFullUser({
-        fullName: data.name.trim(),
-        email: data.email.trim(),
-        password: tempPassword,
-        roleId: clientRole.id,
-      })
-
-      await createClient({
-        userId,
+      await createOwnerWithoutLogin({
+        name: data.name.trim(),
         identificationNumber: data.documentId.trim(),
-        address: data.address.trim() || null,
+        phoneNumber: data.phone.trim(),
+        email: data.email?.trim() || null,
+        address: data.address?.trim() || null,
       })
 
       setIsDuenoModalOpen(false)
@@ -356,6 +341,7 @@ export function useMascotasSuperAdmin() {
       await updateClient(id, {
         userId: client.userId,
         identificationNumber: data.documentId.trim(),
+        phoneNumber: data.phone.trim(),
         address: data.address.trim() || null,
         registrationDate: client.registrationDate,
       })
