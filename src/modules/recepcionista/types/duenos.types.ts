@@ -23,10 +23,19 @@ export interface RecepDuenoListItem {
 }
 
 export interface RecepDuenoDetail extends RecepDuenoListItem {
+  userId?: string
   address?: string
   city?: string
   registrationDateLabel?: string
   pets: RecepDuenoPetSummary[]
+}
+
+export interface RecepDuenoFormData {
+  fullName: string
+  documentId: string
+  phone: string
+  email?: string
+  address?: string
 }
 
 export interface RecepDuenosDirectoryPayload {
@@ -36,3 +45,4 @@ export interface RecepDuenosDirectoryPayload {
   pageStart: number
   pageEnd: number
 }
+

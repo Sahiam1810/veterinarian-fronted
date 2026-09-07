@@ -1,22 +1,28 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import type {
   RecepDuenoDetail,
+  RecepDuenoFormData,
   RecepDuenoStatusFilter,
   RecepDuenosDirectoryPayload,
 } from '../types'
-import { fetchRecepDuenosDirectory } from '../services'
+import { fetchRecepDuenosDirectory, createRecepDueno, updateRecepDueno } from '../services'
 
 const ITEMS_PER_PAGE = 8
 
 export function useRecepDuenos(enabled: boolean) {
   const [directory, setDirectory] = useState<RecepDuenosDirectoryPayload | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<RecepDuenoStatusFilter>('todos')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+
+  // Modal de registro / edición de dueño
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingOwner, setEditingOwner] = useState<RecepDuenoDetail | null>(null)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -91,7 +97,46 @@ export function useRecepDuenos(enabled: boolean) {
 
   const handleSelect = (ownerId: string) => setSelectedId(ownerId)
   const handleCloseDetail = () => setSelectedId(null)
-  const handleNewOwner = () => showNotice('Para registrar dueños nuevos, usa la sección de Usuarios o el módulo administrativo.')
+
+  const openCreateOwner = () => {
+    setEditingOwner(null)
+    setIsModalOpen(true)
+  }
+
+  const openEditOwner = (owner: RecepDuenoDetail) => {
+    setEditingOwner(owner)
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setEditingOwner(null)
+  }
+
+  const handleSaveOwner = async (data: RecepDuenoFormData) => {
+    setIsSubmitting(true)
+    try {
+      if (editingOwner) {
+        await updateRecepDueno(editingOwner.id, editingOwner.userId, data)
+        showNotice(`Dueño "${data.fullName}" actualizado con éxito`)
+      } else {
+        const result = await createRecepDueno(data)
+        showNotice(`Dueño "${data.fullName}" registrado con éxito`)
+        if (result.clientId) {
+          setSelectedId(result.clientId)
+        }
+      }
+      setIsModalOpen(false)
+      setEditingOwner(null)
+      await loadDirectory()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar el dueño'
+      showNotice(msg)
+      throw err
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handlePrevPage = () => {
     if (currentPage > 1) setCurrentPage((prev) => prev - 1)
@@ -114,6 +159,9 @@ export function useRecepDuenos(enabled: boolean) {
     statusFilter,
     setStatusFilter,
     isLoading,
+    isSubmitting,
+    isModalOpen,
+    editingOwner,
     error,
     notice,
     currentPage,
@@ -124,9 +172,14 @@ export function useRecepDuenos(enabled: boolean) {
     reloadDirectory: loadDirectory,
     handleSelect,
     handleCloseDetail,
-    handleNewOwner,
+    handleNewOwner: openCreateOwner,
+    openCreateOwner,
+    openEditOwner,
+    closeModal,
+    handleSaveOwner,
     handlePrevPage,
     handleNextPage,
     handleGoToPage,
   }
 }
+

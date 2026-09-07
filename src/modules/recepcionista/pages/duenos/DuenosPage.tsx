@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { RecepDuenosView } from '../../components'
+import { RecepDuenosView, RecepDuenoModal } from '../../components'
 import { useRecepDuenos } from '../../hooks'
 
 interface DuenosPageProps {
@@ -20,11 +20,17 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
     pageEnd,
     totalCount,
     isLoading,
+    isSubmitting,
+    isModalOpen,
+    editingOwner,
     error,
     notice,
     handleSelect,
     handleCloseDetail,
-    handleNewOwner,
+    openCreateOwner,
+    openEditOwner,
+    closeModal,
+    handleSaveOwner,
     handlePrevPage,
     handleNextPage,
     handleGoToPage,
@@ -68,13 +74,23 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
         totalCount={totalCount}
         onSearchChange={setSearch}
         onStatusFilterChange={setStatusFilter}
-        onNewOwner={handleNewOwner}
+        onNewOwner={openCreateOwner}
+        onEditOwner={openEditOwner}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
         onGoToPage={handleGoToPage}
       />
+
+      <RecepDuenoModal
+        isOpen={isModalOpen}
+        editingOwner={editingOwner}
+        isLoading={isSubmitting}
+        onClose={closeModal}
+        onSave={handleSaveOwner}
+      />
     </div>
   )
 }
+

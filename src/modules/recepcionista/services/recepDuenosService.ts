@@ -1,18 +1,21 @@
 import { apiClient } from '@/services'
 import type {
   RecepDuenoDetail,
+  RecepDuenoFormData,
   RecepDuenoListItem,
   RecepDuenoPetSummary,
   RecepDuenosDirectoryPayload,
 } from '../types'
 import type { ApiClientResponse, ApiCreateClientRequest, ApiUpdateClientRequest } from '@/modules/superadmin/services/superAdminClientsService'
-import { lookupOwner, createOwnerWithoutLogin } from '@/modules/superadmin/services/superAdminClientsService'
+import { lookupOwner, createOwnerWithoutLogin, updateClient } from '@/modules/superadmin/services/superAdminClientsService'
+import { updateUser } from '@/modules/superadmin/services/superAdminUserService'
+import { fetchRoles } from '@/modules/superadmin/services/superAdminRolesService'
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
 import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
 import type { ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
 import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
 
-export { lookupOwner, createOwnerWithoutLogin }
+export { lookupOwner, createOwnerWithoutLogin, updateClient }
 
 function formatDateLabel(dateStr?: string | null): string {
   if (!dateStr) return 'Fecha no registrada'
@@ -105,6 +108,7 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
 
     detailsById[client.id] = {
       ...listItem,
+      userId: client.userId,
       address: client.address || 'Dirección no registrada',
       city: 'Clínica Huellitas',
       registrationDateLabel: formatDateLabel(client.registrationDate || client.createdAt),
@@ -121,6 +125,50 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
   }
 }
 
+// Crear un nuevo dueño usando createOwnerWithoutLogin
+export async function createRecepDueno(
+  data: RecepDuenoFormData,
+): Promise<{ userId: string; clientId: string }> {
+  return createOwnerWithoutLogin({
+    name: data.fullName.trim(),
+    identificationNumber: data.documentId.trim(),
+    phoneNumber: data.phone.trim(),
+    email: data.email?.trim() || null,
+    address: data.address?.trim() || null,
+  })
+}
+
+// Actualizar un dueño existente (PUT /api/Clients/{id} + PUT /api/Users/{id})
+export async function updateRecepDueno(
+  clientId: string,
+  userId: string | undefined,
+  data: RecepDuenoFormData,
+): Promise<void> {
+  const resolvedUserId = userId || ''
+
+  await updateClient(clientId, {
+    userId: resolvedUserId,
+    identificationNumber: data.documentId.trim(),
+    phoneNumber: data.phone.trim(),
+    address: data.address?.trim() || null,
+  })
+
+  if (resolvedUserId) {
+    const roles = await fetchRoles().catch(() => [])
+    const clientRole = roles.find((r) => {
+      const n = r.name.toLowerCase()
+      return n.includes('client') || n.includes('cliente') || n.includes('dueño') || n.includes('dueno')
+    })
+    if (clientRole) {
+      await updateUser(resolvedUserId, {
+        fullName: data.fullName.trim(),
+        email: data.email?.trim() || '',
+        roleId: clientRole.id,
+      })
+    }
+  }
+}
+
 // Crear un nuevo cliente en el sistema
 export async function createRecepClient(data: ApiCreateClientRequest): Promise<{ id: string }> {
   return apiClient.post<{ id: string }>('/api/Clients', data)
@@ -130,4 +178,5 @@ export async function createRecepClient(data: ApiCreateClientRequest): Promise<{
 export async function updateRecepClient(id: string, data: ApiUpdateClientRequest): Promise<void> {
   return apiClient.put<void>(`/api/Clients/${id}`, data)
 }
+
 
