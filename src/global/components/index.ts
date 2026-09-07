@@ -10,3 +10,15 @@ export type {
 } from './Sidebar'
 export * from './Icons'
 export * from './PawCheckbox'
+export * from './HeaderBackgroundTexture'
+export * from './SidebarBackgroundTexture'
+export {
+  SuperAdminHeader,
+  SuperAdminHeader as Header,
+  SuperAdminHeader as GlobalHeader,
+} from '@/modules/superadmin/components/SuperAdminHeader'
+export type {
+  SuperAdminHeaderProps,
+  SuperAdminHeaderProps as HeaderProps,
+  SuperAdminHeaderProps as GlobalHeaderProps,
+} from '@/modules/superadmin/components/SuperAdminHeader'

@@ -178,6 +178,7 @@ function SuperAdminApp({
     onCloseSidebar: closeSidebar,
     userName: user.name,
     userRole: user.roleName,
+    onProfileClick: () => handleNavigate('perfil'),
     onLogout,
     canViewModule,
     notifications,
@@ -341,6 +342,7 @@ function AuxApp({
         onToggleSidebar={toggleSidebar}
         userName={user.name}
         userRole={user.roleName || 'Auxiliar'}
+        onProfileClick={() => handleNavigate('perfil')}
       />
 
       {/* Cuerpo principal: Sidebar + Vista activa */}
