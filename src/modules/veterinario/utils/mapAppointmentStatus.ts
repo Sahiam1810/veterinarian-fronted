@@ -4,6 +4,14 @@ import type { VetAppointmentStatus } from '../types'
 export function mapAppointmentStatus(statusName?: string | null): VetAppointmentStatus {
   const name = (statusName || '').trim().toLowerCase()
 
+  if (/cancel/.test(name)) {
+    return 'CANCELADO'
+  }
+
+  if (/no\s*asist|ausent|missed|no[\s-]?show/.test(name)) {
+    return 'NO ASISTIÓ'
+  }
+
   if (/complet|atendid|finaliz|cerrad|done|realiz/.test(name)) {
     return 'ATENDIDO'
   }

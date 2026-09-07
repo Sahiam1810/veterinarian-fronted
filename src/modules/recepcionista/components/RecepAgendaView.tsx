@@ -24,6 +24,7 @@ interface RecepAgendaViewProps {
   services: RecepAgendaServiceOption[]
   professionals: RecepAgendaProfessionalOption[]
   timeSlots: RecepAgendaTimeSlot[]
+  selectedOwner?: RecepAgendaOwnerOption | null
   selectedOwnerName: string | null
   selectedPetLabel: string | null
   selectedServiceLabel: string | null
@@ -62,6 +63,7 @@ export function RecepAgendaView({
   services,
   professionals,
   timeSlots,
+  selectedOwner,
   selectedOwnerName,
   selectedPetLabel,
   selectedServiceLabel,
@@ -103,7 +105,7 @@ export function RecepAgendaView({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 min-w-0">
               <div className="min-w-0 relative">
                 <label className={labelClass} htmlFor="recep-owner-search">
-                  Buscar Dueño (Cliente)
+                  Buscar Dueño (Cliente por nombre, cédula o teléfono)
                 </label>
                 <div className="relative">
                   <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sage pointer-events-none" />
@@ -112,28 +114,34 @@ export function RecepAgendaView({
                     type="search"
                     value={form.ownerQuery}
                     onChange={(event) => onOwnerQueryChange(event.target.value)}
-                    placeholder="Ej. Juan Pérez o DNI"
+                    placeholder="Ej. Juan Pérez, cédula o teléfono..."
                     className={`${fieldClass} pl-9`}
                     autoComplete="off"
                   />
                 </div>
                 {showOwnerSuggestions && (
-                  <ul className="absolute z-20 mt-1 w-full max-h-28 overflow-y-auto rounded-lg border border-border-tan bg-white shadow-md">
+                  <ul className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-xl border border-border-tan bg-white shadow-xl">
                     {ownerSuggestions.map((owner) => (
                       <li key={owner.id}>
                         <button
                           type="button"
                           onClick={() => onSelectOwnerSuggestion(owner)}
-                          className="w-full text-left px-3 py-1.5 text-xs font-medium text-charcoal hover:bg-bone cursor-pointer"
+                          className="w-full text-left px-3 py-2 text-xs font-medium text-charcoal hover:bg-bone cursor-pointer flex flex-col gap-0.5 border-b border-border-tan/30 last:border-b-0"
                         >
-                          <span className="font-bold">{owner.name}</span>
-                          <span className="text-sage"> · {owner.documentLabel}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-brand">{owner.name}</span>
+                            <span className="text-[11px] text-sage font-medium">{owner.documentLabel}</span>
+                          </div>
+                          {owner.phone && (
+                            <span className="text-[11px] text-charcoal/70">Tel: {owner.phone}</span>
+                          )}
                         </button>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
+
 
               <div className="min-w-0">
                 <label className={labelClass} htmlFor="recep-pet-select">
@@ -300,9 +308,14 @@ export function RecepAgendaView({
                 label="Paciente"
                 title={selectedPetLabel ?? 'Sin mascota'}
                 subtitle={
-                  selectedOwnerName ? `Dueño: ${selectedOwnerName}` : 'Dueño pendiente'
+                  selectedOwner
+                    ? `Dueño: ${selectedOwner.name} · ${selectedOwner.documentLabel}${selectedOwner.phone ? ` · Tel: ${selectedOwner.phone}` : ''}`
+                    : selectedOwnerName
+                      ? `Dueño: ${selectedOwnerName}`
+                      : 'Dueño pendiente'
                 }
               />
+
               <SummaryRow
                 icon={<StethoscopeIcon className="w-4 h-4" />}
                 label="Servicio"

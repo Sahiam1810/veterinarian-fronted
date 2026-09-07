@@ -5,6 +5,9 @@ import {
   VetAgendaDelDia,
   VetSidebar,
   ViewPopup,
+  CitaAccionesModal,
+  RegistrarAtencionModal,
+  HistoriaClinicaModal,
 } from '../../components'
 import { AgendaPage } from '../agenda'
 import { MascotasPage } from '../mascotas'
@@ -36,10 +39,23 @@ export function PuntoInicio({
     handleNavigate,
     activeNotification,
     showToast,
+    selectedAppointment,
+    isActionModalOpen,
+    isRegistrarOpen,
+    historiaModalTarget,
+    isHistoriaModalOpen,
+    isUpdatingStatus,
     handleViewFullAgenda,
     handleAttendNow,
     handleViewAppointment,
     handleMoreActions,
+    handleCloseActionModal,
+    handleCloseRegistrar,
+    handleCloseHistoria,
+    handleUpdateStatus,
+    handleAttendAndRegister,
+    handleViewHistoria,
+    handleRegistrationSuccess,
   } = useVetHome()
 
   const isAgenda = activeRoute === 'agenda'
@@ -59,7 +75,6 @@ export function PuntoInicio({
         onProfileClick={() => handleNavigate('perfil')}
       />
 
-
       <div className="flex flex-1 h-[calc(100vh-57px)] overflow-hidden overflow-x-hidden relative min-w-0">
         <VetSidebar
           isOpen={isSidebarOpen}
@@ -69,7 +84,6 @@ export function PuntoInicio({
           grantedPermissions={grantedPermissions}
           onLogout={onLogout}
         />
-
 
         <main
           className={`flex-1 h-full min-w-0 overflow-x-hidden flex flex-col max-w-[1400px] w-full mx-auto relative ${
@@ -138,6 +152,50 @@ export function PuntoInicio({
         </main>
       </div>
 
+      {isActionModalOpen && selectedAppointment && (
+        <CitaAccionesModal
+          isOpen={isActionModalOpen}
+          appointment={selectedAppointment}
+          onClose={handleCloseActionModal}
+          onAttendAndRegister={handleAttendAndRegister}
+          onChangeStatus={handleUpdateStatus}
+          onViewHistoriaClinica={(petId) => {
+            void handleViewHistoria(petId)
+          }}
+          isUpdatingStatus={isUpdatingStatus}
+        />
+      )}
+
+      {isRegistrarOpen && selectedAppointment && (
+        <RegistrarAtencionModal
+          isOpen={isRegistrarOpen}
+          petId={selectedAppointment.petId || ''}
+          petName={selectedAppointment.petName || 'Mascota'}
+          speciesBreed={selectedAppointment.speciesBreed || selectedAppointment.species}
+          clientPetId={selectedAppointment.clientPetId || ''}
+          appointmentId={selectedAppointment.id}
+          serviceName={selectedAppointment.service}
+          scheduledStart={selectedAppointment.startTime}
+          onClose={handleCloseRegistrar}
+          onSuccess={(result) => {
+            void handleRegistrationSuccess(result)
+          }}
+        />
+      )}
+
+      {isHistoriaModalOpen && historiaModalTarget && (
+        <HistoriaClinicaModal
+          historia={historiaModalTarget}
+          onClose={handleCloseHistoria}
+          onOpenRegistrarConsulta={() => {
+            handleCloseHistoria()
+            if (selectedAppointment) {
+              handleAttendAndRegister(selectedAppointment)
+            }
+          }}
+        />
+      )}
+
       {activeNotification && (
         <div className="toast-pop-up-bottom fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)]">
           <div
@@ -153,3 +211,4 @@ export function PuntoInicio({
     </div>
   )
 }
+

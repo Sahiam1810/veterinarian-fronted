@@ -8,6 +8,7 @@ import type {
   ApiServiceResponse,
   ApiSpeciesResponse,
   ApiRaceResponse,
+  ApiStatusAppointmentResponse,
 } from '../types'
 import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
 import {
@@ -20,6 +21,9 @@ import {
   fetchRaces,
   fetchServices,
   fetchVeterinarians,
+  fetchStatusAppointments,
+  fetchMedicalRecords,
+  type ApiMedicalRecordResponse,
 } from '../services'
 
 export interface AgendaAppointmentItem {
@@ -27,7 +31,8 @@ export interface AgendaAppointmentItem {
   dateKey: string // YYYY-MM-DD
   startTime: string
   endTime: string
-  status: 'Agendado' | 'Atendido' | 'Cancelado' | 'Preparada' | 'Pendiente'
+  status: 'Agendado' | 'Atendido' | 'Cancelado' | 'No asistió' | 'En espera'
+  pretriajeStatus: 'Pendiente' | 'Realizado'
   petName: string
   petBreed: string
   species: string
@@ -35,6 +40,16 @@ export interface AgendaAppointmentItem {
   professional: string
   service: string
   notes?: string
+}
+
+function mapAgendaStatus(statusName?: string | null): AgendaAppointmentItem['status'] {
+  if (!statusName) return 'Agendado'
+  const norm = statusName.trim().toLowerCase()
+  if (norm.includes('aten') || norm.includes('complet')) return 'Atendido'
+  if (norm.includes('canc')) return 'Cancelado'
+  if (norm.includes('no') || norm.includes('inasist') || norm.includes('asist')) return 'No asistió'
+  if (norm.includes('espera')) return 'En espera'
+  return 'Agendado'
 }
 
 export function useAuxAgenda() {
@@ -64,6 +79,8 @@ export function useAuxAgenda() {
         racesRes,
         servicesRes,
         vetsRes,
+        statusRes,
+        recordsRes,
       ] = await Promise.allSettled([
         fetchAppointments(),
         fetchPets(),
@@ -74,6 +91,8 @@ export function useAuxAgenda() {
         fetchRaces(),
         fetchServices(),
         fetchVeterinarians(),
+        fetchStatusAppointments(),
+        fetchMedicalRecords(),
       ])
 
       const fetchedApts: ApiAppointmentResponse[] = aptsRes.status === 'fulfilled' ? aptsRes.value : []
@@ -85,6 +104,8 @@ export function useAuxAgenda() {
       const fetchedRaces: ApiRaceResponse[] = racesRes.status === 'fulfilled' ? racesRes.value : []
       const fetchedServices: ApiServiceResponse[] = servicesRes.status === 'fulfilled' ? servicesRes.value : []
       const fetchedVets: ApiVeterinarianResponse[] = vetsRes.status === 'fulfilled' ? vetsRes.value : []
+      const fetchedStatuses: ApiStatusAppointmentResponse[] = statusRes.status === 'fulfilled' ? statusRes.value : []
+      const fetchedRecords: ApiMedicalRecordResponse[] = recordsRes.status === 'fulfilled' ? recordsRes.value : []
 
       const petsMap = new Map(fetchedPets.map((p) => [p.id.toLowerCase(), p]))
       const cpMap = new Map(fetchedCP.map((cp) => [cp.id.toLowerCase(), cp]))
@@ -94,6 +115,14 @@ export function useAuxAgenda() {
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const servicesMap = new Map(fetchedServices.map((s) => [s.id.toLowerCase(), s.name]))
       const vetsMap = new Map(fetchedVets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
+      const statusesMap = new Map(fetchedStatuses.map((st) => [st.id.toLowerCase(), st.name]))
+
+      const recordsByApt = new Map<string, ApiMedicalRecordResponse>()
+      for (const rec of fetchedRecords) {
+        if (rec.appointmentId) {
+          recordsByApt.set(rec.appointmentId.toLowerCase(), rec)
+        }
+      }
 
       // Profesionales para filtro
       const vetNames = Array.from(new Set(fetchedVets.map((v) => v.userFullName).filter(Boolean) as string[]))
@@ -109,7 +138,7 @@ export function useAuxAgenda() {
         const species = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Perro' : 'Perro'
         const petBreed = pet ? racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo' : 'Mestizo'
         const service = apt.serviceName || servicesMap.get(apt.serviceId?.toLowerCase()) || 'Consulta General'
-        const professional = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Dra. Martínez'
+        const professional = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Veterinario'
 
         const startDate = new Date(apt.scheduledStart)
         const dateKey = !Number.isNaN(startDate.getTime())
@@ -125,9 +154,14 @@ export function useAuxAgenda() {
           ? endDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
           : '09:30'
 
-        let status: AgendaAppointmentItem['status'] = 'Agendado'
+        const statusName = apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
+        const status = mapAgendaStatus(statusName)
+
+        const medRecord = recordsByApt.get(apt.id.toLowerCase())
+        const hasMedRecord = Boolean(medRecord)
         const normNotes = (apt.notes || '').toLowerCase()
-        if (normNotes.includes('preparada') || normNotes.includes('peso')) status = 'Preparada'
+        const hasTriageNote = normNotes.includes('pre-triaje') || normNotes.includes('triaje') || normNotes.includes('peso:') || normNotes.includes('temp:')
+        const pretriajeStatus: AgendaAppointmentItem['pretriajeStatus'] = (hasMedRecord || hasTriageNote) ? 'Realizado' : 'Pendiente'
 
         return {
           id: apt.id,
@@ -135,6 +169,7 @@ export function useAuxAgenda() {
           startTime,
           endTime,
           status,
+          pretriajeStatus,
           petName,
           petBreed,
           species,
@@ -182,3 +217,4 @@ export function useAuxAgenda() {
     loadData,
   }
 }
+

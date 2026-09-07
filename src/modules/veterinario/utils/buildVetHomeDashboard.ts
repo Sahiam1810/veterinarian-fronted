@@ -130,6 +130,9 @@ export function buildVetHomeDashboard(input: {
       ownerName: resolveOwnerName(link, clientsById),
       service: apt.serviceName || 'Servicio',
       status,
+      clientPetId: apt.clientPetId,
+      petId: link?.petId,
+      rawStatusName: apt.statusName || undefined,
     }
   })
 

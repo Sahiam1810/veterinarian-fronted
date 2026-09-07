@@ -53,7 +53,6 @@ export function PuntoInicio({
       <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
-        unreadNotificationsCount={3}
         userName={userName || dashboard?.profile.displayName || 'Carlos Méndez'}
         userRole={userRole || 'Recepcionista'}
         onProfileClick={() => handleNavigate('perfil')}

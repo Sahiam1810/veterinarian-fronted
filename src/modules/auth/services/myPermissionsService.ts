@@ -52,17 +52,6 @@ export const AUX_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
   'aux.perfil',
 ]
 
-// Mapa módulo → menú del cliente
-export const CLIENTE_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
-  Mascotas: 'cliente.mascotas',
-  Citas: 'cliente.citas',
-  'Historiales Clínicos': 'cliente.historial',
-}
-
-export const CLIENTE_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
-  'cliente.inicio',
-  'cliente.perfil',
-]
 
 // true si la ruta aún no está filtrada o el permiso está en la lista concedida
 export function isNavPermissionGranted(

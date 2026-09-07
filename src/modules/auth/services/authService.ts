@@ -78,7 +78,6 @@ export function mapBackendRole(roleName: string | undefined | null): UserRole | 
   if (normalized.includes('veterinar')) return 'veterinario'
   if (normalized.includes('recep')) return 'recepcionista'
   if (normalized.includes('aux')) return 'auxiliar'
-  if (normalized.includes('client')) return 'cliente'
   return 'unknown'
 }
 
@@ -193,7 +192,7 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
   // VALIDACIÓN ESTRICTA DE STAFF:
   // La aplicación web es exclusiva para SuperAdmin, Admin, Veterinario, Recepcionista y Auxiliar.
   // El rol Cliente y roles desconocidos son rechazados inmediatamente sin persistir sesión.
-  if (mappedRole === 'cliente' || mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
+  if (mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
     clearStoredUser()
     throw new Error('Este correo no tiene permitido acceder.')
   }
@@ -306,7 +305,7 @@ async function executeSessionRefresh(): Promise<string> {
   const roleId = readRoleIdClaim(tokens.accessToken) || storedUser.roleId
   const mappedRole = mapBackendRole(roleName)
 
-  if (mappedRole === 'cliente' || mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
+  if (mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
     clearStoredUser()
     throw new Error('Este correo no tiene permitido acceder.')
   }
@@ -353,8 +352,8 @@ export function getStoredUser(): AuthUser | null {
     const stored = JSON.parse(raw) as AuthUser
     const mappedRole = mapBackendRole(stored.roleName || stored.role)
 
-    // Si la sesión almacenada es Cliente o rol desconocido, invalidar y limpiar
-    if (mappedRole === 'cliente' || mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
+    // Si la sesión almacenada no es Staff o rol desconocido, invalidar y limpiar
+    if (mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
       clearStoredUser()
       return null
     }

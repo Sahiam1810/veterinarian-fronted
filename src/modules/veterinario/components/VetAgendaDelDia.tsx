@@ -245,29 +245,50 @@ function RowActions({
   onViewAppointment,
   onMoreActions,
 }: AgendaRowProps) {
-  if (appointment.status === 'EN ESPERA') {
+  if (appointment.status === 'EN ESPERA' || appointment.status === 'AGENDADO') {
     return (
-      <button
-        type="button"
-        onClick={() => onAttendNow?.(appointment)}
-        className="inline-flex items-center justify-center px-3 sm:px-3.5 py-2 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm"
-      >
-        Atender ahora
-      </button>
+      <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={() => onAttendNow?.(appointment)}
+          className="inline-flex items-center justify-center px-3 py-1.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-xs"
+        >
+          Atender
+        </button>
+        <button
+          type="button"
+          onClick={() => onMoreActions?.(appointment)}
+          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer shrink-0"
+          aria-label={`Más acciones para ${appointment.petName}`}
+          title="Gestionar cita"
+        >
+          <MoreVerticalIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
     )
   }
 
   if (appointment.status === 'ATENDIDO') {
     return (
-      <button
-        type="button"
-        onClick={() => onViewAppointment?.(appointment)}
-        className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer"
-        aria-label={`Ver cita de ${appointment.petName}`}
-        title="Ver detalle"
-      >
-        <EyeIcon className="w-4 h-4" />
-      </button>
+      <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={() => onAttendNow?.(appointment)}
+          className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-xl bg-terracotta-soft text-terracotta border border-terracotta/30 text-xs font-bold hover:bg-terracotta/15 transition cursor-pointer"
+          title="Ver o agregar consulta"
+        >
+          Consulta
+        </button>
+        <button
+          type="button"
+          onClick={() => onViewAppointment?.(appointment)}
+          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer shrink-0"
+          aria-label={`Ver cita de ${appointment.petName}`}
+          title="Ver detalle"
+        >
+          <EyeIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
     )
   }
 
@@ -275,11 +296,11 @@ function RowActions({
     <button
       type="button"
       onClick={() => onMoreActions?.(appointment)}
-      className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer"
+      className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer"
       aria-label={`Más acciones para ${appointment.petName}`}
       title="Más acciones"
     >
-      <MoreVerticalIcon className="w-4 h-4" />
+      <MoreVerticalIcon className="w-3.5 h-3.5" />
     </button>
   )
 }

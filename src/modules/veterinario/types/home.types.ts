@@ -1,7 +1,12 @@
 // Tipos del punto de inicio del veterinario (contrato futuro con la API)
 
-// Estados de cita alineados a la agenda del día
-export type VetAppointmentStatus = 'ATENDIDO' | 'EN ESPERA' | 'AGENDADO'
+// Estados de cita alineados a la agenda del día y backend
+export type VetAppointmentStatus =
+  | 'ATENDIDO'
+  | 'EN ESPERA'
+  | 'AGENDADO'
+  | 'CANCELADO'
+  | 'NO ASISTIÓ'
 
 // Resumen numérico de la jornada del veterinario
 export interface VetHomeStats {
@@ -28,6 +33,10 @@ export interface VetDayAppointment {
   status: VetAppointmentStatus
   // Marca la cita activa / siguiente a atender
   isHighlighted?: boolean
+  clientPetId?: string
+  petId?: string
+  ownerPhone?: string
+  rawStatusName?: string
 }
 
 // Payload completo del dashboard de inicio

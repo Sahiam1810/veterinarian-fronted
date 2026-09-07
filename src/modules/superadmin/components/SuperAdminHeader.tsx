@@ -148,9 +148,15 @@ export function SuperAdminHeader({
                   )}
 
                   {!isLoadingNotifications && !notificationsError && notifications.length === 0 && (
-                    <p className="text-xs text-sage font-medium text-center py-6">
-                      No tienes notificaciones.
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-7 px-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-bone flex items-center justify-center text-sage mb-2 border border-border-tan/50">
+                        <BellPlusIcon className="w-5 h-5 opacity-50" />
+                      </div>
+                      <p className="text-xs font-bold text-charcoal">Sin notificaciones</p>
+                      <p className="text-[11px] text-sage font-medium mt-0.5 max-w-[200px]">
+                        No hay notificaciones registradas para tu usuario.
+                      </p>
+                    </div>
                   )}
 
                   {!isLoadingNotifications &&

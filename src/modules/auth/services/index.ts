@@ -19,7 +19,5 @@ export {
   RECEP_ALWAYS_VISIBLE_NAV,
   AUX_MODULE_TO_NAV,
   AUX_ALWAYS_VISIBLE_NAV,
-  CLIENTE_MODULE_TO_NAV,
-  CLIENTE_ALWAYS_VISIBLE_NAV,
 } from './myPermissionsService'
 export type { MyModulePermission, MyPermissionsMap } from './myPermissionsService'

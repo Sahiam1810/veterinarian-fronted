@@ -121,3 +121,42 @@ export function MailIcon({ className = 'w-4 h-4', ...props }: IconProps) {
     </svg>
   )
 }
+
+export function KeyIcon({ className = 'w-4 h-4', ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M21 2l-2 2m-1.5 1.5L16 7l-2-2 1.5-1.5L21 2z" />
+      <path d="M15.5 7.5L14 9l2 2 1.5-1.5" />
+      <circle cx="7.5" cy="16.5" r="4.5" />
+      <path d="M10.5 13.5L14 10" />
+    </svg>
+  )
+}
+
+export function ShieldIcon({ className = 'w-4 h-4', ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  )
+}

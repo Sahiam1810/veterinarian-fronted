@@ -36,7 +36,7 @@ export function InicioAux({
   const [selectedAppointment, setSelectedAppointment] = useState<AuxDayAppointment | null>(null)
   const [prepAppointment, setPrepAppointment] = useState<AuxDayAppointment | null>(null)
   const [isNewAppointmentDrawerOpen, setIsNewAppointmentDrawerOpen] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<'TODAS' | 'Pendiente' | 'Preparada'>('TODAS')
+  const [filterStatus, setFilterStatus] = useState<'TODAS' | 'PENDIENTES_PRETRIAJE' | 'PRETRIAJE_REALIZADO'>('TODAS')
 
   const handleOpenPrepare = (apt: AuxDayAppointment) => {
     if (onPrepareAppointment) {
@@ -51,7 +51,7 @@ export function InicioAux({
     data: { weight: string; temp: string; notes?: string }
   ) => {
     await savePreparation(appointmentId, data)
-    onNotice?.('¡Paciente preparado y guardado con éxito!')
+    onNotice?.('¡Pre-triaje del paciente guardado con éxito!')
     setPrepAppointment(null)
   }
 
@@ -78,7 +78,9 @@ export function InicioAux({
 
   const filteredAppointments = appointments.filter((apt) => {
     if (filterStatus === 'TODAS') return true
-    return apt.status === filterStatus
+    if (filterStatus === 'PENDIENTES_PRETRIAJE') return apt.pretriajeStatus === 'Pendiente'
+    if (filterStatus === 'PRETRIAJE_REALIZADO') return apt.pretriajeStatus === 'Realizado'
+    return true
   })
 
   const formattedCurrentDate = new Intl.DateTimeFormat('es-ES', {
@@ -101,7 +103,7 @@ export function InicioAux({
               Buenos días, {userName}
             </h1>
             <p className="text-xs sm:text-sm text-sage font-medium mt-0.5">
-              {formattedDateCapitalized}
+              {formattedDateCapitalized} • Resumen calculado en cliente a partir de las citas.
             </p>
           </div>
 
@@ -117,7 +119,6 @@ export function InicioAux({
           </div>
         </header>
       </ViewPopup>
-
 
       {/* 2. Tarjetas de Estadísticas con efecto cascada (Staggered Pop-up) */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -138,7 +139,7 @@ export function InicioAux({
           </article>
         </ViewPopup>
 
-        {/* Card 2: Pendientes Prep. */}
+        {/* Card 2: Pendientes Pre-triaje */}
         <ViewPopup delayMs={110}>
           <article className="bg-white rounded-2xl border border-border-tan shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-5 flex flex-col justify-between transition hover:shadow-md h-full">
             <div className="flex items-center justify-between">
@@ -146,45 +147,45 @@ export function InicioAux({
                 <AlertClipboardIcon className="w-5 h-5" />
               </div>
               <span className="text-2xl sm:text-3xl font-extrabold text-[#c81e1e] tracking-tight">
-                {stats.pendientesPrep}
+                {stats.pendientesPretriaje}
               </span>
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-500 mt-3 sm:mt-4">
-              Pendientes Prep.
+              Pendientes Pre-triaje
             </span>
           </article>
         </ViewPopup>
 
-        {/* Card 3: Próximas */}
+        {/* Card 3: Pre-triajes Realizados */}
         <ViewPopup delayMs={150}>
+          <article className="bg-white rounded-2xl border border-border-tan shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-5 flex flex-col justify-between transition hover:shadow-md h-full">
+            <div className="flex items-center justify-between">
+              <div className="w-10 h-10 rounded-xl bg-[#e1f5ee] text-[#0f766e] flex items-center justify-center">
+                <CheckCircleOutlineIcon className="w-5 h-5" />
+              </div>
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#0f766e] tracking-tight">
+                {stats.pretriajesRealizados}
+              </span>
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-gray-500 mt-3 sm:mt-4">
+              Pre-triajes Realizados
+            </span>
+          </article>
+        </ViewPopup>
+
+        {/* Card 4: Atendidas por Vet */}
+        <ViewPopup delayMs={190}>
           <article className="bg-white rounded-2xl border border-border-tan shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-5 flex flex-col justify-between transition hover:shadow-md h-full">
             <div className="flex items-center justify-between">
               <div className="w-10 h-10 rounded-xl bg-[#fef0e6] text-[#b45309] flex items-center justify-center">
                 <ClockOutlineIcon className="w-5 h-5" />
               </div>
               <span className="text-2xl sm:text-3xl font-extrabold text-[#78350f] tracking-tight">
-                {stats.proximas}
+                {stats.atendidas}
               </span>
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-500 mt-3 sm:mt-4">
-              Próximas
-            </span>
-          </article>
-        </ViewPopup>
-
-        {/* Card 4: Preparadas */}
-        <ViewPopup delayMs={190}>
-          <article className="bg-white rounded-2xl border border-border-tan shadow-[0_2px_10px_rgba(0,0,0,0.03)] p-4 sm:p-5 flex flex-col justify-between transition hover:shadow-md h-full">
-            <div className="flex items-center justify-between">
-              <div className="w-10 h-10 rounded-xl bg-[#e1f5ee] text-[#0f766e] flex items-center justify-center">
-                <CheckCircleOutlineIcon className="w-5 h-5" />
-              </div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-[#143d36] tracking-tight">
-                {stats.preparadas}
-              </span>
-            </div>
-            <span className="text-xs sm:text-sm font-medium text-gray-500 mt-3 sm:mt-4">
-              Preparadas
+              Atendidas por Vet
             </span>
           </article>
         </ViewPopup>
@@ -193,13 +194,13 @@ export function InicioAux({
       {/* 3. Sección "Citas de hoy" con Pop-up Effect */}
       <ViewPopup delayMs={230}>
         <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-lg sm:text-xl font-bold text-brand tracking-tight">
               Citas de hoy
             </h2>
 
             {/* Filtros sutiles para interactividad */}
-            <div className="flex items-center gap-1.5 bg-bone/90 p-1 rounded-xl border border-border-tan/80 text-xs">
+            <div className="flex items-center gap-1.5 bg-bone/90 p-1 rounded-xl border border-border-tan/80 text-xs flex-wrap">
               <button
                 type="button"
                 onClick={() => setFilterStatus('TODAS')}
@@ -213,25 +214,25 @@ export function InicioAux({
               </button>
               <button
                 type="button"
-                onClick={() => setFilterStatus('Pendiente')}
+                onClick={() => setFilterStatus('PENDIENTES_PRETRIAJE')}
                 className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                  filterStatus === 'Pendiente'
+                  filterStatus === 'PENDIENTES_PRETRIAJE'
                     ? 'bg-white text-[#c81e1e] shadow-xs'
                     : 'text-sage hover:text-brand'
                 }`}
               >
-                Pendientes ({appointments.filter((a) => a.status === 'Pendiente').length})
+                Pre-triaje pendiente ({appointments.filter((a) => a.pretriajeStatus === 'Pendiente').length})
               </button>
               <button
                 type="button"
-                onClick={() => setFilterStatus('Preparada')}
+                onClick={() => setFilterStatus('PRETRIAJE_REALIZADO')}
                 className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                  filterStatus === 'Preparada'
+                  filterStatus === 'PRETRIAJE_REALIZADO'
                     ? 'bg-white text-[#065f46] shadow-xs'
                     : 'text-sage hover:text-brand'
                 }`}
               >
-                Preparadas ({appointments.filter((a) => a.status === 'Preparada').length})
+                Pre-triaje listo ({appointments.filter((a) => a.pretriajeStatus === 'Realizado').length})
               </button>
             </div>
           </div>
@@ -240,21 +241,22 @@ export function InicioAux({
           <ViewPopup animationKey={filterStatus} className="w-full">
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[700px]">
+                <table className="w-full text-left border-collapse min-w-[760px]">
                   <thead>
                     <tr className="bg-[#dce9e3] text-[#34524a] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
                       <th className="py-3.5 px-4 sm:px-6 font-bold">HORA</th>
                       <th className="py-3.5 px-4 sm:px-5 font-bold">MASCOTA</th>
                       <th className="py-3.5 px-4 sm:px-5 font-bold">SERVICIO</th>
                       <th className="py-3.5 px-4 sm:px-5 font-bold">PROFESIONAL</th>
-                      <th className="py-3.5 px-4 sm:px-5 font-bold">ESTADO</th>
+                      <th className="py-3.5 px-3 sm:px-4 font-bold text-center">ESTADO CITA</th>
+                      <th className="py-3.5 px-3 sm:px-4 font-bold text-center">PRE-TRIAJE</th>
                       <th className="py-3.5 px-4 sm:px-6 font-bold text-right">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-tan/60 text-sm">
                     {isLoading ? (
                       <tr className="animate-in fade-in duration-200">
-                        <td colSpan={6} className="py-12 text-center text-sage">
+                        <td colSpan={7} className="py-12 text-center text-sage">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
                             <span className="font-semibold text-xs sm:text-sm text-sage">
@@ -265,7 +267,7 @@ export function InicioAux({
                       </tr>
                     ) : filteredAppointments.length === 0 ? (
                       <tr className="animate-in fade-in duration-200">
-                        <td colSpan={6} className="py-12 text-center text-sage">
+                        <td colSpan={7} className="py-12 text-center text-sage">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <div className="w-10 h-10 rounded-2xl bg-bone flex items-center justify-center text-sage border border-border-tan/60">
                               <svg
@@ -283,19 +285,23 @@ export function InicioAux({
                               </svg>
                             </div>
                             <span className="font-semibold text-xs sm:text-sm text-sage">
-                              No hay citas con el estado seleccionado.
+                              No hay citas con el filtro seleccionado.
                             </span>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       filteredAppointments.map((apt) => {
-                        const isPending = apt.status === 'Pendiente'
-                        const isPrepared = apt.status === 'Preparada'
+                        const isPretriajeDone = apt.pretriajeStatus === 'Realizado'
                         const avatarBg =
                           apt.avatarColor === 'peach'
                             ? 'bg-[#f09a82] text-white'
                             : 'bg-brand text-white'
+
+                        let aptBadgeClass = 'bg-[#eef2f6] text-slate-700'
+                        if (apt.status === 'Atendida') aptBadgeClass = 'bg-[#d1fae5] text-[#065f46]'
+                        if (apt.status === 'Cancelada' || apt.status === 'No asistió') aptBadgeClass = 'bg-[#fde8e8] text-[#c81e1e]'
+                        if (apt.status === 'En espera') aptBadgeClass = 'bg-[#fef0e6] text-[#b45309]'
 
                         return (
                           <tr
@@ -336,54 +342,47 @@ export function InicioAux({
                               {apt.professional}
                             </td>
 
-                            {/* ESTADO */}
-                            <td className="py-4 px-4 sm:px-5 whitespace-nowrap">
-                              {isPending && (
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-[#eef2f6] text-slate-600">
-                                  Pendiente
-                                </span>
-                              )}
-                              {isPrepared && (
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-[#d1fae5] text-[#065f46]">
-                                  Preparada
-                                </span>
-                              )}
-                              {!isPending && !isPrepared && (
-                                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-bone text-sage">
-                                  {apt.status}
-                                </span>
-                              )}
+                            {/* ESTADO CITA OFICIAL */}
+                            <td className="py-4 px-3 sm:px-4 text-center whitespace-nowrap">
+                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${aptBadgeClass}`}>
+                                {apt.status}
+                              </span>
+                            </td>
+
+                            {/* PRE-TRIAJE */}
+                            <td className="py-4 px-3 sm:px-4 text-center whitespace-nowrap">
+                              <span
+                                className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                  isPretriajeDone
+                                    ? 'bg-[#d1fae5] text-[#065f46] border border-[#a7f3d0]'
+                                    : 'bg-[#fef0e6] text-[#b45309] border border-[#fed7aa]'
+                                }`}
+                              >
+                                {isPretriajeDone ? 'Realizado' : 'Pendiente'}
+                              </span>
                             </td>
 
                             {/* ACCIONES */}
                             <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
-                              <div className="inline-flex items-center justify-end gap-3">
-                                {isPending ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenView(apt)}
-                                      className="text-xs font-semibold text-charcoal hover:text-brand transition cursor-pointer"
-                                    >
-                                      Ver cita
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleOpenPrepare(apt)}
-                                      className="px-3.5 py-1.5 rounded-lg bg-[#854d38] hover:bg-[#703d2a] active:scale-97 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
-                                    >
-                                      Preparar
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenView(apt)}
-                                    className="text-xs font-semibold text-charcoal hover:text-brand transition cursor-pointer"
-                                  >
-                                    Ver detalles
-                                  </button>
-                                )}
+                              <div className="inline-flex items-center justify-end gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenView(apt)}
+                                  className="text-xs font-semibold text-charcoal hover:text-brand transition cursor-pointer"
+                                >
+                                  Ver detalle
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenPrepare(apt)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer ${
+                                    isPretriajeDone
+                                      ? 'bg-bone text-brand hover:bg-border-tan/50 border border-border-tan'
+                                      : 'bg-[#854d38] hover:bg-[#703d2a] active:scale-97 text-white'
+                                  }`}
+                                >
+                                  {isPretriajeDone ? 'Editar triaje' : 'Pre-triaje'}
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -397,6 +396,7 @@ export function InicioAux({
           </ViewPopup>
         </section>
       </ViewPopup>
+
 
       {/* DRAWER LATERAL: Preparar Paciente (desplegable tipo admin) */}
       <PrepararCitaDrawer

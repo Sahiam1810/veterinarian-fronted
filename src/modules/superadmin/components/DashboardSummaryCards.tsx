@@ -27,7 +27,7 @@ export function DashboardSummaryCards({
           Resumen de Hoy
         </h1>
         <p className="text-xs sm:text-sm font-medium text-sage mt-0.5">
-          {stats.formattedDate || dateText}
+          {stats.formattedDate || dateText} • Resumen calculado en cliente a partir de las citas.
         </p>
       </div>
 

@@ -114,7 +114,18 @@ function UserDrawer({
   const [showPassword, setShowPassword] = useState(false)
   const [roleId, setRoleId] = useState('superadmin')
   const [status, setStatus] = useState<UserStatus>('Activo')
+  const [identificationNumber, setIdentificationNumber] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [address, setAddress] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+
+  const selectedRoleObj = roles.find((r) => r.id === roleId)
+  const isClientRole = !!selectedRoleObj && (
+    selectedRoleObj.name.toLowerCase().includes('client') ||
+    selectedRoleObj.name.toLowerCase().includes('cliente') ||
+    selectedRoleObj.name.toLowerCase().includes('dueño') ||
+    selectedRoleObj.name.toLowerCase().includes('dueno')
+  )
 
   useEffect(() => {
     if (isOpen) {
@@ -125,9 +136,12 @@ function UserDrawer({
         setFirstName(editingUser.firstName || parts[0] || '')
         setLastName(editingUser.lastName || parts.slice(1).join(' ') || '')
         setEmail(editingUser.email || '')
-        setPassword(editingUser.password || '')
+        setPassword('')
         setRoleId(editingUser.roleId || roles[0]?.id || 'superadmin')
         setStatus(editingUser.status || 'Activo')
+        setIdentificationNumber(editingUser.identificationNumber || '')
+        setPhoneNumber(editingUser.phone || '')
+        setAddress(editingUser.address || '')
       } else {
         setFirstName('')
         setLastName('')
@@ -135,6 +149,9 @@ function UserDrawer({
         setPassword('')
         setRoleId(roles[0]?.id || '')
         setStatus('Activo')
+        setIdentificationNumber('')
+        setPhoneNumber('')
+        setAddress('')
       }
       setShowPassword(false)
       setFormError(null)
@@ -176,7 +193,7 @@ function UserDrawer({
     e.preventDefault()
 
     if (!firstName.trim()) {
-      setFormError('Por favor ingresa el nombre del usuario.')
+      setFormError('Por favor ingresa el nombre.')
       return
     }
 
@@ -185,9 +202,20 @@ function UserDrawer({
       return
     }
 
-    if (!editingUser && !password.trim()) {
-      setFormError('Por favor asigna una contraseña inicial para el usuario.')
-      return
+    if (isClientRole) {
+      if (!identificationNumber.trim()) {
+        setFormError('Por favor ingresa la cédula / identificación.')
+        return
+      }
+      if (!phoneNumber.trim()) {
+        setFormError('Por favor ingresa el número de teléfono.')
+        return
+      }
+    } else {
+      if (!editingUser && !password.trim()) {
+        setFormError('Por favor asigna una contraseña inicial para el usuario.')
+        return
+      }
     }
 
     setFormError(null)
@@ -197,9 +225,12 @@ function UserDrawer({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      password: password.trim() || undefined,
+      password: isClientRole ? undefined : (password.trim() || undefined),
       roleId,
       status,
+      identificationNumber: identificationNumber.trim(),
+      phoneNumber: phoneNumber.trim(),
+      address: address.trim(),
     })
 
     if (!result.ok) {
@@ -234,7 +265,13 @@ function UserDrawer({
             id="drawer-user-title"
             className="text-xl sm:text-2xl font-bold text-brand tracking-tight"
           >
-            {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+            {editingUser
+              ? isClientRole
+                ? 'Editar Dueño / Cliente'
+                : 'Editar Usuario'
+              : isClientRole
+                ? 'Nuevo Dueño / Cliente'
+                : 'Nuevo Usuario'}
           </h2>
           <button
             type="button"
@@ -255,6 +292,29 @@ function UserDrawer({
           {formError && (
             <div className="p-3.5 rounded-xl bg-terracotta-soft text-danger text-xs font-semibold border border-danger/20">
               {formError}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+              Rol en el sistema <span className="text-terracotta">*</span>
+            </label>
+            <select
+              value={roleId}
+              onChange={(e) => setRoleId(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer shadow-2xs"
+            >
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {isClientRole && (
+            <div className="p-3.5 rounded-xl bg-mint-soft text-brand text-xs font-medium border border-brand/15">
+              Este usuario se registrará como cliente / dueño de mascotas en el backend (sin cuenta de acceso al sistema).
             </div>
           )}
 
@@ -299,56 +359,84 @@ function UserDrawer({
             />
           </div>
 
-          <div>
-            <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-              {editingUser ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}{' '}
-              {!editingUser && <span className="text-terracotta">*</span>}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required={!editingUser}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-sage hover:text-charcoal p-1 cursor-pointer"
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-              >
-                {showPassword ? (
-                  <EyeOffIcon className="w-4 h-4" />
-                ) : (
-                  <EyeIcon className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-            <p className="text-[11px] text-sage mt-1">
-              {editingUser
-                ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
-                : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
-            </p>
-          </div>
+          {isClientRole ? (
+            <>
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  Cédula / Identificación <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={identificationNumber}
+                  onChange={(e) => setIdentificationNumber(e.target.value)}
+                  placeholder="Ej: 1098765432"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                />
+              </div>
 
-          <div>
-            <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-              Rol <span className="text-terracotta">*</span>
-            </label>
-            <select
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer shadow-2xs"
-            >
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  Teléfono <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="Ej: 3001234567"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  Dirección (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Ej: Calle 123 # 45-67"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                {editingUser ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}{' '}
+                {!editingUser && <span className="text-terracotta">*</span>}
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required={!editingUser}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sage hover:text-charcoal p-1 cursor-pointer"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="w-4 h-4" />
+                  ) : (
+                    <EyeIcon className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              <p className="text-[11px] text-sage mt-1">
+                {editingUser
+                  ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
+                  : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
@@ -915,9 +1003,13 @@ function ByUserModeView({
                             />
                           )}
                         </div>
-                        <span className="text-[10px] text-sage truncate block leading-tight">
-                          {user.roleName}
-                        </span>
+                        <div className="flex items-center gap-1.5 text-[10px] text-sage truncate mt-0.5">
+                          <span className="truncate">{user.roleName}</span>
+                          {user.phone && <span className="truncate">• Tel: {user.phone}</span>}
+                          {user.identificationNumber && (
+                            <span className="truncate">• Doc: {user.identificationNumber}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -1017,10 +1109,25 @@ function ByUserModeView({
                       {selectedTargetUser.name}
                     </h3>
                     <p className="text-[11px] text-sage truncate">{selectedTargetUser.email}</p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                       <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-cream text-brand border border-border-tan">
                         {selectedTargetUser.roleName}
                       </span>
+                      {selectedTargetUser.identificationNumber && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-bone text-charcoal border border-border-tan">
+                          Doc: {selectedTargetUser.identificationNumber}
+                        </span>
+                      )}
+                      {selectedTargetUser.phone && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-mint-soft text-brand border border-brand/10">
+                          Tel: {selectedTargetUser.phone}
+                        </span>
+                      )}
+                      {selectedTargetUser.address && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-bone text-sage border border-border-tan">
+                          {selectedTargetUser.address}
+                        </span>
+                      )}
                       <span
                         className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
                           selectedTargetUser.status === 'Activo'

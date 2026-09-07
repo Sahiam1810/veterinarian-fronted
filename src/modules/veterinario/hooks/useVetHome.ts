@@ -1,8 +1,20 @@
 import { useEffect, useState, useCallback } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
 import { isNavPermissionGranted } from '@/modules/auth'
-import type { VetDayAppointment, VetHomeDashboard } from '../types'
-import { fetchVetHomeBundle, fetchVetNavPermissions } from '../services'
+import type {
+  HistoriaClinicaPayload,
+  VetDayAppointment,
+  VetHomeDashboard,
+} from '../types'
+import {
+  fetchVetHomeBundle,
+  fetchVetNavPermissions,
+  fetchStatusAppointments,
+  updateAppointmentStatus,
+  findStatusId,
+  fetchHistoriaClinica,
+} from '../services'
+import type { CitaActionTarget } from '../components'
 
 const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
 
@@ -22,41 +34,13 @@ export function useVetHome() {
   const [activeRoute, setActiveRoute] = useState('inicio')
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadHome() {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const [home, permissions] = await Promise.all([
-          fetchVetHomeBundle(),
-          fetchVetNavPermissions(),
-        ])
-        if (!cancelled) {
-          setDashboard(home.dashboard)
-          setUnreadNotificationsCount(home.unreadNotificationsCount)
-          setGrantedPermissions(permissions)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          const msg =
-            err instanceof Error ? err.message : 'No se pudo cargar el punto de inicio'
-          setError(msg)
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
-    void loadHome()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev)
-  const closeSidebar = () => setIsSidebarOpen(false)
+  // Modales desde Inicio
+  const [selectedAppointment, setSelectedAppointment] = useState<CitaActionTarget | null>(null)
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false)
+  const [isRegistrarOpen, setIsRegistrarOpen] = useState(false)
+  const [historiaModalTarget, setHistoriaModalTarget] = useState<HistoriaClinicaPayload | null>(null)
+  const [isHistoriaModalOpen, setIsHistoriaModalOpen] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   const showToast = useCallback((message: string) => {
     setActiveNotification(message)
@@ -64,6 +48,33 @@ export function useVetHome() {
       setActiveNotification((current) => (current === message ? null : current))
     }, 2800)
   }, [])
+
+  const loadHome = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [home, permissions] = await Promise.all([
+        fetchVetHomeBundle(),
+        fetchVetNavPermissions(),
+      ])
+      setDashboard(home.dashboard)
+      setUnreadNotificationsCount(home.unreadNotificationsCount)
+      setGrantedPermissions(permissions)
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'No se pudo cargar el punto de inicio'
+      setError(msg)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadHome()
+  }, [loadHome])
+
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev)
+  const closeSidebar = () => setIsSidebarOpen(false)
 
   const handleNavigate = (routeId: string) => {
     if (routeId === 'logout') {
@@ -93,15 +104,131 @@ export function useVetHome() {
   }
 
   const handleAttendNow = (appointment: VetDayAppointment) => {
-    showToast(`Atender ahora: ${appointment.petName}`)
+    const target: CitaActionTarget = {
+      id: appointment.id,
+      startTime: appointment.time,
+      status: appointment.status,
+      petName: appointment.petName,
+      speciesBreed: appointment.speciesBreed,
+      service: appointment.service,
+      clientPetId: appointment.clientPetId,
+      petId: appointment.petId,
+      ownerName: appointment.ownerName,
+      ownerPhone: appointment.ownerPhone,
+      rawStatusName: appointment.rawStatusName,
+    }
+
+    setSelectedAppointment(target)
+    setIsRegistrarOpen(true)
   }
 
   const handleViewAppointment = (appointment: VetDayAppointment) => {
-    showToast(`Ver detalle: ${appointment.petName}`)
+    const target: CitaActionTarget = {
+      id: appointment.id,
+      startTime: appointment.time,
+      status: appointment.status,
+      petName: appointment.petName,
+      speciesBreed: appointment.speciesBreed,
+      service: appointment.service,
+      clientPetId: appointment.clientPetId,
+      petId: appointment.petId,
+      ownerName: appointment.ownerName,
+      ownerPhone: appointment.ownerPhone,
+      rawStatusName: appointment.rawStatusName,
+    }
+
+    setSelectedAppointment(target)
+    setIsActionModalOpen(true)
   }
 
   const handleMoreActions = (appointment: VetDayAppointment) => {
-    showToast(`Más acciones: ${appointment.petName}`)
+    handleViewAppointment(appointment)
+  }
+
+  const handleCloseActionModal = () => {
+    setIsActionModalOpen(false)
+  }
+
+  const handleCloseRegistrar = () => {
+    setIsRegistrarOpen(false)
+  }
+
+  const handleCloseHistoria = () => {
+    setIsHistoriaModalOpen(false)
+    setHistoriaModalTarget(null)
+  }
+
+  const handleUpdateStatus = async (
+    appointmentId: string,
+    statusKeyword: 'atendida' | 'cancelada' | 'no_asistio',
+    comment?: string | null,
+  ) => {
+    setIsUpdatingStatus(true)
+    try {
+      const statuses = await fetchStatusAppointments()
+      const targetId = findStatusId(statuses, statusKeyword)
+      if (!targetId) {
+        showToast(`No se encontró el estado ${statusKeyword.toUpperCase()} en el catálogo.`)
+        return
+      }
+
+      await updateAppointmentStatus(appointmentId, {
+        statusId: targetId,
+        comment: comment || null,
+      })
+
+      showToast(`Estado de la cita actualizado a ${statusKeyword.toUpperCase()}.`)
+      await loadHome()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al actualizar el estado de la cita'
+      showToast(msg)
+      throw err
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  const handleAttendAndRegister = (appointment: CitaActionTarget) => {
+    setSelectedAppointment(appointment)
+    setIsActionModalOpen(false)
+    setIsRegistrarOpen(true)
+  }
+
+  const handleViewHistoria = async (petId: string) => {
+    try {
+      const data = await fetchHistoriaClinica(petId)
+      if (!data) {
+        showToast('No se encontró historia clínica para esta mascota')
+        return
+      }
+      setHistoriaModalTarget(data)
+      setIsHistoriaModalOpen(true)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo cargar la historia clínica'
+      showToast(msg)
+    }
+  }
+
+  const handleRegistrationSuccess = async (result: {
+    recordId: string
+    petId: string
+    appointmentId: string
+  }) => {
+    setIsRegistrarOpen(false)
+    showToast('¡Consulta médica registrada con éxito!')
+    await loadHome()
+
+    if (result.petId) {
+      try {
+        const data = await fetchHistoriaClinica(result.petId)
+        if (data) {
+          setHistoriaModalTarget(data)
+          setIsHistoriaModalOpen(true)
+        }
+      } catch {
+        // Silently handle
+      }
+    }
   }
 
   return {
@@ -117,9 +244,24 @@ export function useVetHome() {
     handleNavigate,
     activeNotification,
     showToast,
+    selectedAppointment,
+    isActionModalOpen,
+    isRegistrarOpen,
+    historiaModalTarget,
+    isHistoriaModalOpen,
+    isUpdatingStatus,
     handleViewFullAgenda,
     handleAttendNow,
     handleViewAppointment,
     handleMoreActions,
+    handleCloseActionModal,
+    handleCloseRegistrar,
+    handleCloseHistoria,
+    handleUpdateStatus,
+    handleAttendAndRegister,
+    handleViewHistoria,
+    handleRegistrationSuccess,
+    reloadHome: loadHome,
   }
 }
+

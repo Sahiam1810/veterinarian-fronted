@@ -14,6 +14,7 @@ import type {
 import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
 import {
   fetchUsers,
+  createUser as apiCreateUser,
   createFullUser as apiCreateFullUser,
   updateUser as apiUpdateUser,
   activateUser as apiActivateUser,
@@ -21,10 +22,17 @@ import {
   type ApiUserResponse,
 } from '../services/superAdminUserService'
 import {
+  fetchClients,
+  createClient,
+  updateClient,
+  type ApiClientResponse,
+} from '../services/superAdminClientsService'
+import {
   fetchRoles,
   createRole as apiCreateRole,
   type ApiRoleResponse,
 } from '../services/superAdminRolesService'
+
 import {
   fetchModules,
   type ApiModuleResponse,
@@ -43,8 +51,6 @@ import {
   fetchSpecialties,
   createVeterinarian,
   fetchVeterinarians,
-  createClient,
-  fetchClients,
 } from '../services'
 import { ApiError } from '@/services'
 import {
@@ -175,15 +181,16 @@ export function useUserSuperAdmin() {
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes] = await Promise.allSettled([
+      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, clientsRes] = await Promise.allSettled([
         fetchUsers(),
         fetchRoles(),
         fetchModules(),
         fetchAllRolePermissions(),
         fetchAllUserPermissions(),
+        fetchClients(),
       ])
 
-      const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes]
+      const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, clientsRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
 
       if (rejected.length > 0) {
@@ -202,10 +209,13 @@ export function useUserSuperAdmin() {
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
       const fetchedUserPerms: ApiUserPermissionResponse[] = userPermsRes.status === 'fulfilled' ? userPermsRes.value : []
       const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
+      const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
 
       setDbModules(fetchedModules)
       setRawRolePermissions(fetchedRolePerms)
       setRawUserPermissions(fetchedUserPerms)
+
+      const clientsByUserId = new Map(fetchedClients.map((c) => [c.userId.toLowerCase(), c]))
 
       // Módulo ID a ModuleId
       const moduleMap = new Map<string, ModuleId>()
@@ -274,6 +284,7 @@ export function useUserSuperAdmin() {
         const parts = u.fullName.trim().split(' ')
         const firstName = parts[0] || ''
         const lastName = parts.slice(1).join(' ') || ''
+        const clientInfo = clientsByUserId.get(u.id.toLowerCase())
 
         // Permisos personalizados de usuario
         const userCustomPerms: Partial<Record<ModuleId, ModulePermission>> = {}
@@ -314,6 +325,9 @@ export function useUserSuperAdmin() {
           roleName,
           status: (u.isActive ? 'Activo' : 'Inactivo') as UserStatus,
           registrationDate: formatDate(u.createdAt),
+          identificationNumber: clientInfo?.identificationNumber,
+          phone: clientInfo?.phoneNumber || '',
+          address: clientInfo?.address || '',
           customPermissions:
             !isSuperAdminAccount && Object.keys(userCustomPerms).length > 0
               ? userCustomPerms
@@ -323,6 +337,7 @@ export function useUserSuperAdmin() {
 
       setRoles(mappedRoles)
       setUsers(mappedUsers)
+
 
       // No resetear el objetivo de permisos en cada recarga (evita que se "remarquen" solos)
       setSelectedRoleId((prev) => prev || mappedRoles[0]?.id || '')
@@ -740,6 +755,49 @@ export function useUserSuperAdmin() {
     try {
       const fullName = `${data.firstName} ${data.lastName}`.trim()
       const email = data.email.trim()
+
+      const targetRole = roles.find((r) => r.id === data.roleId)
+      const roleNameLower = (targetRole?.name || '').toLowerCase()
+      const isClientRole =
+        roleNameLower.includes('client') ||
+        roleNameLower.includes('cliente') ||
+        roleNameLower.includes('dueño') ||
+        roleNameLower.includes('dueno')
+
+      if (isClientRole) {
+        // Flujo Dueño / Cliente (SIN credenciales ni cuenta de acceso):
+        // Paso 1: POST /api/Users (rol Cliente, sin password)
+        const userRes = await apiCreateUser({
+          fullName,
+          email,
+          roleId: data.roleId,
+        })
+
+        if (!userRes || !userRes.id) {
+          throw new Error('No se pudo registrar el usuario en /api/Users')
+        }
+
+        // Paso 2: POST /api/Clients (con datos reales: identificationNumber, phoneNumber, address)
+        await createClient({
+          userId: userRes.id,
+          identificationNumber: (data.identificationNumber || '').trim() || 'DOC-PENDIENTE',
+          phoneNumber: (data.phoneNumber || '').trim() || null,
+          address: (data.address || '').trim() || null,
+        })
+
+        if (data.status === 'Inactivo') {
+          await syncUserActiveStatus(userRes.id, 'Inactivo')
+        }
+
+        await loadData()
+        setActiveTab('usuarios')
+        setPendingSelectUserId(userRes.id)
+        setPermissionTarget({ type: 'user', id: userRes.id })
+
+        return { ok: true, email, mode: 'create' }
+      }
+
+      // Flujo normal para usuarios de plataforma (Staff: Admin, Veterinario, Recepcionista, etc.)
       const result = await apiCreateFullUser({
         fullName,
         email,
@@ -753,9 +811,6 @@ export function useUserSuperAdmin() {
       }
 
       // Si el rol creado es Veterinario, crear perfil en /api/Veterinarians
-      const targetRole = roles.find((r) => r.id === data.roleId)
-      const roleNameLower = (targetRole?.name || '').toLowerCase()
-
       if (
         roleNameLower.includes('vet') ||
         roleNameLower.includes('veterin') ||
@@ -775,15 +830,6 @@ export function useUserSuperAdmin() {
           }
         } catch (vetErr) {
           console.error('Error creando perfil de veterinario para nuevo usuario:', vetErr)
-        }
-      } else if (roleNameLower.includes('client') || roleNameLower.includes('cliente')) {
-        try {
-          await createClient({
-            userId: result.userId,
-            identificationNumber: 'DOC-PENDIENTE',
-          })
-        } catch (clientErr) {
-          console.error('Error creando perfil de cliente para nuevo usuario:', clientErr)
         }
       }
 
@@ -815,46 +861,58 @@ export function useUserSuperAdmin() {
         await syncUserActiveStatus(userId, data.status)
       }
 
-      // Si cambió de rol a Veterinario o Cliente, asegurar que existan los perfiles
-      if (current?.roleId !== data.roleId) {
-        const targetRole = roles.find((r) => r.id === data.roleId)
-        const roleNameLower = (targetRole?.name || '').toLowerCase()
+      const targetRole = roles.find((r) => r.id === data.roleId)
+      const roleNameLower = (targetRole?.name || '').toLowerCase()
+      const isClientRole =
+        roleNameLower.includes('client') ||
+        roleNameLower.includes('cliente') ||
+        roleNameLower.includes('dueño') ||
+        roleNameLower.includes('dueno')
 
-        if (
-          roleNameLower.includes('vet') ||
-          roleNameLower.includes('veterin') ||
-          roleNameLower.includes('profesional') ||
-          roleNameLower.includes('médico') ||
-          roleNameLower.includes('medico')
-        ) {
-          try {
-            const existingVets = await fetchVeterinarians()
-            if (!existingVets.some((v) => v.userId.toLowerCase() === userId.toLowerCase())) {
-              const specialties = await fetchSpecialties()
-              const defaultSpecId = specialties[0]?.id || ''
-              if (defaultSpecId) {
-                await createVeterinarian({
-                  userId,
-                  specialtyId: defaultSpecId,
-                  licenseNumber: 'CMP-PENDIENTE',
-                })
-              }
-            }
-          } catch (vetErr) {
-            console.error('Error actualizando perfil de veterinario:', vetErr)
-          }
-        } else if (roleNameLower.includes('client') || roleNameLower.includes('cliente')) {
-          try {
-            const existingClients = await fetchClients()
-            if (!existingClients.some((c) => c.userId.toLowerCase() === userId.toLowerCase())) {
-              await createClient({
+      // Sincronizar o actualizar datos de cliente en /api/Clients (incluyendo phoneNumber e identificationNumber)
+      const existingClients = await fetchClients()
+      const existingClient = existingClients.find((c) => c.userId.toLowerCase() === userId.toLowerCase())
+
+      if (existingClient) {
+        await updateClient(existingClient.id, {
+          userId,
+          identificationNumber: (data.identificationNumber || existingClient.identificationNumber).trim(),
+          phoneNumber: (data.phoneNumber || existingClient.phoneNumber || '').trim() || null,
+          address: (data.address || existingClient.address || '').trim() || null,
+          registrationDate: existingClient.registrationDate,
+        })
+      } else if (isClientRole) {
+        await createClient({
+          userId,
+          identificationNumber: (data.identificationNumber || '').trim() || 'DOC-PENDIENTE',
+          phoneNumber: (data.phoneNumber || '').trim() || null,
+          address: (data.address || '').trim() || null,
+        })
+      }
+
+      // Si cambió de rol a Veterinario, asegurar que exista el perfil
+      if (
+        roleNameLower.includes('vet') ||
+        roleNameLower.includes('veterin') ||
+        roleNameLower.includes('profesional') ||
+        roleNameLower.includes('médico') ||
+        roleNameLower.includes('medico')
+      ) {
+        try {
+          const existingVets = await fetchVeterinarians()
+          if (!existingVets.some((v) => v.userId.toLowerCase() === userId.toLowerCase())) {
+            const specialties = await fetchSpecialties()
+            const defaultSpecId = specialties[0]?.id || ''
+            if (defaultSpecId) {
+              await createVeterinarian({
                 userId,
-                identificationNumber: 'DOC-PENDIENTE',
+                specialtyId: defaultSpecId,
+                licenseNumber: 'CMP-PENDIENTE',
               })
             }
-          } catch (clientErr) {
-            console.error('Error actualizando perfil de cliente:', clientErr)
           }
+        } catch (vetErr) {
+          console.error('Error actualizando perfil de veterinario:', vetErr)
         }
       }
 

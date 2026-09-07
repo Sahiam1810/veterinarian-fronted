@@ -10,6 +10,8 @@ export function AppointmentStatusBadge({ status }: AppointmentStatusBadgeProps) 
     ATENDIDO: 'bg-terracotta-soft text-terracotta border border-terracotta/20',
     'EN ESPERA': 'bg-white text-charcoal/70 border border-border-tan',
     AGENDADO: 'bg-brand text-white border border-brand',
+    CANCELADO: 'bg-danger-soft text-danger border border-danger/25',
+    'NO ASISTIÓ': 'bg-bone text-sage border border-sage/35 border-dashed',
   }
 
   return (

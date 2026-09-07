@@ -215,21 +215,27 @@ export function PerfilSuperAdmin({
             <div className="flex-1 flex flex-col gap-5 animate-pop-in stagger-2">
               {/* Información Personal */}
               <section className="bg-white border border-border-tan rounded-2xl p-5 shadow-[0_4px_20px_rgba(35,78,70,0.03)]">
-                <header className="flex items-center gap-2 pb-2.5 mb-4 border-b border-brand/20">
-                  <svg className="w-5 h-5 text-brand shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <h3 className="text-sm sm:text-base font-black text-brand">
-                    Información Personal
-                  </h3>
+                <header className="flex items-center justify-between pb-2.5 mb-4 border-b border-brand/20">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-brand shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <h3 className="text-sm sm:text-base font-black text-brand">
+                      Información Personal
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+                    GET /api/auth/me
+                  </span>
                 </header>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <DetailField label="Nombre Completo" value={profile.fullName} />
-                  <DetailField label="Rol en Sistema" value={profile.systemRole} />
+                  <DetailField label="Nombre Completo" value={profile.fullName} persistence="server" />
+                  <DetailField label="Rol en Sistema" value={profile.systemRole} persistence="server" />
                   <DetailField
                     label="Correo Electrónico"
                     value={profile.email}
+                    persistence="server"
                     icon={
                       <svg className="w-4 h-4 text-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -238,7 +244,8 @@ export function PerfilSuperAdmin({
                   />
                   <DetailField
                     label="Teléfono de Contacto"
-                    value={profile.phone}
+                    value={profile.phone || 'No configurado'}
+                    persistence="local"
                     icon={
                       <svg className="w-4 h-4 text-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -250,19 +257,24 @@ export function PerfilSuperAdmin({
 
               {/* Información Profesional / Operativa */}
               <section className="bg-white border border-border-tan rounded-2xl p-5 shadow-[0_4px_20px_rgba(35,78,70,0.03)]">
-                <header className="flex items-center gap-2 pb-2.5 mb-4 border-b border-brand/20">
-                  <svg className="w-5 h-5 text-brand shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <h3 className="text-sm sm:text-base font-black text-brand">
-                    Información Operativa
-                  </h3>
+                <header className="flex items-center justify-between pb-2.5 mb-4 border-b border-brand/20">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-brand shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <h3 className="text-sm sm:text-base font-black text-brand">
+                      Información Operativa
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md">
+                    Almacenamiento Local (Navegador)
+                  </span>
                 </header>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <TagField label="Clínica" value={profile.clinicName} />
-                  <TagField label="Sede Principal" value={profile.clinicBranch} />
-                  <TagField label="Horario de Trabajo" value={profile.workHours} />
+                  <TagField label="Clínica" value={profile.clinicName} persistence="local" />
+                  <TagField label="Sede Principal" value={profile.clinicBranch} persistence="local" />
+                  <TagField label="Horario de Trabajo" value={profile.workHours} persistence="local" />
                 </div>
               </section>
             </div>
@@ -301,14 +313,27 @@ function DetailField({
   label,
   value,
   icon,
+  persistence = 'server',
 }: {
   label: string
   value: string
   icon?: React.ReactNode
+  persistence?: 'server' | 'local'
 }) {
   return (
     <div className="min-w-0 rounded-xl bg-bone/40 border border-border-tan/50 px-4 py-2.5">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-sage">{label}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-sage truncate">{label}</p>
+        <span
+          className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+            persistence === 'server'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+              : 'bg-amber-50 text-amber-800 border border-amber-200/60'
+          }`}
+        >
+          {persistence === 'server' ? 'Servidor' : 'Navegador'}
+        </span>
+      </div>
       <p className="mt-1 text-xs sm:text-sm font-bold text-charcoal flex items-center gap-2 truncate">
         {icon}
         <span className="truncate" title={value}>
@@ -319,10 +344,29 @@ function DetailField({
   )
 }
 
-function TagField({ label, value }: { label: string; value: string }) {
+function TagField({
+  label,
+  value,
+  persistence = 'local',
+}: {
+  label: string
+  value: string
+  persistence?: 'server' | 'local'
+}) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-sage mb-1.5">{label}</p>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-sage truncate">{label}</p>
+        <span
+          className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+            persistence === 'server'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+              : 'bg-amber-50 text-amber-800 border border-amber-200/60'
+          }`}
+        >
+          {persistence === 'server' ? 'Servidor' : 'Navegador'}
+        </span>
+      </div>
       <div className="rounded-xl bg-[#F5F3EE] border border-border-tan/70 px-4 py-2.5">
         <p className="text-xs sm:text-sm font-bold text-charcoal truncate" title={value}>
           {value}
@@ -427,35 +471,58 @@ function EditProfileDrawer({
             </div>
           )}
 
+          <div className="rounded-xl bg-amber-50/80 border border-amber-200/60 p-3.5 text-xs text-amber-900 flex items-start gap-2">
+            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>
+              Tu <strong>nombre</strong> y <strong>correo</strong> provienen de tu cuenta de usuario autenticada en el servidor. El <strong>teléfono</strong> se almacena únicamente en este navegador.
+            </p>
+          </div>
+
           <div>
-            <label className="block font-bold text-charcoal mb-1.5">Nombre Completo</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block font-bold text-charcoal">Nombre Completo</label>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                Servidor (Solo lectura)
+              </span>
+            </div>
             <input
               type="text"
-              required
+              disabled
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal bg-bone/40 cursor-not-allowed transition"
             />
           </div>
 
           <div>
-            <label className="block font-bold text-charcoal mb-1.5">Correo Electrónico</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block font-bold text-charcoal">Correo Electrónico</label>
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+                Servidor (Solo lectura)
+              </span>
+            </div>
             <input
               type="email"
-              required
+              disabled
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal bg-bone/40 cursor-not-allowed transition"
             />
           </div>
 
           <div>
-            <label className="block font-bold text-charcoal mb-1.5">Teléfono de Contacto</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block font-bold text-charcoal">Teléfono de Contacto</label>
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
+                Navegador local
+              </span>
+            </div>
             <input
               type="text"
               required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              placeholder="+57 300 123 4567"
               className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
             />
           </div>
@@ -465,7 +532,7 @@ function EditProfileDrawer({
               Cancelar
             </button>
             <button type="submit" className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer">
-              Guardar Cambios
+              Guardar en este Navegador
             </button>
           </div>
         </form>
@@ -689,6 +756,15 @@ function ChangePhotoDrawer({
             </div>
           )}
 
+          <div className="rounded-xl bg-amber-50/80 border border-amber-200/60 p-3.5 text-xs text-amber-900 flex items-start gap-2">
+            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>
+              La foto de perfil se almacena <strong>únicamente en este navegador</strong> (localStorage) y no se persiste en el servidor.
+            </p>
+          </div>
+
           <div>
             <label className="block font-bold text-charcoal mb-1.5">URL de Foto de Perfil</label>
             <input
@@ -705,7 +781,7 @@ function ChangePhotoDrawer({
               Cancelar
             </button>
             <button type="submit" className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer">
-              Actualizar
+              Guardar en este Navegador
             </button>
           </div>
         </form>

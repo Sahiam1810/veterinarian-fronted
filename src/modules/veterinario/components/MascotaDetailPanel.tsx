@@ -13,6 +13,7 @@ interface MascotaDetailPanelProps {
   detail: MascotaDetail
   onClose: () => void
   onViewClinicalHistory?: () => void
+  onRegistrarAtencion?: () => void
   isHistoryLoading?: boolean
 }
 
@@ -21,6 +22,7 @@ export function MascotaDetailPanel({
   detail,
   onClose,
   onViewClinicalHistory,
+  onRegistrarAtencion,
   isHistoryLoading = false,
 }: MascotaDetailPanelProps) {
   return (
@@ -94,17 +96,30 @@ export function MascotaDetailPanel({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={onViewClinicalHistory}
-          disabled={isHistoryLoading}
-          className="mt-auto w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-3 text-sm font-bold hover:bg-brand-hover transition cursor-pointer disabled:opacity-70 disabled:cursor-wait"
-        >
-          <MedicalFolderIcon className="w-4 h-4" />
-          <span>
-            {isHistoryLoading ? 'Cargando historia…' : 'Ver Historia Clínica Completa'}
-          </span>
-        </button>
+        <div className="mt-auto flex flex-col gap-2 pt-2">
+          {onRegistrarAtencion && (
+            <button
+              type="button"
+              onClick={onRegistrarAtencion}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm"
+            >
+              <PawIcon className="w-4 h-4" />
+              <span>Registrar Consulta / Atención</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onViewClinicalHistory}
+            disabled={isHistoryLoading}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border-tan bg-white text-charcoal px-4 py-2.5 text-sm font-bold hover:bg-bone hover:text-brand transition cursor-pointer disabled:opacity-70 disabled:cursor-wait"
+          >
+            <MedicalFolderIcon className="w-4 h-4 text-sage" />
+            <span>
+              {isHistoryLoading ? 'Cargando historia…' : 'Ver Historia Clínica Completa'}
+            </span>
+          </button>
+        </div>
       </aside>
     </ViewPopup>
   )

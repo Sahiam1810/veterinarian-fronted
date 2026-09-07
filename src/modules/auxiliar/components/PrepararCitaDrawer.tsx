@@ -115,10 +115,10 @@ export function PrepararCitaDrawer({
               id="drawer-preparar-cita-title"
               className="text-xl sm:text-2xl font-bold text-brand tracking-tight"
             >
-              Preparar Paciente
+              Registro de Pre-triaje
             </h2>
             <p className="text-xs text-sage mt-0.5 font-medium">
-              Triaje, registro de signos vitales e instrumental clínico
+              Signos vitales de ingreso y preparación clínica del paciente
             </p>
           </div>
 
@@ -126,7 +126,7 @@ export function PrepararCitaDrawer({
             type="button"
             onClick={handleClose}
             className="text-charcoal/70 hover:text-charcoal p-1.5 rounded-lg hover:bg-bone transition cursor-pointer"
-            aria-label="Cerrar panel de preparación"
+            aria-label="Cerrar panel de pre-triaje"
           >
             <span className="text-xl font-medium leading-none">✕</span>
           </button>
@@ -159,13 +159,13 @@ export function PrepararCitaDrawer({
               </div>
             </div>
 
-            <div className="text-right shrink-0">
+            <div className="text-right shrink-0 flex flex-col items-end gap-1">
               <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-brand border border-border-tan shadow-2xs">
                 {appointment.time}
               </span>
-              <p className="text-[11px] text-sage mt-1 font-medium">
-                {appointment.professional}
-              </p>
+              <span className="text-[10px] font-semibold text-charcoal/80 bg-bone/80 px-2 py-0.5 rounded-md border border-border-tan/60">
+                Cita: {appointment.status}
+              </span>
             </div>
           </div>
 
@@ -264,13 +264,13 @@ export function PrepararCitaDrawer({
           {/* Sección: Observaciones de Triaje */}
           <div className="space-y-2 pt-2">
             <label className="block text-xs sm:text-sm font-bold text-charcoal">
-              Notas de Preparación y Triaje
+              Notas de Pre-triaje y Observaciones
             </label>
             <textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Observaciones de ingreso, comportamiento, medicación reciente o requerimientos especiales..."
+              placeholder="Observaciones de ingreso, comportamiento, medicación reciente o notas para el veterinario..."
               className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
             />
           </div>
@@ -291,7 +291,7 @@ export function PrepararCitaDrawer({
               />
             </svg>
             <p className="leading-relaxed">
-              Al guardar, la cita cambiará a estado <strong>Preparada</strong> y se notificará al profesional <strong>{appointment.professional}</strong>.
+              Al guardar, las mediciones quedarán registradas en la <strong>historia clínica</strong> del paciente para la consulta del profesional <strong>{appointment.professional}</strong>.
             </p>
           </div>
         </form>
@@ -310,7 +310,7 @@ export function PrepararCitaDrawer({
             form="preparar-cita-drawer-form"
             className="px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#854d38] hover:bg-[#703d2a] active:scale-98 text-white transition shadow-xs cursor-pointer"
           >
-            Guardar y Marcar Preparada
+            Guardar Pre-triaje
           </button>
         </div>
       </div>

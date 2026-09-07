@@ -27,16 +27,16 @@ export function RecepPerfilDetailsPanel({
               Información de la Cuenta
             </h3>
           </div>
-          <span className="text-[11px] font-semibold text-sage bg-bone px-2.5 py-1 rounded-lg">
-            Datos de Sesión
+          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+            GET /api/auth/me
           </span>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <Field label="Nombre Completo" value={profile.fullName} />
-          <Field label="Nombre de Usuario" value={profile.userName} />
-          <Field label="Correo Electrónico" value={profile.email} />
-          <Field label="Cargo / Rol de Cuenta" value={profile.role || 'Recepcionista'} highlighted />
+          <Field label="Nombre Completo" value={profile.fullName} persistence="server" />
+          <Field label="Nombre de Usuario" value={profile.userName} persistence="server" />
+          <Field label="Correo Electrónico" value={profile.email} persistence="server" />
+          <Field label="Cargo / Rol de Cuenta" value={profile.role || 'Recepcionista'} persistence="server" highlighted />
         </div>
 
         <div className="rounded-xl bg-amber-50/70 border border-amber-200/60 p-3.5 flex items-start gap-2.5 text-xs text-amber-900 mt-1">
@@ -44,7 +44,7 @@ export function RecepPerfilDetailsPanel({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p>
-            Los datos personales, rol y estado de la cuenta son administrados de forma centralizada por la administración de la clínica. Puedes actualizar tu contraseña de acceso en cualquier momento.
+            Los datos personales, rol y estado de la cuenta están <strong>persistidos en el servidor</strong> y son gestionados por la administración. La contraseña se actualiza directamente vía API.
           </p>
         </div>
       </section>
@@ -59,8 +59,8 @@ export function RecepPerfilDetailsPanel({
                 Seguridad de la Cuenta
               </h3>
             </div>
-            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-              Autoservicio Activo
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+              PATCH /api/auth/me/password
             </span>
           </header>
 
@@ -94,16 +94,29 @@ function Field({
   label,
   value,
   highlighted = false,
+  persistence = 'server',
 }: {
   label: string
   value: string
   highlighted?: boolean
+  persistence?: 'server' | 'local'
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-sage mb-1.5">
-        {label}
-      </p>
+      <div className="flex items-center justify-between gap-1 mb-1.5">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-sage truncate">
+          {label}
+        </p>
+        <span
+          className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+            persistence === 'server'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+              : 'bg-amber-50 text-amber-800 border border-amber-200/60'
+          }`}
+        >
+          {persistence === 'server' ? 'Servidor' : 'Navegador'}
+        </span>
+      </div>
       <div
         className={`rounded-xl border border-border-tan px-3.5 py-2.5 ${
           highlighted ? 'bg-cream' : 'bg-bone/35'

@@ -239,6 +239,10 @@ function mapAppointmentEvents(
         petName: pet?.name || 'Mascota',
         species: species || undefined,
         service: apt.serviceName || 'Servicio',
+        clientPetId: apt.clientPetId,
+        petId: link?.petId,
+        rawStatusName: apt.statusName || undefined,
+        veterinarianId: apt.veterinarianId,
       } satisfies AgendaCalendarEvent
     })
     .sort((a, b) => a.startTime.localeCompare(b.startTime))

@@ -1,14 +1,23 @@
-import type { GrantedPermissions } from '@/global/navigation'
-import { CLIENTE_DEFAULT_PERMISSIONS } from '@/global/navigation'
+import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
+import { CLIENTE_DEFAULT_PERMISSIONS } from '@/global/navigation/roles/cliente'
 import {
-  CLIENTE_ALWAYS_VISIBLE_NAV,
-  CLIENTE_MODULE_TO_NAV,
   fetchMyModulePermissions,
   filterNavKeysByModuleView,
 } from '@/modules/auth'
 import type { ClienteHomeDashboard } from '../types'
 import { CLIENT_PETS, getDbNextUpcomingAppointment } from './clienteDbMock'
 import { mapDbNextAppointmentToHome } from '../utils/dbMappers'
+
+const CLIENTE_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
+  Mascotas: 'cliente.mascotas',
+  Citas: 'cliente.citas',
+  'Historiales Clínicos': 'cliente.historial',
+}
+
+const CLIENTE_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
+  'cliente.inicio',
+  'cliente.perfil',
+]
 
 export async function fetchClienteHomeDashboard(): Promise<ClienteHomeDashboard> {
   const next = mapDbNextAppointmentToHome(getDbNextUpcomingAppointment())

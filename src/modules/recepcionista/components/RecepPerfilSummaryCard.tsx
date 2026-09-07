@@ -34,11 +34,17 @@ export function RecepPerfilSummaryCard({
             onClick={onChangePhoto}
             className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white text-brand border border-border-tan shadow-md inline-flex items-center justify-center hover:bg-bone transition cursor-pointer"
             aria-label="Cambiar foto de perfil"
-            title="Cambiar foto"
+            title="Cambiar foto (Almacenada únicamente en este navegador)"
           >
             <CameraIcon className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {profile.photoUrl && (
+          <span className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded mb-2">
+            Foto local (Este navegador)
+          </span>
+        )}
 
         <h2 className="text-lg font-extrabold text-charcoal tracking-tight leading-tight px-1">
           {profile.displayName}
@@ -68,16 +74,19 @@ export function RecepPerfilSummaryCard({
           icon={<MailIcon className="w-4 h-4" />}
           label="Correo electrónico"
           value={profile.email}
+          persistence="server"
         />
         <ContactRow
           icon={<UserOutlineIcon className="w-4 h-4" />}
           label="Nombre de usuario"
           value={`@${profile.userName}`}
+          persistence="server"
         />
         <ContactRow
           icon={<BadgeIcon className="w-4 h-4" />}
           label="Rol en el sistema"
           value={profile.role || 'Recepcionista'}
+          persistence="server"
         />
       </div>
     </aside>
@@ -88,16 +97,29 @@ function ContactRow({
   icon,
   label,
   value,
+  persistence = 'server',
 }: {
   icon: ReactNode
   label: string
   value: string
+  persistence?: 'server' | 'local'
 }) {
   return (
     <div className="flex items-start gap-3 min-w-0">
       <span className="mt-0.5 text-sage shrink-0">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-sage">{label}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-sage truncate">{label}</p>
+          <span
+            className={`text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+              persistence === 'server'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+                : 'bg-amber-50 text-amber-800 border border-amber-200/60'
+            }`}
+          >
+            {persistence === 'server' ? 'Servidor' : 'Navegador'}
+          </span>
+        </div>
         <p className="text-xs sm:text-sm font-semibold text-charcoal truncate" title={value}>
           {value}
         </p>

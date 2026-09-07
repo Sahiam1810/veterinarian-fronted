@@ -15,9 +15,10 @@ export function VetHomeGreeting({ profile, formattedDate }: VetHomeGreetingProps
       <h1 className="text-2xl sm:text-3xl lg:text-[2rem] font-extrabold text-brand tracking-tight leading-tight">
         {greeting}
       </h1>
-      <p className="flex items-center gap-2 text-sm sm:text-[0.95rem] text-sage font-medium">
+      <p className="flex flex-wrap items-center gap-2 text-sm sm:text-[0.95rem] text-sage font-medium">
         <CalendarIcon className="w-4 h-4 sm:w-[1.05rem] sm:h-[1.05rem] shrink-0 text-sage" />
         <span>{formattedDate}</span>
+        <span className="text-xs text-sage/80">• Resumen calculado en cliente a partir de las citas.</span>
       </p>
     </header>
   )

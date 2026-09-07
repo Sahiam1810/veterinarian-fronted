@@ -33,14 +33,24 @@ function splitTreatment(treatment?: string | null): string[] {
     .filter(Boolean)
 }
 
+export interface ApiDiagnosticItem {
+  id: string
+  code?: string | null
+  name?: string | null
+}
+
 // Arma la historia clínica con medical records + vacunas del backend.
 export function buildHistoriaClinica(input: {
   detail: MascotaDetail
   clientPetIds: string[]
   medicalRecords: ApiMedicalRecord[]
   vaccinations: ApiVaccination[]
+  diagnostics?: ApiDiagnosticItem[]
 }): HistoriaClinicaPayload {
   const idSet = new Set(input.clientPetIds.map((id) => id.toLowerCase()))
+  const diagnosticsById = new Map(
+    (input.diagnostics || []).map((d) => [d.id.toLowerCase(), d]),
+  )
 
   const records = input.medicalRecords
     .filter((item) => idSet.has(item.clientPetId.toLowerCase()))
@@ -60,14 +70,25 @@ export function buildHistoriaClinica(input: {
     }))
 
   const latest = records[0]
-  const consultas = records.map((record) => ({
-    id: record.id,
-    dateLabel: formatDateLabel(record.createdAt),
-    typeLabel: record.diagnosticCode || 'Consulta',
-    motivo: record.symptoms?.trim() || 'Sin motivo registrado.',
-    diagnostico: record.diagnosticCode || undefined,
-    tratamientoIndicaciones: splitTreatment(record.treatment),
-  }))
+  const consultas = records.map((record) => {
+    const diag = record.diagnosticId
+      ? diagnosticsById.get(record.diagnosticId.toLowerCase())
+      : undefined
+    const diagCode = diag?.code || record.diagnosticCode || undefined
+    const diagName = diag?.name || undefined
+    const diagLabel = diagCode && diagName
+      ? `${diagCode} - ${diagName}`
+      : diagName || diagCode || record.diagnosticCode || undefined
+
+    return {
+      id: record.id,
+      dateLabel: formatDateLabel(record.createdAt),
+      typeLabel: diagCode || 'Consulta General',
+      motivo: record.symptoms?.trim() || 'Sin motivo registrado.',
+      diagnostico: diagLabel,
+      tratamientoIndicaciones: splitTreatment(record.treatment),
+    }
+  })
 
   return {
     petId: input.detail.id,

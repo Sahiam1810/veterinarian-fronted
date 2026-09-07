@@ -130,7 +130,7 @@ export function ReportesSuperAdmin({
                 Reportes Administrativos
               </h1>
               <p className="text-xs sm:text-sm text-sage font-medium mt-1">
-                Visualización de métricas clave y rendimiento de la clínica.
+                Visualización de métricas clave y rendimiento de la clínica. Resumen calculado en cliente a partir de las citas.
               </p>
             </div>
 

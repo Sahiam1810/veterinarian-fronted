@@ -72,3 +72,65 @@ export async function fetchVetAgendaWeek(
     species,
   })
 }
+
+export interface ApiStatusAppointment {
+  id: string
+  name: string
+  description?: string | null
+  createdAt: string
+}
+
+export interface ApiUpdateAppointmentStatusRequest {
+  statusId: string
+  comment?: string | null
+}
+
+// Catálogo de estados de citas del backend
+export async function fetchStatusAppointments(): Promise<ApiStatusAppointment[]> {
+  return vetApiFetch<ApiStatusAppointment[]>('/api/statusappointments').catch(async () => {
+    return vetApiFetch<ApiStatusAppointment[]>('/api/StatusAppointments').catch(() => [])
+  })
+}
+
+// Transición de estado canónica de cita (AGENDADA → ATENDIDA | CANCELADA | NO_ASISTIO)
+export async function updateAppointmentStatus(
+  appointmentId: string,
+  data: ApiUpdateAppointmentStatusRequest,
+): Promise<void> {
+  return vetApiFetch<void>(`/api/appointments/${appointmentId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }).catch(async () => {
+    return vetApiFetch<void>(`/api/Appointments/${appointmentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  })
+}
+
+// Resuelve el ID del estado en el catálogo ignorando mayúsculas, espacios y acentos
+export function findStatusId(
+  statuses: { id: string; name: string }[],
+  ...keywords: string[]
+): string | undefined {
+  const normalizedKeywords = keywords.map((k) =>
+    k
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[_\s-]+/g, ''),
+  )
+
+  const match = statuses.find((s) => {
+    const normName = s.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[_\s-]+/g, '')
+
+    return normalizedKeywords.some((k) => normName.includes(k) || k.includes(normName))
+  })
+
+  return match?.id
+}
+

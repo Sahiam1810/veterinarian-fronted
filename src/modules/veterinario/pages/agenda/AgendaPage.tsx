@@ -1,5 +1,10 @@
 import { useEffect } from 'react'
-import { VetAgendaView } from '../../components'
+import {
+  VetAgendaView,
+  CitaAccionesModal,
+  RegistrarAtencionModal,
+  HistoriaClinicaModal,
+} from '../../components'
 import { useVetAgenda } from '../../hooks'
 
 interface AgendaPageProps {
@@ -16,6 +21,12 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     isLoading,
     error,
     notice,
+    selectedAppointment,
+    isActionModalOpen,
+    isRegistrarOpen,
+    historiaModalTarget,
+    isHistoriaModalOpen,
+    isUpdatingStatus,
     handlePrevPeriod,
     handleNextPeriod,
     handleGoToday,
@@ -23,6 +34,13 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleOpenFilters,
     handleToggleStatusFilter,
     handleSelectEvent,
+    handleCloseActionModal,
+    handleUpdateStatus,
+    handleAttendAndRegister,
+    handleCloseRegistrar,
+    handleViewHistoria,
+    handleCloseHistoria,
+    handleRegistrationSuccess,
   } = useVetAgenda(true)
 
   useEffect(() => {
@@ -69,6 +87,55 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onToggleStatusFilter={handleToggleStatusFilter}
         onSelectEvent={handleSelectEvent}
       />
+
+      {isActionModalOpen && selectedAppointment && (
+        <CitaAccionesModal
+          isOpen={isActionModalOpen}
+          appointment={selectedAppointment}
+          onClose={handleCloseActionModal}
+          onAttendAndRegister={handleAttendAndRegister}
+          onChangeStatus={handleUpdateStatus}
+          onViewHistoriaClinica={(petId) => {
+            void handleViewHistoria(petId)
+          }}
+          isUpdatingStatus={isUpdatingStatus}
+        />
+      )}
+
+      {isRegistrarOpen && selectedAppointment && (
+        <RegistrarAtencionModal
+          isOpen={isRegistrarOpen}
+          petId={selectedAppointment.petId || ''}
+          petName={selectedAppointment.petName || 'Mascota'}
+          speciesBreed={selectedAppointment.speciesBreed || selectedAppointment.species}
+          clientPetId={selectedAppointment.clientPetId || ''}
+          appointmentId={selectedAppointment.id}
+          serviceName={selectedAppointment.service}
+          scheduledStart={
+            selectedAppointment.dateKey && selectedAppointment.startTime
+              ? `${selectedAppointment.dateKey}T${selectedAppointment.startTime}:00`
+              : undefined
+          }
+          onClose={handleCloseRegistrar}
+          onSuccess={(result) => {
+            void handleRegistrationSuccess(result)
+          }}
+        />
+      )}
+
+      {isHistoriaModalOpen && historiaModalTarget && (
+        <HistoriaClinicaModal
+          historia={historiaModalTarget}
+          onClose={handleCloseHistoria}
+          onOpenRegistrarConsulta={() => {
+            handleCloseHistoria()
+            if (selectedAppointment) {
+              handleAttendAndRegister(selectedAppointment)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }
+

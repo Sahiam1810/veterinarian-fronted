@@ -23,6 +23,8 @@ interface VetMascotasViewProps {
   onSelect: (petId: string) => void
   onCloseDetail: () => void
   onViewClinicalHistory?: () => void
+  onRegistrarAtencion?: () => void
+  onOpenRegistrarConsulta?: () => void
   onCloseHistoria: () => void
   onPrevPage?: () => void
   onNextPage?: () => void
@@ -47,6 +49,8 @@ export function VetMascotasView({
   onSelect,
   onCloseDetail,
   onViewClinicalHistory,
+  onRegistrarAtencion,
+  onOpenRegistrarConsulta,
   onCloseHistoria,
   onPrevPage,
   onNextPage,
@@ -92,6 +96,7 @@ export function VetMascotasView({
                 detail={selectedDetail}
                 onClose={onCloseDetail}
                 onViewClinicalHistory={onViewClinicalHistory}
+                onRegistrarAtencion={onRegistrarAtencion}
                 isHistoryLoading={isHistoriaLoading}
               />
             </div>
@@ -100,7 +105,11 @@ export function VetMascotasView({
       </ViewPopup>
 
       {isHistoriaOpen && historia && (
-        <HistoriaClinicaModal historia={historia} onClose={onCloseHistoria} />
+        <HistoriaClinicaModal
+          historia={historia}
+          onClose={onCloseHistoria}
+          onOpenRegistrarConsulta={onOpenRegistrarConsulta}
+        />
       )}
     </>
   )

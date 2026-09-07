@@ -91,7 +91,8 @@ export function NuevaCitaDrawer({
       speciesBreed: speciesBreedFormatted,
       service,
       professional,
-      status: 'Pendiente',
+      status: 'Agendada',
+      pretriajeStatus: 'Pendiente',
       ownerName: ownerPhone.trim() ? `${ownerName.trim()} (${ownerPhone.trim()})` : ownerName.trim(),
       notes: notes.trim() || undefined,
     }

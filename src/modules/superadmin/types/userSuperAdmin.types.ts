@@ -55,6 +55,9 @@ export interface SystemUser {
   status: UserStatus
   registrationDate: string
   avatarUrl?: string
+  identificationNumber?: string
+  phone?: string
+  address?: string
   customPermissions?: Partial<Record<ModuleId, ModulePermission>>
 }
 
@@ -65,7 +68,11 @@ export interface UserFormData {
   password?: string
   roleId: string
   status: UserStatus
+  identificationNumber?: string
+  phoneNumber?: string
+  address?: string
 }
+
 
 export interface UserFilters {
   searchQuery: string

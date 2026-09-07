@@ -3,14 +3,16 @@ import {
   type SidebarNavItem,
 } from '@/global/components'
 import {
-  CLIENTE_DEFAULT_PERMISSIONS,
-  CLIENTE_NAV_CATALOG,
   resolveNavCatalog,
   splitNavCatalog,
   splitNavByPlacement,
   toSidebarNavItems,
   type GrantedPermissions,
 } from '@/global/navigation'
+import {
+  CLIENTE_DEFAULT_PERMISSIONS,
+  CLIENTE_NAV_CATALOG,
+} from '@/global/navigation/roles/cliente'
 
 export interface ClienteSidebarProps {
   isOpen?: boolean

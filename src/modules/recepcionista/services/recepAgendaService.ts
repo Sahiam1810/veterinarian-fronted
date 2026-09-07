@@ -88,15 +88,18 @@ export async function fetchRecepAgendaCatalog(): Promise<RecepAgendaCatalogPaylo
   const petsMap = new Map(pets.map((p) => [p.id.toLowerCase(), p]))
   const racesMap = new Map(races.map((r) => [r.id.toLowerCase(), r.name]))
 
-  // Dueños disponibles
+  // Dueños disponibles con datos reales de contacto
   const owners: RecepAgendaOwnerOption[] = clients.map((client) => {
     const user = usersMap.get(client.userId?.toLowerCase())
     return {
       id: client.id,
       name: user?.fullName || 'Cliente Sin Nombre',
       documentLabel: `CC ${client.identificationNumber || 'N/A'}`,
+      phone: client.phoneNumber || '',
+      identificationNumber: client.identificationNumber || '',
     }
   })
+
 
   // Mascotas por dueño
   const petsOptions: RecepAgendaPetOption[] = clientPets

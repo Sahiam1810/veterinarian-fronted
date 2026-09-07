@@ -23,14 +23,21 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-
+  
   const displayName = profile?.fullName || userName
   const displayEmail = profile?.email || userEmail
   const displayUserName = profile?.userName || 'auxiliar'
   const displayRole = profile?.role || 'Auxiliar'
   const displayInitials = profile?.initials || displayName.slice(0, 2).toUpperCase()
   const displayStatus = profile?.accountStatus || 'Activo'
+
+  const [photoUrl, setPhotoUrl] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(`huellitas_photo_${displayEmail.toLowerCase()}`)
+    } catch {
+      return null
+    }
+  })
 
   const handleSavePassword = async (e: FormEvent) => {
     e.preventDefault()
@@ -50,8 +57,13 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
       'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150',
     ]
     const nextPhoto = randomPhotos[Math.floor(Math.random() * randomPhotos.length)]
+    try {
+      localStorage.setItem(`huellitas_photo_${displayEmail.toLowerCase()}`, nextPhoto)
+    } catch {
+      // ignore
+    }
     setPhotoUrl(nextPhoto)
-    onNotice?.('Foto de perfil actualizada en la vista actual')
+    onNotice?.('Foto de perfil actualizada (guardada únicamente en este navegador)')
   }
 
   if (isLoading && !profile) {
@@ -69,7 +81,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
     <ViewPopup animationKey="perfil" className="w-full flex flex-col lg:flex-row gap-5 sm:gap-6 min-w-0">
       {/* Columna Izquierda: Resumen del Perfil */}
       <div className="w-full lg:w-[280px] xl:w-[320px] shrink-0">
-        <div className="bg-white rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] p-5 sm:p-6 flex flex-col items-center text-center gap-5">
+        <div className="bg-white rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] p-5 sm:p-6 flex flex-col items-center text-center gap-4">
           {/* Foto / Avatar de Perfil */}
           <div className="relative group">
             <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-bone shadow-md bg-bone flex items-center justify-center">
@@ -89,7 +101,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
               type="button"
               onClick={handleChangePhoto}
               className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-white hover:bg-bone border border-border-tan shadow-md flex items-center justify-center text-brand transition cursor-pointer"
-              title="Cambiar foto de perfil"
+              title="Cambiar foto de perfil (Almacenada únicamente en este navegador)"
             >
               <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -107,6 +119,12 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
               </svg>
             </button>
           </div>
+
+          {photoUrl && (
+            <span className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded">
+              Foto local (Este navegador)
+            </span>
+          )}
 
           {/* Nombre, Usuario y Rol */}
           <div>
@@ -127,40 +145,55 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
 
           {/* Información Rápida / Contacto */}
           <div className="w-full border-t border-border-tan/50 pt-4 flex flex-col gap-3 text-left">
-            <div className="flex items-center gap-2.5 text-xs text-charcoal">
-              <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-              <span className="truncate" title={displayEmail}>{displayEmail}</span>
+            <div className="flex items-center justify-between gap-2 text-xs text-charcoal">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="truncate" title={displayEmail}>{displayEmail}</span>
+              </div>
+              <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 shrink-0">
+                Servidor
+              </span>
             </div>
 
-            <div className="flex items-center gap-2.5 text-xs text-charcoal">
-              <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span className="truncate">Usuario: {displayUserName}</span>
+            <div className="flex items-center justify-between gap-2 text-xs text-charcoal">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span className="truncate">Usuario: {displayUserName}</span>
+              </div>
+              <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 shrink-0">
+                Servidor
+              </span>
             </div>
 
-            <div className="flex items-center gap-2.5 text-xs text-charcoal">
-              <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-              <span>Rol: {displayRole}</span>
+            <div className="flex items-center justify-between gap-2 text-xs text-charcoal">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+                <span>Rol: {displayRole}</span>
+              </div>
+              <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 shrink-0">
+                Servidor
+              </span>
             </div>
           </div>
         </div>
@@ -187,16 +220,21 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
             <h3 className="text-base sm:text-lg font-black text-brand">
               Información de la Cuenta
             </h3>
-            <span className="text-[11px] font-semibold text-sage bg-bone px-2.5 py-1 rounded-lg">
-              Datos de Sesión
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+              GET /api/auth/me
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">
-                Nombre Completo
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-charcoal">
+                  Nombre Completo
+                </label>
+                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                  Servidor
+                </span>
+              </div>
               <input
                 type="text"
                 disabled
@@ -206,9 +244,14 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">
-                Nombre de Usuario
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-charcoal">
+                  Nombre de Usuario
+                </label>
+                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                  Servidor
+                </span>
+              </div>
               <input
                 type="text"
                 disabled
@@ -218,9 +261,14 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">
-                Correo Electrónico
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-charcoal">
+                  Correo Electrónico
+                </label>
+                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                  Servidor
+                </span>
+              </div>
               <input
                 type="email"
                 disabled
@@ -230,9 +278,14 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">
-                Cargo / Rol de Cuenta
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-charcoal">
+                  Cargo / Rol de Cuenta
+                </label>
+                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
+                  Servidor
+                </span>
+              </div>
               <input
                 type="text"
                 disabled
@@ -247,7 +300,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p>
-              Los datos personales, rol y estado de la cuenta son administrados de forma centralizada por la administración de la clínica. Puedes actualizar tu contraseña de acceso en la sección inferior.
+              Los datos personales, rol y estado de la cuenta están <strong>persistidos en el servidor</strong>. La contraseña de acceso se actualiza directamente vía API.
             </p>
           </div>
         </div>
@@ -258,8 +311,8 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
             <h3 className="text-base sm:text-lg font-black text-brand">
               Seguridad de la Cuenta
             </h3>
-            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-              Autoservicio Activo
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+              PATCH /api/auth/me/password
             </span>
           </div>
 

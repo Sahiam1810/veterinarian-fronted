@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { VetMascotasView } from '../../components'
+import { VetMascotasView, RegistrarAtencionModal } from '../../components'
 import { useVetMascotas } from '../../hooks'
 
 interface MascotasPageProps {
@@ -25,11 +25,16 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     historia,
     isHistoriaOpen,
     isHistoriaLoading,
+    isRegistrarOpen,
+    registrarTarget,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
     handleViewClinicalHistory,
     handleCloseHistoria,
+    handleOpenRegistrar,
+    handleCloseRegistrar,
+    handleRegistrationSuccess,
     handlePrevPage,
     handleNextPage,
   } = useVetMascotas(true)
@@ -80,10 +85,35 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onViewClinicalHistory={() => {
           void handleViewClinicalHistory()
         }}
+        onRegistrarAtencion={() => {
+          void handleOpenRegistrar()
+        }}
+        onOpenRegistrarConsulta={() => {
+          void handleOpenRegistrar()
+        }}
         onCloseHistoria={handleCloseHistoria}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
       />
+
+      {isRegistrarOpen && registrarTarget && (
+        <RegistrarAtencionModal
+          isOpen={isRegistrarOpen}
+          petId={registrarTarget.petId}
+          petName={registrarTarget.petName}
+          speciesBreed={registrarTarget.speciesBreed}
+          clientPetId={registrarTarget.clientPetId}
+          appointmentId={registrarTarget.appointmentId}
+          serviceName={registrarTarget.serviceName}
+          scheduledStart={registrarTarget.scheduledStart}
+          availableAppointments={registrarTarget.availableAppointments}
+          onClose={handleCloseRegistrar}
+          onSuccess={(result) => {
+            void handleRegistrationSuccess(result)
+          }}
+        />
+      )}
     </div>
   )
 }
+

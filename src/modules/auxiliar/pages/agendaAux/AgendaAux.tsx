@@ -114,6 +114,12 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
   }
 
   const handleCardClick = (apt: AgendaAppointmentItem) => {
+    let mappedStatus: AuxDayAppointment['status'] = 'Agendada'
+    if (apt.status === 'Atendido') mappedStatus = 'Atendida'
+    if (apt.status === 'Cancelado') mappedStatus = 'Cancelada'
+    if (apt.status === 'No asistió') mappedStatus = 'No asistió'
+    if (apt.status === 'En espera') mappedStatus = 'En espera'
+
     const auxApt: AuxDayAppointment = {
       id: apt.id,
       time: `${apt.startTime} - ${apt.endTime}`,
@@ -123,7 +129,8 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
       speciesBreed: `${apt.species} / ${apt.petBreed}`,
       service: apt.service,
       professional: apt.professional,
-      status: apt.status === 'Atendido' || apt.status === 'Preparada' ? 'Preparada' : 'Pendiente',
+      status: mappedStatus,
+      pretriajeStatus: apt.pretriajeStatus,
       ownerName: apt.ownerName,
       notes: apt.notes,
     }
@@ -140,8 +147,8 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
     _data: { weight: string; temp: string; notes?: string }
   ) => {
     setPrepAppointment(null)
-    showToast('¡Paciente preparado y marcado como listo para el veterinario!')
-    onNotice?.('¡Paciente preparado y marcado como listo para el veterinario!')
+    showToast('¡Pre-triaje registrado exitosamente en historia clínica!')
+    onNotice?.('¡Pre-triaje registrado exitosamente en historia clínica!')
     await loadData()
   }
 
@@ -162,7 +169,7 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
               Agenda Semanal
             </h1>
             <p className="text-xs sm:text-sm text-sage font-medium mt-0.5">
-              Revisa las próximas citas para preparar a los pacientes.
+              Revisa las próximas citas para el pre-triaje y atención de pacientes.
             </p>
           </div>
 
@@ -278,26 +285,26 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                   {dayAppointments.map((apt) => {
                     const isAtendido = apt.status === 'Atendido'
                     const isCancelado = apt.status === 'Cancelado'
-                    const isPreparada = apt.status === 'Preparada'
+                    const isNoAsistio = apt.status === 'No asistió'
+                    const isPretriajeDone = apt.pretriajeStatus === 'Realizado'
 
-                    // Estilo de la píldora de estado
-                    let statusBadgeClass = 'bg-[#eef2f6] text-slate-600'
-                    if (isAtendido) statusBadgeClass = 'bg-[#fbe8e4] text-[#854d38]'
-                    if (isCancelado) statusBadgeClass = 'bg-[#fde8e8] text-[#c81e1e]'
-                    if (isPreparada) statusBadgeClass = 'bg-[#d1fae5] text-[#065f46]'
+                    // Estilo de la píldora de estado oficial
+                    let statusBadgeClass = 'bg-[#eef2f6] text-slate-700'
+                    if (isAtendido) statusBadgeClass = 'bg-[#d1fae5] text-[#065f46]'
+                    if (isCancelado || isNoAsistio) statusBadgeClass = 'bg-[#fde8e8] text-[#c81e1e]'
+                    if (apt.status === 'En espera') statusBadgeClass = 'bg-[#fef0e6] text-[#b45309]'
 
                     // Borde lateral temático
                     let borderLeftClass = 'border-l-4 border-l-brand'
-                    if (isAtendido) borderLeftClass = 'border-l-4 border-l-[#854d38]'
-                    if (isCancelado) borderLeftClass = 'border-l-4 border-l-danger/60'
-                    if (isPreparada) borderLeftClass = 'border-l-4 border-l-emerald-600'
+                    if (isAtendido) borderLeftClass = 'border-l-4 border-l-emerald-600'
+                    if (isCancelado || isNoAsistio) borderLeftClass = 'border-l-4 border-l-danger/60'
 
                     return (
                       <div
                         key={apt.id}
                         onClick={() => handleCardClick(apt)}
                         className={`group bg-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-border-tan/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-brand/40 transition-all duration-200 cursor-pointer flex flex-col gap-1.5 relative ${borderLeftClass} ${
-                          isCancelado ? 'opacity-70 bg-gray-50/50' : ''
+                          isCancelado || isNoAsistio ? 'opacity-70 bg-gray-50/50' : ''
                         }`}
                       >
                         {/* Horario y Estado */}
@@ -329,10 +336,22 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                           </span>
                         </div>
 
-                        {/* Tag de Servicio Clínico con Ícono */}
-                        <div className="mt-1 pt-1.5 border-t border-border-tan/50 flex items-center gap-1.5 text-[11px] font-semibold text-brand/90 bg-[#f9f8f6] px-2 py-1 rounded-lg">
-                          <ServiceTagIcon serviceName={apt.service} className="w-3.5 h-3.5 shrink-0 text-brand" />
-                          <span className="truncate">{apt.service}</span>
+                        {/* Badge de Pre-triaje + Servicio Clínico */}
+                        <div className="mt-1 pt-1.5 border-t border-border-tan/50 flex items-center justify-between gap-1.5 text-[11px]">
+                          <div className="flex items-center gap-1.5 font-semibold text-brand/90 bg-[#f9f8f6] px-2 py-0.5 rounded-lg truncate min-w-0">
+                            <ServiceTagIcon serviceName={apt.service} className="w-3.5 h-3.5 shrink-0 text-brand" />
+                            <span className="truncate">{apt.service}</span>
+                          </div>
+
+                          <span
+                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0 ${
+                              isPretriajeDone
+                                ? 'bg-[#d1fae5] text-[#065f46]'
+                                : 'bg-[#fef0e6] text-[#b45309]'
+                            }`}
+                          >
+                            {isPretriajeDone ? 'Triaje ✓' : 'Triaje...'}
+                          </span>
                         </div>
                       </div>
                     )

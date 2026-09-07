@@ -45,12 +45,16 @@ export function DetalleCitaDrawer({
   if (!isRendered && !isOpen) return null
   if (!appointment) return null
 
-  const isPending = appointment.status === 'Pendiente'
-  const isPrepared = appointment.status === 'Preparada'
+  const isPretriajeDone = appointment.pretriajeStatus === 'Realizado'
   const avatarBg =
     appointment.avatarColor === 'peach'
       ? 'bg-[#f09a82] text-white'
       : 'bg-brand text-white'
+
+  let aptBadgeClass = 'bg-[#eef2f6] text-slate-700'
+  if (appointment.status === 'Atendida') aptBadgeClass = 'bg-[#d1fae5] text-[#065f46]'
+  if (appointment.status === 'Cancelada' || appointment.status === 'No asistió') aptBadgeClass = 'bg-[#fde8e8] text-[#c81e1e]'
+  if (appointment.status === 'En espera') aptBadgeClass = 'bg-[#fef0e6] text-[#b45309]'
 
   const drawerContent = (
     <div
@@ -106,18 +110,11 @@ export function DetalleCitaDrawer({
                 <h3 className="text-lg font-bold text-charcoal truncate">
                   {appointment.petName}
                 </h3>
-                {isPending && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#eef2f6] text-slate-600 shrink-0">
-                    Pendiente
-                  </span>
-                )}
-                {isPrepared && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#d1fae5] text-[#065f46] shrink-0">
-                    Preparada
-                  </span>
-                )}
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${aptBadgeClass}`}>
+                  {appointment.status}
+                </span>
               </div>
-              <p className="text-xs text-sage font-medium truncate">
+              <p className="text-xs text-sage font-medium truncate mt-0.5">
                 {appointment.speciesBreed}
               </p>
             </div>
@@ -159,6 +156,34 @@ export function DetalleCitaDrawer({
             </div>
           </div>
 
+          {/* Estado de Pre-triaje */}
+          <div className="space-y-3 pt-1">
+            <h4 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
+              Estado de Pre-triaje
+            </h4>
+
+            <div className="bg-bone/40 p-3.5 rounded-2xl border border-border-tan/60 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-sage block uppercase tracking-wider mb-0.5">
+                  Preparación Clínica
+                </span>
+                <span className="text-xs text-charcoal font-medium">
+                  {isPretriajeDone ? 'Signos vitales registrados en historia clínica' : 'Pendiente de toma de signos vitales'}
+                </span>
+              </div>
+
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  isPretriajeDone
+                    ? 'bg-[#d1fae5] text-[#065f46] border border-[#a7f3d0]'
+                    : 'bg-[#fef0e6] text-[#b45309] border border-[#fed7aa]'
+                }`}
+              >
+                {isPretriajeDone ? 'Realizado' : 'Pendiente'}
+              </span>
+            </div>
+          </div>
+
           {/* Datos del Dueño */}
           <div className="space-y-3 pt-1">
             <h4 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
@@ -180,7 +205,7 @@ export function DetalleCitaDrawer({
           {/* Notas Clínicas / Motivo */}
           <div className="space-y-2 pt-1">
             <h4 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
-              Observaciones y Notas de Triaje
+              Observaciones y Notas Clínicas
             </h4>
 
             <div className="p-4 rounded-2xl bg-bone/40 border border-border-tan/60">
@@ -202,7 +227,7 @@ export function DetalleCitaDrawer({
             Cerrar
           </button>
 
-          {isPending && onPrepare && (
+          {onPrepare && (
             <button
               type="button"
               onClick={() => {
@@ -213,7 +238,7 @@ export function DetalleCitaDrawer({
               }}
               className="px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#854d38] hover:bg-[#703d2a] active:scale-98 text-white transition shadow-xs cursor-pointer"
             >
-              Preparar Paciente
+              {isPretriajeDone ? 'Actualizar Pre-triaje' : 'Realizar Pre-triaje'}
             </button>
           )}
         </div>

@@ -1,6 +1,7 @@
+import { apiClient } from '@/services'
 import { vetApiFetch } from '../api/vetHttp'
 import type { ApiCurrentProfile, ApiVeterinarian } from '../api/apiTypes'
-import type { VetProfilePayload } from '../types'
+import type { VetProfilePayload, ChangeVetPasswordPayload } from '../types'
 import { findVeterinarianForProfile } from '../utils/buildVetHomeDashboard'
 import { buildVetProfilePayload } from '../utils/buildVetProfile'
 
@@ -27,5 +28,13 @@ export async function fetchVetProfile(): Promise<VetProfilePayload> {
     profile,
     veterinarian,
     specialtyDescription: specialty?.description,
+  })
+}
+
+// Cambia la contraseña propia del veterinario autenticado en el servidor
+export async function changeVetPassword(data: ChangeVetPasswordPayload): Promise<void> {
+  return apiClient.patch<void>('/api/auth/me/password', {
+    currentPassword: data.currentPassword,
+    newPassword: data.newPassword,
   })
 }

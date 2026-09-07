@@ -4,7 +4,10 @@ export interface RecepAgendaOwnerOption {
   id: string
   name: string
   documentLabel: string
+  phone?: string
+  identificationNumber?: string
 }
+
 
 export interface RecepAgendaPetOption {
   id: string

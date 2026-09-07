@@ -65,8 +65,10 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         services={catalog.services}
         professionals={catalog.professionals}
         timeSlots={catalog.timeSlots}
+        selectedOwner={selectedOwner}
         selectedOwnerName={selectedOwner?.name ?? null}
         selectedPetLabel={
+
           selectedPet ? `${selectedPet.name} (${selectedPet.breed})` : null
         }
         selectedServiceLabel={selectedService?.label ?? null}

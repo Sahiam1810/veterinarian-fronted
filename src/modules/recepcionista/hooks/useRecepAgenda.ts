@@ -127,7 +127,9 @@ export function useRecepAgenda(enabled: boolean) {
     return catalog.owners.filter(
       (owner) =>
         owner.name.toLowerCase().includes(query) ||
-        owner.documentLabel.toLowerCase().includes(query),
+        owner.documentLabel.toLowerCase().includes(query) ||
+        (owner.phone && owner.phone.toLowerCase().includes(query)) ||
+        (owner.identificationNumber && owner.identificationNumber.toLowerCase().includes(query)),
     )
   }, [catalog, form.ownerQuery])
 
@@ -187,10 +189,13 @@ export function useRecepAgenda(enabled: boolean) {
 
   const handleOwnerQueryChange = (value: string) => {
     setForm((prev) => {
+      const q = value.trim().toLowerCase()
       const match = catalog?.owners.find(
         (owner) =>
-          owner.name.toLowerCase() === value.trim().toLowerCase() ||
-          owner.documentLabel.toLowerCase() === value.trim().toLowerCase(),
+          owner.name.toLowerCase() === q ||
+          owner.documentLabel.toLowerCase() === q ||
+          (owner.phone && owner.phone.toLowerCase() === q) ||
+          (owner.identificationNumber && owner.identificationNumber.toLowerCase() === q),
       )
       return {
         ...prev,
@@ -200,6 +205,7 @@ export function useRecepAgenda(enabled: boolean) {
       }
     })
   }
+
 
   const handleSelectOwnerSuggestion = (owner: RecepAgendaOwnerOption) => {
     setForm((prev) => ({

@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getStoredUser, setStoredUser } from '@/modules/auth'
+import { getStoredUser } from '@/modules/auth'
 import {
   fetchCurrentProfile,
   changeMyPassword,
-  updateUser,
-  fetchUserById,
 } from '../services'
 import { ApiError } from '@/services'
 
@@ -122,56 +120,15 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
   const saveProfile = async (data: { fullName: string; email: string; phone: string }) => {
     writeExtras(data.email || profile.email, { phone: data.phone })
 
-    // Los datos identificadores del SuperAdmin están protegidos por el backend;
-    // los complementos visuales continúan siendo locales.
-    if (profile.isPlatformSuperAdmin) {
-      setProfile((prev) => ({
-        ...prev,
-        phone: data.phone,
-        // nombre y correo no se modifican desde el endpoint administrativo
-      }))
-      showToast(
-        'Teléfono guardado localmente. Por seguridad, el nombre y correo del SuperAdmin no se modifican desde este panel.',
-      )
-      return { ok: true as const }
-    }
+    setProfile((prev) => ({
+      ...prev,
+      phone: data.phone,
+    }))
 
-    if (!profile.personId) {
-      showToast('No se encontró el ID de usuario para actualizar.')
-      return { ok: false as const, error: 'Sin personId' }
-    }
-
-    try {
-      const current = await fetchUserById(profile.personId)
-      await updateUser(profile.personId, {
-        fullName: data.fullName.trim(),
-        email: data.email.trim(),
-        roleId: current.roleId,
-      })
-
-      setProfile((prev) => ({
-        ...prev,
-        fullName: data.fullName.trim(),
-        displayName: data.fullName.trim(),
-        email: data.email.trim(),
-        phone: data.phone,
-      }))
-
-      const auth = getStoredUser()
-      if (auth) {
-        setStoredUser(
-          { ...auth, name: data.fullName.trim(), email: data.email.trim() },
-          true,
-        )
-      }
-
-      showToast('Perfil actualizado correctamente.')
-      return { ok: true as const }
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo actualizar el perfil.'
-      showToast(message)
-      return { ok: false as const, error: message }
-    }
+    showToast(
+      'Teléfono guardado únicamente en este navegador. El nombre, correo y rol son gestionados por el servidor.',
+    )
+    return { ok: true as const }
   }
 
   const savePassword = async (data: {
@@ -180,7 +137,7 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
   }) => {
     try {
       await changeMyPassword(data)
-      showToast('Contraseña cambiada exitosamente.')
+      showToast('Contraseña cambiada exitosamente en el servidor.')
       return { ok: true as const }
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.'
@@ -192,7 +149,7 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
   const savePhoto = (photoUrl: string) => {
     writeExtras(profile.email, { photoUrl })
     setProfile((prev) => ({ ...prev, photoUrl }))
-    showToast('Foto actualizada (almacenamiento local del navegador).')
+    showToast('Foto actualizada (almacenada únicamente en este navegador).')
   }
 
   return {

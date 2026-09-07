@@ -29,4 +29,4 @@ export type {
   HistoriaClinicaPayload,
 } from './historiaClinica.types'
 
-export type { VetProfilePayload } from './perfil.types'
+export type { VetProfilePayload, ChangeVetPasswordPayload } from './perfil.types'

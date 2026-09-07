@@ -14,7 +14,7 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
     setSelectedCitaId,
     searchTerm,
     setSearchTerm,
-    savePreparada,
+    savePretriaje,
   } = useAuxPreparacion()
 
   // Form states for selected appointment triaje
@@ -31,18 +31,18 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
     setVetNotes('')
   }
 
-  const handleSavePreparada = async (e: FormEvent) => {
+  const handleSavePretriaje = async (e: FormEvent) => {
     e.preventDefault()
     if (!selectedCita) return
 
-    await savePreparada(selectedCita.id, {
+    await savePretriaje(selectedCita.id, {
       weight,
       temp,
       obs,
       vetNotes,
     })
 
-    onNotice?.(`¡Paciente ${selectedCita.petName} marcado como preparado exitosamente!`)
+    onNotice?.(`¡Pre-triaje de ${selectedCita.petName} guardado exitosamente!`)
     
     // Reset fields
     setWeight('')
@@ -50,7 +50,6 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
     setObs('')
     setVetNotes('')
   }
-
 
   return (
     <ViewPopup animationKey="preparacion" className="w-full">
@@ -63,10 +62,10 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
           <div className="flex flex-col">
             <h1 className="text-xl sm:text-2xl font-black text-brand tracking-tight">
-              Preparación de Atención
+              Pre-triaje de Pacientes
             </h1>
             <p className="text-xs sm:text-sm text-sage font-medium mt-0.5">
-              Citas programadas para hoy que requieren preparación previa.
+              Registro de signos vitales y preparación previa para la consulta médica.
             </p>
           </div>
 
@@ -89,91 +88,111 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
         {/* Tabla */}
         <div className="bg-white rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
+            <table className="w-full text-left border-collapse min-w-[650px]">
               <thead>
                 <tr className="bg-[#dce9e3] text-[#34524a] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
                   <th className="py-4 px-4 sm:px-6 font-bold">HORA</th>
                   <th className="py-4 px-4 sm:px-5 font-bold">PACIENTE</th>
                   <th className="py-4 px-4 sm:px-5 font-bold">SERVICIO / PROFESIONAL</th>
-                  <th className="py-4 px-4 sm:px-6 font-bold text-center">ESTADO</th>
+                  <th className="py-4 px-3 sm:px-4 font-bold text-center">ESTADO CITA</th>
+                  <th className="py-4 px-4 sm:px-6 font-bold text-center">PRE-TRIAJE</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-tan/60 text-sm">
-                {citas.map((cita) => {
-                  const isSelected = cita.id === selectedCitaId
-                  const isPending = cita.status === 'Pendiente'
-                  const isEnPrep = cita.status === 'En preparación'
-                  const isPrepared = cita.status === 'Preparada'
+                {citas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-sage font-medium">
+                      No hay citas para mostrar.
+                    </td>
+                  </tr>
+                ) : (
+                  citas.map((cita) => {
+                    const isSelected = cita.id === selectedCitaId
+                    const isPretriajeDone = cita.pretriajeStatus === 'Realizado'
 
-                  let badgeClass = 'bg-bone text-sage'
-                  if (isEnPrep) badgeClass = 'bg-[#fbe8e4] text-[#854d38] border border-[#f5d0c7]'
-                  if (isPending) badgeClass = 'bg-[#eef2f6] text-slate-600 border border-slate-200'
-                  if (isPrepared) badgeClass = 'bg-[#d1fae5] text-[#065f46] border border-[#a7f3d0]'
+                    let aptBadgeClass = 'bg-[#eef2f6] text-slate-700'
+                    if (cita.appointmentStatus === 'Atendida') aptBadgeClass = 'bg-[#d1fae5] text-[#065f46]'
+                    if (cita.appointmentStatus === 'Cancelada' || cita.appointmentStatus === 'No asistió') aptBadgeClass = 'bg-[#fde8e8] text-[#c81e1e]'
+                    if (cita.appointmentStatus === 'En espera') aptBadgeClass = 'bg-[#fef0e6] text-[#b45309]'
 
-                  return (
-                    <tr
-                      key={cita.id}
-                      onClick={() => handleSelectCita(cita)}
-                      className={`hover:bg-[#fcfaf7] transition-colors cursor-pointer ${
-                        isSelected ? 'bg-[#f8faf9]' : ''
-                      }`}
-                    >
-                      {/* HORA */}
-                      <td className="py-4 px-4 sm:px-6 font-bold text-charcoal whitespace-nowrap">
-                        {cita.time}
-                      </td>
+                    return (
+                      <tr
+                        key={cita.id}
+                        onClick={() => handleSelectCita(cita)}
+                        className={`hover:bg-[#fcfaf7] transition-colors cursor-pointer ${
+                          isSelected ? 'bg-[#f8faf9]' : ''
+                        }`}
+                      >
+                        {/* HORA */}
+                        <td className="py-4 px-4 sm:px-6 font-bold text-charcoal whitespace-nowrap">
+                          {cita.time}
+                        </td>
 
-                      {/* PACIENTE */}
-                      <td className="py-4 px-4 sm:px-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-border-tan bg-bone flex items-center justify-center text-brand font-bold">
-                            {cita.avatarUrl ? (
-                              <img
-                                src={cita.avatarUrl}
-                                alt={cita.petName}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              cita.petName.charAt(0)
-                            )}
+                        {/* PACIENTE */}
+                        <td className="py-4 px-4 sm:px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-border-tan bg-bone flex items-center justify-center text-brand font-bold">
+                              {cita.avatarUrl ? (
+                                <img
+                                  src={cita.avatarUrl}
+                                  alt={cita.petName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                cita.petName.charAt(0)
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-extrabold text-charcoal truncate">
+                                {cita.petName}
+                              </span>
+                              <span className="text-[11px] text-sage font-medium truncate">
+                                Dueño: {cita.ownerName}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-extrabold text-charcoal truncate">
-                              {cita.petName}
-                            </span>
-                            <span className="text-[11px] text-sage font-medium truncate">
-                              Dueño: {cita.ownerName}
+                        </td>
+
+                        {/* SERVICIO / PROFESIONAL */}
+                        <td className="py-4 px-4 sm:px-5">
+                          <div className="flex flex-col text-xs font-semibold text-charcoal">
+                            <span>{cita.service}</span>
+                            <span className="text-[11px] text-gray-500 font-normal mt-0.5">
+                              {cita.vetName}
                             </span>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* SERVICIO / PROFESIONAL */}
-                      <td className="py-4 px-4 sm:px-5">
-                        <div className="flex flex-col text-xs font-semibold text-charcoal">
-                          <span>{cita.service}</span>
-                          <span className="text-[11px] text-gray-500 font-normal mt-0.5">
-                            {cita.vetName}
+                        {/* ESTADO CITA */}
+                        <td className="py-4 px-3 sm:px-4 text-center">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${aptBadgeClass}`}>
+                            {cita.appointmentStatus}
                           </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* ESTADO */}
-                      <td className="py-4 px-4 sm:px-6 text-center">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}`}>
-                          {cita.status}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
+                        {/* PRE-TRIAJE */}
+                        <td className="py-4 px-4 sm:px-6 text-center">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                              isPretriajeDone
+                                ? 'bg-[#d1fae5] text-[#065f46] border border-[#a7f3d0]'
+                                : 'bg-[#fef0e6] text-[#b45309] border border-[#fed7aa]'
+                            }`}
+                          >
+                            {isPretriajeDone ? 'Realizado' : 'Pendiente'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* Columna Derecha: Panel de Registro de Preparación */}
+      {/* Columna Derecha: Panel de Registro de Pre-triaje */}
       {selectedCita && (
         <div className="w-full lg:w-[360px] xl:w-[400px] shrink-0">
           <div className="bg-white rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] p-5 sm:p-6 flex flex-col gap-5 sticky top-6">
@@ -198,8 +217,14 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
                     {selectedCita.petName}
                   </h3>
                   
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#fbe8e4] text-[#854d38]">
-                    En prep.
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      selectedCita.pretriajeStatus === 'Realizado'
+                        ? 'bg-[#d1fae5] text-[#065f46]'
+                        : 'bg-[#fef0e6] text-[#b45309]'
+                    }`}
+                  >
+                    Pre-triaje: {selectedCita.pretriajeStatus}
                   </span>
                 </div>
 
@@ -221,21 +246,22 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
               </div>
             </div>
 
-            {/* Formulario de Triaje y Registro */}
-            <form onSubmit={handleSavePreparada} className="space-y-4">
+            {/* Formulario de Pre-triaje y Registro */}
+            <form onSubmit={handleSavePretriaje} className="space-y-4">
               <h4 className="text-xs font-bold text-brand uppercase tracking-wider border-b border-border-tan/50 pb-1">
-                REGISTRO DE PREPARACIÓN
+                REGISTRO DE PRE-TRIAJE
               </h4>
 
               {/* Peso y Temp inputs */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-charcoal mb-1.5">
-                    Peso actual (kg)
+                    Peso actual (kg) <span className="text-terracotta">*</span>
                   </label>
                   <input
                     type="number"
                     step="0.1"
+                    min="0.1"
                     required
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
@@ -246,11 +272,13 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
 
                 <div>
                   <label className="block text-xs font-bold text-charcoal mb-1.5">
-                    Temperatura (°C)
+                    Temperatura (°C) <span className="text-terracotta">*</span>
                   </label>
                   <input
                     type="number"
                     step="0.1"
+                    min="30"
+                    max="45"
                     required
                     value={temp}
                     onChange={(e) => setTemp(e.target.value)}
@@ -263,13 +291,13 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
               {/* Observaciones */}
               <div>
                 <label className="block text-xs font-bold text-charcoal mb-1.5">
-                  Observaciones de preparación
+                  Observaciones de pre-triaje
                 </label>
                 <textarea
                   rows={3}
                   value={obs}
                   onChange={(e) => setObs(e.target.value)}
-                  placeholder="Estado de ánimo, signos vitales adicionales, etc."
+                  placeholder="Estado de ánimo, signos vitales adicionales, síntomas observados..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
                 />
               </div>
@@ -277,13 +305,13 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
               {/* Info para el Profesional */}
               <div>
                 <label className="block text-xs font-bold text-charcoal mb-1.5">
-                  Información para el profesional
+                  Información para el veterinario
                 </label>
                 <textarea
                   rows={3}
                   value={vetNotes}
                   onChange={(e) => setVetNotes(e.target.value)}
-                  placeholder="Notas importantes para el veterinario antes de entrar."
+                  placeholder="Notas importantes para el profesional antes de la consulta."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
                 />
               </div>
@@ -291,13 +319,12 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
               {/* Botón Guardar */}
               <button
                 type="submit"
-                disabled={selectedCita.status === 'Preparada'}
-                className="w-full mt-2 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-brand hover:bg-brand-hover active:scale-97 disabled:opacity-55 disabled:pointer-events-none text-white font-bold text-sm shadow-xs transition cursor-pointer"
+                className="w-full mt-2 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-brand hover:bg-brand-hover active:scale-97 text-white font-bold text-sm shadow-xs transition cursor-pointer"
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
-                <span>Marcar como preparada</span>
+                <span>Guardar Pre-triaje</span>
               </button>
             </form>
           </div>
@@ -307,3 +334,4 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
     </ViewPopup>
   )
 }
+

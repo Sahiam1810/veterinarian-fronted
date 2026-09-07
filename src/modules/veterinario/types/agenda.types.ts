@@ -29,6 +29,12 @@ export interface AgendaCalendarEvent {
   service?: string
   // Texto libre para bloqueos (fuera de horario / sin disponibilidad)
   blockLabel?: string
+  clientPetId?: string
+  petId?: string
+  ownerName?: string
+  ownerPhone?: string
+  rawStatusName?: string
+  veterinarianId?: string
 }
 
 export interface AgendaWeekPayload {

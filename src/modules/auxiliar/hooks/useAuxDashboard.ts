@@ -3,6 +3,7 @@ import type {
   AuxDayAppointment,
   AuxStatSummary,
   AuxAppointmentStatus,
+  AuxPretriajeStatus,
   ApiAppointmentResponse,
   ApiPetResponse,
   ApiClientPetResponse,
@@ -20,6 +21,7 @@ import {
   createAppointment as apiCreateAppointment,
   updateAppointment as apiUpdateAppointment,
   fetchPets,
+  updatePet,
   fetchClientsPets,
   fetchClients,
   fetchUsers,
@@ -29,6 +31,10 @@ import {
   fetchVeterinarians,
   fetchStatusAppointments,
   fetchAvailabilities,
+  fetchMedicalRecords,
+  createMedicalRecord,
+  fetchDiagnostics,
+  type ApiMedicalRecordResponse,
 } from '../services'
 
 function formatTime(isoString: string): string {
@@ -43,14 +49,13 @@ function formatTime(isoString: string): string {
 }
 
 function mapStatus(statusName?: string | null): AuxAppointmentStatus {
-  if (!statusName) return 'Pendiente'
+  if (!statusName) return 'Agendada'
   const norm = statusName.trim().toLowerCase()
-  if (norm.includes('prep') || norm.includes('listo')) return 'Preparada'
   if (norm.includes('aten') || norm.includes('complet')) return 'Atendida'
-  if (norm.includes('canc')) return 'Cancelado'
-  if (norm.includes('espera')) return 'En Espera'
-  if (norm.includes('agend')) return 'Agendado'
-  return 'Pendiente'
+  if (norm.includes('canc')) return 'Cancelada'
+  if (norm.includes('no') || norm.includes('inasist') || norm.includes('asist')) return 'No asistió'
+  if (norm.includes('espera')) return 'En espera'
+  return 'Agendada'
 }
 
 export function useAuxDashboard() {
@@ -92,6 +97,7 @@ export function useAuxDashboard() {
         vetsRes,
         statusRes,
         availRes,
+        recordsRes,
       ] = await Promise.allSettled([
         fetchAppointments(),
         fetchPets(),
@@ -104,6 +110,7 @@ export function useAuxDashboard() {
         fetchVeterinarians(),
         fetchStatusAppointments(),
         fetchAvailabilities(),
+        fetchMedicalRecords(),
       ])
 
       const fetchedApts = aptsRes.status === 'fulfilled' ? aptsRes.value : []
@@ -117,6 +124,7 @@ export function useAuxDashboard() {
       const fetchedVets = vetsRes.status === 'fulfilled' ? vetsRes.value : []
       const fetchedStatuses = statusRes.status === 'fulfilled' ? statusRes.value : []
       const fetchedAvail = availRes.status === 'fulfilled' ? availRes.value : []
+      const fetchedRecords: ApiMedicalRecordResponse[] = recordsRes.status === 'fulfilled' ? recordsRes.value : []
 
       setRawAppointments(fetchedApts)
       setRawPets(fetchedPets)
@@ -141,6 +149,13 @@ export function useAuxDashboard() {
       const vetsMap = new Map(fetchedVets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
       const statusesMap = new Map(fetchedStatuses.map((st) => [st.id.toLowerCase(), st.name]))
 
+      const recordsByApt = new Map<string, ApiMedicalRecordResponse>()
+      for (const rec of fetchedRecords) {
+        if (rec.appointmentId) {
+          recordsByApt.set(rec.appointmentId.toLowerCase(), rec)
+        }
+      }
+
       const mappedAppointments: AuxDayAppointment[] = fetchedApts.map((apt) => {
         const cp = cpMap.get(apt.clientPetId?.toLowerCase())
         const pet = cp ? petsMap.get(cp.petId.toLowerCase()) : undefined
@@ -151,9 +166,15 @@ export function useAuxDashboard() {
         const speciesName = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Mascota' : 'Mascota'
         const raceName = pet ? racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo' : 'Mestizo'
         const serviceName = apt.serviceName || servicesMap.get(apt.serviceId?.toLowerCase()) || 'Consulta General'
-        const vetName = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Dra. Martínez'
+        const vetName = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Veterinario'
         const statusName = apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
         const status = mapStatus(statusName)
+
+        const medRecord = recordsByApt.get(apt.id.toLowerCase())
+        const hasMedRecord = Boolean(medRecord)
+        const notes = (apt.notes || '').toLowerCase()
+        const hasTriageNote = notes.includes('pre-triaje') || notes.includes('triaje') || notes.includes('peso:') || notes.includes('temp:')
+        const pretriajeStatus: AuxPretriajeStatus = (hasMedRecord || hasTriageNote) ? 'Realizado' : 'Pendiente'
 
         const isCat = speciesName.toLowerCase().includes('gato') || speciesName.toLowerCase().includes('felin')
         const avatarColor = isCat ? 'brand' : 'peach'
@@ -169,10 +190,15 @@ export function useAuxDashboard() {
           service: serviceName,
           professional: vetName,
           status,
+          pretriajeStatus,
+          weightAtVisit: medRecord?.weightAtVisit != null ? medRecord.weightAtVisit : pet?.weight,
+          temperature: medRecord?.temperature,
+          symptoms: medRecord?.symptoms,
           ownerName: ownerUser?.fullName || 'Propietario',
           notes: apt.notes || undefined,
           statusId: apt.statusId,
           clientPetId: apt.clientPetId,
+          petId: pet?.id,
           veterinarianId: apt.veterinarianId,
           serviceId: apt.serviceId,
         }
@@ -191,22 +217,29 @@ export function useAuxDashboard() {
     void loadData()
   }, [loadData])
 
-  // Estadísticas calculadas
+  // Estadísticas calculadas basadas en estado real de la cita y pre-triaje
   const stats = useMemo((): AuxStatSummary => {
     const total = appointments.length
-    const pendientes = appointments.filter((a) => a.status === 'Pendiente' || a.status === 'Agendado').length
-    const preparadas = appointments.filter((a) => a.status === 'Preparada').length
-    const proximas = appointments.filter((a) => a.status === 'Pendiente' || a.status === 'En Espera' || a.status === 'Agendado').length
+    const pendientesPretriaje = appointments.filter(
+      (a) => a.pretriajeStatus === 'Pendiente' && a.status !== 'Cancelada' && a.status !== 'No asistió'
+    ).length
+    const pretriajesRealizados = appointments.filter((a) => a.pretriajeStatus === 'Realizado').length
+    const atendidas = appointments.filter((a) => a.status === 'Atendida').length
+    const proximas = appointments.filter((a) => a.status === 'Agendada' || a.status === 'En espera').length
 
     return {
       citasDelDia: total,
-      pendientesPrep: pendientes,
+      pendientesPretriaje,
+      pretriajesRealizados,
+      atendidas,
+      // Compatibility aliases
+      pendientesPrep: pendientesPretriaje,
       proximas,
-      preparadas,
+      preparadas: pretriajesRealizados,
     }
   }, [appointments])
 
-  // Guardar preparación de una cita en backend
+  // Guardar pre-triaje de una cita en backend (MedicalRecords + Pet weight + appointment notes)
   const savePreparation = async (
     appointmentId: string,
     data: { weight: string; temp: string; notes?: string }
@@ -217,15 +250,53 @@ export function useAuxDashboard() {
         throw new Error('No se encontró la cita especificada en el sistema.')
       }
 
-      // Buscar el statusId para "Preparada" o "Confirmada"
-      const prepStatus = rawStatuses.find((s) => s.name.toLowerCase().includes('prep') || s.name.toLowerCase().includes('confir'))
-      const statusId = prepStatus?.id || targetApt.statusId
+      const targetCP = rawClientsPets.find((cp) => cp.id.toLowerCase() === targetApt.clientPetId?.toLowerCase())
+      const targetPet = targetCP ? rawPets.find((p) => p.id.toLowerCase() === targetCP.petId.toLowerCase()) : undefined
 
+      const numWeight = data.weight ? parseFloat(data.weight) : null
+      const numTemp = data.temp ? parseFloat(data.temp) : null
+
+      // Guardar en MedicalRecords
+      const diagnostics = await fetchDiagnostics(false)
+      const validDiagId = diagnostics[0]?.id || '00000000-0000-0000-0000-000000000000'
+
+      if (targetApt.clientPetId && validDiagId && validDiagId !== '00000000-0000-0000-0000-000000000000') {
+        try {
+          await createMedicalRecord({
+            clientPetId: targetApt.clientPetId,
+            appointmentId: targetApt.id,
+            diagnosticId: validDiagId,
+            symptoms: data.notes || 'Pre-triaje realizado por auxiliar',
+            weightAtVisit: numWeight,
+            temperature: numTemp,
+          })
+        } catch (recErr) {
+          console.warn('No se pudo guardar MedicalRecord directamente', recErr)
+        }
+      }
+
+      // Actualizar peso de la mascota si aplica
+      if (targetPet && numWeight && numWeight > 0) {
+        try {
+          await updatePet(targetPet.id, {
+            name: targetPet.name,
+            age: targetPet.age,
+            gender: targetPet.gender,
+            weight: numWeight,
+            observations: targetPet.observations,
+            speciesId: targetPet.speciesId,
+            raceId: targetPet.raceId,
+          })
+        } catch (petErr) {
+          console.warn('No se pudo actualizar peso de mascota', petErr)
+        }
+      }
+
+      // Actualizar notas de la cita preservando el statusId oficial
       const updatedNotes = [
         targetApt.notes,
-        data.notes,
-        data.weight ? `Peso ingreso: ${data.weight}kg` : null,
-        data.temp ? `Temp: ${data.temp}°C` : null,
+        `[Pre-triaje] Peso: ${data.weight || '-'}kg, Temp: ${data.temp || '-'}°C`,
+        data.notes ? `Detalles: ${data.notes}` : null,
       ]
         .filter(Boolean)
         .join(' | ')
@@ -234,18 +305,18 @@ export function useAuxDashboard() {
         clientPetId: targetApt.clientPetId,
         veterinarianId: targetApt.veterinarianId,
         serviceId: targetApt.serviceId,
-        statusId,
+        statusId: targetApt.statusId, // Preserva status oficial
         availabilityId: targetApt.availabilityId || undefined,
         scheduledStart: targetApt.scheduledStart,
         scheduledEnd: targetApt.scheduledEnd,
         notes: updatedNotes,
       })
 
-      showToast('¡Paciente preparado y guardado en la base de datos!')
+      showToast('¡Pre-triaje del paciente guardado exitosamente en historia clínica!')
       await loadData()
     } catch (err) {
-      console.error('Error al guardar preparación', err)
-      const msg = err instanceof Error ? err.message : 'Error al guardar preparación'
+      console.error('Error al guardar pre-triaje', err)
+      const msg = err instanceof Error ? err.message : 'Error al guardar pre-triaje'
       showToast(msg)
     }
   }
@@ -253,11 +324,14 @@ export function useAuxDashboard() {
   // Crear nueva cita en backend
   const createNewAppointment = async (newApt: AuxDayAppointment) => {
     try {
-      // Tomar primer clientPetId, veterinarianId, serviceId, statusId si no vienen especificados
       const clientPetId = newApt.clientPetId || rawClientsPets[0]?.id
       const veterinarianId = newApt.veterinarianId || rawVets[0]?.id
       const serviceId = newApt.serviceId || rawServices[0]?.id
-      const statusId = newApt.statusId || rawStatuses[0]?.id
+
+      // Preferir status 'AGENDADA'
+      const agendadaStatus = rawStatuses.find((s) => s.name.toLowerCase().includes('agend')) || rawStatuses[0]
+      const statusId = newApt.statusId || agendadaStatus?.id
+
       const availabilityId = rawAvailabilities[0]?.id
 
       if (!clientPetId || !veterinarianId || !serviceId || !statusId) {
@@ -308,3 +382,4 @@ export function useAuxDashboard() {
     createNewAppointment,
   }
 }
+
