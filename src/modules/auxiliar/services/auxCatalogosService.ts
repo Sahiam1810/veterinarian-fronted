@@ -36,8 +36,13 @@ export async function fetchSpecies(): Promise<ApiSpeciesResponse[]> {
 }
 
 // 6. Razas
-export async function fetchRaces(): Promise<ApiRaceResponse[]> {
-  return apiClient.get<ApiRaceResponse[]>('/api/Races').catch(() => [])
+// Lista razas; opcionalmente filtradas por especie
+export async function fetchRaces(speciesId?: string): Promise<ApiRaceResponse[]> {
+  return apiClient
+    .get<ApiRaceResponse[]>('/api/Races', {
+      params: speciesId ? { speciesId } : undefined,
+    })
+    .catch(() => [])
 }
 
 // 7. Estados de cita

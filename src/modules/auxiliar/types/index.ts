@@ -168,6 +168,8 @@ export interface ApiSpeciesResponse {
 export interface ApiRaceResponse {
   id: string
   name: string
+  // FK a especie
+  speciesId: string
 }
 
 export interface ApiStatusAppointmentResponse {

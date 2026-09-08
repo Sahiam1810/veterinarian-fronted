@@ -33,6 +33,7 @@ import {
   mapPetToMascota,
   findSpeciesId,
   findRaceId,
+  filterRacesBySpecies,
   parseAgeToInt,
   parseWeightToDecimal,
   mapSexoToGender,
@@ -45,7 +46,7 @@ export function useMascotasSuperAdmin() {
   const [duenos, setDuenos] = useState<SuperAdminDueno[]>([])
   // Catálogos de especies/razas desde la API (para filtros y formularios)
   const [speciesOptions, setSpeciesOptions] = useState<{ id: string; name: string }[]>([])
-  const [raceOptions, setRaceOptions] = useState<{ id: string; name: string }[]>([])
+  const [raceOptions, setRaceOptions] = useState<{ id: string; name: string; speciesId: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -128,38 +129,49 @@ export function useMascotasSuperAdmin() {
         }
       }
 
-      const usersById = new Map(users.map((u) => [u.id, u]))
-      const speciesById = new Map(species.map((s) => [s.id, s.name]))
-      const racesById = new Map(races.map((r) => [r.id, r.name]))
+      // Normaliza GUIDs: Oracle/JSON a veces cambia mayúsculas y rompe el Map
+      const normId = (id: string) => id.toLowerCase()
+      const usersById = new Map(users.map((u) => [normId(u.id), u]))
+      const speciesById = new Map(species.map((s) => [normId(s.id), s.name]))
+      const racesById = new Map(races.map((r) => [normId(r.id), r.name]))
+      const petsById = new Map(pets.map((p) => [normId(p.id), p]))
       setSpeciesOptions(species.map((s) => ({ id: s.id, name: s.name })))
-      setRaceOptions(races.map((r) => ({ id: r.id, name: r.name })))
+      setRaceOptions(races.map((r) => ({ id: r.id, name: r.name, speciesId: r.speciesId })))
 
       const duenosMapped = clients.map((client) => {
-        const user = usersById.get(client.userId)
-        const petLinks = clientsPets.filter((cp) => cp.clientId === client.id)
+        const user = usersById.get(normId(client.userId))
+        const petLinks = clientsPets.filter((cp) => normId(cp.clientId) === normId(client.id))
         const summary = petLinks
           .map((link) => {
-            const pet = pets.find((p) => p.id === link.petId)
+            const pet = petsById.get(normId(link.petId))
             if (!pet) return null
-            const speciesName = speciesById.get(pet.speciesId) ?? ''
+            const speciesName = speciesById.get(normId(pet.speciesId)) ?? ''
             return `${pet.name} (${mapPetToMascota({ pet, speciesName }).species})`
           })
           .filter((s): s is string => Boolean(s))
         return mapClientToDueno(client, user, summary)
       })
 
-      const duenosById = new Map(duenosMapped.map((d) => [d.id, d]))
-      const clientPetByPetId = new Map(clientsPets.map((cp) => [cp.petId, cp]))
+      const duenosById = new Map(duenosMapped.map((d) => [normId(d.id), d]))
+      // Si hay varios dueños, prioriza el principal
+      const clientPetByPetId = new Map<string, (typeof clientsPets)[number]>()
+      for (const cp of clientsPets) {
+        const key = normId(cp.petId)
+        const prev = clientPetByPetId.get(key)
+        if (!prev || (cp.isPrimaryOwner && !prev.isPrimaryOwner)) {
+          clientPetByPetId.set(key, cp)
+        }
+      }
 
       const mascotasMapped = pets.map((pet) => {
-        const clientPet = clientPetByPetId.get(pet.id)
-        const owner = clientPet ? duenosById.get(clientPet.clientId) : undefined
+        const clientPet = clientPetByPetId.get(normId(pet.id))
+        const owner = clientPet ? duenosById.get(normId(clientPet.clientId)) : undefined
         return mapPetToMascota({
           pet,
           clientPet,
           owner,
-          speciesName: speciesById.get(pet.speciesId),
-          raceName: racesById.get(pet.raceId),
+          speciesName: speciesById.get(normId(pet.speciesId)),
+          raceName: racesById.get(normId(pet.raceId)),
         })
       })
 
@@ -237,7 +249,13 @@ export function useMascotasSuperAdmin() {
     try {
       const [species, races] = await Promise.all([fetchSpecies(), fetchRaces()])
       const speciesId = findSpeciesId(data.species, species)
-      const raceId = findRaceId(data.breed, races)
+      // Solo razas de esa especie (evita Golden con Conejo)
+      const racesForSpecies = filterRacesBySpecies(data.species, races, species)
+      if (racesForSpecies.length === 0) {
+        showToast('No hay razas registradas para esa especie.')
+        return
+      }
+      const raceId = findRaceId(data.breed, racesForSpecies)
 
       const created = await createPet({
         name: data.name.trim(),
@@ -266,10 +284,17 @@ export function useMascotasSuperAdmin() {
 
   const updateMascota = async (id: string, data: MascotaFormData) => {
     try {
+      const current = mascotas.find((m) => m.id === id)
       const [species, races] = await Promise.all([fetchSpecies(), fetchRaces()])
       const speciesId = findSpeciesId(data.species, species)
-      const raceId = findRaceId(data.breed, races)
+      const racesForSpecies = filterRacesBySpecies(data.species, races, species)
+      if (racesForSpecies.length === 0) {
+        showToast('No hay razas registradas para esa especie.')
+        return
+      }
+      const raceId = findRaceId(data.breed, racesForSpecies)
 
+      // PUT /api/Pets/{id}
       await updatePet(id, {
         name: data.name.trim(),
         age: parseAgeToInt(data.age),
@@ -279,6 +304,25 @@ export function useMascotasSuperAdmin() {
         speciesId,
         raceId,
       })
+
+      // Sincroniza vínculo ClientsPets (el PUT de ClientsPets no cambia clientId)
+      const ownerChanged =
+        !current?.ownerId ||
+        current.ownerId.toLowerCase() !== data.ownerId.toLowerCase()
+      if (!current?.clientPetId) {
+        await createClientPet({
+          clientId: data.ownerId,
+          petId: id,
+          isPrimaryOwner: true,
+        })
+      } else if (ownerChanged) {
+        await deleteClientPet(current.clientPetId)
+        await createClientPet({
+          clientId: data.ownerId,
+          petId: id,
+          isPrimaryOwner: true,
+        })
+      }
 
       setIsMascotaModalOpen(false)
       setEditingMascota(null)
@@ -311,7 +355,7 @@ export function useMascotasSuperAdmin() {
         name: data.name.trim(),
         identificationNumber: data.documentId.trim(),
         phoneNumber: data.phone.trim(),
-        email: data.email?.trim() || null,
+        email: data.email.trim(),
         address: data.address?.trim() || null,
       })
 

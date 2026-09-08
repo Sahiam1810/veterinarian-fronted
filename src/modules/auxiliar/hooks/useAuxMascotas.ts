@@ -201,13 +201,16 @@ export function useAuxMascotas() {
         s.name.toLowerCase().includes(data.specie.toLowerCase())
       ) || speciesList[0]
 
-      // 2. Resolver o tomar ID de raza
-      const matchingRace = racesList.find((r) =>
-        r.name.toLowerCase().includes(data.breed.toLowerCase())
-      ) || racesList[0]
+      // 2. Raza solo dentro de esa especie
+      const racesForSpecies = racesList.filter(
+        (r) => (r.speciesId ?? '').toLowerCase() === (matchingSpecies?.id ?? '').toLowerCase(),
+      )
+      const matchingRace =
+        racesForSpecies.find((r) => r.name.toLowerCase().includes(data.breed.toLowerCase()))
+        || racesForSpecies[0]
 
       if (!matchingSpecies || !matchingRace) {
-        throw new Error('No hay especies o razas registradas en el catálogo.')
+        throw new Error('No hay especies o razas registradas para esa combinación.')
       }
 
       const parsedAge = parseInt(data.age.replace(/\D/g, ''), 10) || 1
