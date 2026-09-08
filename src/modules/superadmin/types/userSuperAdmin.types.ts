@@ -55,9 +55,8 @@ export interface SystemUser {
   status: UserStatus
   registrationDate: string
   avatarUrl?: string
-  identificationNumber?: string
-  phone?: string
-  address?: string
+  // Cuenta de login en USER_ACCOUNTS; vacía en dueños sin panel.
+  accountId?: string
   customPermissions?: Partial<Record<ModuleId, ModulePermission>>
 }
 
@@ -66,13 +65,11 @@ export interface UserFormData {
   lastName: string
   email: string
   password?: string
+  // Teléfono: sesión del Cliente vía Telegram (sin login web)
+  phoneNumber?: string
   roleId: string
   status: UserStatus
-  identificationNumber?: string
-  phoneNumber?: string
-  address?: string
 }
-
 
 export interface UserFilters {
   searchQuery: string

@@ -24,6 +24,7 @@ import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
 import { fetchAuxNavPermissions } from '@/modules/auxiliar/services'
+import { PageToast } from '@/global/components'
 
 const AUX_GATED_ROUTES: Record<string, NavPermissionKey> = {
   agenda: 'aux.agenda',
@@ -431,14 +432,7 @@ function AuxApp({
         </main>
       </div>
 
-      {activeNotification && (
-        <div className="toast-pop-up-bottom fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)]">
-          <div className="bg-brand text-white px-5 py-2.5 rounded-full shadow-xl text-xs sm:text-sm font-medium border border-white/20 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-ochre animate-pulse shrink-0" />
-            <span className="truncate">{activeNotification}</span>
-          </div>
-        </div>
-      )}
+      {activeNotification && <PageToast message={activeNotification} />}
     </div>
   )
 }

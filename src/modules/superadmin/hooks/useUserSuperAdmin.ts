@@ -14,25 +14,20 @@ import type {
 import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
 import {
   fetchUsers,
-  createUser as apiCreateUser,
+  fetchUserAccounts,
+  deleteUser as apiDeleteUser,
   createFullUser as apiCreateFullUser,
   updateUser as apiUpdateUser,
   activateUser as apiActivateUser,
   deactivateUser as apiDeactivateUser,
   type ApiUserResponse,
 } from '../services/superAdminUserService'
-import {
-  fetchClients,
-  createClient,
-  updateClient,
-  type ApiClientResponse,
-} from '../services/superAdminClientsService'
+import { createOwnerWithoutLogin } from '../services/superAdminClientsService'
 import {
   fetchRoles,
   createRole as apiCreateRole,
   type ApiRoleResponse,
 } from '../services/superAdminRolesService'
-
 import {
   fetchModules,
   type ApiModuleResponse,
@@ -47,11 +42,6 @@ import {
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
-import {
-  fetchSpecialties,
-  createVeterinarian,
-  fetchVeterinarians,
-} from '../services'
 import { ApiError } from '@/services'
 import {
   clearUserUiShellOverrides,
@@ -117,9 +107,19 @@ function normalizeModuleName(name: string): ModuleId | null {
 }
 
 // SuperAdmin es un rol de sistema persistido y no se ofrece como rol administrable.
-function isPlatformSuperAdminRoleName(name: string): boolean {
+export function isPlatformSuperAdminRoleName(name: string): boolean {
   const n = name.trim().toLowerCase()
   return n.includes('superadmin') || n.includes('super admin')
+}
+
+export function isProtectedSuperAdminUser(user: Pick<SystemUser, 'roleName'>): boolean {
+  return isPlatformSuperAdminRoleName(user.roleName)
+}
+
+// Cliente: sin panel web ni contraseña; sesión = teléfono (Telegram)
+export function isClienteRoleName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  return n === 'cliente' || n === 'client' || n.includes('cliente')
 }
 
 // Rol Administrador (panel completo por defecto, editable por SuperAdmin)
@@ -142,6 +142,7 @@ function formatDate(isoString: string): string {
 
 export function useUserSuperAdmin() {
   const [users, setUsers] = useState<SystemUser[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [roles, setRoles] = useState<RoleDefinition[]>([])
   const [dbModules, setDbModules] = useState<ApiModuleResponse[]>([])
   const [rawRolePermissions, setRawRolePermissions] = useState<ApiRolePermissionResponse[]>([])
@@ -157,6 +158,7 @@ export function useUserSuperAdmin() {
   const [activeTab, setActiveTab] = useState<'usuarios' | 'roles'>('usuarios')
   const [pendingSelectUserId, setPendingSelectUserId] = useState<string | null>(null)
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
+  const [toastTone, setToastTone] = useState<'success' | 'warning'>('success')
 
   // Modals state
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
@@ -170,37 +172,51 @@ export function useUserSuperAdmin() {
     statusFilter: 'all',
   })
 
-  const showToast = useCallback((message: string) => {
+  const showToast = useCallback((message: string, tone: 'success' | 'warning' = 'success') => {
+    setToastTone(tone)
     setActiveNotification(message)
     setTimeout(() => {
       setActiveNotification((current) => (current === message ? null : current))
-    }, 3500)
+    }, 4200)
   }, [])
 
   // Cargar datos reales desde el backend
   const loadData = useCallback(async () => {
     setIsLoading(true)
+    setLoadError(null)
     try {
-      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, clientsRes] = await Promise.allSettled([
-        fetchUsers(),
-        fetchRoles(),
-        fetchModules(),
-        fetchAllRolePermissions(),
-        fetchAllUserPermissions(),
-        fetchClients(),
-      ])
+      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes] =
+        await Promise.allSettled([
+          fetchUsers(),
+          fetchRoles(),
+          fetchModules(),
+          fetchAllRolePermissions(),
+          fetchAllUserPermissions(),
+          fetchUserAccounts(),
+        ])
 
-      const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, clientsRes]
+      const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
 
-      if (rejected.length > 0) {
+      if (usersRes.status === 'rejected') {
+        const first = usersRes.reason
+        const status = first instanceof ApiError ? first.status : 0
+        const msg =
+          status === 401
+            ? 'Sesión expirada. Cierra sesión e inicia de nuevo.'
+            : first instanceof Error
+              ? first.message
+              : 'No se pudo contactar al API (¿está corriendo en http://localhost:5233?).'
+        setLoadError(msg)
+        showToast(msg, 'warning')
+      } else if (rejected.length > 0) {
         const first = rejected[0].reason
         const status = first instanceof ApiError ? first.status : 0
         if (status === 401) {
-          showToast('Sesión expirada. Cierra sesión e inicia de nuevo.')
+          showToast('Sesión expirada. Cierra sesión e inicia de nuevo.', 'warning')
         } else {
           const msg = first instanceof Error ? first.message : 'No se pudieron cargar usuarios y roles.'
-          showToast(msg)
+          showToast(msg, 'warning')
         }
       }
 
@@ -209,13 +225,15 @@ export function useUserSuperAdmin() {
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
       const fetchedUserPerms: ApiUserPermissionResponse[] = userPermsRes.status === 'fulfilled' ? userPermsRes.value : []
       const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
-      const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
+      const fetchedAccounts =
+        accountsRes.status === 'fulfilled' ? accountsRes.value : []
+      const accountsByUserId = new Map(
+        fetchedAccounts.map((account) => [account.userId.toLowerCase(), account.id]),
+      )
 
       setDbModules(fetchedModules)
       setRawRolePermissions(fetchedRolePerms)
       setRawUserPermissions(fetchedUserPerms)
-
-      const clientsByUserId = new Map(fetchedClients.map((c) => [c.userId.toLowerCase(), c]))
 
       // Módulo ID a ModuleId
       const moduleMap = new Map<string, ModuleId>()
@@ -229,20 +247,12 @@ export function useUserSuperAdmin() {
       // Mapear Roles
       const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
         const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
-        if (isPlatformSuper) {
-          return {
-            id: r.id,
-            name: r.name,
-            description: r.description || 'SuperAdministrador con acceso total permanente.',
-            isSystem: true,
-            permissions: { ...DEFAULT_PERMISSIONS_ALL },
-          }
-        }
-
         const isClinicAdmin = isClinicAdminRoleName(r.name)
-        const perms: Record<ModuleId, ModulePermission> = isClinicAdmin
-          ? { ...DEFAULT_PERMISSIONS_ALL }
-          : { ...DEFAULT_PERMISSIONS_EMPTY }
+        // Admin de clínica parte con todas las vistas del panel (como SuperAdmin UI)
+        const perms: Record<ModuleId, ModulePermission> =
+          isPlatformSuper || isClinicAdmin
+            ? { ...DEFAULT_PERMISSIONS_ALL }
+            : { ...DEFAULT_PERMISSIONS_EMPTY }
 
         // Aplicar permisos desde la tabla ROLE_PERMISSIONS
         const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
@@ -270,7 +280,7 @@ export function useUserSuperAdmin() {
           id: r.id,
           name: r.name,
           description: r.description || 'Sin descripción',
-          isSystem: false,
+          isSystem: isPlatformSuper,
           permissions: perms,
         }
       })
@@ -284,7 +294,6 @@ export function useUserSuperAdmin() {
         const parts = u.fullName.trim().split(' ')
         const firstName = parts[0] || ''
         const lastName = parts.slice(1).join(' ') || ''
-        const clientInfo = clientsByUserId.get(u.id.toLowerCase())
 
         // Permisos personalizados de usuario
         const userCustomPerms: Partial<Record<ModuleId, ModulePermission>> = {}
@@ -303,15 +312,12 @@ export function useUserSuperAdmin() {
 
         const uiUserOverrides = getUiShellOverrides('user', u.id)
         const uiEmailOverrides = getUiShellOverrides('email', u.email)
-        const isSuperAdminAccount = isPlatformSuperAdminRoleName(roleName)
-        if (!isSuperAdminAccount) {
-          for (const modId of UI_SHELL_MODULE_IDS) {
-            if (uiEmailOverrides[modId]) {
-              userCustomPerms[modId] = uiEmailOverrides[modId]
-            }
-            if (uiUserOverrides[modId]) {
-              userCustomPerms[modId] = uiUserOverrides[modId]
-            }
+        for (const modId of UI_SHELL_MODULE_IDS) {
+          if (uiEmailOverrides[modId]) {
+            userCustomPerms[modId] = uiEmailOverrides[modId]
+          }
+          if (uiUserOverrides[modId]) {
+            userCustomPerms[modId] = uiUserOverrides[modId]
           }
         }
 
@@ -325,31 +331,26 @@ export function useUserSuperAdmin() {
           roleName,
           status: (u.isActive ? 'Activo' : 'Inactivo') as UserStatus,
           registrationDate: formatDate(u.createdAt),
-          identificationNumber: clientInfo?.identificationNumber,
-          phone: clientInfo?.phoneNumber || '',
-          address: clientInfo?.address || '',
-          customPermissions:
-            !isSuperAdminAccount && Object.keys(userCustomPerms).length > 0
-              ? userCustomPerms
-              : undefined,
+          accountId: accountsByUserId.get(u.id.toLowerCase()),
+          customPermissions: Object.keys(userCustomPerms).length > 0 ? userCustomPerms : undefined,
         }
       })
 
       setRoles(mappedRoles)
       setUsers(mappedUsers)
 
-
       // No resetear el objetivo de permisos en cada recarga (evita que se "remarquen" solos)
-      setSelectedRoleId((prev) => prev || mappedRoles[0]?.id || '')
-      setActiveRoleSimulated((prev) => prev || mappedRoles[0]?.id || '')
+      const firstAssignable = mappedRoles.find((r) => !r.isSystem) || mappedRoles[0]
+      setSelectedRoleId((prev) => prev || firstAssignable?.id || '')
+      setActiveRoleSimulated((prev) => prev || firstAssignable?.id || '')
       setPermissionTarget((prev) => {
         if (prev.id) return prev
-        if (mappedRoles[0]) return { type: 'role', id: mappedRoles[0].id }
+        if (firstAssignable) return { type: 'role', id: firstAssignable.id }
         return prev
       })
     } catch (err) {
       console.error('Error al cargar datos de usuarios y roles', err)
-      showToast('Error al conectar con la base de datos.')
+      showToast('Error al conectar con la base de datos.', 'warning')
     } finally {
       setIsLoading(false)
     }
@@ -451,7 +452,8 @@ export function useUserSuperAdmin() {
     (mode: 'usuarios' | 'roles') => {
       setActiveTab(mode)
       if (mode === 'roles') {
-        const roleId = selectedRoleId || roles[0]?.id
+        const assignable = roles.find((r) => !r.isSystem && r.id === selectedRoleId) || roles.find((r) => !r.isSystem)
+        const roleId = assignable?.id
         if (roleId) {
           setSelectedRoleId(roleId)
           setPermissionTarget({ type: 'role', id: roleId })
@@ -518,6 +520,10 @@ export function useUserSuperAdmin() {
     permissionKey: keyof ModulePermission
   ) => {
     if (permissionTarget.type === 'user' && selectedTargetUser) {
+      if (isProtectedSuperAdminUser(selectedTargetUser)) {
+        showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
+        return
+      }
       const currentCombined = activePermissions[moduleId] || {
         view: false,
         create: false,
@@ -596,23 +602,10 @@ export function useUserSuperAdmin() {
   const saveRolePermissions = async () => {
     try {
       if (permissionTarget.type === 'user' && selectedTargetUser) {
-        const isSuperAdminUser =
-          isPlatformSuperAdminRoleName(selectedTargetUser.roleName) ||
-          isPlatformSuperAdminRoleName(activeTargetRole.name) ||
-          selectedTargetUser.roleName.toLowerCase().includes('superadmin')
-
-        if (isSuperAdminUser) {
-          showToast('No se pueden modificar ni eliminar los permisos del usuario SuperAdmin.')
-          setUsers((prevUsers) =>
-            prevUsers.map((u) => {
-              if (u.id !== selectedTargetUser.id) return u
-              const { customPermissions: _, ...rest } = u
-              return rest
-            })
-          )
+        if (isProtectedSuperAdminUser(selectedTargetUser)) {
+          showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
           return
         }
-
         const userCustom = selectedTargetUser.customPermissions || {}
 
         // Persistir Inicio/Reportes en local (no hay MODULES Oracle para ellos)
@@ -657,19 +650,11 @@ export function useUserSuperAdmin() {
         showToast(`Permisos personalizados para "${selectedTargetUser.name}" guardados correctamente`)
       } else {
         const currentRole = roles.find((r) => r.id === permissionTarget.id)
+        if (currentRole?.isSystem || (currentRole && isPlatformSuperAdminRoleName(currentRole.name))) {
+          showToast('El rol SuperAdmin no se puede modificar.', 'warning')
+          return
+        }
         if (currentRole) {
-          if (isPlatformSuperAdminRoleName(currentRole.name)) {
-            showToast('No se pueden modificar ni eliminar los permisos del rol SuperAdmin.')
-            setRoles((prevRoles) =>
-              prevRoles.map((r) =>
-                r.id === currentRole.id
-                  ? { ...r, permissions: { ...DEFAULT_PERMISSIONS_ALL } }
-                  : r
-              )
-            )
-            return
-          }
-
           const uiOverrides: Partial<Record<ModuleId, ModulePermission>> = {}
           for (const modId of UI_SHELL_MODULE_IDS) {
             if (currentRole.permissions[modId]) {
@@ -721,6 +706,11 @@ export function useUserSuperAdmin() {
   const resetUserPermissions = (userId?: string) => {
     const targetId = userId || selectedTargetUser?.id
     if (!targetId) return
+    const protectedUser = users.find((u) => u.id === targetId)
+    if (protectedUser && isProtectedSuperAdminUser(protectedUser)) {
+      showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
+      return
+    }
 
     clearUserUiShellOverrides({
       id: targetId,
@@ -753,51 +743,53 @@ export function useUserSuperAdmin() {
   // User CRUD Actions
   const createUser = async (data: UserFormData): Promise<UserSaveResult> => {
     try {
+      const roleName = roles.find((r) => r.id === data.roleId)?.name || ''
+      if (isPlatformSuperAdminRoleName(roleName)) {
+        return { ok: false, error: 'El rol SuperAdmin no se puede asignar desde este panel.' }
+      }
+
       const fullName = `${data.firstName} ${data.lastName}`.trim()
-      const email = data.email.trim()
 
-      const targetRole = roles.find((r) => r.id === data.roleId)
-      const roleNameLower = (targetRole?.name || '').toLowerCase()
-      const isClientRole =
-        roleNameLower.includes('client') ||
-        roleNameLower.includes('cliente') ||
-        roleNameLower.includes('dueño') ||
-        roleNameLower.includes('dueno')
+      // Cliente: alta vía register-owner (teléfono = sesión; correo = OTP si cambia de número)
+      if (isClienteRoleName(roleName)) {
+        const phone = data.phoneNumber?.trim() || ''
+        const phoneDigits = phone.replace(/\D/g, '')
+        if (phoneDigits.length < 7) {
+          return {
+            ok: false,
+            error: 'El teléfono del cliente es obligatorio (mínimo 7 dígitos). Es su sesión en Telegram.',
+          }
+        }
 
-      if (isClientRole) {
-        // Flujo Dueño / Cliente (SIN credenciales ni cuenta de acceso):
-        // Paso 1: POST /api/Users (rol Cliente, sin password)
-        const userRes = await apiCreateUser({
-          fullName,
+        const email = data.email.trim()
+        if (!email || !email.includes('@')) {
+          return {
+            ok: false,
+            error: 'El correo del cliente es obligatorio para enviar el código de verificación al chatbot.',
+          }
+        }
+
+        const result = await createOwnerWithoutLogin({
+          name: fullName,
+          phoneNumber: phone,
+          identificationNumber: `TEL${phoneDigits}`.slice(0, 20),
           email,
           roleId: data.roleId,
         })
 
-        if (!userRes || !userRes.id) {
-          throw new Error('No se pudo registrar el usuario en /api/Users')
-        }
-
-        // Paso 2: POST /api/Clients (con datos reales: identificationNumber, phoneNumber, address)
-        await createClient({
-          userId: userRes.id,
-          identificationNumber: (data.identificationNumber || '').trim() || 'DOC-PENDIENTE',
-          phoneNumber: (data.phoneNumber || '').trim() || null,
-          address: (data.address || '').trim() || null,
-        })
-
         if (data.status === 'Inactivo') {
-          await syncUserActiveStatus(userRes.id, 'Inactivo')
+          await syncUserActiveStatus(result.userId, 'Inactivo')
         }
 
         await loadData()
         setActiveTab('usuarios')
-        setPendingSelectUserId(userRes.id)
-        setPermissionTarget({ type: 'user', id: userRes.id })
+        setPendingSelectUserId(result.userId)
+        setPermissionTarget({ type: 'user', id: result.userId })
 
         return { ok: true, email, mode: 'create' }
       }
 
-      // Flujo normal para usuarios de plataforma (Staff: Admin, Veterinario, Recepcionista, etc.)
+      const email = data.email.trim()
       const result = await apiCreateFullUser({
         fullName,
         email,
@@ -808,29 +800,6 @@ export function useUserSuperAdmin() {
       // createFullUser siempre deja la cuenta Activa; si eligieron Inactivo, desactivar
       if (data.status === 'Inactivo') {
         await syncUserActiveStatus(result.userId, 'Inactivo')
-      }
-
-      // Si el rol creado es Veterinario, crear perfil en /api/Veterinarians
-      if (
-        roleNameLower.includes('vet') ||
-        roleNameLower.includes('veterin') ||
-        roleNameLower.includes('profesional') ||
-        roleNameLower.includes('médico') ||
-        roleNameLower.includes('medico')
-      ) {
-        try {
-          const specialties = await fetchSpecialties()
-          const defaultSpecId = specialties[0]?.id || ''
-          if (defaultSpecId) {
-            await createVeterinarian({
-              userId: result.userId,
-              specialtyId: defaultSpecId,
-              licenseNumber: 'CMP-PENDIENTE',
-            })
-          }
-        } catch (vetErr) {
-          console.error('Error creando perfil de veterinario para nuevo usuario:', vetErr)
-        }
       }
 
       await loadData()
@@ -846,9 +815,17 @@ export function useUserSuperAdmin() {
 
   const updateUser = async (userId: string, data: UserFormData): Promise<UserSaveResult> => {
     try {
+      const current = users.find((u) => u.id === userId)
+      if (current && isProtectedSuperAdminUser(current)) {
+        return { ok: false, error: 'La cuenta SuperAdmin no se puede editar.' }
+      }
+      if (isPlatformSuperAdminRoleName(
+        roles.find((r) => r.id === data.roleId)?.name || '',
+      )) {
+        return { ok: false, error: 'El rol SuperAdmin no se puede asignar desde este panel.' }
+      }
       const fullName = `${data.firstName} ${data.lastName}`.trim()
       const email = data.email.trim()
-      const current = users.find((u) => u.id === userId)
 
       await apiUpdateUser(userId, {
         fullName,
@@ -861,61 +838,6 @@ export function useUserSuperAdmin() {
         await syncUserActiveStatus(userId, data.status)
       }
 
-      const targetRole = roles.find((r) => r.id === data.roleId)
-      const roleNameLower = (targetRole?.name || '').toLowerCase()
-      const isClientRole =
-        roleNameLower.includes('client') ||
-        roleNameLower.includes('cliente') ||
-        roleNameLower.includes('dueño') ||
-        roleNameLower.includes('dueno')
-
-      // Sincronizar o actualizar datos de cliente en /api/Clients (incluyendo phoneNumber e identificationNumber)
-      const existingClients = await fetchClients()
-      const existingClient = existingClients.find((c) => c.userId.toLowerCase() === userId.toLowerCase())
-
-      if (existingClient) {
-        await updateClient(existingClient.id, {
-          userId,
-          identificationNumber: (data.identificationNumber || existingClient.identificationNumber).trim(),
-          phoneNumber: (data.phoneNumber || existingClient.phoneNumber || '').trim() || null,
-          address: (data.address || existingClient.address || '').trim() || null,
-          registrationDate: existingClient.registrationDate,
-        })
-      } else if (isClientRole) {
-        await createClient({
-          userId,
-          identificationNumber: (data.identificationNumber || '').trim() || 'DOC-PENDIENTE',
-          phoneNumber: (data.phoneNumber || '').trim() || null,
-          address: (data.address || '').trim() || null,
-        })
-      }
-
-      // Si cambió de rol a Veterinario, asegurar que exista el perfil
-      if (
-        roleNameLower.includes('vet') ||
-        roleNameLower.includes('veterin') ||
-        roleNameLower.includes('profesional') ||
-        roleNameLower.includes('médico') ||
-        roleNameLower.includes('medico')
-      ) {
-        try {
-          const existingVets = await fetchVeterinarians()
-          if (!existingVets.some((v) => v.userId.toLowerCase() === userId.toLowerCase())) {
-            const specialties = await fetchSpecialties()
-            const defaultSpecId = specialties[0]?.id || ''
-            if (defaultSpecId) {
-              await createVeterinarian({
-                userId,
-                specialtyId: defaultSpecId,
-                licenseNumber: 'CMP-PENDIENTE',
-              })
-            }
-          }
-        } catch (vetErr) {
-          console.error('Error actualizando perfil de veterinario:', vetErr)
-        }
-      }
-
       await loadData()
       setEditingUser(null)
 
@@ -925,13 +847,36 @@ export function useUserSuperAdmin() {
     }
   }
 
-  const deleteUser = (_userId: string) => {
-    showToast('La eliminación física de usuarios está restringida. Use desactivar cuenta.')
+  const deleteUser = async (userId: string) => {
+    const user = users.find((u) => u.id === userId)
+    if (!user) return
+
+    if (isProtectedSuperAdminUser(user)) {
+      showToast('La cuenta SuperAdmin no se puede eliminar ni modificar.', 'warning')
+      return
+    }
+
+    if (user.status !== 'Inactivo') {
+      showToast('Desactiva la cuenta antes de eliminarla.', 'warning')
+      return
+    }
+
+    try {
+      await apiDeleteUser(user.id)
+      showToast(`Usuario "${user.name}" eliminado.`)
+      await loadData()
+    } catch (err) {
+      showToast(extractUserApiErrorMessage(err), 'warning')
+    }
   }
 
   const toggleUserStatus = async (userId: string) => {
     const user = users.find((u) => u.id === userId)
     if (!user) return
+    if (isProtectedSuperAdminUser(user)) {
+      showToast('La cuenta SuperAdmin no se puede activar ni desactivar.', 'warning')
+      return
+    }
 
     try {
       const nextStatus: UserStatus = user.status === 'Activo' ? 'Inactivo' : 'Activo'
@@ -943,7 +888,7 @@ export function useUserSuperAdmin() {
       )
       await loadData()
     } catch (err) {
-      showToast(extractUserApiErrorMessage(err))
+      showToast(extractUserApiErrorMessage(err), 'warning')
     }
   }
 
@@ -974,6 +919,10 @@ export function useUserSuperAdmin() {
   }
 
   const openEditUserModal = (user: SystemUser) => {
+    if (isProtectedSuperAdminUser(user)) {
+      showToast('La cuenta SuperAdmin no se puede editar.', 'warning')
+      return
+    }
     setEditingUser(user)
     setIsUserModalOpen(true)
   }
@@ -1015,8 +964,10 @@ export function useUserSuperAdmin() {
     filters,
     setFilters,
     filteredUsers,
+    loadError,
     modulesInfo: MODULES_INFO,
     activeNotification,
+    toastTone,
     showToast,
     loadData,
     // Permissions checkers

@@ -1,10 +1,11 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, type FormEvent, type SVGProps } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
+  PageToast,
 } from '../../components'
-import { useUserSuperAdmin } from '../../hooks'
+import { useUserSuperAdmin, isProtectedSuperAdminUser, isClienteRoleName } from '../../hooks'
 import type {
   SystemUser,
   RoleDefinition,
@@ -26,10 +27,7 @@ import {
   TrashIcon,
   EyeIcon,
   EyeOffIcon,
-  CheckIcon,
-  PawCheckbox,
 } from '@/global/components'
-
 
 function getUserInitials(name: string): string {
   return name
@@ -45,7 +43,8 @@ function hasCustomPermissions(user: SystemUser): boolean {
   return !!user.customPermissions && Object.keys(user.customPermissions).length > 0
 }
 
-function ChevronLeftIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVGSVGElement>) {
+// Flecha izquierda para paginar la lista de cuentas (carrusel manual).
+function ChevronLeftIcon({ className = 'w-4 h-4', ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
       className={className}
@@ -63,7 +62,8 @@ function ChevronLeftIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVG
   )
 }
 
-function ChevronRightIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SVGSVGElement>) {
+// Flecha derecha para paginar la lista de cuentas (carrusel manual).
+function ChevronRightIcon({ className = 'w-4 h-4', ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
       className={className}
@@ -80,9 +80,6 @@ function ChevronRightIcon({ className = 'w-4 h-4', ...props }: React.SVGProps<SV
     </svg>
   )
 }
-
-
-
 
 /* ============================================================================
    1. DRAWER / PANEL LATERAL: NUEVO / EDITAR USUARIO
@@ -111,21 +108,16 @@ function UserDrawer({
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [roleId, setRoleId] = useState('superadmin')
-  const [status, setStatus] = useState<UserStatus>('Activo')
-  const [identificationNumber, setIdentificationNumber] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [address, setAddress] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [roleId, setRoleId] = useState('')
+  const [status, setStatus] = useState<UserStatus>('Activo')
   const [formError, setFormError] = useState<string | null>(null)
-
-  const selectedRoleObj = roles.find((r) => r.id === roleId)
-  const isClientRole = !!selectedRoleObj && (
-    selectedRoleObj.name.toLowerCase().includes('client') ||
-    selectedRoleObj.name.toLowerCase().includes('cliente') ||
-    selectedRoleObj.name.toLowerCase().includes('dueño') ||
-    selectedRoleObj.name.toLowerCase().includes('dueno')
-  )
+  const assignableRoles = useMemo(() => roles.filter((r) => !r.isSystem), [roles])
+  const selectedRoleName = assignableRoles.find((r) => r.id === roleId)?.name || ''
+  // Cliente no usa panel web: sesión = teléfono (Telegram)
+  const isClienteForm = isClienteRoleName(selectedRoleName)
+  const isClienteCreate = isClienteForm && !editingUser
 
   useEffect(() => {
     if (isOpen) {
@@ -136,22 +128,18 @@ function UserDrawer({
         setFirstName(editingUser.firstName || parts[0] || '')
         setLastName(editingUser.lastName || parts.slice(1).join(' ') || '')
         setEmail(editingUser.email || '')
-        setPassword('')
-        setRoleId(editingUser.roleId || roles[0]?.id || 'superadmin')
+        setPassword(editingUser.password || '')
+        setPhoneNumber('')
+        setRoleId(editingUser.roleId || assignableRoles[0]?.id || '')
         setStatus(editingUser.status || 'Activo')
-        setIdentificationNumber(editingUser.identificationNumber || '')
-        setPhoneNumber(editingUser.phone || '')
-        setAddress(editingUser.address || '')
       } else {
         setFirstName('')
         setLastName('')
         setEmail('')
         setPassword('')
-        setRoleId(roles[0]?.id || '')
-        setStatus('Activo')
-        setIdentificationNumber('')
         setPhoneNumber('')
-        setAddress('')
+        setRoleId(assignableRoles[0]?.id || '')
+        setStatus('Activo')
       }
       setShowPassword(false)
       setFormError(null)
@@ -165,6 +153,14 @@ function UserDrawer({
       return () => clearTimeout(timer)
     }
   }, [editingUser, isOpen, roles])
+
+  // Al pasar a Cliente, limpia contraseña (el API la rechaza en ese rol)
+  useEffect(() => {
+    if (isClienteForm) {
+      setPassword('')
+      setShowPassword(false)
+    }
+  }, [isClienteForm])
 
   const handleClose = () => {
     if (isClosing || isSubmitting) return
@@ -193,25 +189,28 @@ function UserDrawer({
     e.preventDefault()
 
     if (!firstName.trim()) {
-      setFormError('Por favor ingresa el nombre.')
+      setFormError('Por favor ingresa el nombre del usuario.')
       return
     }
 
-    if (!email.trim() || !email.includes('@')) {
-      setFormError('Por favor ingresa un correo electrónico válido.')
-      return
-    }
-
-    if (isClientRole) {
-      if (!identificationNumber.trim()) {
-        setFormError('Por favor ingresa la cédula / identificación.')
-        return
+    if (isClienteForm) {
+      if (isClienteCreate) {
+        const digits = phoneNumber.replace(/\D/g, '')
+        if (digits.length < 7) {
+          setFormError('El teléfono es obligatorio (mínimo 7 dígitos). Es la sesión del cliente en Telegram.')
+          return
+        }
       }
-      if (!phoneNumber.trim()) {
-        setFormError('Por favor ingresa el número de teléfono.')
+      // Correo obligatorio: sirve para OTP si inicia sesión desde otro teléfono
+      if (!email.trim() || !email.includes('@')) {
+        setFormError('El correo del cliente es obligatorio. Se usa para enviar el código de verificación al chatbot.')
         return
       }
     } else {
+      if (!email.trim() || !email.includes('@')) {
+        setFormError('Por favor ingresa un correo electrónico válido.')
+        return
+      }
       if (!editingUser && !password.trim()) {
         setFormError('Por favor asigna una contraseña inicial para el usuario.')
         return
@@ -225,12 +224,10 @@ function UserDrawer({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      password: isClientRole ? undefined : (password.trim() || undefined),
+      password: isClienteForm ? undefined : password.trim() || undefined,
+      phoneNumber: isClienteForm ? phoneNumber.trim() : undefined,
       roleId,
       status,
-      identificationNumber: identificationNumber.trim(),
-      phoneNumber: phoneNumber.trim(),
-      address: address.trim(),
     })
 
     if (!result.ok) {
@@ -265,13 +262,7 @@ function UserDrawer({
             id="drawer-user-title"
             className="text-xl sm:text-2xl font-bold text-brand tracking-tight"
           >
-            {editingUser
-              ? isClientRole
-                ? 'Editar Dueño / Cliente'
-                : 'Editar Usuario'
-              : isClientRole
-                ? 'Nuevo Dueño / Cliente'
-                : 'Nuevo Usuario'}
+            {editingUser ? 'Editar Usuario' : isClienteCreate ? 'Nuevo Cliente' : 'Nuevo Usuario'}
           </h2>
           <button
             type="button"
@@ -295,26 +286,11 @@ function UserDrawer({
             </div>
           )}
 
-          <div>
-            <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-              Rol en el sistema <span className="text-terracotta">*</span>
-            </label>
-            <select
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer shadow-2xs"
-            >
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {isClientRole && (
-            <div className="p-3.5 rounded-xl bg-mint-soft text-brand text-xs font-medium border border-brand/15">
-              Este usuario se registrará como cliente / dueño de mascotas en el backend (sin cuenta de acceso al sistema).
+          {isClienteForm && (
+            <div className="p-3.5 rounded-xl bg-mint-soft/80 text-brand text-xs font-semibold border border-brand/20 leading-snug">
+              {editingUser
+                ? 'Cliente sin panel web ni contraseña. Teléfono = sesión en Telegram; el correo recibe el código si inicia desde otro número.'
+                : 'Sin panel web ni contraseña. El teléfono es la sesión en Telegram; el correo es obligatorio para enviar un código al chatbot si inicia desde otro número.'}
             </div>
           )}
 
@@ -347,37 +323,26 @@ function UserDrawer({
 
           <div>
             <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-              Correo electrónico <span className="text-terracotta">*</span>
+              Rol <span className="text-terracotta">*</span>
             </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="usuario@vetclinic.com"
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-            />
+            <select
+              value={roleId}
+              onChange={(e) => setRoleId(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer shadow-2xs"
+            >
+              {assignableRoles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {isClientRole ? (
+          {isClienteCreate ? (
             <>
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  Cédula / Identificación <span className="text-terracotta">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={identificationNumber}
-                  onChange={(e) => setIdentificationNumber(e.target.value)}
-                  placeholder="Ej: 1098765432"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  Teléfono <span className="text-terracotta">*</span>
+                  Teléfono (sesión Telegram) <span className="text-terracotta">*</span>
                 </label>
                 <input
                   type="tel"
@@ -387,55 +352,95 @@ function UserDrawer({
                   placeholder="Ej: 3001234567"
                   className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
                 />
+                <p className="text-[11px] text-sage mt-1">
+                  Identifica la sesión del cliente en el chatbot (sin acceso al frontend).
+                </p>
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  Dirección (Opcional)
+                  Correo electrónico <span className="text-terracotta">*</span>
                 </label>
                 <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Ej: Calle 123 # 45-67"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="cliente@correo.com"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                />
+                <p className="text-[11px] text-sage mt-1">
+                  Si inicia sesión desde otro teléfono, se envía un código a este correo para ingresarlo en el chatbot.
+                </p>
+              </div>
+            </>
+          ) : isClienteForm ? (
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                Correo electrónico <span className="text-terracotta">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="cliente@correo.com"
+                className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+              />
+              <p className="text-[11px] text-sage mt-1">
+                Canal del código de verificación cuando el cliente usa otro número en Telegram.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  Correo electrónico <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="usuario@vetclinic.com"
                   className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
                 />
               </div>
-            </>
-          ) : (
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                {editingUser ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}{' '}
-                {!editingUser && <span className="text-terracotta">*</span>}
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required={!editingUser}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sage hover:text-charcoal p-1 cursor-pointer"
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="w-4 h-4" />
-                  ) : (
-                    <EyeIcon className="w-4 h-4" />
-                  )}
-                </button>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  {editingUser ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}{' '}
+                  {!editingUser && <span className="text-terracotta">*</span>}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required={!editingUser}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-sage hover:text-charcoal p-1 cursor-pointer"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  >
+                    {showPassword ? (
+                      <EyeOffIcon className="w-4 h-4" />
+                    ) : (
+                      <EyeIcon className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-[11px] text-sage mt-1">
+                  {editingUser
+                    ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
+                    : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
+                </p>
               </div>
-              <p className="text-[11px] text-sage mt-1">
-                {editingUser
-                  ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
-                  : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
-              </p>
-            </div>
+            </>
           )}
 
           <div>
@@ -473,7 +478,9 @@ function UserDrawer({
               ? 'Guardando...'
               : editingUser
                 ? 'Guardar cambios'
-                : 'Guardar usuario'}
+                : isClienteCreate
+                  ? 'Registrar cliente'
+                  : 'Guardar usuario'}
           </button>
         </div>
       </div>
@@ -710,6 +717,8 @@ function PermissionMatrixPanel({
   onResetUserPermissions,
 }: PermissionMatrixPanelProps) {
   const isTargetUser = permissionTarget.type === 'user' && selectedTargetUser !== null
+  const isProtectedTarget =
+    isTargetUser && selectedTargetUser !== null && isProtectedSuperAdminUser(selectedTargetUser)
 
   return (
     <div
@@ -742,7 +751,7 @@ function PermissionMatrixPanel({
           </p>
         </div>
 
-        {isTargetUser && isUserTargetCustomized && (
+        {isTargetUser && isUserTargetCustomized && !isProtectedTarget && (
           <button
             type="button"
             onClick={onResetUserPermissions}
@@ -780,17 +789,23 @@ function PermissionMatrixPanel({
                     {mod.label}
                   </td>
                   <td className="py-1.5 px-1 text-center">
-                    <PawCheckbox
+                    <input
+                      type="checkbox"
                       checked={perms.view}
+                      disabled={isProtectedTarget}
                       onChange={() => onTogglePermission(mod.id, 'view')}
+                      className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Permiso Ver para ${mod.label}`}
                     />
                   </td>
                   <td className="py-1.5 px-1 text-center">
                     {mod.supportsCreate !== false ? (
-                      <PawCheckbox
+                      <input
+                        type="checkbox"
                         checked={perms.create}
+                        disabled={isProtectedTarget}
                         onChange={() => onTogglePermission(mod.id, 'create')}
+                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Crear para ${mod.label}`}
                       />
                     ) : (
@@ -799,9 +814,12 @@ function PermissionMatrixPanel({
                   </td>
                   <td className="py-1.5 px-1 text-center">
                     {mod.supportsEdit !== false ? (
-                      <PawCheckbox
+                      <input
+                        type="checkbox"
                         checked={perms.edit}
+                        disabled={isProtectedTarget}
                         onChange={() => onTogglePermission(mod.id, 'edit')}
+                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Editar para ${mod.label}`}
                       />
                     ) : (
@@ -810,9 +828,12 @@ function PermissionMatrixPanel({
                   </td>
                   <td className="py-1.5 px-1 text-center">
                     {mod.supportsDelete !== false ? (
-                      <PawCheckbox
+                      <input
+                        type="checkbox"
                         checked={perms.delete}
+                        disabled={isProtectedTarget}
                         onChange={() => onTogglePermission(mod.id, 'delete')}
+                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Eliminar para ${mod.label}`}
                       />
                     ) : (
@@ -828,17 +849,21 @@ function PermissionMatrixPanel({
 
       <div className="shrink-0 pt-2 mt-2 border-t border-border-tan/60 flex items-center justify-between gap-3">
         <span className="text-[11px] text-sage truncate">
-          {isTargetUser
-            ? `Excepciones para ${selectedTargetUser.name}`
-            : `Permisos por defecto del rol ${selectedRole.name}`}
+          {isProtectedTarget
+            ? 'Los permisos de SuperAdmin son fijos y no se pueden cambiar.'
+            : isTargetUser
+              ? `Excepciones para ${selectedTargetUser.name}`
+              : `Permisos por defecto del rol ${selectedRole.name}`}
         </span>
-        <button
-          type="button"
-          onClick={onSavePermissions}
-          className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition shadow-xs cursor-pointer active:translate-y-0.5 shrink-0"
-        >
-          {isTargetUser ? 'Guardar excepciones' : 'Guardar permisos del rol'}
-        </button>
+        {!isProtectedTarget && (
+          <button
+            type="button"
+            onClick={onSavePermissions}
+            className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition shadow-xs cursor-pointer active:translate-y-0.5 shrink-0"
+          >
+            {isTargetUser ? 'Guardar excepciones' : 'Guardar permisos del rol'}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -894,6 +919,7 @@ function ByUserModeView({
   showPermissionMatrix = true,
 }: ByUserModeViewProps) {
   const [showMobileDetail, setShowMobileDetail] = useState(false)
+  // Carrusel manual: 10 cuentas por página con flechas.
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10
 
@@ -1003,13 +1029,9 @@ function ByUserModeView({
                             />
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-sage truncate mt-0.5">
-                          <span className="truncate">{user.roleName}</span>
-                          {user.phone && <span className="truncate">• Tel: {user.phone}</span>}
-                          {user.identificationNumber && (
-                            <span className="truncate">• Doc: {user.identificationNumber}</span>
-                          )}
-                        </div>
+                        <span className="text-[10px] text-sage truncate block leading-tight">
+                          {user.roleName}
+                        </span>
                       </div>
                     </div>
 
@@ -1017,7 +1039,7 @@ function ByUserModeView({
                       className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md shrink-0 ${
                         user.status === 'Activo'
                           ? 'bg-mint-soft text-brand'
-                          : 'bg-bone text-sage'
+                          : 'bg-terracotta-soft text-terracotta'
                       }`}
                     >
                       {user.status}
@@ -1028,7 +1050,7 @@ function ByUserModeView({
             )}
           </div>
 
-          {/* Barra de Paginación siempre visible con límite de 10 */}
+          {/* Carrusel manual: 10 por página con flechas */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 px-1 pt-2 border-t border-border-tan/40 shrink-0 text-[10px] text-sage">
             <span className="truncate">
               Mostrando {users.length === 0 ? 0 : startIndex + 1} -{' '}
@@ -1086,10 +1108,7 @@ function ByUserModeView({
         }`}
       >
         {selectedTargetUser ? (
-          <div
-            key={selectedTargetUser.id}
-            className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden animate-view-popup"
-          >
+          <>
             <button
               type="button"
               onClick={() => setShowMobileDetail(false)}
@@ -1098,7 +1117,7 @@ function ByUserModeView({
               Volver a la lista
             </button>
 
-            <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-3 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] shrink-0 animate-pop-in stagger-1">
+            <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-3 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] shrink-0">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-mint-soft text-brand border border-brand/15 flex items-center justify-center text-xs font-bold shrink-0">
@@ -1109,25 +1128,10 @@ function ByUserModeView({
                       {selectedTargetUser.name}
                     </h3>
                     <p className="text-[11px] text-sage truncate">{selectedTargetUser.email}</p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-cream text-brand border border-border-tan">
                         {selectedTargetUser.roleName}
                       </span>
-                      {selectedTargetUser.identificationNumber && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-bone text-charcoal border border-border-tan">
-                          Doc: {selectedTargetUser.identificationNumber}
-                        </span>
-                      )}
-                      {selectedTargetUser.phone && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-mint-soft text-brand border border-brand/10">
-                          Tel: {selectedTargetUser.phone}
-                        </span>
-                      )}
-                      {selectedTargetUser.address && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-bone text-sage border border-border-tan">
-                          {selectedTargetUser.address}
-                        </span>
-                      )}
                       <span
                         className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
                           selectedTargetUser.status === 'Activo'
@@ -1150,10 +1154,16 @@ function ByUserModeView({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                  {isProtectedSuperAdminUser(selectedTargetUser) ? (
+                    <p className="text-[11px] font-semibold text-sage max-w-[16rem] leading-snug">
+                      Cuenta SuperAdmin protegida: no se puede editar, activar, desactivar ni eliminar.
+                    </p>
+                  ) : (
+                    <>
                   <button
                     type="button"
                     onClick={() => onOpenEditModal(selectedTargetUser)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs"
                   >
                     <EditIcon className="w-3 h-3" />
                     <span>Editar</span>
@@ -1161,46 +1171,54 @@ function ByUserModeView({
                   <button
                     type="button"
                     onClick={() => onToggleStatus(selectedTargetUser.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs"
                   >
                     <span>{selectedTargetUser.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => onDeleteUser(selectedTargetUser.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-terracotta/20 bg-terracotta-soft text-terracotta text-[11px] font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                    disabled={selectedTargetUser.status !== 'Inactivo'}
+                    title={
+                      selectedTargetUser.status !== 'Inactivo'
+                        ? 'Desactiva la cuenta para poder eliminarla'
+                        : 'Eliminar usuario'
+                    }
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-terracotta/20 bg-terracotta-soft text-terracotta text-[11px] font-semibold transition cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <TrashIcon className="w-3 h-3" />
                     <span>Eliminar</span>
                   </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-pop-in stagger-2">
-              {showPermissionMatrix ? (
-                <PermissionMatrixPanel
-                  permissionTarget={permissionTarget}
-                  selectedRole={activeTargetRole}
-                  selectedTargetUser={selectedTargetUser}
-                  activeTargetRole={activeTargetRole}
-                  activePermissions={activePermissions}
-                  isUserTargetCustomized={isUserTargetCustomized}
-                  modulesInfo={modulesInfo}
-                  onTogglePermission={onTogglePermission}
-                  onSavePermissions={onSavePermissions}
-                  onResetUserPermissions={onResetUserPermissions}
-                />
-              ) : (
-                <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-border-tan text-sm text-sage">
-                  Como administrador de clínica puedes crear y gestionar cuentas, pero no puedes
-                  cambiar permisos ni bloquear vistas. Eso solo lo hace el SuperAdmin.
-                </div>
-              )}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            {showPermissionMatrix ? (
+            <PermissionMatrixPanel
+              permissionTarget={permissionTarget}
+              selectedRole={activeTargetRole}
+              selectedTargetUser={selectedTargetUser}
+              activeTargetRole={activeTargetRole}
+              activePermissions={activePermissions}
+              isUserTargetCustomized={isUserTargetCustomized}
+              modulesInfo={modulesInfo}
+              onTogglePermission={onTogglePermission}
+              onSavePermissions={onSavePermissions}
+              onResetUserPermissions={onResetUserPermissions}
+            />
+            ) : (
+              <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-border-tan text-sm text-sage">
+                Como administrador de clínica puedes crear y gestionar cuentas, pero no puedes
+                cambiar permisos ni bloquear vistas. Eso solo lo hace el SuperAdmin.
+              </div>
+            )}
             </div>
-          </div>
+          </>
         ) : (
-          <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-8 border border-border-tan text-center text-sage text-sm animate-pop-in">
+          <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-8 border border-border-tan text-center text-sage text-sm">
             Selecciona un usuario de la lista para ver su ficha y permisos.
           </div>
         )}
@@ -1295,10 +1313,7 @@ function ByRoleModeView({
         </div>
       </div>
 
-      <div
-        key={selectedRole.id}
-        className="lg:col-span-8 h-full min-h-0 min-w-0 flex flex-col overflow-hidden animate-view-popup"
-      >
+      <div className="lg:col-span-8 h-full min-h-0 min-w-0 flex flex-col overflow-hidden animate-pop-in stagger-2">
         <PermissionMatrixPanel
           permissionTarget={permissionTarget}
           selectedRole={selectedRole}
@@ -1360,6 +1375,9 @@ export function UserSuperAdmin({
   onReloadNotifications,
 }: UserSuperAdminProps) {
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
+  // Confirmación in-app (window.confirm falla si la pestaña no está activa).
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<SystemUser | null>(null)
+  const [isDeletingUser, setIsDeletingUser] = useState(false)
 
   const {
     users,
@@ -1378,8 +1396,10 @@ export function UserSuperAdmin({
     filters,
     setFilters,
     filteredUsers,
+    loadError,
     modulesInfo,
     activeNotification,
+    toastTone,
     showToast,
     canView,
     togglePermission,
@@ -1398,6 +1418,31 @@ export function UserSuperAdmin({
     openCreateRoleModal,
     closeRoleModal,
   } = useUserSuperAdmin()
+
+  const requestDeleteUser = (userId: string) => {
+    const user = filteredUsers.find((u) => u.id === userId) || users.find((u) => u.id === userId)
+    if (!user) return
+    if (isProtectedSuperAdminUser(user)) {
+      showToast('La cuenta SuperAdmin no se puede eliminar ni modificar.', 'warning')
+      return
+    }
+    if (user.status !== 'Inactivo') {
+      showToast('Desactiva la cuenta antes de eliminarla.', 'warning')
+      return
+    }
+    setPendingDeleteUser(user)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!pendingDeleteUser) return
+    setIsDeletingUser(true)
+    try {
+      await deleteUser(pendingDeleteUser.id)
+      setPendingDeleteUser(null)
+    } finally {
+      setIsDeletingUser(false)
+    }
+  }
 
   const isSidebarOpen =
     externalIsSidebarOpen !== undefined ? externalIsSidebarOpen : internalIsSidebarOpen
@@ -1451,15 +1496,14 @@ export function UserSuperAdmin({
           <DashboardBackgroundDecoration />
 
           {activeNotification && (
-            <div
-              className="toast-pop-up fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-xl border border-white/20 flex items-center gap-2 pointer-events-none"
-              role="alert"
-            >
-              <CheckIcon className="w-4 h-4 text-ochre shrink-0" />
-              <span>{activeNotification}</span>
-            </div>
+            <PageToast message={activeNotification} tone={toastTone} />
           )}
 
+          {loadError && (
+            <div className="relative z-10 rounded-xl border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm font-semibold text-terracotta">
+              {loadError} Recarga la página cuando el backend esté activo.
+            </div>
+          )}
 
           {/* Barra de modo: control de acceso */}
           <div className="relative z-10 border-b border-border-tan/70 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3 shrink-0 animate-pop-in stagger-1">
@@ -1544,7 +1588,7 @@ export function UserSuperAdmin({
                 onSelectUser={selectUserTarget}
                 onOpenEditModal={openEditUserModal}
                 onToggleStatus={toggleUserStatus}
-                onDeleteUser={deleteUser}
+                onDeleteUser={requestDeleteUser}
                 onTogglePermission={togglePermission}
                 onSavePermissions={saveRolePermissions}
                 onResetUserPermissions={resetUserPermissions}
@@ -1552,7 +1596,7 @@ export function UserSuperAdmin({
               />
             ) : (
               <ByRoleModeView
-                roles={roles}
+                roles={roles.filter((r) => !r.isSystem)}
                 users={users}
                 permissionTarget={permissionTarget}
                 selectedRole={selectedRole}
@@ -1580,7 +1624,7 @@ export function UserSuperAdmin({
         }}
         onSuccess={({ email, mode }) => {
           if (mode === 'create') {
-            showToast(`Usuario con ${email} fue creado exitosamente`)
+            showToast(`Cliente/usuario con ${email} registrado exitosamente`)
             return
           }
           showToast(`Usuario con ${email} fue actualizado exitosamente`)
@@ -1588,6 +1632,51 @@ export function UserSuperAdmin({
         editingUser={editingUser}
         roles={roles}
       />
+
+      {/* Confirmación de eliminación (modal propio, no window.confirm) */}
+      {pendingDeleteUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-charcoal/40 backdrop-blur-[2px] cursor-pointer"
+            aria-label="Cerrar confirmación"
+            disabled={isDeletingUser}
+            onClick={() => setPendingDeleteUser(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-user-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-border-tan bg-white p-5 shadow-[0_16px_40px_rgba(35,78,70,0.18)]"
+          >
+            <h2 id="delete-user-title" className="text-base font-bold text-brand tracking-tight">
+              ¿Eliminar usuario?
+            </h2>
+            <p className="mt-2 text-sm text-charcoal leading-snug">
+              Vas a eliminar a <span className="font-bold">{pendingDeleteUser.name}</span>.
+              Quedará fuera del sistema y no se puede deshacer.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeletingUser}
+                onClick={() => setPendingDeleteUser(null)}
+                className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone text-charcoal text-xs font-semibold transition cursor-pointer hover:bg-cream disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingUser}
+                onClick={() => void confirmDeleteUser()}
+                className="px-3.5 py-2 rounded-xl bg-terracotta text-white text-xs font-bold transition cursor-pointer hover:bg-[#b55e43] disabled:opacity-50"
+              >
+                {isDeletingUser ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Slide-over Drawer para Crear Nuevo Rol */}
       <RoleDrawer

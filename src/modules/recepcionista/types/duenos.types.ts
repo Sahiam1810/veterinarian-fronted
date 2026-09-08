@@ -34,7 +34,8 @@ export interface RecepDuenoFormData {
   fullName: string
   documentId: string
   phone: string
-  email?: string
+  // Obligatorio: OTP en chatbot si cambia de teléfono
+  email: string
   address?: string
 }
 

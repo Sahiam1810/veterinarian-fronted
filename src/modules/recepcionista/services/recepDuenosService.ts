@@ -129,11 +129,15 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
 export async function createRecepDueno(
   data: RecepDuenoFormData,
 ): Promise<{ userId: string; clientId: string }> {
+  const email = data.email?.trim() || ''
+  if (!email || !email.includes('@')) {
+    throw new Error('El correo del cliente es obligatorio.')
+  }
   return createOwnerWithoutLogin({
     name: data.fullName.trim(),
     identificationNumber: data.documentId.trim(),
     phoneNumber: data.phone.trim(),
-    email: data.email?.trim() || null,
+    email,
     address: data.address?.trim() || null,
   })
 }

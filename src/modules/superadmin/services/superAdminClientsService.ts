@@ -1,6 +1,4 @@
 import { apiClient } from '@/services'
-import { createUser } from './superAdminUserService'
-import { fetchRoles } from './superAdminRolesService'
 
 export interface ApiClientResponse {
   id: string
@@ -42,9 +40,19 @@ export interface CreateOwnerWithoutLoginParams {
   name: string
   identificationNumber: string
   phoneNumber: string
-  email?: string | null
+  // Obligatorio: OTP al chatbot si inicia desde otro teléfono
+  email: string
   address?: string | null
   roleId?: string
+}
+
+// Body de POST /api/Clients/register-owner (staff, sin cuenta ni contraseña)
+export interface ApiRegisterOwnerRequest {
+  fullName: string
+  email: string
+  identificationNumber: string
+  phoneNumber: string
+  address?: string | null
 }
 
 export async function fetchClients(): Promise<ApiClientResponse[]> {
@@ -80,47 +88,43 @@ export async function createClient(data: ApiCreateClientRequest): Promise<ApiCre
   return apiClient.post<ApiCreateClientResponse>('/api/Clients', data)
 }
 
+// Alta staff de dueño/cliente: sin UserAccounts ni UserCredentials
+export async function registerOwner(data: ApiRegisterOwnerRequest): Promise<ApiClientResponse> {
+  return apiClient.post<ApiClientResponse>('/api/Clients/register-owner', {
+    fullName: data.fullName.trim(),
+    email: data.email.trim(),
+    identificationNumber: data.identificationNumber.trim(),
+    phoneNumber: data.phoneNumber.trim(),
+    address: data.address?.trim() || null,
+  })
+}
+
 /**
- * Registra un nuevo dueño como cliente en el backend SIN crear cuenta de login ni credenciales:
- * Paso 1: POST /api/Users (rol Cliente, sin password ni cuenta)
- * Paso 2: POST /api/Clients (identificación, teléfono, dirección)
+ * Registra un dueño sin login web.
+ * Teléfono = sesión Telegram; correo obligatorio para OTP si cambia de número.
  */
 export async function createOwnerWithoutLogin(
   params: CreateOwnerWithoutLoginParams,
 ): Promise<{ userId: string; clientId: string }> {
-  let roleId = params.roleId
-  if (!roleId) {
-    const roles = await fetchRoles()
-    const clientRole = roles.find((r) => {
-      const n = r.name.toLowerCase()
-      return n.includes('client') || n.includes('cliente') || n.includes('dueño') || n.includes('dueno')
-    })
-    if (!clientRole) {
-      throw new Error('No se encontró el rol de Cliente en el sistema.')
-    }
-    roleId = clientRole.id
+  const phoneDigits = params.phoneNumber.replace(/\D/g, '')
+  const email = params.email.trim()
+  if (!email || !email.includes('@')) {
+    throw new Error('El correo del cliente es obligatorio para la verificación por código en el chatbot.')
   }
 
-  // Paso 1: Crear usuario en /api/Users sin contraseña ni cuenta
-  const userRes = await createUser({
+  const identificationNumber =
+    params.identificationNumber.trim() ||
+    `TEL${phoneDigits}`.slice(0, 20)
+
+  const client = await registerOwner({
     fullName: params.name.trim(),
-    email: params.email?.trim() || '',
-    roleId,
-  })
-
-  if (!userRes || !userRes.id) {
-    throw new Error('No se pudo registrar el usuario base para el cliente.')
-  }
-
-  // Paso 2: Crear cliente en /api/Clients con los datos de contacto
-  const clientRes = await createClient({
-    userId: userRes.id,
-    identificationNumber: params.identificationNumber.trim(),
+    email,
+    identificationNumber,
     phoneNumber: params.phoneNumber.trim(),
-    address: params.address?.trim() || null,
+    address: params.address,
   })
 
-  return { userId: userRes.id, clientId: clientRes.id }
+  return { userId: client.userId, clientId: client.id }
 }
 
 export async function updateClient(id: string, data: ApiUpdateClientRequest): Promise<void> {

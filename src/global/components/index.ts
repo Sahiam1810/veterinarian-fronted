@@ -12,6 +12,7 @@ export * from './Icons'
 export * from './PawCheckbox'
 export * from './HeaderBackgroundTexture'
 export * from './SidebarBackgroundTexture'
+export * from './PageToast'
 export {
   SuperAdminHeader,
   SuperAdminHeader as Header,

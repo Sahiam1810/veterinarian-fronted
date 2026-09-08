@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
@@ -17,17 +17,30 @@ import type {
 } from '../../types'
 import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 import {
+  filterRacesBySpecies,
+  isValidAgeYearsInput,
+  isValidWeightKgInput,
+  parseAgeToInt,
+  parseWeightToDecimal,
+  mapSpeciesNameToEspecie,
+} from '../../utils/superAdminApiMappers'
+import {
   SearchIcon,
   PlusIcon,
-  MoreVerticalIcon,
   EditIcon,
   TrashIcon,
   EyeIcon,
   PawIcon,
   OwnersIcon,
   MedicalHistoryIcon,
-  CheckIcon,
+  PageToast,
 } from '@/global/components'
+
+// Estilo base de botones de acción en la tabla
+const actionBtnClass =
+  'inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-border-tan bg-white text-sage hover:text-brand hover:bg-bone hover:border-brand/30 text-[11px] font-semibold transition cursor-pointer shadow-2xs'
+const actionDangerBtnClass =
+  'inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-terracotta/25 bg-terracotta-soft text-terracotta hover:bg-[#F8E8E2] text-[11px] font-semibold transition cursor-pointer shadow-2xs'
 
 
 export interface MascotasSuperAdminProps {
@@ -58,7 +71,7 @@ interface MascotaDrawerProps {
   editingMascota: SuperAdminMascota | null
   duenos: SuperAdminDueno[]
   speciesOptions: { id: string; name: string }[]
-  raceOptions: { id: string; name: string }[]
+  raceOptions: { id: string; name: string; speciesId: string }[]
 }
 
 function MascotaDrawer({
@@ -71,38 +84,54 @@ function MascotaDrawer({
   raceOptions,
 }: MascotaDrawerProps) {
   const defaultSpecies = (speciesOptions[0]?.name || 'Canino') as EspecieMascota
-  const defaultBreed = raceOptions[0]?.name || ''
 
   const [name, setName] = useState(editingMascota?.name || '')
   const [species, setSpecies] = useState<EspecieMascota>(editingMascota?.species || defaultSpecies)
-  const [breed, setBreed] = useState(editingMascota?.breed || defaultBreed)
-  const [age, setAge] = useState(editingMascota?.age || '')
+  const [breed, setBreed] = useState(editingMascota?.breed || '')
+  const [age, setAge] = useState('')
   const [sex, setSex] = useState<SexoMascota>(editingMascota?.sex || 'Macho')
-  const [weight, setWeight] = useState(editingMascota?.weight || '')
+  const [weight, setWeight] = useState('')
   const [ownerId, setOwnerId] = useState(editingMascota?.ownerId || duenos[0]?.id || '')
   const [status, setStatus] = useState<EstadoMascota>(editingMascota?.status || 'Activo')
   const [photoUrl, setPhotoUrl] = useState(editingMascota?.photoUrl || '')
   const [notes, setNotes] = useState(editingMascota?.notes || '')
   const [formError, setFormError] = useState<string | null>(null)
 
+  // Razas válidas solo para la especie elegida (por speciesId de API)
+  const racesForSpecies = useMemo(
+    () => filterRacesBySpecies(species, raceOptions, speciesOptions),
+    [species, raceOptions, speciesOptions],
+  )
+
   // Sincroniza el formulario al abrir o cambiar la mascota editada
   useEffect(() => {
     if (!isOpen) return
     if (editingMascota) {
+      // Alinea el nombre de especie con el catálogo API (Perro/Canino, etc.)
+      const speciesFromCatalog =
+        speciesOptions.find(
+          (s) =>
+            s.name === editingMascota.species ||
+            mapSpeciesNameToEspecie(s.name) === mapSpeciesNameToEspecie(editingMascota.species),
+        )?.name || editingMascota.species
+
       setName(editingMascota.name)
-      setSpecies(editingMascota.species)
+      setSpecies(speciesFromCatalog as EspecieMascota)
       setBreed(editingMascota.breed)
-      setAge(editingMascota.age)
+      // Solo número: el estándar UI es años / kg
+      setAge(String(parseAgeToInt(editingMascota.age)))
       setSex(editingMascota.sex)
-      setWeight(editingMascota.weight)
+      setWeight(String(parseWeightToDecimal(editingMascota.weight)))
       setOwnerId(editingMascota.ownerId)
       setStatus(editingMascota.status)
       setPhotoUrl(editingMascota.photoUrl || '')
       setNotes(editingMascota.notes || '')
     } else {
+      const firstSpecies = (speciesOptions[0]?.name || 'Canino') as EspecieMascota
+      const firstRaces = filterRacesBySpecies(firstSpecies, raceOptions, speciesOptions)
       setName('')
-      setSpecies(defaultSpecies)
-      setBreed(defaultBreed)
+      setSpecies(firstSpecies)
+      setBreed(firstRaces[0]?.name || '')
       setAge('')
       setSex('Macho')
       setWeight('')
@@ -112,9 +141,43 @@ function MascotaDrawer({
       setNotes('')
     }
     setFormError(null)
-  }, [isOpen, editingMascota, duenos, defaultSpecies, defaultBreed])
+  }, [isOpen, editingMascota, duenos, speciesOptions, raceOptions])
+
+  // Si cambia la especie, quita razas incompatibles (ej. Siamés con Perro)
+  useEffect(() => {
+    if (!isOpen) return
+    if (racesForSpecies.length === 0) return
+    if (!racesForSpecies.some((r) => r.name === breed)) {
+      setBreed(racesForSpecies[0].name)
+    }
+  }, [isOpen, racesForSpecies, breed])
 
   if (!isOpen) return null
+
+  const handleSpeciesChange = (nextSpecies: EspecieMascota) => {
+    setSpecies(nextSpecies)
+    const nextRaces = filterRacesBySpecies(nextSpecies, raceOptions, speciesOptions)
+    setBreed(nextRaces[0]?.name || '')
+    setFormError(null)
+  }
+
+  const handleAgeChange = (raw: string) => {
+    if (!isValidAgeYearsInput(raw)) {
+      setFormError('La edad solo admite números (años). No uses letras ni unidades.')
+      return
+    }
+    setAge(raw)
+    setFormError(null)
+  }
+
+  const handleWeightChange = (raw: string) => {
+    if (!isValidWeightKgInput(raw)) {
+      setFormError('El peso solo admite números (kg). No uses letras ni unidades.')
+      return
+    }
+    setWeight(raw.replace(',', '.'))
+    setFormError(null)
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -123,7 +186,11 @@ function MascotaDrawer({
       return
     }
     if (!breed.trim()) {
-      setFormError('Por favor selecciona o ingresa la raza de la mascota.')
+      setFormError('Por favor selecciona la raza de la mascota.')
+      return
+    }
+    if (racesForSpecies.length > 0 && !racesForSpecies.some((r) => r.name === breed)) {
+      setFormError('La raza no corresponde a la especie seleccionada.')
       return
     }
     if (!ownerId) {
@@ -134,14 +201,22 @@ function MascotaDrawer({
       setFormError('No hay especies configuradas en el sistema.')
       return
     }
+    if (age.trim() && !isValidAgeYearsInput(age)) {
+      setFormError('La edad solo admite números (años).')
+      return
+    }
+    if (weight.trim() && !isValidWeightKgInput(weight)) {
+      setFormError('El peso solo admite números (kg).')
+      return
+    }
 
     onSave({
       name: name.trim(),
       species,
       breed: breed.trim(),
-      age: age.trim() || 'No especificada',
+      age: age.trim() || '0',
       sex,
-      weight: weight.trim() || 'N/A',
+      weight: weight.trim() || '0',
       ownerId,
       status,
       photoUrl: photoUrl.trim() || undefined,
@@ -206,7 +281,7 @@ function MascotaDrawer({
               </label>
               <select
                 value={species}
-                onChange={(e) => setSpecies(e.target.value as EspecieMascota)}
+                onChange={(e) => handleSpeciesChange(e.target.value as EspecieMascota)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               >
                 {speciesOptions.length === 0 ? (
@@ -225,13 +300,13 @@ function MascotaDrawer({
               <label className="block text-xs font-bold text-charcoal mb-1.5">
                 Raza <span className="text-terracotta">*</span>
               </label>
-              {raceOptions.length > 0 ? (
+              {racesForSpecies.length > 0 ? (
                 <select
                   value={breed}
                   onChange={(e) => setBreed(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
                 >
-                  {raceOptions.map((r) => (
+                  {racesForSpecies.map((r) => (
                     <option key={r.id} value={r.name}>
                       {r.name}
                     </option>
@@ -247,17 +322,22 @@ function MascotaDrawer({
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
                 />
               )}
+              <p className="text-[10px] text-sage mt-1">Solo razas de la especie elegida.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">Edad</label>
+              <label className="block text-xs font-bold text-charcoal mb-1.5">
+                Edad <span className="text-sage font-semibold">(años)</span>
+              </label>
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="Ej: 3 años"
+                onChange={(e) => handleAgeChange(e.target.value)}
+                placeholder="Ej: 3"
                 className="w-full px-3 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               />
             </div>
@@ -275,12 +355,15 @@ function MascotaDrawer({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-charcoal mb-1.5">Peso</label>
+              <label className="block text-xs font-bold text-charcoal mb-1.5">
+                Peso <span className="text-sage font-semibold">(kg)</span>
+              </label>
               <input
                 type="text"
+                inputMode="decimal"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                placeholder="Ej: 32 kg"
+                onChange={(e) => handleWeightChange(e.target.value)}
+                placeholder="Ej: 32"
                 className="w-full px-3 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
               />
             </div>
@@ -404,6 +487,10 @@ function DuenoDrawer({
       setFormError('Por favor ingresa el teléfono de contacto.')
       return
     }
+    if (!email.trim() || !email.includes('@')) {
+      setFormError('El correo es obligatorio: se usa para el código de verificación en el chatbot.')
+      return
+    }
 
     onSave({
       name: name.trim(),
@@ -497,14 +584,20 @@ function DuenoDrawer({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-charcoal mb-1.5">Correo Electrónico (Opcional)</label>
+            <label className="block text-xs font-bold text-charcoal mb-1.5">
+              Correo electrónico <span className="text-terracotta">*</span>
+            </label>
             <input
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="correo@ejemplo.com"
               className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
             />
+            <p className="text-[11px] text-sage mt-1">
+              Si inicia desde otro teléfono, se envía un código a este correo para ingresarlo en el chatbot.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -754,8 +847,11 @@ export function MascotasSuperAdmin({
   onReloadNotifications,
 }: MascotasSuperAdminProps) {
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const [selectedHistoriaPet, setSelectedHistoriaPet] = useState<SuperAdminMascota | null>(null)
+  // Confirmación de borrado (modal propio, no window.confirm)
+  const [pendingDeleteMascota, setPendingDeleteMascota] = useState<SuperAdminMascota | null>(null)
+  const [pendingDeleteDueno, setPendingDeleteDueno] = useState<SuperAdminDueno | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
 
   const {
@@ -817,19 +913,30 @@ export function MascotasSuperAdmin({
     }
   }
 
-  const toggleMenu = (id: string) => {
-    setActiveMenuId((curr) => (curr === id ? null : id))
+  const confirmDeleteMascota = async () => {
+    if (!pendingDeleteMascota) return
+    setIsDeleting(true)
+    try {
+      await deleteMascota(pendingDeleteMascota.id)
+      setPendingDeleteMascota(null)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
-  const closeMenu = () => {
-    setActiveMenuId(null)
+  const confirmDeleteDueno = async () => {
+    if (!pendingDeleteDueno) return
+    setIsDeleting(true)
+    try {
+      await deleteDueno(pendingDeleteDueno.id)
+      setPendingDeleteDueno(null)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
-    <div
-      className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal"
-      onClick={closeMenu}
-    >
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
       {/* 1. Header Fijo */}
       <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
@@ -862,15 +969,7 @@ export function MascotasSuperAdmin({
         >
           <DashboardBackgroundDecoration />
 
-          {activeNotification && (
-            <div
-              className="toast-pop-up fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-xl border border-white/20 flex items-center gap-2 pointer-events-none"
-              role="alert"
-            >
-              <CheckIcon className="w-4 h-4 text-ochre shrink-0" />
-              <span>{activeNotification}</span>
-            </div>
-          )}
+          {activeNotification && <PageToast message={activeNotification} />}
 
           {/* Barra de Pestañas Superiores (Mascotas / Dueños) */}
           <div className="relative z-10 border-b border-border-tan/70 flex items-center justify-between gap-4 animate-pop-in stagger-1">
@@ -995,7 +1094,7 @@ export function MascotasSuperAdmin({
                         <th className="py-3.5 px-4">Sexo / Peso</th>
                         <th className="py-3.5 px-4">Dueño</th>
                         <th className="py-3.5 px-4">Estado</th>
-                        <th className="py-3.5 px-4 sm:px-6 text-center">Acciones</th>
+                        <th className="py-3.5 px-4 sm:px-6 text-center min-w-[220px]">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-tan/30 text-xs sm:text-sm">
@@ -1091,74 +1190,53 @@ export function MascotasSuperAdmin({
                               </span>
                             </td>
 
-                            {/* Acciones */}
+                            {/* Acciones: Historia / Ver / Editar / Eliminar → endpoints Pets + ClientsPets */}
                             <td
-                              className="py-3.5 px-4 sm:px-6 text-center relative whitespace-nowrap"
+                              className="py-3.5 px-4 sm:px-6 text-center whitespace-nowrap"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
-                                type="button"
-                                onClick={() => toggleMenu(m.id)}
-                                className="p-1.5 text-sage hover:text-charcoal hover:bg-border-tan/40 rounded-lg transition-colors cursor-pointer"
-                                aria-label={`Acciones para ${m.name}`}
-                              >
-                                <MoreVerticalIcon className="w-4 h-4" />
-                              </button>
-
-                              {activeMenuId === m.id && (
-                                <div className="absolute right-6 top-10 z-30 w-44 bg-white rounded-2xl shadow-lg border border-border-tan p-1.5 text-left text-xs modal-content-animate">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      setSelectedHistoriaPet(m)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone hover:text-brand font-semibold transition cursor-pointer"
-                                  >
-                                    <MedicalHistoryIcon className="w-3.5 h-3.5 text-brand" />
-                                    <span>Historia clínica</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      setDetailItem({ type: 'mascota', data: m })
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone hover:text-brand font-semibold transition cursor-pointer"
-                                  >
-                                    <EyeIcon className="w-3.5 h-3.5" />
-                                    <span>Ver detalles</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      openEditMascota(m)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone hover:text-brand font-semibold transition cursor-pointer"
-                                  >
-                                    <EditIcon className="w-3.5 h-3.5" />
-                                    <span>Editar</span>
-                                  </button>
-
-
-                                  <div className="my-1 border-t border-border-tan/50" />
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      deleteMascota(m.id)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-terracotta hover:bg-terracotta-soft font-semibold transition cursor-pointer"
-                                  >
-                                    <TrashIcon className="w-3.5 h-3.5" />
-                                    <span>Eliminar</span>
-                                  </button>
-                                </div>
-                              )}
+                              <div className="inline-flex flex-wrap items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedHistoriaPet(m)}
+                                  className={actionBtnClass}
+                                  title="Historia clínica"
+                                  aria-label={`Historia clínica de ${m.name}`}
+                                >
+                                  <MedicalHistoryIcon className="w-3.5 h-3.5 text-brand" />
+                                  <span className="hidden xl:inline">Historia</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailItem({ type: 'mascota', data: m })}
+                                  className={actionBtnClass}
+                                  title="Ver detalles"
+                                  aria-label={`Ver detalles de ${m.name}`}
+                                >
+                                  <EyeIcon className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Ver</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditMascota(m)}
+                                  className={actionBtnClass}
+                                  title="Editar mascota (PUT /api/Pets)"
+                                  aria-label={`Editar ${m.name}`}
+                                >
+                                  <EditIcon className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Editar</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPendingDeleteMascota(m)}
+                                  className={actionDangerBtnClass}
+                                  title="Eliminar mascota (DELETE /api/Pets)"
+                                  aria-label={`Eliminar ${m.name}`}
+                                >
+                                  <TrashIcon className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Eliminar</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -1291,7 +1369,7 @@ export function MascotasSuperAdmin({
                         <th className="py-3.5 px-4">Dirección / Ciudad</th>
                         <th className="py-3.5 px-4">Mascotas Registradas</th>
                         <th className="py-3.5 px-4">Estado</th>
-                        <th className="py-3.5 px-4 sm:px-6 text-center">Acciones</th>
+                        <th className="py-3.5 px-4 sm:px-6 text-center min-w-[220px]">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-tan/30 text-xs sm:text-sm">
@@ -1377,77 +1455,59 @@ export function MascotasSuperAdmin({
                               </span>
                             </td>
 
-                            {/* Acciones */}
+                            {/* Acciones dueño: Ver / Editar / Activar-Desactivar / Eliminar */}
                             <td
-                              className="py-3.5 px-4 sm:px-6 text-center relative whitespace-nowrap"
+                              className="py-3.5 px-4 sm:px-6 text-center whitespace-nowrap"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
-                                type="button"
-                                onClick={() => toggleMenu(d.id)}
-                                className="p-1.5 text-sage hover:text-charcoal hover:bg-border-tan/40 rounded-lg transition-colors cursor-pointer"
-                                aria-label={`Acciones para ${d.name}`}
-                              >
-                                <MoreVerticalIcon className="w-4 h-4" />
-                              </button>
-
-                              {activeMenuId === d.id && (
-                                <div className="absolute right-6 top-10 z-30 w-40 bg-white rounded-2xl shadow-lg border border-border-tan p-1.5 text-left text-xs modal-content-animate">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      setDetailItem({ type: 'dueno', data: d })
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone hover:text-brand font-semibold transition cursor-pointer"
-                                  >
-                                    <EyeIcon className="w-3.5 h-3.5" />
-                                    <span>Ver detalles</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      openEditDueno(d)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone hover:text-brand font-semibold transition cursor-pointer"
-                                  >
-                                    <EditIcon className="w-3.5 h-3.5" />
-                                    <span>Editar</span>
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      toggleDuenoStatus(d.id)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-charcoal hover:bg-bone font-semibold transition cursor-pointer"
-                                  >
-                                    <span
-                                      className={`w-2 h-2 rounded-full ${
-                                        d.status === 'Activo' ? 'bg-sage' : 'bg-brand'
-                                      }`}
-                                    />
-                                    <span>{d.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
-                                  </button>
-
-                                  <div className="my-1 border-t border-border-tan/50" />
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      closeMenu()
-                                      deleteDueno(d.id)
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-terracotta hover:bg-terracotta-soft font-semibold transition cursor-pointer"
-                                  >
-                                    <TrashIcon className="w-3.5 h-3.5" />
-                                    <span>Eliminar</span>
-                                  </button>
-                                </div>
-                              )}
+                              <div className="inline-flex flex-wrap items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailItem({ type: 'dueno', data: d })}
+                                  className={actionBtnClass}
+                                  title="Ver detalles"
+                                  aria-label={`Ver detalles de ${d.name}`}
+                                >
+                                  <EyeIcon className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Ver</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditDueno(d)}
+                                  className={actionBtnClass}
+                                  title="Editar dueño"
+                                  aria-label={`Editar ${d.name}`}
+                                >
+                                  <EditIcon className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Editar</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleDuenoStatus(d.id)}
+                                  className={actionBtnClass}
+                                  title={d.status === 'Activo' ? 'Desactivar' : 'Activar'}
+                                  aria-label={`${d.status === 'Activo' ? 'Desactivar' : 'Activar'} ${d.name}`}
+                                >
+                                  <span
+                                    className={`w-2 h-2 rounded-full ${
+                                      d.status === 'Activo' ? 'bg-sage' : 'bg-brand'
+                                    }`}
+                                  />
+                                  <span className="hidden xl:inline">
+                                    {d.status === 'Activo' ? 'Desactivar' : 'Activar'}
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPendingDeleteDueno(d)}
+                                  className={actionDangerBtnClass}
+                                  title="Eliminar dueño"
+                                  aria-label={`Eliminar ${d.name}`}
+                                >
+                                  <TrashIcon className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Eliminar</span>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -1543,6 +1603,96 @@ export function MascotasSuperAdmin({
         mascota={selectedHistoriaPet}
         onClose={() => setSelectedHistoriaPet(null)}
       />
+
+      {/* Confirmación eliminar mascota */}
+      {pendingDeleteMascota && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-charcoal/40 backdrop-blur-[2px] cursor-pointer"
+            aria-label="Cerrar confirmación"
+            disabled={isDeleting}
+            onClick={() => setPendingDeleteMascota(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-mascota-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-border-tan bg-white p-5 shadow-[0_16px_40px_rgba(35,78,70,0.18)]"
+          >
+            <h2 id="delete-mascota-title" className="text-base font-bold text-brand tracking-tight">
+              ¿Eliminar mascota?
+            </h2>
+            <p className="mt-2 text-sm text-charcoal leading-snug">
+              Vas a eliminar a <span className="font-bold">{pendingDeleteMascota.name}</span>.
+              Se quita el vínculo con el dueño y el registro en el sistema.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setPendingDeleteMascota(null)}
+                className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone text-charcoal text-xs font-semibold transition cursor-pointer hover:bg-cream disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => void confirmDeleteMascota()}
+                className="px-3.5 py-2 rounded-xl bg-terracotta text-white text-xs font-bold transition cursor-pointer hover:bg-[#b55e43] disabled:opacity-50"
+              >
+                {isDeleting ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmación eliminar dueño */}
+      {pendingDeleteDueno && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-charcoal/40 backdrop-blur-[2px] cursor-pointer"
+            aria-label="Cerrar confirmación"
+            disabled={isDeleting}
+            onClick={() => setPendingDeleteDueno(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dueno-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-border-tan bg-white p-5 shadow-[0_16px_40px_rgba(35,78,70,0.18)]"
+          >
+            <h2 id="delete-dueno-title" className="text-base font-bold text-brand tracking-tight">
+              ¿Eliminar dueño?
+            </h2>
+            <p className="mt-2 text-sm text-charcoal leading-snug">
+              Vas a eliminar a <span className="font-bold">{pendingDeleteDueno.name}</span>.
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setPendingDeleteDueno(null)}
+                className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone text-charcoal text-xs font-semibold transition cursor-pointer hover:bg-cream disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => void confirmDeleteDueno()}
+                className="px-3.5 py-2 rounded-xl bg-terracotta text-white text-xs font-bold transition cursor-pointer hover:bg-[#b55e43] disabled:opacity-50"
+              >
+                {isDeleting ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

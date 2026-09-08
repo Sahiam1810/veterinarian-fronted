@@ -8,6 +8,8 @@ export interface ApiSpeciesResponse {
 export interface ApiRaceResponse {
   id: string
   name: string
+  // FK a especie; filtra razas coherentes en formularios
+  speciesId: string
 }
 
 export interface ApiSpecialtyResponse {
@@ -46,8 +48,11 @@ export async function fetchSpecies(): Promise<ApiSpeciesResponse[]> {
   return apiClient.get<ApiSpeciesResponse[]>('/api/Species')
 }
 
-export async function fetchRaces(): Promise<ApiRaceResponse[]> {
-  return apiClient.get<ApiRaceResponse[]>('/api/Races')
+// Lista razas; si speciesId, solo las de esa especie (GET /api/Races?speciesId=)
+export async function fetchRaces(speciesId?: string): Promise<ApiRaceResponse[]> {
+  return apiClient.get<ApiRaceResponse[]>('/api/Races', {
+    params: speciesId ? { speciesId } : undefined,
+  })
 }
 
 export async function fetchSpecialties(): Promise<ApiSpecialtyResponse[]> {

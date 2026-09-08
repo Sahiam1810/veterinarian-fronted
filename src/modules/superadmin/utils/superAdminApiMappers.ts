@@ -93,18 +93,51 @@ export function findRaceId(breed: string, races: ApiRaceResponse[]): string {
   return match?.id ?? races[0]?.id ?? ''
 }
 
-// Extrae edad numérica del texto del formulario
+// Filtra razas por speciesId del catálogo (API ya vincula Race → Species)
+export function filterRacesBySpeciesId<T extends { speciesId: string }>(
+  speciesId: string,
+  races: T[],
+): T[] {
+  const sid = speciesId.trim().toLowerCase()
+  if (!sid) return []
+  return races.filter((race) => (race.speciesId ?? '').toLowerCase() === sid)
+}
+
+// Resuelve especie por nombre y filtra razas por su speciesId
+export function filterRacesBySpecies<T extends { name: string; speciesId: string }>(
+  speciesName: string,
+  races: T[],
+  speciesCatalog: { id: string; name: string }[] = [],
+): T[] {
+  const speciesId =
+    speciesCatalog.find((s) => s.name.toLowerCase() === speciesName.trim().toLowerCase())?.id
+    ?? findSpeciesId(speciesName, speciesCatalog as ApiSpeciesResponse[])
+  return filterRacesBySpeciesId(speciesId, races)
+}
+
+// Extrae edad numérica del texto del formulario (años)
 export function parseAgeToInt(age: string): number {
   const match = age.match(/\d+/)
   const value = match ? Number.parseInt(match[0], 10) : 1
   return Number.isFinite(value) ? Math.min(Math.max(value, 0), 150) : 1
 }
 
-// Extrae peso numérico del texto del formulario
+// Extrae peso numérico del texto del formulario (kg)
 export function parseWeightToDecimal(weight: string): number {
   const match = weight.replace(',', '.').match(/[\d.]+/)
   const value = match ? Number.parseFloat(match[0]) : 1
   return Number.isFinite(value) && value > 0 ? value : 1
+}
+
+// true si el texto de edad es solo dígitos (años)
+export function isValidAgeYearsInput(value: string): boolean {
+  return value.trim() === '' || /^\d{1,3}$/.test(value.trim())
+}
+
+// true si el texto de peso es número (kg), admite un decimal
+export function isValidWeightKgInput(value: string): boolean {
+  const v = value.trim().replace(',', '.')
+  return v === '' || /^\d{1,4}(\.\d{0,2})?$/.test(v)
 }
 
 // Mapea cliente + usuario a dueño para la UI

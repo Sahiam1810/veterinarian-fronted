@@ -9,6 +9,15 @@ export interface ApiUserResponse {
   createdAt: string
 }
 
+export interface ApiUserAccountResponse {
+  id: string
+  userId: string
+  username: string
+  mail: string
+  status: string
+  createdAt: string
+}
+
 export interface ApiCreateUserRequest {
   fullName: string
   email: string
@@ -144,4 +153,19 @@ export async function activateUser(id: string): Promise<void> {
 // Desactivar usuario
 export async function deactivateUser(id: string): Promise<void> {
   return apiClient.patch<void>(`/api/Users/${id}/deactivate`)
+}
+
+// Elimina un usuario inactivo (API: DELETE /api/Users/{id}).
+export async function deleteUser(id: string): Promise<void> {
+  return apiClient.delete<void>(`/api/Users/${id}`)
+}
+
+// Listar cuentas de acceso (login) para cruzarlas con USERS.
+export async function fetchUserAccounts(): Promise<ApiUserAccountResponse[]> {
+  return apiClient.get<ApiUserAccountResponse[]>('/api/UserAccounts')
+}
+
+// Quita la cuenta de login; el backend bloquea SuperAdmin.
+export async function deleteUserAccount(id: string): Promise<void> {
+  return apiClient.delete<void>(`/api/UserAccounts/${id}`)
 }
