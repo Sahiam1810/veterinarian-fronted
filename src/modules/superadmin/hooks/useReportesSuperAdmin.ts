@@ -5,58 +5,53 @@ import {
   fetchPets,
   fetchClientsPets,
   fetchServices,
-  fetchUsers,
-  fetchClients,
   fetchRaces,
 } from '../services'
+import {
+  REPORTES_USE_API,
+  resolveReportesDateRange,
+  isIsoInRange,
+} from '../services/superAdminReportsService'
+import { buildReportesDashboardFromCitas } from '../utils/buildReportesDashboard'
 import { mapStatusToAppointmentStatus, formatDateEs } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
+import type {
+  ReportesCitaDetalleVm,
+  ReportesDashboardVm,
+  ReportesPeriodoId,
+  ReportesTabId,
+} from '../types/reportesSuperAdmin.types'
+import { REPORTES_PERIODO_OPTIONS } from '../types/reportesSuperAdmin.types'
 
-export interface ReporteCitaReciente {
-  id: string
-  dateStr: string
-  timeStr: string
-  professionalName: string
-  service: string
-  petName: string
-  petBreed: string
-  status: 'Atendido' | 'Agendado' | 'Cancelado'
-  scheduledStart: string
+const EMPTY_DASHBOARD: ReportesDashboardVm = {
+  range: { from: '', to: '' },
+  summary: {
+    from: '',
+    to: '',
+    totalAppointments: 0,
+    attendedCount: 0,
+    canceledCount: 0,
+    noShowCount: 0,
+    scheduledCount: 0,
+    attendanceRate: 0,
+    topServiceName: null,
+    topServiceCount: 0,
+    topServicePercentage: 0,
+  },
+  byStatus: [],
+  byVeterinarian: [],
+  byDay: [],
+  topServices: [],
+  citasDetalle: [],
 }
 
-export interface ReportesKpis {
-  totalCitas: number
-  pctAsistencia: number
-  servicioTop: string
-  servicioTopPct: number
-  byStatus: { label: string; count: number; pct: number; color: string }[]
-  byProfessional: { label: string; count: number; pct: number }[]
-}
-
-function inPeriod(iso: string, period: string): boolean {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return false
-  const now = new Date()
-  if (period === 'este-mes') {
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-  }
-  if (period === '30-dias') {
-    const from = new Date(now)
-    from.setDate(from.getDate() - 30)
-    return d >= from
-  }
-  // ultimo-ano
-  const from = new Date(now)
-  from.setFullYear(from.getFullYear() - 1)
-  return d >= from
-}
-
+// Hook de Reportes Admin/SuperAdmin. KPIs provisionales en cliente; API Reports aún no cableada.
 export function useReportesSuperAdmin() {
-  const [citas, setCitas] = useState<ReporteCitaReciente[]>([])
+  const [citasDetalle, setCitasDetalle] = useState<ReportesCitaDetalleVm[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [period, setPeriod] = useState('este-mes')
+  const [period, setPeriod] = useState<ReportesPeriodoId>('este-mes')
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'resumen' | 'detalles'>('resumen')
+  const [activeTab, setActiveTab] = useState<ReportesTabId>('resumen')
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
   const showToast = useCallback((message: string) => {
@@ -64,37 +59,65 @@ export function useReportesSuperAdmin() {
     setTimeout(() => setActiveNotification(null), 3200)
   }, [])
 
-  const loadData = useCallback(async () => {
+  const range = useMemo(() => resolveReportesDateRange(period), [period])
+
+  // Carga detalle de citas (sigue siendo Appointments). No llama /api/Reports.
+  const loadDetalleCitas = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [appointments, vets, pets, clientsPets, services, users, clients, races] =
-        await Promise.all([
-          fetchAppointments(),
-          fetchVeterinarians(),
-          fetchPets(),
-          fetchClientsPets(),
-          fetchServices(),
-          fetchUsers(),
-          fetchClients(),
-          fetchRaces(),
-        ])
+      if (REPORTES_USE_API) {
+        // Reservado: cuando B1–B4 existan, cargar summary/by-* aquí y dejar detalle aparte.
+        showToast('Los endpoints de Reportes aún no están disponibles.')
+        setCitasDetalle([])
+        return
+      }
+
+      // allSettled: si Pets falla (p. ej. PHOTO_URL), igual armamos reportes con citas
+      const results = await Promise.allSettled([
+        fetchAppointments(),
+        fetchVeterinarians(),
+        fetchPets(),
+        fetchClientsPets(),
+        fetchServices(),
+        fetchRaces(),
+      ])
+
+      const appointments = results[0].status === 'fulfilled' ? results[0].value : []
+      const vets = results[1].status === 'fulfilled' ? results[1].value : []
+      const pets = results[2].status === 'fulfilled' ? results[2].value : []
+      const clientsPets = results[3].status === 'fulfilled' ? results[3].value : []
+      const services = results[4].status === 'fulfilled' ? results[4].value : []
+      const races = results[5].status === 'fulfilled' ? results[5].value : []
+
+      const failed = results.find((r) => r.status === 'rejected')
+      if (failed && failed.status === 'rejected') {
+        const reason = failed.reason
+        const message =
+          reason instanceof ApiError
+            ? reason.message === 'Unexpected error'
+              ? 'Algunos catálogos fallaron; el resumen usa solo las citas disponibles.'
+              : reason.message
+            : 'Algunos datos no cargaron; el resumen puede estar incompleto.'
+        showToast(message)
+      }
+
+      if (results[0].status === 'rejected') {
+        setCitasDetalle([])
+        return
+      }
 
       const petsById = new Map(pets.map((p) => [p.id, p]))
       const racesById = new Map(races.map((r) => [r.id, r.name]))
       const vetsById = new Map(vets.map((v) => [v.id, v]))
       const servicesById = new Map(services.map((s) => [s.id, s]))
 
-      const mapped: ReporteCitaReciente[] = appointments.map((apt) => {
+      const mapped: ReportesCitaDetalleVm[] = appointments.map((apt) => {
         const cp = clientsPets.find((x) => x.id === apt.clientPetId)
         const pet = cp ? petsById.get(cp.petId) : undefined
         const vet = vetsById.get(apt.veterinarianId)
         const uiStatus = mapStatusToAppointmentStatus(apt.statusName)
-        const status: ReporteCitaReciente['status'] =
-          uiStatus === 'Atendido'
-            ? 'Atendido'
-            : uiStatus === 'Cancelado'
-              ? 'Cancelado'
-              : 'Agendado'
+        const status: ReportesCitaDetalleVm['status'] =
+          uiStatus === 'Atendido' ? 'Atendido' : uiStatus === 'Cancelado' ? 'Cancelado' : 'Agendado'
 
         const start = new Date(apt.scheduledStart)
         return {
@@ -114,102 +137,45 @@ export function useReportesSuperAdmin() {
         }
       })
 
-      setCitas(mapped)
-      void users
-      void clients
+      setCitasDetalle(mapped)
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudieron cargar los reportes.'
+      const message =
+        err instanceof ApiError
+          ? err.message === 'Unexpected error'
+            ? 'Error del servidor al cargar reportes.'
+            : err.message
+          : 'No se pudieron cargar los reportes.'
       showToast(message)
-      setCitas([])
+      setCitasDetalle([])
     } finally {
       setIsLoading(false)
     }
   }, [showToast])
 
   useEffect(() => {
-    void loadData()
-  }, [loadData])
+    void loadDetalleCitas()
+  }, [loadDetalleCitas])
 
-  const periodCitas = useMemo(
-    () => citas.filter((c) => inPeriod(c.scheduledStart, period)),
-    [citas, period],
+  const citasEnPeriodo = useMemo(
+    () => citasDetalle.filter((c) => isIsoInRange(c.scheduledStart, range)),
+    [citasDetalle, range],
   )
+
+  const dashboard: ReportesDashboardVm = useMemo(() => {
+    const built = buildReportesDashboardFromCitas(range, citasEnPeriodo)
+    return { ...built, citasDetalle: citasEnPeriodo }
+  }, [range, citasEnPeriodo])
 
   const filteredCitas = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
-    if (!q) return periodCitas
-    return periodCitas.filter(
+    if (!q) return dashboard.citasDetalle
+    return dashboard.citasDetalle.filter(
       (c) =>
         c.professionalName.toLowerCase().includes(q) ||
         c.service.toLowerCase().includes(q) ||
         c.petName.toLowerCase().includes(q),
     )
-  }, [periodCitas, searchQuery])
-
-  const kpis: ReportesKpis = useMemo(() => {
-    const total = periodCitas.length
-    const attended = periodCitas.filter((c) => c.status === 'Atendido').length
-    const scheduled = periodCitas.filter((c) => c.status === 'Agendado').length
-    const cancelled = periodCitas.filter((c) => c.status === 'Cancelado').length
-    const pctAsistencia = total > 0 ? Math.round((attended / total) * 100) : 0
-
-    const serviceCounts = new Map<string, number>()
-    for (const c of periodCitas) {
-      serviceCounts.set(c.service, (serviceCounts.get(c.service) ?? 0) + 1)
-    }
-    let servicioTop = '—'
-    let servicioTopCount = 0
-    for (const [name, count] of serviceCounts) {
-      if (count > servicioTopCount) {
-        servicioTop = name
-        servicioTopCount = count
-      }
-    }
-    const servicioTopPct = total > 0 ? Math.round((servicioTopCount / total) * 100) : 0
-
-    const byStatus = [
-      {
-        label: 'Atendido',
-        count: attended,
-        pct: total > 0 ? Math.round((attended / total) * 100) : 0,
-        color: 'bg-terracotta',
-      },
-      {
-        label: 'Agendado',
-        count: scheduled,
-        pct: total > 0 ? Math.round((scheduled / total) * 100) : 0,
-        color: 'bg-brand/60',
-      },
-      {
-        label: 'Cancelado',
-        count: cancelled,
-        pct: total > 0 ? Math.round((cancelled / total) * 100) : 0,
-        color: 'bg-[#B24C3D]',
-      },
-    ]
-
-    const profCounts = new Map<string, number>()
-    for (const c of periodCitas) {
-      profCounts.set(c.professionalName, (profCounts.get(c.professionalName) ?? 0) + 1)
-    }
-    const byProfessional = [...profCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([label, count]) => ({
-        label,
-        count,
-        pct: total > 0 ? Math.round((count / total) * 100) : 0,
-      }))
-
-    return {
-      totalCitas: total,
-      pctAsistencia,
-      servicioTop,
-      servicioTopPct,
-      byStatus,
-      byProfessional,
-    }
-  }, [periodCitas])
+  }, [dashboard.citasDetalle, searchQuery])
 
   const exportCsv = () => {
     if (filteredCitas.length === 0) {
@@ -233,19 +199,47 @@ export function useReportesSuperAdmin() {
     showToast('Reporte CSV descargado.')
   }
 
+  const handlePeriodChange = (next: ReportesPeriodoId) => {
+    setPeriod(next)
+    const label = REPORTES_PERIODO_OPTIONS.find((o) => o.id === next)?.label ?? next
+    showToast(`Periodo: ${label}`)
+  }
+
   return {
     isLoading,
     period,
-    setPeriod,
+    setPeriod: handlePeriodChange,
+    periodOptions: REPORTES_PERIODO_OPTIONS,
+    range,
     searchQuery,
     setSearchQuery,
     activeTab,
     setActiveTab,
     filteredCitas,
-    kpis,
+    dashboard,
+    // Compat: KPIs antiguos mapeados al summary/by*
+    kpis: {
+      totalCitas: dashboard.summary.totalAppointments,
+      pctAsistencia: Math.round(dashboard.summary.attendanceRate),
+      servicioTop: dashboard.summary.topServiceName ?? '—',
+      servicioTopPct: Math.round(dashboard.summary.topServicePercentage),
+      byStatus: dashboard.byStatus.map((s) => ({
+        label: s.statusName,
+        count: s.count,
+        pct: Math.round(s.percentage),
+        color: s.barClassName,
+      })),
+      byProfessional: dashboard.byVeterinarian.map((v) => ({
+        label: v.veterinarianName,
+        count: v.totalAppointments,
+        pct: Math.round(v.percentage),
+      })),
+    },
+    usingReportsApi: REPORTES_USE_API,
     activeNotification,
     showToast,
     exportCsv,
-    reload: loadData,
+    reload: loadDetalleCitas,
+    emptyDashboard: EMPTY_DASHBOARD,
   }
 }

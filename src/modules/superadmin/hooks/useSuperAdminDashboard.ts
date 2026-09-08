@@ -91,7 +91,11 @@ export function useSuperAdminDashboard() {
       setAppointments(mapped)
       setStats(buildDashboardStats(apiAppointments, veterinarians.length))
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo cargar el dashboard.'
+      const raw = err instanceof ApiError ? err.message : 'No se pudo cargar el dashboard.'
+      const message =
+        raw === 'Unexpected error'
+          ? 'Error del servidor al cargar el resumen. Si persiste, reinicia el API.'
+          : raw
       showToast(message)
       setAppointments([])
       setStats(EMPTY_STATS)

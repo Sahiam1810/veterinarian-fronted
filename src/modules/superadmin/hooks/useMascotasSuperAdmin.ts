@@ -181,7 +181,7 @@ export function useMascotasSuperAdmin() {
       const message =
         err instanceof ApiError
           ? err.message === 'Unexpected error'
-            ? 'Error del servidor al cargar datos. Si acabas de actualizar, recarga tras aplicar la migración de razas.'
+            ? 'Error del servidor al cargar mascotas. Revisa que el API esté al día (columna PHOTO_URL) y recarga.'
             : err.message
           : 'No se pudieron cargar mascotas y dueños.'
       setLoadError(message)
