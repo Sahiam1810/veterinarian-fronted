@@ -78,6 +78,27 @@ export function translateApiError(
     return 'La sesión expiró. Inicia sesión de nuevo.'
   }
 
+  if (
+    cleanCode === 'Users.MustBeInactive' ||
+    cleanCode === 'User.MustBeInactive'
+  ) {
+    return 'Desactiva la cuenta antes de eliminarla.'
+  }
+
+  if (
+    cleanCode === 'Users.HasClientProfile' ||
+    cleanCode === 'User.HasClientProfile'
+  ) {
+    return 'Este usuario es dueño. Elimínalo desde Dueños y mascotas.'
+  }
+
+  if (
+    cleanCode === 'Users.HasVeterinarianProfile' ||
+    cleanCode === 'User.HasVeterinarianProfile'
+  ) {
+    return 'Este usuario tiene ficha de profesional. Elimínalo desde Profesionales.'
+  }
+
   // 2. Si hay mensaje de texto (rawMessage)
   if (cleanMessage) {
     const normalized = cleanMessage.toLowerCase()
