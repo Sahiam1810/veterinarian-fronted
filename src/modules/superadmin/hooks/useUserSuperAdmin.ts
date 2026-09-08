@@ -24,6 +24,12 @@ import {
 } from '../services/superAdminUserService'
 import { createOwnerWithoutLogin } from '../services/superAdminClientsService'
 import {
+  fetchSpecialties,
+  createVeterinarian,
+  updateVeterinarian,
+  fetchVeterinarians,
+} from '../services'
+import {
   fetchRoles,
   createRole as apiCreateRole,
   type ApiRoleResponse,
@@ -56,6 +62,7 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'usuarios', label: 'Usuarios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'mascotas', label: 'Mascotas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'duenos', label: 'Dueños', supportsCreate: true, supportsEdit: true, supportsDelete: true },
+  { id: 'especiesRazas', label: 'Especies y Razas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'servicios', label: 'Servicios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'profesionales', label: 'Profesionales', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'disponibilidad', label: 'Disponibilidad', supportsCreate: true, supportsEdit: true, supportsDelete: false },
@@ -70,6 +77,7 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   usuarios: { view: true, create: true, edit: true, delete: true },
   duenos: { view: true, create: true, edit: true, delete: true },
   mascotas: { view: true, create: true, edit: true, delete: true },
+  especiesRazas: { view: true, create: true, edit: true, delete: true },
   servicios: { view: true, create: true, edit: true, delete: true },
   profesionales: { view: true, create: true, edit: true, delete: true },
   disponibilidad: { view: true, create: true, edit: true, delete: true },
@@ -83,6 +91,7 @@ const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
   usuarios: { view: false, create: false, edit: false, delete: false },
   duenos: { view: false, create: false, edit: false, delete: false },
   mascotas: { view: false, create: false, edit: false, delete: false },
+  especiesRazas: { view: false, create: false, edit: false, delete: false },
   servicios: { view: false, create: false, edit: false, delete: false },
   profesionales: { view: false, create: false, edit: false, delete: false },
   disponibilidad: { view: false, create: false, edit: false, delete: false },
@@ -94,6 +103,7 @@ const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
 function normalizeModuleName(name: string): ModuleId | null {
   const norm = name.trim().toLowerCase()
   if (norm.includes('usuario')) return 'usuarios'
+  if (norm.includes('especie') || norm.includes('raza')) return 'especiesRazas'
   if (norm.includes('mascota')) return 'mascotas'
   if (norm.includes('dueño') || norm.includes('dueno') || norm.includes('cliente')) return 'duenos'
   if (norm.includes('servicio')) return 'servicios'
@@ -122,6 +132,12 @@ export function isClienteRoleName(name: string): boolean {
   return n === 'cliente' || n === 'client' || n.includes('cliente')
 }
 
+// Veterinario: requiere especialidad y tarjeta profesional (CMP)
+export function isVeterinarioRoleName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  return n.includes('veterinar')
+}
+
 // Rol Administrador (panel completo por defecto, editable por SuperAdmin)
 function isClinicAdminRoleName(name: string): boolean {
   const n = name.trim().toLowerCase()
@@ -144,6 +160,11 @@ export function useUserSuperAdmin() {
   const [users, setUsers] = useState<SystemUser[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [roles, setRoles] = useState<RoleDefinition[]>([])
+  const [specialties, setSpecialties] = useState<{ id: string; name: string }[]>([])
+  // Perfil vet por userId (para editar CMP/especialidad)
+  const [vetProfileByUserId, setVetProfileByUserId] = useState<
+    Record<string, { id: string; specialtyId: string; licenseNumber: string }>
+  >({})
   const [dbModules, setDbModules] = useState<ApiModuleResponse[]>([])
   const [rawRolePermissions, setRawRolePermissions] = useState<ApiRolePermissionResponse[]>([])
   const [rawUserPermissions, setRawUserPermissions] = useState<ApiUserPermissionResponse[]>([])
@@ -185,7 +206,7 @@ export function useUserSuperAdmin() {
     setIsLoading(true)
     setLoadError(null)
     try {
-      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes] =
+      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes, specialtiesRes, vetsRes] =
         await Promise.allSettled([
           fetchUsers(),
           fetchRoles(),
@@ -193,6 +214,8 @@ export function useUserSuperAdmin() {
           fetchAllRolePermissions(),
           fetchAllUserPermissions(),
           fetchUserAccounts(),
+          fetchSpecialties(),
+          fetchVeterinarians(),
         ])
 
       const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes]
@@ -231,6 +254,21 @@ export function useUserSuperAdmin() {
         fetchedAccounts.map((account) => [account.userId.toLowerCase(), account.id]),
       )
 
+      const fetchedSpecialties =
+        specialtiesRes.status === 'fulfilled' ? specialtiesRes.value : []
+      setSpecialties(fetchedSpecialties.map((s) => ({ id: s.id, name: s.name })))
+
+      const fetchedVets = vetsRes.status === 'fulfilled' ? vetsRes.value : []
+      const vetMap: Record<string, { id: string; specialtyId: string; licenseNumber: string }> = {}
+      for (const vet of fetchedVets) {
+        vetMap[vet.userId.toLowerCase()] = {
+          id: vet.id,
+          specialtyId: vet.specialtyId,
+          licenseNumber: vet.licenseNumber,
+        }
+      }
+      setVetProfileByUserId(vetMap)
+
       setDbModules(fetchedModules)
       setRawRolePermissions(fetchedRolePerms)
       setRawUserPermissions(fetchedUserPerms)
@@ -248,31 +286,35 @@ export function useUserSuperAdmin() {
       const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
         const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
         const isClinicAdmin = isClinicAdminRoleName(r.name)
+        const isCliente = isClienteRoleName(r.name)
         // Admin de clínica parte con todas las vistas del panel (como SuperAdmin UI)
+        // Cliente: sin panel web (ADR) — ignorar residuales de ROLE_PERMISSIONS
         const perms: Record<ModuleId, ModulePermission> =
           isPlatformSuper || isClinicAdmin
             ? { ...DEFAULT_PERMISSIONS_ALL }
             : { ...DEFAULT_PERMISSIONS_EMPTY }
 
-        // Aplicar permisos desde la tabla ROLE_PERMISSIONS
-        const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
-        rolePerms.forEach((rp) => {
-          const modId = moduleMap.get(rp.moduleId.toLowerCase())
-          if (modId) {
-            perms[modId] = {
-              view: rp.canView,
-              create: rp.canCreate,
-              edit: rp.canEdit,
-              delete: rp.canDelete,
+        if (!isCliente) {
+          // Aplicar permisos desde la tabla ROLE_PERMISSIONS
+          const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
+          rolePerms.forEach((rp) => {
+            const modId = moduleMap.get(rp.moduleId.toLowerCase())
+            if (modId) {
+              perms[modId] = {
+                view: rp.canView,
+                create: rp.canCreate,
+                edit: rp.canEdit,
+                delete: rp.canDelete,
+              }
             }
-          }
-        })
+          })
 
-        // Inicio/Reportes no están en Oracle: se guardan en local hasta tener módulos reales
-        const uiRoleOverrides = getUiShellOverrides('role', r.id)
-        for (const modId of UI_SHELL_MODULE_IDS) {
-          if (uiRoleOverrides[modId]) {
-            perms[modId] = uiRoleOverrides[modId]!
+          // Inicio/Reportes no están en Oracle: se guardan en local hasta tener módulos reales
+          const uiRoleOverrides = getUiShellOverrides('role', r.id)
+          for (const modId of UI_SHELL_MODULE_IDS) {
+            if (uiRoleOverrides[modId]) {
+              perms[modId] = uiRoleOverrides[modId]!
+            }
           }
         }
 
@@ -295,29 +337,31 @@ export function useUserSuperAdmin() {
         const firstName = parts[0] || ''
         const lastName = parts.slice(1).join(' ') || ''
 
-        // Permisos personalizados de usuario
+        // Permisos personalizados de usuario (Cliente: sin excepciones de panel)
         const userCustomPerms: Partial<Record<ModuleId, ModulePermission>> = {}
-        const userPerms = fetchedUserPerms.filter((up) => up.userId.toLowerCase() === u.id.toLowerCase())
-        userPerms.forEach((up) => {
-          const modId = moduleMap.get(up.moduleId.toLowerCase())
-          if (modId) {
-            userCustomPerms[modId] = {
-              view: up.canView,
-              create: up.canCreate,
-              edit: up.canEdit,
-              delete: up.canDelete,
+        if (!isClienteRoleName(roleName)) {
+          const userPerms = fetchedUserPerms.filter((up) => up.userId.toLowerCase() === u.id.toLowerCase())
+          userPerms.forEach((up) => {
+            const modId = moduleMap.get(up.moduleId.toLowerCase())
+            if (modId) {
+              userCustomPerms[modId] = {
+                view: up.canView,
+                create: up.canCreate,
+                edit: up.canEdit,
+                delete: up.canDelete,
+              }
             }
-          }
-        })
+          })
 
-        const uiUserOverrides = getUiShellOverrides('user', u.id)
-        const uiEmailOverrides = getUiShellOverrides('email', u.email)
-        for (const modId of UI_SHELL_MODULE_IDS) {
-          if (uiEmailOverrides[modId]) {
-            userCustomPerms[modId] = uiEmailOverrides[modId]
-          }
-          if (uiUserOverrides[modId]) {
-            userCustomPerms[modId] = uiUserOverrides[modId]
+          const uiUserOverrides = getUiShellOverrides('user', u.id)
+          const uiEmailOverrides = getUiShellOverrides('email', u.email)
+          for (const modId of UI_SHELL_MODULE_IDS) {
+            if (uiEmailOverrides[modId]) {
+              userCustomPerms[modId] = uiEmailOverrides[modId]
+            }
+            if (uiUserOverrides[modId]) {
+              userCustomPerms[modId] = uiUserOverrides[modId]
+            }
           }
         }
 
@@ -397,6 +441,9 @@ export function useUserSuperAdmin() {
   // Active permissions for the Permissions Matrix (merging role + custom user overrides if any)
   const activePermissions = useMemo((): Record<ModuleId, ModulePermission> => {
     if (permissionTarget.type === 'user' && selectedTargetUser) {
+      if (isClienteRoleName(selectedTargetUser.roleName)) {
+        return { ...DEFAULT_PERMISSIONS_EMPTY }
+      }
       const baseRole = roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
       const userCustom = selectedTargetUser.customPermissions || {}
       const combined: Record<ModuleId, ModulePermission> = { ...(baseRole?.permissions || DEFAULT_PERMISSIONS_EMPTY) }
@@ -411,7 +458,19 @@ export function useUserSuperAdmin() {
     }
 
     const currentRole = roles.find((r) => r.id === permissionTarget.id) || roles[0]
+    if (currentRole && isClienteRoleName(currentRole.name)) {
+      return { ...DEFAULT_PERMISSIONS_EMPTY }
+    }
     return currentRole?.permissions || DEFAULT_PERMISSIONS_EMPTY
+  }, [permissionTarget, selectedTargetUser, roles])
+
+  // Cliente no usa panel web: matriz solo informativa
+  const isClientePermissionTarget = useMemo(() => {
+    if (permissionTarget.type === 'user' && selectedTargetUser) {
+      return isClienteRoleName(selectedTargetUser.roleName)
+    }
+    const role = roles.find((r) => r.id === permissionTarget.id)
+    return role ? isClienteRoleName(role.name) : false
   }, [permissionTarget, selectedTargetUser, roles])
 
   // Whether the selected target is a user with customized overrides
@@ -524,6 +583,10 @@ export function useUserSuperAdmin() {
         showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
         return
       }
+      if (isClienteRoleName(selectedTargetUser.roleName)) {
+        showToast('El cliente no usa el panel web; no se asignan permisos de sesión.', 'warning')
+        return
+      }
       const currentCombined = activePermissions[moduleId] || {
         view: false,
         create: false,
@@ -557,6 +620,12 @@ export function useUserSuperAdmin() {
           }
         })
       )
+      return
+    }
+
+    const targetRole = roles.find((r) => r.id === permissionTarget.id)
+    if (targetRole && isClienteRoleName(targetRole.name)) {
+      showToast('El rol Cliente no tiene acceso al panel; no se configuran permisos web.', 'warning')
       return
     }
 
@@ -606,6 +675,10 @@ export function useUserSuperAdmin() {
           showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
           return
         }
+        if (isClienteRoleName(selectedTargetUser.roleName)) {
+          showToast('El cliente no usa el panel web; no hay excepciones que guardar.', 'warning')
+          return
+        }
         const userCustom = selectedTargetUser.customPermissions || {}
 
         // Persistir Inicio/Reportes en local (no hay MODULES Oracle para ellos)
@@ -652,6 +725,10 @@ export function useUserSuperAdmin() {
         const currentRole = roles.find((r) => r.id === permissionTarget.id)
         if (currentRole?.isSystem || (currentRole && isPlatformSuperAdminRoleName(currentRole.name))) {
           showToast('El rol SuperAdmin no se puede modificar.', 'warning')
+          return
+        }
+        if (currentRole && isClienteRoleName(currentRole.name)) {
+          showToast('El rol Cliente no tiene acceso al panel; no se guardan permisos web.', 'warning')
           return
         }
         if (currentRole) {
@@ -802,6 +879,29 @@ export function useUserSuperAdmin() {
         await syncUserActiveStatus(result.userId, 'Inactivo')
       }
 
+      // Veterinario: crear perfil profesional con especialidad y CMP
+      if (isVeterinarioRoleName(roleName)) {
+        const specialtyId = data.specialtyId?.trim() || specialties[0]?.id || ''
+        const licenseNumber = data.licenseNumber?.trim() || ''
+        if (!specialtyId) {
+          return {
+            ok: false,
+            error: 'No hay especialidades configuradas. Configúralas antes de registrar un veterinario.',
+          }
+        }
+        if (!licenseNumber) {
+          return {
+            ok: false,
+            error: 'La tarjeta profesional (CMP) es obligatoria para veterinarios.',
+          }
+        }
+        await createVeterinarian({
+          userId: result.userId,
+          specialtyId,
+          licenseNumber,
+        })
+      }
+
       await loadData()
       setActiveTab('usuarios')
       setPendingSelectUserId(result.userId)
@@ -836,6 +936,32 @@ export function useUserSuperAdmin() {
       // El dropdown de estado del drawer debe persistir con activate/deactivate
       if (current?.status !== data.status) {
         await syncUserActiveStatus(userId, data.status)
+      }
+
+      const roleName = roles.find((r) => r.id === data.roleId)?.name || ''
+      if (isVeterinarioRoleName(roleName)) {
+        const specialtyId = data.specialtyId?.trim() || specialties[0]?.id || ''
+        const licenseNumber = data.licenseNumber?.trim() || ''
+        if (!specialtyId || !licenseNumber) {
+          return {
+            ok: false,
+            error: 'Especialidad y tarjeta profesional (CMP) son obligatorias para veterinarios.',
+          }
+        }
+        const existing = vetProfileByUserId[userId.toLowerCase()]
+        if (existing) {
+          await updateVeterinarian(existing.id, {
+            userId,
+            specialtyId,
+            licenseNumber,
+          })
+        } else {
+          await createVeterinarian({
+            userId,
+            specialtyId,
+            licenseNumber,
+          })
+        }
       }
 
       await loadData()
@@ -943,6 +1069,8 @@ export function useUserSuperAdmin() {
   return {
     users,
     roles,
+    specialties,
+    vetProfileByUserId,
     isLoading,
     permissionTarget,
     selectRoleTarget,
@@ -953,6 +1081,7 @@ export function useUserSuperAdmin() {
     selectedTargetUser,
     activeTargetRole,
     activePermissions,
+    isClientePermissionTarget,
     isUserTargetCustomized,
     resetUserPermissions,
     activeRoleSimulated,

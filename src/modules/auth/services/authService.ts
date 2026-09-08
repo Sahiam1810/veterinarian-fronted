@@ -194,7 +194,9 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
   // El rol Cliente y roles desconocidos son rechazados inmediatamente sin persistir sesión.
   if (mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
     clearStoredUser()
-    throw new Error('Este correo no tiene permitido acceder.')
+    throw new Error(
+      'Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot.',
+    )
   }
 
   const roleId = readRoleIdClaim(tokens.accessToken)
@@ -307,7 +309,9 @@ async function executeSessionRefresh(): Promise<string> {
 
   if (mappedRole === 'unknown' || !isStaffRole(mappedRole)) {
     clearStoredUser()
-    throw new Error('Este correo no tiene permitido acceder.')
+    throw new Error(
+      'Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot.',
+    )
   }
 
   const resolvedIdentity = resolvePersistedRoleIdentity(roleId, mappedRole as UserRole)

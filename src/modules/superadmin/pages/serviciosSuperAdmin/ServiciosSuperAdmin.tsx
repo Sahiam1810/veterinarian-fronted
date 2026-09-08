@@ -73,6 +73,7 @@ export function ServiciosSuperAdmin({
     setCurrentPage,
     itemsPerPage,
     activeNotification,
+    toastTone,
     showToast,
     isDrawerOpen,
     setIsDrawerOpen,
@@ -85,6 +86,33 @@ export function ServiciosSuperAdmin({
     handleDeleteServicio,
     typeServices,
   } = useServiciosSuperAdmin()
+
+  const [pendingDeleteServicio, setPendingDeleteServicio] =
+    useState<ServicioSuperAdmin | null>(null)
+  const [isDeletingServicio, setIsDeletingServicio] = useState(false)
+
+  // Abre modal solo si está Inactivo; si no, aviso para desactivar primero.
+  const requestDeleteServicio = (srv: ServicioSuperAdmin) => {
+    if (srv.status !== 'Inactivo') {
+      showToast(
+        'Desactiva el servicio antes de eliminarlo. Edítalo y márcalo como Inactivo.',
+        'warning',
+      )
+      return
+    }
+    setPendingDeleteServicio(srv)
+  }
+
+  const confirmDeleteServicio = async () => {
+    if (!pendingDeleteServicio) return
+    setIsDeletingServicio(true)
+    try {
+      await handleDeleteServicio(pendingDeleteServicio)
+      setPendingDeleteServicio(null)
+    } finally {
+      setIsDeletingServicio(false)
+    }
+  }
 
   // Navigation helper
   const handleSidebarNavigate = (routeId: string) => {
@@ -130,7 +158,9 @@ export function ServiciosSuperAdmin({
           <DashboardBackgroundDecoration />
 
           {/* Toast Notification */}
-          {activeNotification && <PageToast message={activeNotification} />}
+          {activeNotification && (
+            <PageToast message={activeNotification} tone={toastTone} />
+          )}
 
           {/* Header de la Vista */}
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
@@ -278,9 +308,19 @@ export function ServiciosSuperAdmin({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteServicio(srv.id)}
-                              className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
-                              aria-label={`Desactivar ${srv.name}`}
+                              onClick={() => requestDeleteServicio(srv)}
+                              disabled={srv.status !== 'Inactivo'}
+                              title={
+                                srv.status !== 'Inactivo'
+                                  ? 'Desactiva el servicio antes de eliminarlo'
+                                  : `Eliminar ${srv.name}`
+                              }
+                              className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-sage disabled:hover:bg-transparent disabled:hover:border-transparent"
+                              aria-label={
+                                srv.status !== 'Inactivo'
+                                  ? `Desactiva ${srv.name} antes de eliminarlo`
+                                  : `Eliminar ${srv.name}`
+                              }
                             >
                               <TrashIcon className="w-4 h-4" />
                             </button>
@@ -353,6 +393,55 @@ export function ServiciosSuperAdmin({
         }}
         onSave={handleSaveServicio}
       />
+
+      {/* Confirmación de eliminación (modal propio, no window.confirm) */}
+      {pendingDeleteServicio && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-charcoal/40 backdrop-blur-[2px] cursor-pointer"
+            aria-label="Cerrar confirmación"
+            disabled={isDeletingServicio}
+            onClick={() => setPendingDeleteServicio(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-servicio-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-border-tan bg-white p-5 shadow-[0_16px_40px_rgba(35,78,70,0.18)]"
+          >
+            <h2
+              id="delete-servicio-title"
+              className="text-base font-bold text-brand tracking-tight"
+            >
+              ¿Eliminar servicio?
+            </h2>
+            <p className="mt-2 text-sm text-charcoal leading-snug">
+              Vas a eliminar{' '}
+              <span className="font-bold">{pendingDeleteServicio.name}</span> del
+              catálogo. Esta acción no se puede deshacer.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeletingServicio}
+                onClick={() => setPendingDeleteServicio(null)}
+                className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone text-charcoal text-xs font-semibold transition cursor-pointer hover:bg-cream disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingServicio}
+                onClick={() => void confirmDeleteServicio()}
+                className="px-3.5 py-2 rounded-xl bg-terracotta text-white text-xs font-bold transition cursor-pointer hover:bg-[#b55e43] disabled:opacity-50"
+              >
+                {isDeletingServicio ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -590,6 +679,12 @@ function ServicioDrawer({
               <option value="Activo">Activo</option>
               <option value="Inactivo">Inactivo</option>
             </select>
+            {status === 'Inactivo' && (
+              <p className="mt-1.5 text-[11px] text-sage leading-snug">
+                Las citas que ya usan este servicio se conservan; no se podrá
+                asignar a citas nuevas. Solo así podrás eliminarlo del catálogo.
+              </p>
+            )}
           </div>
 
           {/* Botones */}

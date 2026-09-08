@@ -25,10 +25,15 @@ import {
   createAppointment,
   createVeterinarian,
   updateVeterinarian,
+  deleteVeterinarian,
   createAvailability,
   updateAvailability,
   deleteAvailability,
   createFullUser,
+  updateUser,
+  activateUser,
+  deactivateUser,
+  deleteUser,
   fetchRoles,
   fetchAvailabilitiesByVeterinarian,
 } from '../services'
@@ -52,6 +57,20 @@ function findStatusId(
   const lower = keywords.map((k) => k.toLowerCase())
   const match = statuses.find((s) => lower.some((k) => s.name.toLowerCase().includes(k)))
   return match?.id
+}
+
+// Solo el rol Veterinario (no Auxiliar ni otros)
+function isVeterinarioRoleName(name: string): boolean {
+  const n = name.trim().toLowerCase()
+  return n.includes('veterinar')
+}
+
+function normId(id: string): string {
+  return id.trim().toLowerCase()
+}
+
+function settledValue<T>(result: PromiseSettledResult<T>, fallback: T): T {
+  return result.status === 'fulfilled' ? result.value : fallback
 }
 
 export function useProfesionalesSuperAdmin() {
@@ -88,25 +107,12 @@ export function useProfesionalesSuperAdmin() {
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [
-        vets,
-        availabilities,
-        specialtyList,
-        users,
-        pets,
-        clientsPets,
-        clients,
-        species,
-        races,
-        services,
-        statuses,
-        apiAppointments,
-        roles,
-      ] = await Promise.all([
+      const results = await Promise.allSettled([
         fetchVeterinarians(),
         fetchAvailabilities(),
         fetchSpecialties(),
         fetchUsers(),
+        fetchRoles(),
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
@@ -115,63 +121,79 @@ export function useProfesionalesSuperAdmin() {
         fetchServices(),
         fetchStatusAppointments(),
         fetchAppointments(),
-        fetchRoles(),
       ])
 
+      let vets = settledValue(results[0], [] as Awaited<ReturnType<typeof fetchVeterinarians>>)
+      const availabilities = settledValue(results[1], [] as Awaited<ReturnType<typeof fetchAvailabilities>>)
+      const specialtyList = settledValue(results[2], [] as Awaited<ReturnType<typeof fetchSpecialties>>)
+      const users = settledValue(results[3], [] as Awaited<ReturnType<typeof fetchUsers>>)
+      const roles = settledValue(results[4], [] as Awaited<ReturnType<typeof fetchRoles>>)
+      const pets = settledValue(results[5], [] as Awaited<ReturnType<typeof fetchPets>>)
+      const clientsPets = settledValue(results[6], [] as Awaited<ReturnType<typeof fetchClientsPets>>)
+      const clients = settledValue(results[7], [] as Awaited<ReturnType<typeof fetchClients>>)
+      const species = settledValue(results[8], [] as Awaited<ReturnType<typeof fetchSpecies>>)
+      const races = settledValue(results[9], [] as Awaited<ReturnType<typeof fetchRaces>>)
+      const services = settledValue(results[10], [] as Awaited<ReturnType<typeof fetchServices>>)
+      const statuses = settledValue(results[11], [] as Awaited<ReturnType<typeof fetchStatusAppointments>>)
+      const apiAppointments = settledValue(results[12], [] as Awaited<ReturnType<typeof fetchAppointments>>)
+
+      if (results[0].status === 'rejected') {
+        const reason = results[0].reason
+        const message =
+          reason instanceof ApiError
+            ? reason.message
+            : 'No se pudieron cargar los veterinarios.'
+        showToast(message)
+      }
+
+      setSpecialties(specialtyList.map((s) => ({ id: s.id, name: s.name })))
+
+      const usersById = new Map(users.map((u) => [normId(u.id), u]))
+      const rolesById = new Map(roles.map((r) => [normId(r.id), r.name]))
       const defaultSpecialtyId = specialtyList[0]?.id || ''
-      const defaultSpecialtyName = specialtyList[0]?.name || 'Medicina General'
 
-      // Auto-sincronizar usuarios creados con rol Veterinario que aún no tengan registro en Veterinarians
-      const vetRoles = roles.filter((r) => {
-        const n = r.name.toLowerCase()
-        return (
-          n.includes('vet') ||
-          n.includes('veterin') ||
-          n.includes('profesional') ||
-          n.includes('médico') ||
-          n.includes('medico')
-        )
-      })
-      const vetRoleIds = new Set(vetRoles.map((r) => r.id.toLowerCase()))
-      const existingVetUserIds = new Set(vets.map((v) => v.userId.toLowerCase()))
-      const unlinkedVetUsers = users.filter(
-        (u) => u.roleId && vetRoleIds.has(u.roleId.toLowerCase()) && !existingVetUserIds.has(u.id.toLowerCase()),
-      )
+      // Usuarios con rol Veterinario sin fila en VETERINARIANS → crear perfil (no reaparece si se borró el usuario)
+      if (defaultSpecialtyId) {
+        const vetUserIdsWithProfile = new Set(vets.map((v) => normId(v.userId)))
+        const missingVetUsers = users.filter((u) => {
+          const roleName = rolesById.get(normId(u.roleId)) || ''
+          return isVeterinarioRoleName(roleName) && !vetUserIdsWithProfile.has(normId(u.id))
+        })
 
-      if (unlinkedVetUsers.length > 0 && defaultSpecialtyId) {
-        for (const u of unlinkedVetUsers) {
-          try {
-            const createdVet = await createVeterinarian({
-              userId: u.id,
-              specialtyId: defaultSpecialtyId,
-              licenseNumber: 'CMP-PENDIENTE',
-            })
-            vets.push({
-              id: createdVet.id,
-              userId: u.id,
-              userFullName: u.fullName,
-              specialtyId: defaultSpecialtyId,
-              specialtyName: defaultSpecialtyName,
-              licenseNumber: 'CMP-PENDIENTE',
-              createdAt: new Date().toISOString(),
-            })
-          } catch (err) {
-            console.error('Error auto-sincronizando perfil de veterinario:', err)
+        if (missingVetUsers.length > 0) {
+          let createdCount = 0
+          for (const u of missingVetUsers) {
+            try {
+              const short = u.id.replace(/-/g, '').slice(0, 8).toUpperCase()
+              await createVeterinarian({
+                userId: u.id,
+                specialtyId: defaultSpecialtyId,
+                licenseNumber: `LIC-${short}`,
+              })
+              createdCount += 1
+            } catch {
+              // Conflicto de licencia/usuario: se omite y se sigue
+            }
+          }
+          if (createdCount > 0) {
+            try {
+              vets = await fetchVeterinarians()
+            } catch {
+              // Se mantienen los ya cargados
+            }
           }
         }
       }
 
-      setSpecialties(specialtyList.map((s) => ({ id: s.id, name: s.name })))
-      const usersById = new Map(users.map((u) => [u.id, u]))
-      const clientsById = new Map(clients.map((c) => [c.id, c]))
-      const petsById = new Map(pets.map((p) => [p.id, p]))
-      const speciesById = new Map(species.map((s) => [s.id, s.name]))
-      const racesById = new Map(races.map((r) => [r.id, r.name]))
+      const clientsById = new Map(clients.map((c) => [normId(c.id), c]))
+      const petsById = new Map(pets.map((p) => [normId(p.id), p]))
+      const speciesById = new Map(species.map((s) => [normId(s.id), s.name]))
+      const racesById = new Map(races.map((r) => [normId(r.id), r.name]))
 
       const mapped = vets.map((vet) => {
-        const user = usersById.get(vet.userId)
+        const user = usersById.get(normId(vet.userId))
         const horario = availabilities
-          .filter((a) => a.veterinarianId === vet.id && a.isActive)
+          .filter((a) => normId(a.veterinarianId) === normId(vet.id) && a.isActive)
           .map((a) => mapAvailabilityToBloque(a, vet.specialtyName ?? undefined))
         return mapVeterinarianToProfesional(vet, user, horario)
       })
@@ -179,7 +201,11 @@ export function useProfesionalesSuperAdmin() {
       setProfesionales(mapped)
       if (!selectedProfesionalId && mapped[0]) {
         setSelectedProfesionalId(mapped[0].id)
-      } else if (selectedProfesionalId && !mapped.some((p) => p.id === selectedProfesionalId) && mapped[0]) {
+      } else if (
+        selectedProfesionalId &&
+        !mapped.some((p) => p.id === selectedProfesionalId) &&
+        mapped[0]
+      ) {
         setSelectedProfesionalId(mapped[0].id)
       }
 
@@ -187,11 +213,11 @@ export function useProfesionalesSuperAdmin() {
       const petOptions: AgendaPetOption[] = clientsPets
         .filter((cp) => Boolean(cp))
         .map((cp) => {
-          const pet = petsById.get(cp.petId)
-          const client = clientsById.get(cp.clientId)
-          const user = client ? usersById.get(client.userId) : undefined
-          const speciesName = pet ? speciesById.get(pet.speciesId) ?? 'Canino' : 'Canino'
-          const raceName = pet ? racesById.get(pet.raceId) ?? 'Sin raza' : 'Sin raza'
+          const pet = petsById.get(normId(cp.petId))
+          const client = clientsById.get(normId(cp.clientId))
+          const user = client ? usersById.get(normId(client.userId)) : undefined
+          const speciesName = pet ? speciesById.get(normId(pet.speciesId)) ?? 'Canino' : 'Canino'
+          const raceName = pet ? racesById.get(normId(pet.raceId)) ?? 'Sin raza' : 'Sin raza'
 
           return {
             clientPetId: cp.id,
@@ -215,26 +241,27 @@ export function useProfesionalesSuperAdmin() {
       setStatusCatalog(statuses.map((s) => ({ id: s.id, name: s.name })))
 
       // Mapeo de citas existentes para sincronización y detección de colisiones
-      const vetsById = new Map(vets.map((v) => [v.id, v]))
+      const vetsById = new Map(vets.map((v) => [normId(v.id), v]))
       const mappedCitas: CitaSuperAdmin[] = apiAppointments.map((apt) => {
-        const clientPet = clientsPets.find((cp) => cp.id === apt.clientPetId)
-        const pet = clientPet ? petsById.get(clientPet.petId) : undefined
-        const client = clientPet ? clientsById.get(clientPet.clientId) : undefined
-        const ownerUser = client ? usersById.get(client.userId) : undefined
-        const vet = vetsById.get(apt.veterinarianId)
-        const vetUser = vet ? usersById.get(vet.userId) : undefined
+        const clientPet = clientsPets.find((cp) => normId(cp.id) === normId(apt.clientPetId))
+        const pet = clientPet ? petsById.get(normId(clientPet.petId)) : undefined
+        const client = clientPet ? clientsById.get(normId(clientPet.clientId)) : undefined
+        const ownerUser = client ? usersById.get(normId(client.userId)) : undefined
+        const vet = vetsById.get(normId(apt.veterinarianId))
+        const vetUser = vet ? usersById.get(normId(vet.userId)) : undefined
 
         return mapAppointmentToCita(apt, {
           petName: pet?.name,
-          petBreed: pet ? racesById.get(pet.raceId) : undefined,
-          species: pet ? speciesById.get(pet.speciesId) : undefined,
+          petBreed: pet ? racesById.get(normId(pet.raceId)) : undefined,
+          species: pet ? speciesById.get(normId(pet.speciesId)) : undefined,
           ownerName: ownerUser?.fullName,
           professionalName: vet?.userFullName ?? vetUser?.fullName,
         })
       })
       setCitas(mappedCitas)
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudieron cargar los datos de profesionales.'
+      const message =
+        err instanceof ApiError ? err.message : 'No se pudieron cargar los datos de profesionales.'
       showToast(message)
     } finally {
       setIsLoading(false)
@@ -366,11 +393,34 @@ export function useProfesionalesSuperAdmin() {
 
       if (editingProfesional?.userId) {
         targetVetId = editingProfesional.id
+        // Actualiza perfil veterinario (CMP / especialidad)
         await updateVeterinarian(editingProfesional.id, {
           userId: editingProfesional.userId,
           specialtyId,
-          licenseNumber: data.cmp,
+          licenseNumber: data.cmp.trim(),
         })
+
+        // Sincroniza nombre, correo y estado del usuario vinculado
+        let roleId = editingProfesional.roleId
+        if (!roleId) {
+          const linkedUser = await fetchUsers().then((list) =>
+            list.find((u) => u.id === editingProfesional.userId),
+          )
+          roleId = linkedUser?.roleId
+        }
+        if (roleId) {
+          await updateUser(editingProfesional.userId, {
+            fullName: data.name.trim(),
+            email: data.email.trim(),
+            roleId,
+          })
+          if (data.status === 'Activo' && editingProfesional.status !== 'Activo') {
+            await activateUser(editingProfesional.userId)
+          } else if (data.status === 'Inactivo' && editingProfesional.status !== 'Inactivo') {
+            await deactivateUser(editingProfesional.userId)
+          }
+        }
+
         showToast(`Profesional "${data.name}" actualizado correctamente.`)
       } else {
         const roles = await fetchRoles()
@@ -502,6 +552,34 @@ export function useProfesionalesSuperAdmin() {
     }
   }
 
+  // Elimina veterinario y su usuario para que no reaparezca en Usuarios/Profesionales
+  const handleDeleteProfesional = async (profesional: ProfesionalSuperAdmin) => {
+    try {
+      if (profesional.userId) {
+        if (profesional.status === 'Activo') {
+          await deactivateUser(profesional.userId)
+        }
+        // DELETE /api/Users también borra el perfil de veterinario si no hay citas
+        await deleteUser(profesional.userId)
+      } else {
+        await deleteVeterinarian(profesional.id)
+      }
+
+      if (selectedProfesionalId === profesional.id) {
+        setSelectedProfesionalId('')
+      }
+      showToast(`Profesional "${profesional.name}" eliminado.`)
+      await loadData()
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : 'No se pudo eliminar el profesional. Puede tener citas u horarios asociados.'
+      showToast(message)
+      throw err
+    }
+  }
+
   const handleSaveChanges = () => {
     if (!selectedProfesional) return
     showToast(`Horario sincronizado para ${selectedProfesional.name}.`)
@@ -537,6 +615,7 @@ export function useProfesionalesSuperAdmin() {
     setIsCitaDrawerOpen,
     handleCreateCita,
     handleSaveProfesional,
+    handleDeleteProfesional,
     handleSaveBloque,
     handleDeleteBloque,
     handleSaveChanges,

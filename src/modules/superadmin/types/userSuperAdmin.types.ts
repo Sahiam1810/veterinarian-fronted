@@ -3,6 +3,7 @@ export type ModuleId =
   | 'usuarios'
   | 'duenos'
   | 'mascotas'
+  | 'especiesRazas'
   | 'servicios'
   | 'profesionales'
   | 'disponibilidad'
@@ -69,6 +70,9 @@ export interface UserFormData {
   phoneNumber?: string
   roleId: string
   status: UserStatus
+  // Obligatorios cuando el rol es Veterinario
+  specialtyId?: string
+  licenseNumber?: string
 }
 
 export interface UserFilters {

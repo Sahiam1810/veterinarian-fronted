@@ -10,6 +10,7 @@ export interface ApiRaceResponse {
   name: string
   // FK a especie; filtra razas coherentes en formularios
   speciesId: string
+  speciesName?: string
 }
 
 export interface ApiSpecialtyResponse {
@@ -48,11 +49,46 @@ export async function fetchSpecies(): Promise<ApiSpeciesResponse[]> {
   return apiClient.get<ApiSpeciesResponse[]>('/api/Species')
 }
 
+export async function createSpecies(name: string): Promise<ApiSpeciesResponse> {
+  return apiClient.post<ApiSpeciesResponse>('/api/Species', { name })
+}
+
+export async function updateSpecies(id: string, name: string): Promise<ApiSpeciesResponse> {
+  return apiClient.put<ApiSpeciesResponse>(`/api/Species/${id}`, { name })
+}
+
+export async function deleteSpecies(id: string): Promise<void> {
+  return apiClient.delete<void>(`/api/Species/${id}`)
+}
+
 // Lista razas; si speciesId, solo las de esa especie (GET /api/Races?speciesId=)
 export async function fetchRaces(speciesId?: string): Promise<ApiRaceResponse[]> {
   return apiClient.get<ApiRaceResponse[]>('/api/Races', {
     params: speciesId ? { speciesId } : undefined,
   })
+}
+
+// Alternativa anidada: GET /api/Species/{id}/races
+export async function fetchRacesBySpecies(speciesId: string): Promise<ApiRaceResponse[]> {
+  return apiClient.get<ApiRaceResponse[]>(`/api/Species/${speciesId}/races`)
+}
+
+export async function createRace(data: {
+  name: string
+  speciesId: string
+}): Promise<ApiRaceResponse> {
+  return apiClient.post<ApiRaceResponse>('/api/Races', data)
+}
+
+export async function updateRace(
+  id: string,
+  data: { name: string; speciesId: string },
+): Promise<ApiRaceResponse> {
+  return apiClient.put<ApiRaceResponse>(`/api/Races/${id}`, data)
+}
+
+export async function deleteRace(id: string): Promise<void> {
+  return apiClient.delete<void>(`/api/Races/${id}`)
 }
 
 export async function fetchSpecialties(): Promise<ApiSpecialtyResponse[]> {

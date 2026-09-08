@@ -40,6 +40,12 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     label: 'Mascotas',
     icon: <PawIcon className="w-4.5 h-4.5 shrink-0" />,
   },
+  {
+    id: 'especies-razas',
+    moduleId: 'especiesRazas',
+    label: 'Especies y razas',
+    icon: <PawIcon className="w-4.5 h-4.5 shrink-0" />,
+  },
 
   {
     id: 'servicios',

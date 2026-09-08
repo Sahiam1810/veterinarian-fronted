@@ -16,7 +16,7 @@ export function translateApiError(
     cleanCode === 'Platform.AccessDenied' ||
     cleanCode === 'AccessDenied'
   ) {
-    return 'Este correo no tiene permitido acceder.'
+    return 'Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot.'
   }
 
   if (
@@ -106,9 +106,11 @@ export function translateApiError(
     if (
       normalized.includes('platformaccessdenied') ||
       normalized.includes('platform access denied') ||
-      normalized.includes('no tiene permitido acceder')
+      normalized.includes('no tiene permitido acceder') ||
+      normalized.includes('no tiene permisos de sesión') ||
+      normalized.includes('permisos de sesion')
     ) {
-      return 'Este correo no tiene permitido acceder.'
+      return 'Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot.'
     }
 
     if (
@@ -165,7 +167,8 @@ export function translateApiError(
 
   // 3. Fallbacks por código de estado HTTP
   if (status === 401) return 'Correo o contraseña incorrectos.'
-  if (status === 403) return 'Este correo no tiene permitido acceder.'
+  if (status === 403)
+    return 'Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot.'
   if (status === 400) return 'Revisa los datos del formulario.'
   if (status === 404) return 'Recurso no encontrado.'
   if (status !== undefined && status >= 500) return 'Error interno del servidor. Intenta de nuevo más tarde.'

@@ -153,6 +153,7 @@ export function ProfesionalesSuperAdmin({
     setIsCitaDrawerOpen,
     handleCreateCita,
     handleSaveProfesional,
+    handleDeleteProfesional,
     handleSaveBloque,
     handleDeleteBloque,
     handleSaveChanges,
@@ -168,12 +169,29 @@ export function ProfesionalesSuperAdmin({
   const itemsPerPage = 3
 
   const [selectedDiaForBlock, setSelectedDiaForBlock] = useState<DiaSemana>('LUNES')
+  // Confirmación in-app (sin window.confirm del navegador)
+  const [pendingDeleteProfesional, setPendingDeleteProfesional] =
+    useState<ProfesionalSuperAdmin | null>(null)
+  const [isDeletingProfesional, setIsDeletingProfesional] = useState(false)
 
   const totalPages = Math.ceil(filteredProfesionales.length / itemsPerPage) || 1
   const paginatedProfesionales = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
     return filteredProfesionales.slice(start, start + itemsPerPage)
   }, [filteredProfesionales, currentPage, itemsPerPage])
+
+  const confirmDeleteProfesional = async () => {
+    if (!pendingDeleteProfesional) return
+    setIsDeletingProfesional(true)
+    try {
+      await handleDeleteProfesional(pendingDeleteProfesional)
+      setPendingDeleteProfesional(null)
+    } catch {
+      // El toast ya lo muestra el hook
+    } finally {
+      setIsDeletingProfesional(false)
+    }
+  }
 
   const handleSidebarNavigate = (routeId: string) => {
     if (onNavigate) {
@@ -231,7 +249,18 @@ export function ProfesionalesSuperAdmin({
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProfesional(null)
+                  setIsProfModalOpen(true)
+                }}
+                className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-sm active:translate-y-0.5"
+              >
+                <PlusIcon className="w-4 h-4 text-white" />
+                <span>Agregar Profesional</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsCitaDrawerOpen(true)}
@@ -390,17 +419,27 @@ export function ProfesionalesSuperAdmin({
                             className="py-3.5 px-4 sm:px-6 text-center whitespace-nowrap"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingProfesional(prof)
-                                setIsProfModalOpen(true)
-                              }}
-                              className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
-                              aria-label={`Editar ${prof.name}`}
-                            >
-                              <EditIcon className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingProfesional(prof)
+                                  setIsProfModalOpen(true)
+                                }}
+                                className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
+                                aria-label={`Editar ${prof.name}`}
+                              >
+                                <EditIcon className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPendingDeleteProfesional(prof)}
+                                className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
+                                aria-label={`Eliminar ${prof.name}`}
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -625,6 +664,55 @@ export function ProfesionalesSuperAdmin({
           }}
           onSave={handleSaveBloque}
         />
+      )}
+
+      {/* Confirmación de eliminación (modal propio, no window.confirm) */}
+      {pendingDeleteProfesional && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-charcoal/40 backdrop-blur-[2px] cursor-pointer"
+            aria-label="Cerrar confirmación"
+            disabled={isDeletingProfesional}
+            onClick={() => setPendingDeleteProfesional(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-profesional-title"
+            className="relative z-10 w-full max-w-sm rounded-2xl border border-border-tan bg-white p-5 shadow-[0_16px_40px_rgba(35,78,70,0.18)]"
+          >
+            <h2
+              id="delete-profesional-title"
+              className="text-base font-bold text-brand tracking-tight"
+            >
+              ¿Eliminar profesional?
+            </h2>
+            <p className="mt-2 text-sm text-charcoal leading-snug">
+              Vas a eliminar a{' '}
+              <span className="font-bold">{pendingDeleteProfesional.name}</span>. Se
+              quitará de la lista de veterinarios. Esta acción no se puede deshacer.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeletingProfesional}
+                onClick={() => setPendingDeleteProfesional(null)}
+                className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone text-charcoal text-xs font-semibold transition cursor-pointer hover:bg-cream disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingProfesional}
+                onClick={() => void confirmDeleteProfesional()}
+                className="px-3.5 py-2 rounded-xl bg-terracotta text-white text-xs font-bold transition cursor-pointer hover:bg-[#b55e43] disabled:opacity-50"
+              >
+                {isDeletingProfesional ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

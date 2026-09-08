@@ -29,6 +29,7 @@ export interface ProfesionalSuperAdmin {
   horario: BloqueHorario[]
   // IDs internos para sincronizar con la API
   userId?: string
+  roleId?: string
   specialtyId?: string
 }
 

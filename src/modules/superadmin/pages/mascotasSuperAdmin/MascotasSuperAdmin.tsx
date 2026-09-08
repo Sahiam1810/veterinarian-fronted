@@ -143,10 +143,13 @@ function MascotaDrawer({
     setFormError(null)
   }, [isOpen, editingMascota, duenos, speciesOptions, raceOptions])
 
-  // Si cambia la especie, quita razas incompatibles (ej. Siamés con Perro)
+  // Si cambia la especie, alinea o limpia la raza
   useEffect(() => {
     if (!isOpen) return
-    if (racesForSpecies.length === 0) return
+    if (racesForSpecies.length === 0) {
+      if (breed) setBreed('')
+      return
+    }
     if (!racesForSpecies.some((r) => r.name === breed)) {
       setBreed(racesForSpecies[0].name)
     }
@@ -185,11 +188,15 @@ function MascotaDrawer({
       setFormError('Por favor ingresa el nombre de la mascota.')
       return
     }
+    if (racesForSpecies.length === 0) {
+      setFormError('No hay razas disponibles para la especie.')
+      return
+    }
     if (!breed.trim()) {
       setFormError('Por favor selecciona la raza de la mascota.')
       return
     }
-    if (racesForSpecies.length > 0 && !racesForSpecies.some((r) => r.name === breed)) {
+    if (!racesForSpecies.some((r) => r.name === breed)) {
       setFormError('La raza no corresponde a la especie seleccionada.')
       return
     }
@@ -301,28 +308,31 @@ function MascotaDrawer({
                 Raza <span className="text-terracotta">*</span>
               </label>
               {racesForSpecies.length > 0 ? (
-                <select
-                  value={breed}
-                  onChange={(e) => setBreed(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-                >
-                  {racesForSpecies.map((r) => (
-                    <option key={r.id} value={r.name}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    required
+                    value={breed}
+                    onChange={(e) => {
+                      setBreed(e.target.value)
+                      setFormError(null)
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                  >
+                    {racesForSpecies.map((r) => (
+                      <option key={r.id} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-sage mt-1">
+                    Solo razas de la especie elegida.
+                  </p>
+                </>
               ) : (
-                <input
-                  type="text"
-                  required
-                  value={breed}
-                  onChange={(e) => setBreed(e.target.value)}
-                  placeholder="Ej: Golden Retriever"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-                />
+                <div className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan/80 bg-bone text-sm text-sage">
+                  No hay razas disponibles para la especie
+                </div>
               )}
-              <p className="text-[10px] text-sage mt-1">Solo razas de la especie elegida.</p>
             </div>
           </div>
 

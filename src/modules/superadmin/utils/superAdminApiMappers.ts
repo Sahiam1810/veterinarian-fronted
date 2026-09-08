@@ -28,6 +28,7 @@ const SPECIES_KEYWORDS: Record<string, string[]> = {
   Canino: ['canin', 'perro', 'dog'],
   Felino: ['felin', 'gato', 'cat'],
   Ave: ['ave', 'bird', 'loro'],
+  Conejo: ['conejo', 'rabbit'],
   Roedor: ['roed', 'hamster', 'cobay'],
   Exótico: ['exot', 'pez', 'reptil'],
   Otro: [],
@@ -69,6 +70,7 @@ export function mapSpeciesNameToEspecie(name: string): EspecieMascota {
   if (n.includes('canin') || n.includes('perro')) return 'Canino'
   if (n.includes('felin') || n.includes('gato')) return 'Felino'
   if (n.includes('ave')) return 'Ave'
+  if (n.includes('conejo') || n.includes('rabbit')) return 'Conejo'
   if (n.includes('roed')) return 'Roedor'
   if (n.includes('exot') || n.includes('pez')) return 'Exótico'
   return name.trim()
@@ -222,6 +224,7 @@ export function mapVeterinarianToProfesional(
     status,
     horario,
     userId: vet.userId,
+    roleId: user?.roleId,
     specialtyId: vet.specialtyId,
   }
 }

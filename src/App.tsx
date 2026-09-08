@@ -14,6 +14,7 @@ import {
   MascotasSuperAdmin,
   ProfesionalesSuperAdmin,
   ServiciosSuperAdmin,
+  EspeciesRazasSuperAdmin,
   AgendaSuperAdmin,
   ReportesSuperAdmin,
   PerfilSuperAdmin,
@@ -37,6 +38,7 @@ const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   usuarios: 'usuarios',
   mascotas: 'mascotas',
   duenos: 'duenos',
+  'especies-razas': 'especiesRazas',
   servicios: 'servicios',
   profesionales: 'profesionales',
   agenda: 'agenda',
@@ -104,7 +106,7 @@ export default function App() {
     <LoginPage
       onLogin={login}
       isSubmitting={isSubmitting}
-      error="Este correo no tiene permitido acceder."
+      error="Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot."
     />
   )
 }
@@ -206,6 +208,15 @@ function SuperAdminApp({
       <ProfesionalesSuperAdmin
         {...shellProps}
         activeRoute="profesionales"
+      />
+    )
+  }
+
+  if (currentRoute === 'especies-razas') {
+    return (
+      <EspeciesRazasSuperAdmin
+        {...shellProps}
+        activeRoute="especies-razas"
       />
     )
   }

@@ -5,7 +5,7 @@ import {
   DashboardBackgroundDecoration,
   PageToast,
 } from '../../components'
-import { useUserSuperAdmin, isProtectedSuperAdminUser, isClienteRoleName } from '../../hooks'
+import { useUserSuperAdmin, isProtectedSuperAdminUser, isClienteRoleName, isVeterinarioRoleName } from '../../hooks'
 import type {
   SystemUser,
   RoleDefinition,
@@ -91,6 +91,9 @@ interface UserDrawerProps {
   onSuccess: (payload: { email: string; mode: 'create' | 'edit' }) => void
   editingUser: SystemUser | null
   roles: RoleDefinition[]
+  specialties: { id: string; name: string }[]
+  // Perfil vet existente al editar (si ya hay fila en Veterinarians)
+  editingVetProfile?: { specialtyId: string; licenseNumber: string } | null
 }
 
 function UserDrawer({
@@ -100,6 +103,8 @@ function UserDrawer({
   onSuccess,
   editingUser,
   roles,
+  specialties,
+  editingVetProfile = null,
 }: UserDrawerProps) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
@@ -112,12 +117,15 @@ function UserDrawer({
   const [showPassword, setShowPassword] = useState(false)
   const [roleId, setRoleId] = useState('')
   const [status, setStatus] = useState<UserStatus>('Activo')
+  const [specialtyId, setSpecialtyId] = useState('')
+  const [licenseNumber, setLicenseNumber] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const assignableRoles = useMemo(() => roles.filter((r) => !r.isSystem), [roles])
   const selectedRoleName = assignableRoles.find((r) => r.id === roleId)?.name || ''
   // Cliente no usa panel web: sesión = teléfono (Telegram)
   const isClienteForm = isClienteRoleName(selectedRoleName)
   const isClienteCreate = isClienteForm && !editingUser
+  const isVeterinarioForm = isVeterinarioRoleName(selectedRoleName)
 
   useEffect(() => {
     if (isOpen) {
@@ -132,6 +140,8 @@ function UserDrawer({
         setPhoneNumber('')
         setRoleId(editingUser.roleId || assignableRoles[0]?.id || '')
         setStatus(editingUser.status || 'Activo')
+        setSpecialtyId(editingVetProfile?.specialtyId || specialties[0]?.id || '')
+        setLicenseNumber(editingVetProfile?.licenseNumber || '')
       } else {
         setFirstName('')
         setLastName('')
@@ -140,6 +150,8 @@ function UserDrawer({
         setPhoneNumber('')
         setRoleId(assignableRoles[0]?.id || '')
         setStatus('Activo')
+        setSpecialtyId(specialties[0]?.id || '')
+        setLicenseNumber('')
       }
       setShowPassword(false)
       setFormError(null)
@@ -152,7 +164,7 @@ function UserDrawer({
       }, 230)
       return () => clearTimeout(timer)
     }
-  }, [editingUser, isOpen, roles])
+  }, [editingUser, editingVetProfile, isOpen, roles, specialties])
 
   // Al pasar a Cliente, limpia contraseña (el API la rechaza en ese rol)
   useEffect(() => {
@@ -161,6 +173,13 @@ function UserDrawer({
       setShowPassword(false)
     }
   }, [isClienteForm])
+
+  // Al elegir Veterinario sin especialidad, toma la primera del catálogo
+  useEffect(() => {
+    if (isVeterinarioForm && !specialtyId && specialties[0]?.id) {
+      setSpecialtyId(specialties[0].id)
+    }
+  }, [isVeterinarioForm, specialtyId, specialties])
 
   const handleClose = () => {
     if (isClosing || isSubmitting) return
@@ -217,6 +236,17 @@ function UserDrawer({
       }
     }
 
+    if (isVeterinarioForm) {
+      if (!specialtyId) {
+        setFormError('Selecciona la especialidad del veterinario.')
+        return
+      }
+      if (!licenseNumber.trim()) {
+        setFormError('Ingresa la tarjeta profesional (CMP) del veterinario.')
+        return
+      }
+    }
+
     setFormError(null)
     setIsSubmitting(true)
 
@@ -228,6 +258,8 @@ function UserDrawer({
       phoneNumber: isClienteForm ? phoneNumber.trim() : undefined,
       roleId,
       status,
+      specialtyId: isVeterinarioForm ? specialtyId : undefined,
+      licenseNumber: isVeterinarioForm ? licenseNumber.trim() : undefined,
     })
 
     if (!result.ok) {
@@ -337,6 +369,50 @@ function UserDrawer({
               ))}
             </select>
           </div>
+
+          {isVeterinarioForm && (
+            <>
+              <div className="p-3.5 rounded-xl bg-mint-soft/80 text-brand text-xs font-semibold border border-brand/20 leading-snug">
+                Datos profesionales obligatorios: el veterinario aparecerá en Profesionales con esta especialidad y CMP.
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  Especialidad <span className="text-terracotta">*</span>
+                </label>
+                <select
+                  required
+                  value={specialtyId}
+                  onChange={(e) => setSpecialtyId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer shadow-2xs"
+                >
+                  {specialties.length === 0 ? (
+                    <option value="">Sin especialidades en el sistema</option>
+                  ) : (
+                    specialties.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+                  Tarjeta profesional (CMP) <span className="text-terracotta">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={licenseNumber}
+                  onChange={(e) => setLicenseNumber(e.target.value)}
+                  placeholder="Ej: CMP-12345"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                />
+              </div>
+            </>
+          )}
 
           {isClienteCreate ? (
             <>
@@ -693,6 +769,7 @@ interface PermissionMatrixPanelProps {
   activeTargetRole: RoleDefinition
   activePermissions: Record<ModuleId, ModulePermission>
   isUserTargetCustomized: boolean
+  isClientePermissionTarget?: boolean
   modulesInfo: ModuleInfo[]
   usersCountForRole?: number
   onTogglePermission: (
@@ -710,6 +787,7 @@ function PermissionMatrixPanel({
   activeTargetRole,
   activePermissions,
   isUserTargetCustomized,
+  isClientePermissionTarget = false,
   modulesInfo,
   usersCountForRole = 0,
   onTogglePermission,
@@ -718,7 +796,9 @@ function PermissionMatrixPanel({
 }: PermissionMatrixPanelProps) {
   const isTargetUser = permissionTarget.type === 'user' && selectedTargetUser !== null
   const isProtectedTarget =
-    isTargetUser && selectedTargetUser !== null && isProtectedSuperAdminUser(selectedTargetUser)
+    (isTargetUser && selectedTargetUser !== null && isProtectedSuperAdminUser(selectedTargetUser)) ||
+    isClientePermissionTarget
+  const matrixLocked = isProtectedTarget || isClientePermissionTarget
 
   return (
     <div
@@ -744,14 +824,16 @@ function PermissionMatrixPanel({
               </span>
             )}
           </div>
-          <p className="text-[11px] text-sage mt-0.5 line-clamp-1">
-            {isTargetUser
-              ? `Los cambios aquí solo afectan a ${selectedTargetUser.name}. Hereda de ${activeTargetRole.name} salvo excepciones.`
-              : `Estos permisos aplican a ${usersCountForRole} usuario${usersCountForRole === 1 ? '' : 's'} con el rol "${selectedRole.name}".`}
+          <p className="text-[11px] text-sage mt-0.5 line-clamp-2">
+            {isClientePermissionTarget
+              ? 'Cliente sin panel web: no tiene permisos de sesión. Solo usa Telegram o el chatbot.'
+              : isTargetUser
+                ? `Los cambios aquí solo afectan a ${selectedTargetUser.name}. Hereda de ${activeTargetRole.name} salvo excepciones.`
+                : `Estos permisos aplican a ${usersCountForRole} usuario${usersCountForRole === 1 ? '' : 's'} con el rol "${selectedRole.name}".`}
           </p>
         </div>
 
-        {isTargetUser && isUserTargetCustomized && !isProtectedTarget && (
+        {isTargetUser && isUserTargetCustomized && !matrixLocked && (
           <button
             type="button"
             onClick={onResetUserPermissions}
@@ -792,7 +874,7 @@ function PermissionMatrixPanel({
                     <input
                       type="checkbox"
                       checked={perms.view}
-                      disabled={isProtectedTarget}
+                      disabled={matrixLocked}
                       onChange={() => onTogglePermission(mod.id, 'view')}
                       className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Permiso Ver para ${mod.label}`}
@@ -803,7 +885,7 @@ function PermissionMatrixPanel({
                       <input
                         type="checkbox"
                         checked={perms.create}
-                        disabled={isProtectedTarget}
+                        disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'create')}
                         className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Crear para ${mod.label}`}
@@ -817,7 +899,7 @@ function PermissionMatrixPanel({
                       <input
                         type="checkbox"
                         checked={perms.edit}
-                        disabled={isProtectedTarget}
+                        disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'edit')}
                         className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Editar para ${mod.label}`}
@@ -831,7 +913,7 @@ function PermissionMatrixPanel({
                       <input
                         type="checkbox"
                         checked={perms.delete}
-                        disabled={isProtectedTarget}
+                        disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'delete')}
                         className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Eliminar para ${mod.label}`}
@@ -849,13 +931,15 @@ function PermissionMatrixPanel({
 
       <div className="shrink-0 pt-2 mt-2 border-t border-border-tan/60 flex items-center justify-between gap-3">
         <span className="text-[11px] text-sage truncate">
-          {isProtectedTarget
-            ? 'Los permisos de SuperAdmin son fijos y no se pueden cambiar.'
-            : isTargetUser
-              ? `Excepciones para ${selectedTargetUser.name}`
-              : `Permisos por defecto del rol ${selectedRole.name}`}
+          {isClientePermissionTarget
+            ? 'Sin permisos de sesión para el panel web.'
+            : isProtectedTarget
+              ? 'Los permisos de SuperAdmin son fijos y no se pueden cambiar.'
+              : isTargetUser
+                ? `Excepciones para ${selectedTargetUser.name}`
+                : `Permisos por defecto del rol ${selectedRole.name}`}
         </span>
-        {!isProtectedTarget && (
+        {!matrixLocked && (
           <button
             type="button"
             onClick={onSavePermissions}
@@ -882,6 +966,7 @@ interface ByUserModeViewProps {
   activeTargetRole: RoleDefinition
   activePermissions: Record<ModuleId, ModulePermission>
   isUserTargetCustomized: boolean
+  isClientePermissionTarget?: boolean
   modulesInfo: ModuleInfo[]
   onFilterChange: (filters: UserFilters) => void
   onSelectUser: (userId: string) => void
@@ -907,6 +992,7 @@ function ByUserModeView({
   activeTargetRole,
   activePermissions,
   isUserTargetCustomized,
+  isClientePermissionTarget = false,
   modulesInfo,
   onFilterChange,
   onSelectUser,
@@ -1204,6 +1290,7 @@ function ByUserModeView({
               activeTargetRole={activeTargetRole}
               activePermissions={activePermissions}
               isUserTargetCustomized={isUserTargetCustomized}
+              isClientePermissionTarget={isClientePermissionTarget}
               modulesInfo={modulesInfo}
               onTogglePermission={onTogglePermission}
               onSavePermissions={onSavePermissions}
@@ -1236,6 +1323,7 @@ interface ByRoleModeViewProps {
   permissionTarget: PermissionTarget
   selectedRole: RoleDefinition
   activePermissions: Record<ModuleId, ModulePermission>
+  isClientePermissionTarget?: boolean
   modulesInfo: ModuleInfo[]
   onSelectRole: (roleId: string) => void
   onTogglePermission: (
@@ -1251,6 +1339,7 @@ function ByRoleModeView({
   permissionTarget,
   selectedRole,
   activePermissions,
+  isClientePermissionTarget = false,
   modulesInfo,
   onSelectRole,
   onTogglePermission,
@@ -1321,6 +1410,7 @@ function ByRoleModeView({
           activeTargetRole={selectedRole}
           activePermissions={activePermissions}
           isUserTargetCustomized={false}
+          isClientePermissionTarget={isClientePermissionTarget}
           modulesInfo={modulesInfo}
           usersCountForRole={usersCountForRole}
           onTogglePermission={onTogglePermission}
@@ -1389,6 +1479,7 @@ export function UserSuperAdmin({
     selectedTargetUser,
     activeTargetRole,
     activePermissions,
+    isClientePermissionTarget,
     isUserTargetCustomized,
     resetUserPermissions,
     activeTab,
@@ -1409,6 +1500,8 @@ export function UserSuperAdmin({
     deleteUser,
     toggleUserStatus,
     createRole,
+    specialties,
+    vetProfileByUserId,
     isUserModalOpen,
     editingUser,
     openCreateUserModal,
@@ -1583,6 +1676,7 @@ export function UserSuperAdmin({
                 activeTargetRole={activeTargetRole}
                 activePermissions={activePermissions}
                 isUserTargetCustomized={isUserTargetCustomized}
+                isClientePermissionTarget={isClientePermissionTarget}
                 modulesInfo={modulesInfo}
                 onFilterChange={setFilters}
                 onSelectUser={selectUserTarget}
@@ -1601,6 +1695,7 @@ export function UserSuperAdmin({
                 permissionTarget={permissionTarget}
                 selectedRole={selectedRole}
                 activePermissions={activePermissions}
+                isClientePermissionTarget={isClientePermissionTarget}
                 modulesInfo={modulesInfo}
                 onSelectRole={selectRoleTarget}
                 onTogglePermission={togglePermission}
@@ -1631,6 +1726,12 @@ export function UserSuperAdmin({
         }}
         editingUser={editingUser}
         roles={roles}
+        specialties={specialties}
+        editingVetProfile={
+          editingUser
+            ? vetProfileByUserId[editingUser.id.toLowerCase()] ?? null
+            : null
+        }
       />
 
       {/* Confirmación de eliminación (modal propio, no window.confirm) */}

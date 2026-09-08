@@ -34,7 +34,8 @@ export function useAuth() {
     async (role: UserRole): Promise<AuthUser> => {
       const account = MOCK_ACCOUNTS.find((a) => a.role === role)
       if (!account) {
-        const msg = 'Este correo no tiene permitido acceder.'
+        const msg =
+          'Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot.'
         setError(msg)
         throw new Error(msg)
       }

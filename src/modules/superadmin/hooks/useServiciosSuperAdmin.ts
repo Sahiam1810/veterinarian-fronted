@@ -4,6 +4,7 @@ import {
   fetchServices,
   createService,
   updateService,
+  deleteService,
   fetchTypeServices,
 } from '../services'
 import { mapServiceToServicio } from '../utils/superAdminApiMappers'
@@ -21,10 +22,12 @@ export function useServiciosSuperAdmin() {
   const itemsPerPage = 4
 
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
+  const [toastTone, setToastTone] = useState<'success' | 'warning'>('success')
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [editingServicio, setEditingServicio] = useState<ServicioSuperAdmin | null>(null)
 
-  const showToast = useCallback((message: string) => {
+  const showToast = useCallback((message: string, tone: 'success' | 'warning' = 'success') => {
+    setToastTone(tone)
     setActiveNotification(message)
     setTimeout(() => {
       setActiveNotification(null)
@@ -40,7 +43,7 @@ export function useServiciosSuperAdmin() {
       setDefaultTypeServiceId(types[0]?.id ?? '')
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudieron cargar los servicios.'
-      showToast(message)
+      showToast(message, 'warning')
     } finally {
       setIsLoading(false)
     }
@@ -74,7 +77,7 @@ export function useServiciosSuperAdmin() {
     const typeServiceId =
       data.typeServiceId || editingServicio?.typeServiceId || defaultTypeServiceId
     if (!typeServiceId) {
-      showToast('No hay tipos de servicio configurados en el sistema.')
+      showToast('No hay tipos de servicio configurados en el sistema.', 'warning')
       return
     }
 
@@ -87,7 +90,11 @@ export function useServiciosSuperAdmin() {
           price: data.price,
           isActive: data.status === 'Activo',
         })
-        showToast(`Servicio "${data.name}" actualizado correctamente.`)
+        showToast(
+          data.status === 'Inactivo'
+            ? `Servicio "${data.name}" marcado como Inactivo. Las citas existentes se conservan; no se asignará a citas nuevas.`
+            : `Servicio "${data.name}" actualizado correctamente.`,
+        )
       } else {
         await createService({
           typeServiceId,
@@ -104,37 +111,27 @@ export function useServiciosSuperAdmin() {
       await loadData()
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'No se pudo guardar el servicio.'
-      showToast(message)
+      showToast(message, 'warning')
     }
   }
 
-  const handleDeleteServicio = async (id: string) => {
-    const target = servicios.find((s) => s.id === id)
-    if (!target) return
-
-    if (!window.confirm(`¿Estás seguro de que deseas desactivar el servicio "${target.name}"?`)) {
+  // Solo elimina si está Inactivo (sin window.confirm; el modal vive en la página).
+  const handleDeleteServicio = async (servicio: ServicioSuperAdmin) => {
+    if (servicio.status !== 'Inactivo') {
+      showToast(
+        'Desactiva el servicio antes de eliminarlo. Edítalo y márcalo como Inactivo.',
+        'warning',
+      )
       return
     }
 
     try {
-      const typeServiceId = target.typeServiceId ?? defaultTypeServiceId
-      if (!typeServiceId) {
-        showToast('No se pudo determinar el tipo de servicio.')
-        return
-      }
-
-      await updateService(id, {
-        typeServiceId,
-        name: target.name,
-        durationMinutes: target.duration,
-        price: target.price,
-        isActive: false,
-      })
-      showToast(`Servicio "${target.name}" marcado como Inactivo.`)
+      await deleteService(servicio.id)
+      showToast(`Servicio "${servicio.name}" eliminado.`)
       await loadData()
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo desactivar el servicio.'
-      showToast(message)
+      const message = err instanceof ApiError ? err.message : 'No se pudo eliminar el servicio.'
+      showToast(message, 'warning')
     }
   }
 
@@ -150,6 +147,7 @@ export function useServiciosSuperAdmin() {
     setCurrentPage,
     itemsPerPage,
     activeNotification,
+    toastTone,
     showToast,
     isDrawerOpen,
     setIsDrawerOpen,
