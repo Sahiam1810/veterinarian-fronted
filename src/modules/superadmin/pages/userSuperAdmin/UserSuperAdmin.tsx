@@ -1396,6 +1396,7 @@ export function UserSuperAdmin({
     filters,
     setFilters,
     filteredUsers,
+    loadError,
     modulesInfo,
     activeNotification,
     toastTone,
@@ -1496,6 +1497,12 @@ export function UserSuperAdmin({
 
           {activeNotification && (
             <PageToast message={activeNotification} tone={toastTone} />
+          )}
+
+          {loadError && (
+            <div className="relative z-10 rounded-xl border border-terracotta/30 bg-terracotta-soft px-4 py-3 text-sm font-semibold text-terracotta">
+              {loadError} Recarga la página cuando el backend esté activo.
+            </div>
           )}
 
           {/* Barra de modo: control de acceso */}

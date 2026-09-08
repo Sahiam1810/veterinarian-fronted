@@ -142,6 +142,7 @@ function formatDate(isoString: string): string {
 
 export function useUserSuperAdmin() {
   const [users, setUsers] = useState<SystemUser[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [roles, setRoles] = useState<RoleDefinition[]>([])
   const [dbModules, setDbModules] = useState<ApiModuleResponse[]>([])
   const [rawRolePermissions, setRawRolePermissions] = useState<ApiRolePermissionResponse[]>([])
@@ -182,6 +183,7 @@ export function useUserSuperAdmin() {
   // Cargar datos reales desde el backend
   const loadData = useCallback(async () => {
     setIsLoading(true)
+    setLoadError(null)
     try {
       const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes] =
         await Promise.allSettled([
@@ -196,7 +198,18 @@ export function useUserSuperAdmin() {
       const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
 
-      if (rejected.length > 0) {
+      if (usersRes.status === 'rejected') {
+        const first = usersRes.reason
+        const status = first instanceof ApiError ? first.status : 0
+        const msg =
+          status === 401
+            ? 'Sesión expirada. Cierra sesión e inicia de nuevo.'
+            : first instanceof Error
+              ? first.message
+              : 'No se pudo contactar al API (¿está corriendo en http://localhost:5233?).'
+        setLoadError(msg)
+        showToast(msg, 'warning')
+      } else if (rejected.length > 0) {
         const first = rejected[0].reason
         const status = first instanceof ApiError ? first.status : 0
         if (status === 401) {
@@ -951,6 +964,7 @@ export function useUserSuperAdmin() {
     filters,
     setFilters,
     filteredUsers,
+    loadError,
     modulesInfo: MODULES_INFO,
     activeNotification,
     toastTone,
