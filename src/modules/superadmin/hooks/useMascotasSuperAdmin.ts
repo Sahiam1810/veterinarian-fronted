@@ -178,7 +178,12 @@ export function useMascotasSuperAdmin() {
       setDuenos(duenosMapped)
       setMascotas(mascotasMapped)
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudieron cargar mascotas y dueños.'
+      const message =
+        err instanceof ApiError
+          ? err.message === 'Unexpected error'
+            ? 'Error del servidor al cargar datos. Si acabas de actualizar, recarga tras aplicar la migración de razas.'
+            : err.message
+          : 'No se pudieron cargar mascotas y dueños.'
       setLoadError(message)
       showToast(message)
     } finally {
