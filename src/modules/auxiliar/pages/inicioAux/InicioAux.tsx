@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
 import type { AuxDayAppointment } from '../../types'
 import { useAuxDashboard } from '../../hooks'
 import {
@@ -8,6 +7,7 @@ import {
   PrepararCitaDrawer,
   DetalleCitaDrawer,
 } from '../../components'
+import { PageToast } from '@/global/components'
 
 export interface InicioAuxProps {
   userName?: string
@@ -425,17 +425,7 @@ export function InicioAux({
       />
 
       {/* Notificación flotante / Toast */}
-      {activeNotification &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)]">
-            <div className="view-popup bg-brand text-white px-5 py-2.5 rounded-full shadow-lg text-xs sm:text-sm font-medium border border-white/20 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-ochre animate-pulse shrink-0" />
-              <span className="truncate">{activeNotification}</span>
-            </div>
-          </div>,
-          document.body
-        )}
+      {activeNotification && <PageToast message={activeNotification} />}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
+import { PageToast } from '@/global/components'
 import { usePerfilSuperAdmin, type SuperAdminProfileData } from '../../hooks'
 import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 
@@ -128,17 +129,7 @@ export function PerfilSuperAdmin({
           <DashboardBackgroundDecoration />
 
           {/* Toast Notification */}
-          {activeNotification && (
-            <div
-              className="toast-pop-up fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-brand text-white text-xs sm:text-sm font-semibold shadow-xl border border-white/20 flex items-center gap-2 pointer-events-none"
-              role="alert"
-            >
-              <svg className="w-4 h-4 text-ochre shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>{activeNotification}</span>
-            </div>
-          )}
+          {activeNotification && <PageToast message={activeNotification} />}
 
           {/* Grid Layout Principal */}
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-stretch gap-5 max-w-5xl mx-auto pt-4">
