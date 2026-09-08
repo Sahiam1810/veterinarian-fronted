@@ -9,6 +9,8 @@ export interface ApiPetResponse {
   observations?: string | null
   speciesId: string
   raceId: string
+  // URL http(s) persistida en PETS.PHOTO_URL
+  photoUrl?: string | null
 }
 
 export interface ApiCreatePetRequest {
@@ -19,6 +21,7 @@ export interface ApiCreatePetRequest {
   observations?: string | null
   speciesId: string
   raceId: string
+  photoUrl?: string | null
 }
 
 export interface ApiUpdatePetRequest {
@@ -29,6 +32,7 @@ export interface ApiUpdatePetRequest {
   observations?: string | null
   speciesId: string
   raceId: string
+  photoUrl?: string | null
 }
 
 export interface ApiCreatePetResponse {

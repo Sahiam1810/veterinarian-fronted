@@ -92,6 +92,7 @@ export interface ApiPetResponse {
   observations?: string | null
   speciesId: string
   raceId: string
+  photoUrl?: string | null
 }
 
 export interface ApiCreatePetRequest {
@@ -102,6 +103,7 @@ export interface ApiCreatePetRequest {
   observations?: string | null
   speciesId: string
   raceId: string
+  photoUrl?: string | null
 }
 
 export interface ApiUpdatePetRequest {
@@ -112,6 +114,7 @@ export interface ApiUpdatePetRequest {
   observations?: string | null
   speciesId: string
   raceId: string
+  photoUrl?: string | null
 }
 
 export interface ApiClientPetResponse {

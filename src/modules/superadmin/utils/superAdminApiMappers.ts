@@ -151,6 +151,7 @@ export function mapPetToMascota(params: {
     status: 'Activo',
     registrationDate: 'Reciente',
     notes: pet.observations ?? undefined,
+    photoUrl: pet.photoUrl ?? undefined,
     speciesId: pet.speciesId,
     raceId: pet.raceId,
     clientPetId: clientPet?.id,
