@@ -371,7 +371,10 @@ export function mapAppointmentToCita(
     professionalName?: string
   } = {}
 ): CitaSuperAdmin {
-  const { consultorio, cleanNotes } = extractConsultorioAndNotes(apt.notes)
+  const fromNotes = extractConsultorioAndNotes(apt.notes)
+  // Preferir campo nativo consultingRoom si el API lo envía.
+  const consultorio = (apt.consultingRoom || '').trim() || fromNotes.consultorio
+  const cleanNotes = fromNotes.cleanNotes
 
   return {
     id: apt.id,

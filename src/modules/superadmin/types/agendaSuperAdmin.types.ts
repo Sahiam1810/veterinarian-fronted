@@ -69,6 +69,8 @@ export interface AgendaPetOption {
   species: string
   ownerName: string
   clientId: string
+  // Telefono del dueño para create de cita (RequesterPhoneNumber).
+  ownerPhone?: string
 }
 
 export interface AgendaServiceOption {

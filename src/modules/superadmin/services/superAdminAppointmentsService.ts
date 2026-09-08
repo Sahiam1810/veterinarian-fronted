@@ -12,6 +12,8 @@ export interface ApiAppointmentResponse {
   scheduledStart: string
   scheduledEnd: string
   notes?: string | null
+  requesterPhoneNumber?: string | null
+  consultingRoom?: string | null
   createdAt: string
 }
 
@@ -24,6 +26,9 @@ export interface ApiCreateAppointmentRequest {
   scheduledStart: string
   scheduledEnd: string
   notes?: string | null
+  // Telefono del solicitante; si falta, el backend usa el del dueño.
+  requesterPhoneNumber?: string | null
+  consultingRoom?: string | null
 }
 
 export interface ApiUpdateAppointmentRequest {
@@ -35,6 +40,7 @@ export interface ApiUpdateAppointmentRequest {
   scheduledStart: string
   scheduledEnd: string
   notes?: string | null
+  consultingRoom?: string | null
 }
 
 export interface ApiCreateAppointmentResponse {

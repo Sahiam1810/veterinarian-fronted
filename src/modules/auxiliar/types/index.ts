@@ -70,6 +70,8 @@ export interface ApiCreateAppointmentRequest {
   scheduledStart: string
   scheduledEnd: string
   notes?: string | null
+  requesterPhoneNumber?: string | null
+  consultingRoom?: string | null
 }
 
 export interface ApiUpdateAppointmentRequest {

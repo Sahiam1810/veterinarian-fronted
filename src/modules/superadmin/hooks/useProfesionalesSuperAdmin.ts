@@ -227,6 +227,7 @@ export function useProfesionalesSuperAdmin() {
             species: speciesName,
             ownerName: user?.fullName ?? 'Dueño',
             clientId: cp.clientId,
+            ownerPhone: client?.phoneNumber ?? undefined,
           }
         })
       setMascotasOpciones(petOptions)
@@ -330,22 +331,26 @@ export function useProfesionalesSuperAdmin() {
 
   const handleCreateCita = async (data: CitaFormData) => {
     if (!data.clientPetId) {
-      showToast('Selecciona una mascota del catálogo.')
-      return
+      const msg = 'Selecciona una mascota del catálogo.'
+      showToast(msg)
+      throw new Error(msg)
     }
     if (!data.serviceId) {
-      showToast('Selecciona un servicio del catálogo.')
-      return
+      const msg = 'Selecciona un servicio del catálogo.'
+      showToast(msg)
+      throw new Error(msg)
     }
     if (!data.professionalId) {
-      showToast('Selecciona un profesional.')
-      return
+      const msg = 'Selecciona un profesional.'
+      showToast(msg)
+      throw new Error(msg)
     }
 
     const agendadaId = findStatusId(statusCatalog, 'agendada')
     if (!agendadaId) {
-      showToast('No hay estado AGENDADA en el catálogo de citas.')
-      return
+      const msg = 'No hay estado AGENDADA en el catálogo de citas.'
+      showToast(msg)
+      throw new Error(msg)
     }
 
     const start = new Date(`${data.dateKey}T${data.startTime}:00`)
@@ -360,6 +365,15 @@ export function useProfesionalesSuperAdmin() {
       )
 
       const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
+      const ownerPhone =
+        mascotasOpciones.find((m) => m.clientPetId === data.clientPetId)?.ownerPhone?.trim() || ''
+
+      if (ownerPhone.replace(/\D/g, '').length < 7) {
+        const msg =
+          'El dueño de la mascota no tiene un teléfono válido. Actualízalo en Dueños/Mascotas.'
+        showToast(msg)
+        throw new Error(msg)
+      }
 
       await createAppointment({
         clientPetId: data.clientPetId,
@@ -370,14 +384,20 @@ export function useProfesionalesSuperAdmin() {
         scheduledStart: start.toISOString(),
         scheduledEnd: end.toISOString(),
         notes: formattedNotes,
+        requesterPhoneNumber: ownerPhone,
+        consultingRoom: data.consultorio || null,
       })
 
       showToast(`¡Cita para ${data.petName} agendada en ${data.consultorio} exitosamente!`)
       setIsCitaDrawerOpen(false)
       await loadData()
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo agendar la cita.'
-      showToast(message)
+      if (err instanceof ApiError) {
+        showToast(err.message)
+      } else if (!(err instanceof Error)) {
+        showToast('No se pudo agendar la cita.')
+      }
+      throw err
     }
   }
 

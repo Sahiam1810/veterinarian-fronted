@@ -190,6 +190,7 @@ export function useAgendaSuperAdmin() {
             species: pet ? speciesById.get(pet.speciesId) ?? '' : '',
             ownerName: owner?.fullName ?? 'Dueño',
             clientId: cp.clientId,
+            ownerPhone: client?.phoneNumber ?? undefined,
           }
         }),
       )
@@ -246,16 +247,19 @@ export function useAgendaSuperAdmin() {
 
   const handleSaveCita = async (data: CitaFormData) => {
     if (!data.clientPetId) {
-      showToast('Selecciona una mascota registrada.')
-      return
+      const msg = 'Selecciona una mascota registrada.'
+      showToast(msg)
+      throw new Error(msg)
     }
     if (!data.serviceId) {
-      showToast('Selecciona un servicio del catálogo.')
-      return
+      const msg = 'Selecciona un servicio del catálogo.'
+      showToast(msg)
+      throw new Error(msg)
     }
     if (!data.professionalId) {
-      showToast('Selecciona un profesional.')
-      return
+      const msg = 'Selecciona un profesional.'
+      showToast(msg)
+      throw new Error(msg)
     }
 
     const start = new Date(`${data.dateKey}T${data.startTime}:00`)
@@ -283,6 +287,7 @@ export function useAgendaSuperAdmin() {
           scheduledStart: start.toISOString(),
           scheduledEnd: end.toISOString(),
           notes: formattedNotes,
+          consultingRoom: data.consultorio || null,
         })
 
         // Si cambiaron estado en el drawer y la cita está AGENDADA, usar transición canónica
@@ -306,8 +311,9 @@ export function useAgendaSuperAdmin() {
       } else {
         const agendadaId = findStatusId(statusCatalog, 'agendada')
         if (!agendadaId) {
-          showToast('No hay estado AGENDADA en el catálogo. Ejecuta el seed de estados.')
-          return
+          const msg = 'No hay estado AGENDADA en el catálogo. Ejecuta el seed de estados.'
+          showToast(msg)
+          throw new Error(msg)
         }
 
         const availabilityId = await resolveAvailabilityId(
@@ -318,6 +324,15 @@ export function useAgendaSuperAdmin() {
         )
 
         const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
+        const ownerPhone =
+          mascotasOpciones.find((m) => m.clientPetId === data.clientPetId)?.ownerPhone?.trim() || ''
+
+        if (ownerPhone.replace(/\D/g, '').length < 7) {
+          const msg =
+            'El dueño de la mascota no tiene un teléfono válido. Actualízalo en Dueños/Mascotas.'
+          showToast(msg)
+          throw new Error(msg)
+        }
 
         const created = await createAppointment({
           clientPetId: data.clientPetId,
@@ -328,6 +343,8 @@ export function useAgendaSuperAdmin() {
           scheduledStart: start.toISOString(),
           scheduledEnd: end.toISOString(),
           notes: formattedNotes,
+          requesterPhoneNumber: ownerPhone,
+          consultingRoom: data.consultorio || null,
         })
 
         setSelectedCitaId(created.id)
@@ -338,8 +355,13 @@ export function useAgendaSuperAdmin() {
       setEditingCita(null)
       await loadData()
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo guardar la cita.'
-      showToast(message)
+      // Validaciones locales ya hicieron toast; API sí necesita uno.
+      if (err instanceof ApiError) {
+        showToast(err.message)
+      } else if (!(err instanceof Error)) {
+        showToast('No se pudo guardar la cita.')
+      }
+      throw err
     }
   }
 
