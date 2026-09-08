@@ -60,6 +60,10 @@ export function RecepDuenoModal({
       setError('Por favor ingresa el teléfono de contacto.')
       return
     }
+    if (!email.trim() || !email.includes('@')) {
+      setError('El correo es obligatorio para verificación por código en el chatbot.')
+      return
+    }
 
     try {
       setError(null)
@@ -67,7 +71,7 @@ export function RecepDuenoModal({
         fullName: fullName.trim(),
         documentId: documentId.trim(),
         phone: phone.trim(),
-        email: email.trim() || undefined,
+        email: email.trim(),
         address: address.trim() || undefined,
       })
     } catch (err) {
@@ -180,13 +184,14 @@ export function RecepDuenoModal({
 
           <div>
             <label className="block text-xs font-bold text-charcoal mb-1.5" htmlFor="dueno-email">
-              Correo Electrónico (Opcional)
+              Correo Electrónico <span className="text-brand">*</span>
             </label>
             <div className="relative">
               <MailIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-sage pointer-events-none" />
               <input
                 id="dueno-email"
                 type="email"
+                required
                 disabled={isLoading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
