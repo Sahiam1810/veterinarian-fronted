@@ -13,18 +13,27 @@ export interface ApiAvailabilityResponse {
 
 export interface ApiCreateAvailabilityRequest {
   veterinarianId: string
-  dayOfWeek: number | string
+  // Número 0-6 (.NET DayOfWeek). String "2" o "Tuesday" provoca 400.
+  dayOfWeek: number
   startTime: string
   endTime: string
   isActive?: boolean
+  slotDurationMinutes?: number
+  maxConcurrentAppointments?: number
+  consultingRoom?: string | null
+  shiftName?: string | null
 }
 
 export interface ApiUpdateAvailabilityRequest {
   veterinarianId: string
-  dayOfWeek: number | string
+  dayOfWeek: number
   startTime: string
   endTime: string
   isActive: boolean
+  slotDurationMinutes?: number
+  maxConcurrentAppointments?: number
+  consultingRoom?: string | null
+  shiftName?: string | null
 }
 
 export interface ApiCreateAvailabilityResponse {

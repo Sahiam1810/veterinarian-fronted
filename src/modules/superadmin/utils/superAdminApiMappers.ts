@@ -36,14 +36,25 @@ const SPECIES_KEYWORDS: Record<string, string[]> = {
 
 const DAY_NAMES: DiaSemana[] = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO']
 
-const DAY_TO_DOTNET: Record<DiaSemana, string> = {
-  DOMINGO: 'Sunday',
-  LUNES: 'Monday',
-  MARTES: 'Tuesday',
-  'MIÉRCOLES': 'Wednesday',
-  JUEVES: 'Thursday',
-  VIERNES: 'Friday',
-  'SÁBADO': 'Saturday',
+// DayOfWeek .NET: 0=Sunday … 6=Saturday (el API espera número, no "Monday").
+const DAY_TO_DOTNET_NUM: Record<DiaSemana, number> = {
+  DOMINGO: 0,
+  LUNES: 1,
+  MARTES: 2,
+  MIÉRCOLES: 3,
+  JUEVES: 4,
+  VIERNES: 5,
+  SÁBADO: 6,
+}
+
+const ENGLISH_DAY_TO_NUM: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
 }
 
 // Formatea fechas ISO a texto corto en español
@@ -231,21 +242,28 @@ export function mapVeterinarianToProfesional(
 
 // Convierte día .NET (número o nombre) a etiqueta UI
 export function mapDayOfWeekToDia(dow: number | string): DiaSemana {
-  if (typeof dow === 'string') {
-    const key = dow.toLowerCase()
-    if (key.includes('monday')) return 'LUNES'
-    if (key.includes('tuesday')) return 'MARTES'
-    if (key.includes('wednesday')) return 'MIÉRCOLES'
-    if (key.includes('thursday')) return 'JUEVES'
-    if (key.includes('friday')) return 'VIERNES'
-    if (key.includes('saturday')) return 'SÁBADO'
-    return 'DOMINGO'
-  }
-  return DAY_NAMES[dow] ?? 'LUNES'
+  return DAY_NAMES[normalizeDayOfWeek(dow)] ?? 'LUNES'
 }
 
-export function mapDiaToDayOfWeek(dia: DiaSemana): string {
-  return DAY_TO_DOTNET[dia]
+// Normaliza dayOfWeek API a 0..6 (.NET)
+export function normalizeDayOfWeek(dow: number | string): number {
+  if (typeof dow === 'number' && Number.isFinite(dow)) {
+    return dow
+  }
+  const raw = String(dow).trim().toLowerCase()
+  const asNum = Number(raw)
+  if (!Number.isNaN(asNum) && asNum >= 0 && asNum <= 6) {
+    return asNum
+  }
+  for (const [name, value] of Object.entries(ENGLISH_DAY_TO_NUM)) {
+    if (raw.includes(name)) return value
+  }
+  return 1
+}
+
+// Día UI → número DayOfWeek que acepta POST /api/Availabilities
+export function mapDiaToDayOfWeek(dia: DiaSemana): number {
+  return DAY_TO_DOTNET_NUM[dia]
 }
 
 // Mapea disponibilidad API a bloque horario UI

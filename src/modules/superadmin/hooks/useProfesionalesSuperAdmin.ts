@@ -308,25 +308,30 @@ export function useProfesionalesSuperAdmin() {
     dateKey: string,
     startTime: string,
     endTime: string,
+    consultingRoom?: string,
   ): Promise<string> => {
-    try {
-      const availabilities = await fetchAvailabilitiesByVeterinarian(vetId)
-      const dayOfWeek = dayOfWeekFromDateKey(dateKey)
-      const matching = availabilities.find(
-        (a) => a.dayOfWeek === dayOfWeek && a.isActive,
-      )
-      if (matching) return matching.id
-      const created = await createAvailability({
-        veterinarianId: vetId,
-        dayOfWeek: String(dayOfWeek),
-        startTime: `${startTime}:00`,
-        endTime: `${endTime}:00`,
-        isActive: true,
-      })
-      return created.id
-    } catch {
-      return ''
+    const availabilities = await fetchAvailabilitiesByVeterinarian(vetId)
+    const dayOfWeek = dayOfWeekFromDateKey(dateKey)
+    const matching = availabilities.find((a) => {
+      const dow = typeof a.dayOfWeek === 'string' ? Number(a.dayOfWeek) : a.dayOfWeek
+      return a.isActive && Number(dow) === dayOfWeek
+    })
+    if (matching) return matching.id
+
+    const created = await createAvailability({
+      veterinarianId: vetId,
+      dayOfWeek,
+      startTime: `${startTime}:00`,
+      endTime: `${endTime}:00`,
+      isActive: true,
+      slotDurationMinutes: 30,
+      maxConcurrentAppointments: 1,
+      consultingRoom: consultingRoom || null,
+    })
+    if (!created.id) {
+      throw new Error('No se pudo crear la disponibilidad del veterinario.')
     }
+    return created.id
   }
 
   const handleCreateCita = async (data: CitaFormData) => {
@@ -362,7 +367,14 @@ export function useProfesionalesSuperAdmin() {
         data.dateKey,
         data.startTime,
         data.endTime,
+        data.consultorio,
       )
+
+      if (!availabilityId) {
+        const msg = 'No hay disponibilidad válida para el veterinario en ese día.'
+        showToast(msg)
+        throw new Error(msg)
+      }
 
       const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
       const ownerPhone =
@@ -499,6 +511,8 @@ export function useProfesionalesSuperAdmin() {
               startTime: `${horaInicio}:00`,
               endTime: `${horaFin}:00`,
               isActive: true,
+              slotDurationMinutes: 30,
+              maxConcurrentAppointments: 1,
             })
           }
         }
@@ -541,6 +555,8 @@ export function useProfesionalesSuperAdmin() {
         startTime: `${horaInicio}:00`,
         endTime: `${horaFin}:00`,
         isActive: true,
+        slotDurationMinutes: 30,
+        maxConcurrentAppointments: 1,
       }
 
       if (editingBlock) {

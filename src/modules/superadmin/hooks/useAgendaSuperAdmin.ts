@@ -226,9 +226,10 @@ export function useAgendaSuperAdmin() {
     dateKey: string,
     startTime: string,
     endTime: string,
+    consultingRoom?: string,
   ): Promise<string> => {
     const day = dayOfWeekFromDateKey(dateKey)
-    let list = await fetchAvailabilitiesByVeterinarian(veterinarianId)
+    const list = await fetchAvailabilitiesByVeterinarian(veterinarianId)
     const match = list.find((a) => {
       const dow = typeof a.dayOfWeek === 'string' ? Number(a.dayOfWeek) : a.dayOfWeek
       return a.isActive && Number(dow) === day
@@ -241,7 +242,13 @@ export function useAgendaSuperAdmin() {
       startTime: `${startTime}:00`,
       endTime: `${endTime}:00`,
       isActive: true,
+      slotDurationMinutes: 30,
+      maxConcurrentAppointments: 1,
+      consultingRoom: consultingRoom || null,
     })
+    if (!created.id) {
+      throw new Error('No se pudo crear la disponibilidad del veterinario.')
+    }
     return created.id
   }
 
@@ -274,6 +281,7 @@ export function useAgendaSuperAdmin() {
             data.dateKey,
             data.startTime,
             data.endTime,
+            data.consultorio,
           ))
 
         const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
@@ -321,6 +329,7 @@ export function useAgendaSuperAdmin() {
           data.dateKey,
           data.startTime,
           data.endTime,
+          data.consultorio,
         )
 
         const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
