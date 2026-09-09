@@ -1,12 +1,17 @@
 import { useEffect } from 'react'
-import { VetMascotasView, RegistrarAtencionModal } from '../../components'
+import {
+  VetMascotasView,
+  RegistrarAtencionModal,
+  VetMascotaModal,
+  VetEliminarMascotaModal,
+} from '../../components'
 import { useVetMascotas } from '../../hooks'
 
 interface MascotasPageProps {
   onNotice?: (message: string) => void
 }
 
-// Página Mascotas del veterinario
+// Página Mascotas del veterinario con soporte CRUD según permisos
 export function MascotasPage({ onNotice }: MascotasPageProps) {
   const {
     directory,
@@ -27,6 +32,15 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     isHistoriaLoading,
     isRegistrarOpen,
     registrarTarget,
+    permissions,
+    speciesList,
+    racesList,
+    clientsList,
+    isCreateOpen,
+    isEditOpen,
+    editingPet,
+    isDeleteOpen,
+    deletingPetName,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
@@ -35,6 +49,15 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     handleOpenRegistrar,
     handleCloseRegistrar,
     handleRegistrationSuccess,
+    handleOpenCreate,
+    handleCloseCreate,
+    handleCreatePet,
+    handleOpenEdit,
+    handleCloseEdit,
+    handleUpdatePet,
+    handleOpenDelete,
+    handleCloseDelete,
+    handleDeletePet,
     handlePrevPage,
     handleNextPage,
   } = useVetMascotas(true)
@@ -74,12 +97,18 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         pageStart={pageStart}
         pageEnd={pageEnd}
         totalCount={totalCount}
+        canCreate={permissions.canCreate}
+        canEdit={permissions.canEdit}
+        canDelete={permissions.canDelete}
         historia={historia}
         isHistoriaOpen={isHistoriaOpen}
         isHistoriaLoading={isHistoriaLoading}
         onSearchChange={setSearch}
         onSpeciesChange={setSpeciesFilter}
         onOpenFilters={handleOpenFilters}
+        onCreatePet={handleOpenCreate}
+        onEditPet={handleOpenEdit}
+        onDeletePet={handleOpenDelete}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
         onViewClinicalHistory={() => {
@@ -96,6 +125,44 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onNextPage={handleNextPage}
       />
 
+      {/* Modal Registrar Nueva Mascota */}
+      {isCreateOpen && (
+        <VetMascotaModal
+          isOpen={isCreateOpen}
+          mode="create"
+          speciesList={speciesList}
+          racesList={racesList}
+          clientsList={clientsList}
+          onClose={handleCloseCreate}
+          onSubmit={handleCreatePet}
+        />
+      )}
+
+      {/* Modal Editar Mascota */}
+      {isEditOpen && (
+        <VetMascotaModal
+          isOpen={isEditOpen}
+          mode="edit"
+          initialData={editingPet}
+          speciesList={speciesList}
+          racesList={racesList}
+          clientsList={clientsList}
+          onClose={handleCloseEdit}
+          onSubmit={handleUpdatePet}
+        />
+      )}
+
+      {/* Modal Eliminar Mascota */}
+      {isDeleteOpen && (
+        <VetEliminarMascotaModal
+          isOpen={isDeleteOpen}
+          petName={deletingPetName}
+          onClose={handleCloseDelete}
+          onConfirm={handleDeletePet}
+        />
+      )}
+
+      {/* Modal Registrar Atención */}
       {isRegistrarOpen && registrarTarget && (
         <RegistrarAtencionModal
           isOpen={isRegistrarOpen}
@@ -116,4 +183,5 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     </div>
   )
 }
+
 
