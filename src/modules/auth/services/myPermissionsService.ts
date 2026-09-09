@@ -1,5 +1,5 @@
-import { apiClient } from '@/services'
-import type { NavPermissionKey } from '@/global/navigation'
+import { apiClient } from '../../../services/apiClient.ts'
+import type { NavPermissionKey } from '../../../global/navigation/types.ts'
 
 // Permiso de un módulo tal como lo devuelve GET /api/auth/permissions
 export interface MyModulePermission {

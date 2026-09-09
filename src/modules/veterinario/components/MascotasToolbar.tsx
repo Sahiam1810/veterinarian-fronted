@@ -5,19 +5,23 @@ interface MascotasToolbarProps {
   search: string
   speciesFilter: string
   speciesOptions: string[]
+  canCreate?: boolean
   onSearchChange: (value: string) => void
   onSpeciesChange: (value: string) => void
   onOpenFilters?: () => void
+  onCreatePet?: () => void
 }
 
-// Barra de búsqueda a ancho completo + filtros compactos a la derecha
+// Barra de búsqueda a ancho completo + filtros compactos a la derecha + botón crear si hay permiso
 export function MascotasToolbar({
   search,
   speciesFilter,
   speciesOptions,
+  canCreate = false,
   onSearchChange,
   onSpeciesChange,
   onOpenFilters,
+  onCreatePet,
 }: MascotasToolbarProps) {
   return (
     <div className="w-full min-w-0 rounded-2xl border border-border-tan bg-white px-3 py-2.5 sm:px-4 sm:py-3 shadow-[0_2px_12px_rgba(35,78,70,0.03)]">
@@ -61,6 +65,17 @@ export function MascotasToolbar({
           >
             <FilterIcon className="w-4 h-4" />
           </button>
+
+          {canCreate && (
+            <button
+              type="button"
+              onClick={onCreatePet}
+              className="inline-flex items-center justify-center gap-1.5 px-4 h-10 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover active:scale-98 transition shadow-xs cursor-pointer shrink-0"
+            >
+              <span className="text-base font-bold leading-none">+</span>
+              <span className="whitespace-nowrap">Nueva Mascota</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { PawIcon } from '@/global/components'
 import type { MascotaListItem } from '../types'
 import { EyeIcon } from './VetHomeIcons'
+import { EditIcon, TrashIcon } from './MascotasIcons'
 
 interface MascotasTableProps {
   items: MascotaListItem[]
@@ -8,7 +9,11 @@ interface MascotasTableProps {
   pageStart: number
   pageEnd: number
   totalCount: number
+  canEdit?: boolean
+  canDelete?: boolean
   onSelect: (petId: string) => void
+  onEditPet?: (petId: string) => void
+  onDeletePet?: (petId: string) => void
   onPrevPage?: () => void
   onNextPage?: () => void
 }
@@ -20,7 +25,11 @@ export function MascotasTable({
   pageStart,
   pageEnd,
   totalCount,
+  canEdit = false,
+  canDelete = false,
   onSelect,
+  onEditPet,
+  onDeletePet,
   onPrevPage,
   onNextPage,
 }: MascotasTableProps) {
@@ -35,7 +44,7 @@ export function MascotasTable({
               <th className="py-2.5 sm:py-3 px-2 sm:px-3 hidden md:table-cell">Edad/Sexo</th>
               <th className="py-2.5 sm:py-3 px-2 sm:px-3 hidden lg:table-cell">Dueño</th>
               <th className="py-2.5 sm:py-3 px-2 sm:px-3 hidden md:table-cell">Última Atención</th>
-              <th className="py-2.5 sm:py-3 px-3 sm:px-4 text-right w-14 sm:w-auto">Acciones</th>
+              <th className="py-2.5 sm:py-3 px-3 sm:px-4 text-right w-28 sm:w-auto">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -84,22 +93,45 @@ export function MascotasTable({
                       {pet.lastVisitLabel}
                     </td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          onSelect(pet.id)
-                        }}
-                        className={`inline-flex items-center justify-center w-9 h-9 rounded-xl transition cursor-pointer ${
-                          selected
-                            ? 'bg-brand text-white'
-                            : 'bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30'
-                        }`}
-                        aria-label={`Ver detalle de ${pet.name}`}
-                        title="Ver detalle"
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                      </button>
+                      <div className="inline-flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                        {canEdit && onEditPet && (
+                          <button
+                            type="button"
+                            onClick={() => onEditPet(pet.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 hover:bg-white transition cursor-pointer"
+                            aria-label={`Editar a ${pet.name}`}
+                            title="Editar mascota"
+                          >
+                            <EditIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {canDelete && onDeletePet && (
+                          <button
+                            type="button"
+                            onClick={() => onDeletePet(pet.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-bone text-terracotta border border-border-tan hover:bg-terracotta-soft hover:border-terracotta/30 transition cursor-pointer"
+                            aria-label={`Eliminar a ${pet.name}`}
+                            title="Eliminar mascota"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => onSelect(pet.id)}
+                          className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition cursor-pointer ${
+                            selected
+                              ? 'bg-brand text-white'
+                              : 'bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 hover:bg-white'
+                          }`}
+                          aria-label={`Ver detalle de ${pet.name}`}
+                          title="Ver detalle"
+                        >
+                          <EyeIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
