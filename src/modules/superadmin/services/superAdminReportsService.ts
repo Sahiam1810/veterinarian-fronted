@@ -1,7 +1,15 @@
-import type { ReportesDateRange, ReportesPeriodoId } from '../types/reportesSuperAdmin.types'
+import { apiClient } from '@/services'
+import type {
+  ReportesDateRange,
+  ReportesDayVm,
+  ReportesPeriodoId,
+  ReportesStatusVm,
+  ReportesVeterinarianVm,
+} from '../types/reportesSuperAdmin.types'
+import { resolveStatusBarClassName } from '../utils/reportesStatusBar'
 
-// true cuando existan B1–B4 en el API; hoy permanece false (sin cablear /api/Reports)
-export const REPORTES_USE_API = false
+// true: usa agregaciones reales GET /api/Reports/* (summary/top-services aún no).
+export const REPORTES_USE_API = true
 
 // Formatea Date local a yyyy-MM-dd
 export function toIsoDateLocal(d: Date): string {
@@ -52,6 +60,87 @@ export function eachDateKeyInRange(range: ReportesDateRange): string[] {
   return keys
 }
 
-// Cuando REPORTES_USE_API sea true, aquí vivirán:
-// fetchReportesSummary / byStatus / byVeterinarian / byDay / topServices.
-// Hoy no se llaman para no romper el build sin backend.
+function reportsQuery(range: ReportesDateRange): string {
+  const query = new URLSearchParams()
+  query.set('from', range.from)
+  query.set('to', range.to)
+  return query.toString()
+}
+
+// DTO crudo del backend (camelCase)
+interface ApiAppointmentsByStatusItem {
+  statusId: string
+  statusName: string
+  count: number
+  percentage: number
+}
+
+interface ApiAppointmentsByVeterinarianItem {
+  veterinarianId: string
+  veterinarianName: string
+  totalAppointments: number
+  attendedCount: number
+  canceledCount: number
+  scheduledCount: number
+  otherCount: number
+}
+
+interface ApiAppointmentsByDayItem {
+  date: string
+  totalAppointments: number
+  attendedCount: number
+  canceledCount: number
+  scheduledCount: number
+}
+
+// GET /api/Reports/appointments-by-status
+export async function fetchAppointmentsByStatus(
+  range: ReportesDateRange,
+): Promise<ReportesStatusVm[]> {
+  const endpoint = `/api/Reports/appointments-by-status?${reportsQuery(range)}`
+  const rows = await apiClient.get<ApiAppointmentsByStatusItem[]>(endpoint)
+  return (rows ?? []).map((row) => ({
+    statusId: row.statusId,
+    statusName: row.statusName,
+    count: row.count,
+    percentage: row.percentage,
+    barClassName: resolveStatusBarClassName(row.statusName),
+  }))
+}
+
+// GET /api/Reports/appointments-by-veterinarian (percentage en cliente)
+export async function fetchAppointmentsByVeterinarian(
+  range: ReportesDateRange,
+): Promise<ReportesVeterinarianVm[]> {
+  const endpoint = `/api/Reports/appointments-by-veterinarian?${reportsQuery(range)}`
+  const rows = await apiClient.get<ApiAppointmentsByVeterinarianItem[]>(endpoint)
+  const list = rows ?? []
+  const total = list.reduce((sum, row) => sum + row.totalAppointments, 0)
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0)
+
+  return list.map((row) => ({
+    veterinarianId: row.veterinarianId,
+    veterinarianName: row.veterinarianName,
+    totalAppointments: row.totalAppointments,
+    attendedCount: row.attendedCount,
+    canceledCount: row.canceledCount,
+    scheduledCount: row.scheduledCount,
+    otherCount: row.otherCount,
+    percentage: pct(row.totalAppointments),
+  }))
+}
+
+// GET /api/Reports/appointments-by-day
+export async function fetchAppointmentsByDay(
+  range: ReportesDateRange,
+): Promise<ReportesDayVm[]> {
+  const endpoint = `/api/Reports/appointments-by-day?${reportsQuery(range)}`
+  const rows = await apiClient.get<ApiAppointmentsByDayItem[]>(endpoint)
+  return (rows ?? []).map((row) => ({
+    date: row.date,
+    totalAppointments: row.totalAppointments,
+    attendedCount: row.attendedCount,
+    canceledCount: row.canceledCount,
+    scheduledCount: row.scheduledCount,
+  }))
+}

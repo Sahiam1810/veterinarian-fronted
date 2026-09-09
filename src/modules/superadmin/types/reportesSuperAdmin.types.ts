@@ -1,5 +1,5 @@
 // Tipos de la vista Reportes (panel Admin/SuperAdmin).
-// Alineados al contrato futuro GET /api/Reports/* (aún no cableado).
+// Alineados a GET /api/Reports/* (by-status / by-veterinarian / by-day).
 
 export type ReportesPeriodoId = 'este-mes' | '30-dias' | 'ultimo-ano'
 
