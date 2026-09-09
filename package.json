@@ -11,10 +11,8 @@
     "lint": "tsc -b --pretty false",
     "test": "node --test --experimental-strip-types tests/auth/systemRoles.test.ts tests/auth/sessionRefresh.test.ts tests/navigation/vetNavPermissions.test.ts tests/superadmin/createFullUserPassword.test.ts tests/superadmin/mapAppointmentsByStatus.test.ts",
     "test:auth": "node --test --experimental-strip-types tests/auth/systemRoles.test.ts tests/auth/sessionRefresh.test.ts",
-    "test:superadmin": "node --test --experimental-strip-types tests/superadmin/createFullUserPassword.test.ts tests/superadmin/mapAppointmentsByStatus.test.ts tests/superadmin/buildViewMapReportes.test.ts"
-
-    "test:nav": "node --test --experimental-strip-types tests/navigation/vetNavPermissions.test.ts",
-
+    "test:superadmin": "node --test --experimental-strip-types tests/superadmin/createFullUserPassword.test.ts tests/superadmin/mapAppointmentsByStatus.test.ts tests/superadmin/buildViewMapReportes.test.ts",
+    "test:nav": "node --test --experimental-strip-types tests/navigation/vetNavPermissions.test.ts"
   },
   "dependencies": {
     "react": "^19.1.1",
