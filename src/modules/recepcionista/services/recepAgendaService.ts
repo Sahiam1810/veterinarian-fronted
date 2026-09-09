@@ -276,7 +276,7 @@ export async function updateRecepAppointmentStatus(
   if (!statusId) throw new Error('No se pudo resolver el estado de la cita.')
 
   return apiClient.patch<void>(`/api/Appointments/${appointmentId}/status`, {
-    statusAppointmentId: statusId,
-    notes: `Estado actualizado a ${targetStatus} desde recepción`,
+    statusId,
+    comment: `Estado actualizado a ${targetStatus} desde recepción`,
   })
 }
