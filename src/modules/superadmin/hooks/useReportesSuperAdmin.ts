@@ -11,15 +11,25 @@ import {
   REPORTES_USE_API,
   resolveReportesDateRange,
   isIsoInRange,
+  fetchAppointmentsByStatus,
+  fetchAppointmentsByVeterinarian,
+  fetchAppointmentsByDay,
 } from '../services/superAdminReportsService'
-import { buildReportesDashboardFromCitas } from '../utils/buildReportesDashboard'
+import {
+  buildReportesDashboardFromCitas,
+  buildSummaryFromByStatus,
+  buildTopServicesFromCitas,
+} from '../utils/buildReportesDashboard'
 import { mapStatusToAppointmentStatus, formatDateEs } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 import type {
   ReportesCitaDetalleVm,
   ReportesDashboardVm,
+  ReportesDayVm,
   ReportesPeriodoId,
+  ReportesStatusVm,
   ReportesTabId,
+  ReportesVeterinarianVm,
 } from '../types/reportesSuperAdmin.types'
 import { REPORTES_PERIODO_OPTIONS } from '../types/reportesSuperAdmin.types'
 
@@ -45,9 +55,16 @@ const EMPTY_DASHBOARD: ReportesDashboardVm = {
   citasDetalle: [],
 }
 
-// Hook de Reportes Admin/SuperAdmin. KPIs provisionales en cliente; API Reports aún no cableada.
+interface ReportsApiParts {
+  byStatus: ReportesStatusVm[]
+  byVeterinarian: ReportesVeterinarianVm[]
+  byDay: ReportesDayVm[]
+}
+
+// Hook Reportes: agregaciones vía /api/Reports cuando REPORTES_USE_API; detalle sigue en Appointments.
 export function useReportesSuperAdmin() {
   const [citasDetalle, setCitasDetalle] = useState<ReportesCitaDetalleVm[]>([])
+  const [apiParts, setApiParts] = useState<ReportsApiParts | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [period, setPeriod] = useState<ReportesPeriodoId>('este-mes')
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,18 +78,10 @@ export function useReportesSuperAdmin() {
 
   const range = useMemo(() => resolveReportesDateRange(period), [period])
 
-  // Carga detalle de citas (sigue siendo Appointments). No llama /api/Reports.
-  const loadDetalleCitas = useCallback(async () => {
+  const loadReportes = useCallback(async () => {
     setIsLoading(true)
     try {
-      if (REPORTES_USE_API) {
-        // Reservado: cuando B1–B4 existan, cargar summary/by-* aquí y dejar detalle aparte.
-        showToast('Los endpoints de Reportes aún no están disponibles.')
-        setCitasDetalle([])
-        return
-      }
-
-      // allSettled: si Pets falla (p. ej. PHOTO_URL), igual armamos reportes con citas
+      // Detalle + topServices: siempre desde Appointments/catálogos (no hay endpoint de detalle).
       const results = await Promise.allSettled([
         fetchAppointments(),
         fetchVeterinarians(),
@@ -103,41 +112,65 @@ export function useReportesSuperAdmin() {
 
       if (results[0].status === 'rejected') {
         setCitasDetalle([])
-        return
+      } else {
+        const petsById = new Map(pets.map((p) => [p.id, p]))
+        const racesById = new Map(races.map((r) => [r.id, r.name]))
+        const vetsById = new Map(vets.map((v) => [v.id, v]))
+        const servicesById = new Map(services.map((s) => [s.id, s]))
+
+        const mapped: ReportesCitaDetalleVm[] = appointments.map((apt) => {
+          const cp = clientsPets.find((x) => x.id === apt.clientPetId)
+          const pet = cp ? petsById.get(cp.petId) : undefined
+          const vet = vetsById.get(apt.veterinarianId)
+          const uiStatus = mapStatusToAppointmentStatus(apt.statusName)
+          const status: ReportesCitaDetalleVm['status'] =
+            uiStatus === 'Atendido' ? 'Atendido' : uiStatus === 'Cancelado' ? 'Cancelado' : 'Agendado'
+
+          const start = new Date(apt.scheduledStart)
+          return {
+            id: apt.id,
+            dateStr: formatDateEs(apt.scheduledStart),
+            timeStr: start.toLocaleTimeString('es-ES', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            }),
+            professionalName: vet?.userFullName ?? 'Profesional',
+            service: apt.serviceName ?? servicesById.get(apt.serviceId)?.name ?? 'Servicio',
+            petName: pet?.name ?? 'Mascota',
+            petBreed: pet ? racesById.get(pet.raceId) ?? '' : '',
+            status,
+            scheduledStart: apt.scheduledStart,
+          }
+        })
+
+        setCitasDetalle(mapped)
       }
 
-      const petsById = new Map(pets.map((p) => [p.id, p]))
-      const racesById = new Map(races.map((r) => [r.id, r.name]))
-      const vetsById = new Map(vets.map((v) => [v.id, v]))
-      const servicesById = new Map(services.map((s) => [s.id, s]))
-
-      const mapped: ReportesCitaDetalleVm[] = appointments.map((apt) => {
-        const cp = clientsPets.find((x) => x.id === apt.clientPetId)
-        const pet = cp ? petsById.get(cp.petId) : undefined
-        const vet = vetsById.get(apt.veterinarianId)
-        const uiStatus = mapStatusToAppointmentStatus(apt.statusName)
-        const status: ReportesCitaDetalleVm['status'] =
-          uiStatus === 'Atendido' ? 'Atendido' : uiStatus === 'Cancelado' ? 'Cancelado' : 'Agendado'
-
-        const start = new Date(apt.scheduledStart)
-        return {
-          id: apt.id,
-          dateStr: formatDateEs(apt.scheduledStart),
-          timeStr: start.toLocaleTimeString('es-ES', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          }),
-          professionalName: vet?.userFullName ?? 'Profesional',
-          service: apt.serviceName ?? servicesById.get(apt.serviceId)?.name ?? 'Servicio',
-          petName: pet?.name ?? 'Mascota',
-          petBreed: pet ? racesById.get(pet.raceId) ?? '' : '',
-          status,
-          scheduledStart: apt.scheduledStart,
+      // Agregaciones reales: by-status / by-veterinarian / by-day
+      if (REPORTES_USE_API) {
+        try {
+          const [byStatus, byVeterinarian, byDay] = await Promise.all([
+            fetchAppointmentsByStatus(range),
+            fetchAppointmentsByVeterinarian(range),
+            fetchAppointmentsByDay(range),
+          ])
+          setApiParts({ byStatus, byVeterinarian, byDay })
+        } catch (err) {
+          setApiParts(null)
+          const message =
+            err instanceof ApiError
+              ? err.status === 403
+                ? 'No tienes permiso para ver Reportes.'
+                : err.message === 'Unexpected error'
+                  ? 'Error del servidor al cargar agregaciones de reportes.'
+                  : err.message
+              : 'No se pudieron cargar las agregaciones de reportes.'
+          showToast(message)
         }
-      })
-
-      setCitasDetalle(mapped)
+      } else {
+        setApiParts(null)
+      }
     } catch (err) {
       const message =
         err instanceof ApiError
@@ -147,14 +180,15 @@ export function useReportesSuperAdmin() {
           : 'No se pudieron cargar los reportes.'
       showToast(message)
       setCitasDetalle([])
+      setApiParts(null)
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [range, showToast])
 
   useEffect(() => {
-    void loadDetalleCitas()
-  }, [loadDetalleCitas])
+    void loadReportes()
+  }, [loadReportes])
 
   const citasEnPeriodo = useMemo(
     () => citasDetalle.filter((c) => isIsoInRange(c.scheduledStart, range)),
@@ -162,9 +196,23 @@ export function useReportesSuperAdmin() {
   )
 
   const dashboard: ReportesDashboardVm = useMemo(() => {
+    if (REPORTES_USE_API && apiParts) {
+      const topServices = buildTopServicesFromCitas(citasEnPeriodo)
+      const summary = buildSummaryFromByStatus(range, apiParts.byStatus, topServices)
+      return {
+        range,
+        summary,
+        byStatus: apiParts.byStatus,
+        byVeterinarian: apiParts.byVeterinarian,
+        byDay: apiParts.byDay,
+        topServices,
+        citasDetalle: citasEnPeriodo,
+      }
+    }
+
     const built = buildReportesDashboardFromCitas(range, citasEnPeriodo)
     return { ...built, citasDetalle: citasEnPeriodo }
-  }, [range, citasEnPeriodo])
+  }, [range, citasEnPeriodo, apiParts])
 
   const filteredCitas = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
@@ -217,7 +265,6 @@ export function useReportesSuperAdmin() {
     setActiveTab,
     filteredCitas,
     dashboard,
-    // Compat: KPIs antiguos mapeados al summary/by*
     kpis: {
       totalCitas: dashboard.summary.totalAppointments,
       pctAsistencia: Math.round(dashboard.summary.attendanceRate),
@@ -239,7 +286,7 @@ export function useReportesSuperAdmin() {
     activeNotification,
     showToast,
     exportCsv,
-    reload: loadDetalleCitas,
+    reload: loadReportes,
     emptyDashboard: EMPTY_DASHBOARD,
   }
 }

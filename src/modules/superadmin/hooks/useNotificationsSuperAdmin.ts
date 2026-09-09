@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { ApiNotificationResponse } from '../services/superAdminNotificationsService'
-import { fetchNotificationsByUser, updateNotification } from '../services'
+import { fetchNotifications, fetchNotificationsByUser, updateNotification } from '../services'
 import { mapNotificationToNotificacion, NOTIFICATION_READ_STATUS } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 

@@ -4,19 +4,24 @@ import type {
   ReportesDateRange,
   ReportesDayVm,
   ReportesStatusVm,
-  ReportesSummaryVm,
-  ReportesTopServiceVm,
   ReportesVeterinarianVm,
 } from '../types/reportesSuperAdmin.types'
 import { eachDateKeyInRange, toIsoDateLocal } from '../services/superAdminReportsService'
+import { resolveStatusBarClassName } from './reportesStatusBar'
+import {
+  buildTopServicesFromCitas,
+  reportesPct,
+} from './reportesApiMappers'
 
-const STATUS_BAR: Record<string, string> = {
-  Atendido: 'bg-terracotta',
-  Agendado: 'bg-brand/60',
-  Cancelado: 'bg-[#B24C3D]',
-}
+export { STATUS_BAR, resolveStatusBarClassName } from './reportesStatusBar'
+export {
+  reportesPct,
+  buildTopServicesFromCitas,
+  buildSummaryFromByStatus,
+  mapAppointmentsByStatusToVm,
+} from './reportesApiMappers'
 
-// Arma el view-model de reportes a partir del detalle de citas (provisional, sin /api/Reports)
+// Arma el view-model de reportes a partir del detalle de citas (fallback sin /api/Reports)
 export function buildReportesDashboardFromCitas(
   range: ReportesDateRange,
   citas: ReportesCitaDetalleVm[],
@@ -25,24 +30,11 @@ export function buildReportesDashboardFromCitas(
   const attended = citas.filter((c) => c.status === 'Atendido').length
   const scheduled = citas.filter((c) => c.status === 'Agendado').length
   const canceled = citas.filter((c) => c.status === 'Cancelado').length
-  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 1000) / 10 : 0)
+  const pct = (n: number) => reportesPct(n, total)
 
-  const serviceCounts = new Map<string, number>()
-  for (const c of citas) {
-    serviceCounts.set(c.service, (serviceCounts.get(c.service) ?? 0) + 1)
-  }
-  const topServices: ReportesTopServiceVm[] = [...serviceCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([serviceName, appointmentsCount], idx) => ({
-      serviceId: `local-service-${idx}`,
-      serviceName,
-      appointmentsCount,
-      percentage: pct(appointmentsCount),
-    }))
-
+  const topServices = buildTopServicesFromCitas(citas)
   const top = topServices[0]
-  const summary: ReportesSummaryVm = {
+  const summary = {
     from: range.from,
     to: range.to,
     totalAppointments: total,
@@ -62,21 +54,21 @@ export function buildReportesDashboardFromCitas(
       statusName: 'Atendido',
       count: attended,
       percentage: pct(attended),
-      barClassName: STATUS_BAR.Atendido,
+      barClassName: resolveStatusBarClassName('Atendido'),
     },
     {
       statusId: 'local-scheduled',
       statusName: 'Agendado',
       count: scheduled,
       percentage: pct(scheduled),
-      barClassName: STATUS_BAR.Agendado,
+      barClassName: resolveStatusBarClassName('Agendado'),
     },
     {
       statusId: 'local-canceled',
       statusName: 'Cancelado',
       count: canceled,
       percentage: pct(canceled),
-      barClassName: STATUS_BAR.Cancelado,
+      barClassName: resolveStatusBarClassName('Cancelado'),
     },
   ]
 
