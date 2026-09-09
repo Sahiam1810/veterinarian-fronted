@@ -4,25 +4,35 @@ import { ViewPopup } from './ViewPopup'
 import {
   AlertTriangleIcon,
   CloseIcon,
+  EditIcon,
   InfoCircleIcon,
   MedicalFolderIcon,
   PhoneIcon,
+  TrashIcon,
 } from './MascotasIcons'
 
 interface MascotaDetailPanelProps {
   detail: MascotaDetail
+  canEdit?: boolean
+  canDelete?: boolean
   onClose: () => void
   onViewClinicalHistory?: () => void
   onRegistrarAtencion?: () => void
+  onEditPet?: () => void
+  onDeletePet?: () => void
   isHistoryLoading?: boolean
 }
 
 // Panel derecho: solo visible al seleccionar; se cierra con X
 export function MascotaDetailPanel({
   detail,
+  canEdit = false,
+  canDelete = false,
   onClose,
   onViewClinicalHistory,
   onRegistrarAtencion,
+  onEditPet,
+  onDeletePet,
   isHistoryLoading = false,
 }: MascotaDetailPanelProps) {
   return (
@@ -41,6 +51,31 @@ export function MascotaDetailPanel({
               </h2>
               <div className="flex items-center gap-1.5 shrink-0">
                 <StatusPill status={detail.status} />
+
+                {canEdit && onEditPet && (
+                  <button
+                    type="button"
+                    onClick={onEditPet}
+                    className="w-8 h-8 rounded-lg border border-border-tan text-sage hover:text-brand hover:border-brand/30 hover:bg-bone transition cursor-pointer inline-flex items-center justify-center"
+                    aria-label="Editar mascota"
+                    title="Editar mascota"
+                  >
+                    <EditIcon className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {canDelete && onDeletePet && (
+                  <button
+                    type="button"
+                    onClick={onDeletePet}
+                    className="w-8 h-8 rounded-lg border border-border-tan text-terracotta hover:bg-terracotta-soft hover:border-terracotta/30 transition cursor-pointer inline-flex items-center justify-center"
+                    aria-label="Eliminar mascota"
+                    title="Eliminar mascota"
+                  >
+                    <TrashIcon className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={onClose}

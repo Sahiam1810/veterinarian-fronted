@@ -836,7 +836,7 @@ function PermissionMatrixPanel({
         {isTargetUser && isUserTargetCustomized && !matrixLocked && (
           <button
             type="button"
-            onClick={onResetUserPermissions}
+            onClick={() => onResetUserPermissions()}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shrink-0 shadow-2xs"
             title="Restablecer a los permisos predeterminados del rol"
           >
@@ -865,6 +865,18 @@ function PermissionMatrixPanel({
                 delete: false,
               }
 
+              const rolePerms = activeTargetRole?.permissions[mod.id] || {
+                view: false,
+                create: false,
+                edit: false,
+                delete: false,
+              }
+
+              const isInheritedView = isTargetUser && Boolean(rolePerms.view)
+              const isInheritedCreate = isTargetUser && Boolean(rolePerms.create)
+              const isInheritedEdit = isTargetUser && Boolean(rolePerms.edit)
+              const isInheritedDelete = isTargetUser && Boolean(rolePerms.delete)
+
               return (
                 <tr key={mod.id} className="hover:bg-bone/40 transition-colors">
                   <td className="py-1.5 px-2 font-semibold text-charcoal truncate">
@@ -873,10 +885,17 @@ function PermissionMatrixPanel({
                   <td className="py-1.5 px-1 text-center">
                     <input
                       type="checkbox"
-                      checked={perms.view}
-                      disabled={matrixLocked}
+                      checked={isInheritedView || perms.view}
+                      disabled={matrixLocked || isInheritedView}
                       onChange={() => onTogglePermission(mod.id, 'view')}
-                      className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      title={
+                        isInheritedView
+                          ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                          : undefined
+                      }
+                      className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
+                        isInheritedView ? 'opacity-70' : 'disabled:opacity-50'
+                      }`}
                       aria-label={`Permiso Ver para ${mod.label}`}
                     />
                   </td>
@@ -884,10 +903,17 @@ function PermissionMatrixPanel({
                     {mod.supportsCreate !== false ? (
                       <input
                         type="checkbox"
-                        checked={perms.create}
-                        disabled={matrixLocked}
+                        checked={isInheritedCreate || perms.create}
+                        disabled={matrixLocked || isInheritedCreate}
                         onChange={() => onTogglePermission(mod.id, 'create')}
-                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        title={
+                          isInheritedCreate
+                            ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                            : undefined
+                        }
+                        className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
+                          isInheritedCreate ? 'opacity-70' : 'disabled:opacity-50'
+                        }`}
                         aria-label={`Permiso Crear para ${mod.label}`}
                       />
                     ) : (
@@ -898,10 +924,17 @@ function PermissionMatrixPanel({
                     {mod.supportsEdit !== false ? (
                       <input
                         type="checkbox"
-                        checked={perms.edit}
-                        disabled={matrixLocked}
+                        checked={isInheritedEdit || perms.edit}
+                        disabled={matrixLocked || isInheritedEdit}
                         onChange={() => onTogglePermission(mod.id, 'edit')}
-                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        title={
+                          isInheritedEdit
+                            ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                            : undefined
+                        }
+                        className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
+                          isInheritedEdit ? 'opacity-70' : 'disabled:opacity-50'
+                        }`}
                         aria-label={`Permiso Editar para ${mod.label}`}
                       />
                     ) : (
@@ -912,10 +945,17 @@ function PermissionMatrixPanel({
                     {mod.supportsDelete !== false ? (
                       <input
                         type="checkbox"
-                        checked={perms.delete}
-                        disabled={matrixLocked}
+                        checked={isInheritedDelete || perms.delete}
+                        disabled={matrixLocked || isInheritedDelete}
                         onChange={() => onTogglePermission(mod.id, 'delete')}
-                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        title={
+                          isInheritedDelete
+                            ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                            : undefined
+                        }
+                        className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
+                          isInheritedDelete ? 'opacity-70' : 'disabled:opacity-50'
+                        }`}
                         aria-label={`Permiso Eliminar para ${mod.label}`}
                       />
                     ) : (

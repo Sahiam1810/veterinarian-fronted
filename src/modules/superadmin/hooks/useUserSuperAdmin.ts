@@ -45,6 +45,7 @@ import {
   fetchAllUserPermissions,
   createUserPermission as apiCreateUserPermission,
   updateUserPermission as apiUpdateUserPermission,
+  deleteUserPermission as apiDeleteUserPermission,
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
@@ -587,6 +588,11 @@ export function useUserSuperAdmin() {
         showToast('El cliente no usa el panel web; no se asignan permisos de sesión.', 'warning')
         return
       }
+      const baseRole = roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
+      if (baseRole?.permissions[moduleId]?.[permissionKey]) {
+        // Heredado del rol base: no se puede desactivar individualmente por usuario
+        return
+      }
       const currentCombined = activePermissions[moduleId] || {
         view: false,
         create: false,
@@ -780,31 +786,68 @@ export function useUserSuperAdmin() {
   }
 
   // Reset user custom permissions back to default role
-  const resetUserPermissions = (userId?: string) => {
-    const targetId = userId || selectedTargetUser?.id
-    if (!targetId) return
-    const protectedUser = users.find((u) => u.id === targetId)
+  const resetUserPermissions = async (userId?: unknown) => {
+    const cleanId =
+      typeof userId === 'string' && userId
+        ? userId
+        : selectedTargetUser?.id
+    if (!cleanId) return
+
+    const protectedUser = users.find(
+      (u) => u.id.toLowerCase() === cleanId.toLowerCase()
+    )
     if (protectedUser && isProtectedSuperAdminUser(protectedUser)) {
       showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
       return
     }
 
-    clearUserUiShellOverrides({
-      id: targetId,
-      email: users.find((u) => u.id === targetId)?.email,
-    })
+    try {
+      // 1. Eliminar todas las excepciones del usuario en la base de datos (Oracle)
+      const userPermsToDelete = rawUserPermissions.filter(
+        (p) => p.userId && p.userId.toLowerCase() === cleanId.toLowerCase()
+      )
+      if (userPermsToDelete.length > 0) {
+        await Promise.allSettled(
+          userPermsToDelete.map((p) => apiDeleteUserPermission(p.id))
+        )
+      }
 
-    setUsers((prevUsers) =>
-      prevUsers.map((u) => {
-        if (u.id !== targetId) return u
-        const { customPermissions: _, ...rest } = u
-        return rest
+      // 2. Limpiar overrides locales de UI Shell
+      clearUserUiShellOverrides({
+        id: cleanId,
+        email: users.find(
+          (u) => u.id.toLowerCase() === cleanId.toLowerCase()
+        )?.email,
       })
-    )
 
-    const targetUser = users.find((u) => u.id === targetId)
-    if (targetUser) {
-      showToast(`Permisos de "${targetUser.name}" restablecidos a los del rol "${targetUser.roleName}"`)
+      // 3. Limpiar customPermissions en el estado local de inmediato
+      setUsers((prevUsers) =>
+        prevUsers.map((u) => {
+          if (u.id.toLowerCase() !== cleanId.toLowerCase()) return u
+          const { customPermissions: _, ...rest } = u
+          return rest
+        })
+      )
+      setRawUserPermissions((prev) =>
+        prev.filter(
+          (p) => p.userId && p.userId.toLowerCase() !== cleanId.toLowerCase()
+        )
+      )
+
+      // 4. Recargar datos limpios desde el backend
+      await loadData()
+
+      const targetUser = users.find(
+        (u) => u.id.toLowerCase() === cleanId.toLowerCase()
+      )
+      if (targetUser) {
+        showToast(
+          `Permisos de "${targetUser.name}" restablecidos a los del rol "${targetUser.roleName}"`
+        )
+      }
+    } catch (err) {
+      console.error('Error al restablecer permisos de usuario', err)
+      showToast('Error al restablecer permisos en el servidor.', 'warning')
     }
   }
 

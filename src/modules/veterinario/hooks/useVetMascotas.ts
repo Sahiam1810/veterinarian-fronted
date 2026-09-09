@@ -6,11 +6,22 @@ import type {
 } from '../types'
 import {
   fetchHistoriaClinica,
-  fetchVetMascotasDirectory,
+  fetchVetMascotasBundle,
+  createVetPet,
+  updateVetPet,
+  deleteVetPet,
 } from '../services'
+import { fetchMyModulePermissions } from '@/modules/auth'
 import { vetApiFetch } from '../api/vetHttp'
-import type { ApiAppointment, ApiClientPet } from '../api/apiTypes'
+import type {
+  ApiAppointment,
+  ApiClient,
+  ApiClientPet,
+  ApiNamedCatalog,
+  ApiPet,
+} from '../api/apiTypes'
 import type { AvailableAppointmentOption } from '../components'
+import type { VetMascotaFormData } from '../components/VetMascotaModal'
 
 const PAGE_SIZE = 8
 
@@ -27,6 +38,17 @@ export interface MascotasRegistrarTarget {
 
 export function useVetMascotas(enabled: boolean) {
   const [directory, setDirectory] = useState<MascotasDirectoryPayload | null>(null)
+  const [rawPets, setRawPets] = useState<ApiPet[]>([])
+  const [clientPets, setClientPets] = useState<ApiClientPet[]>([])
+  const [speciesList, setSpeciesList] = useState<ApiNamedCatalog[]>([])
+  const [racesList, setRacesList] = useState<ApiNamedCatalog[]>([])
+  const [clientsList, setClientsList] = useState<ApiClient[]>([])
+  const [permissions, setPermissions] = useState({
+    canCreate: false,
+    canEdit: false,
+    canDelete: false,
+  })
+
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -37,6 +59,15 @@ export function useVetMascotas(enabled: boolean) {
   const [isHistoriaOpen, setIsHistoriaOpen] = useState(false)
   const [isHistoriaLoading, setIsHistoriaLoading] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+
+  // Modales CRUD Mascotas
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editingPetId, setEditingPetId] = useState<string | null>(null)
+  const [editingPet, setEditingPet] = useState<VetMascotaFormData | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [deletingPetId, setDeletingPetId] = useState<string | null>(null)
+  const [deletingPetName, setDeletingPetName] = useState('')
 
   // Modal registrar atención
   const [isRegistrarOpen, setIsRegistrarOpen] = useState(false)
@@ -53,8 +84,26 @@ export function useVetMascotas(enabled: boolean) {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await fetchVetMascotasDirectory()
-      setDirectory(data)
+      const [bundle, myPerms] = await Promise.all([
+        fetchVetMascotasBundle(),
+        fetchMyModulePermissions().catch(() => ({})),
+      ])
+
+      setDirectory(bundle.directory)
+      setRawPets(bundle.rawPets)
+      setClientPets(bundle.clientPets)
+      setSpeciesList(bundle.species)
+      setRacesList(bundle.races)
+      setClientsList(bundle.clients)
+
+      const mascotPerm = (myPerms as Record<string, { canCreate?: boolean; canEdit?: boolean; canDelete?: boolean }>)?.['Mascotas']
+      if (mascotPerm) {
+        setPermissions({
+          canCreate: Boolean(mascotPerm.canCreate),
+          canEdit: Boolean(mascotPerm.canEdit),
+          canDelete: Boolean(mascotPerm.canDelete),
+        })
+      }
       setPage(1)
     } catch (err) {
       const msg =
@@ -245,6 +294,92 @@ export function useVetMascotas(enabled: boolean) {
     }
   }
 
+  // Handlers CRUD Mascotas
+  const handleOpenCreate = () => {
+    setIsCreateOpen(true)
+  }
+
+  const handleCloseCreate = () => {
+    setIsCreateOpen(false)
+  }
+
+  const handleCreatePet = async (data: VetMascotaFormData) => {
+    await createVetPet(data)
+    showNotice(`¡Mascota ${data.name} registrada con éxito!`)
+    await loadDirectory()
+  }
+
+  const handleOpenEdit = (petId?: string) => {
+    const targetId = petId || selectedId
+    if (!targetId) {
+      showNotice('Selecciona una mascota para editar.')
+      return
+    }
+
+    const raw = rawPets.find((p) => p.id.toLowerCase() === targetId.toLowerCase())
+    const matchingCp = clientPets.find((cp) => cp.petId.toLowerCase() === targetId.toLowerCase())
+    const detail = directory?.detailsById[targetId]
+
+    setEditingPetId(targetId)
+    setEditingPet({
+      name: raw?.name || detail?.name || '',
+      speciesId: raw?.speciesId || speciesList[0]?.id || '',
+      raceId: raw?.raceId || racesList[0]?.id || '',
+      age: typeof raw?.age === 'number' ? raw.age : 1,
+      gender: raw?.gender || (detail?.sexLabel === 'Macho' ? 'Macho' : 'Hembra'),
+      weight: typeof raw?.weight === 'number' ? raw.weight : 5,
+      observations: raw?.observations || detail?.allergyAlert || '',
+      clientId: matchingCp?.clientId,
+      photoUrl: raw?.photoUrl || null,
+    })
+    setIsEditOpen(true)
+  }
+
+  const handleCloseEdit = () => {
+    setIsEditOpen(false)
+    setEditingPetId(null)
+    setEditingPet(null)
+  }
+
+  const handleUpdatePet = async (data: VetMascotaFormData) => {
+    if (!editingPetId) return
+    await updateVetPet(editingPetId, data)
+    showNotice(`¡Mascota ${data.name} actualizada con éxito!`)
+    await loadDirectory()
+  }
+
+  const handleOpenDelete = (petId?: string) => {
+    const targetId = petId || selectedId
+    if (!targetId) {
+      showNotice('Selecciona una mascota para eliminar.')
+      return
+    }
+
+    const detail = directory?.detailsById[targetId]
+    const raw = rawPets.find((p) => p.id.toLowerCase() === targetId.toLowerCase())
+    const name = raw?.name || detail?.name || 'Mascota'
+
+    setDeletingPetId(targetId)
+    setDeletingPetName(name)
+    setIsDeleteOpen(true)
+  }
+
+  const handleCloseDelete = () => {
+    setIsDeleteOpen(false)
+    setDeletingPetId(null)
+    setDeletingPetName('')
+  }
+
+  const handleDeletePet = async () => {
+    if (!deletingPetId) return
+    await deleteVetPet(deletingPetId)
+    if (selectedId === deletingPetId) {
+      setSelectedId(null)
+    }
+    showNotice('Mascota eliminada del sistema con éxito.')
+    await loadDirectory()
+  }
+
   const handlePrevPage = () => {
     setPage((current) => Math.max(1, current - 1))
   }
@@ -272,6 +407,15 @@ export function useVetMascotas(enabled: boolean) {
     isHistoriaLoading,
     isRegistrarOpen,
     registrarTarget,
+    permissions,
+    speciesList,
+    racesList,
+    clientsList,
+    isCreateOpen,
+    isEditOpen,
+    editingPet,
+    isDeleteOpen,
+    deletingPetName,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
@@ -280,6 +424,15 @@ export function useVetMascotas(enabled: boolean) {
     handleOpenRegistrar,
     handleCloseRegistrar,
     handleRegistrationSuccess,
+    handleOpenCreate,
+    handleCloseCreate,
+    handleCreatePet,
+    handleOpenEdit,
+    handleCloseEdit,
+    handleUpdatePet,
+    handleOpenDelete,
+    handleCloseDelete,
+    handleDeletePet,
     handlePrevPage,
     handleNextPage,
   }

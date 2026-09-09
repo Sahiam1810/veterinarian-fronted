@@ -14,12 +14,18 @@ interface VetMascotasViewProps {
   pageStart: number
   pageEnd: number
   totalCount: number
+  canCreate?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
   historia: HistoriaClinicaPayload | null
   isHistoriaOpen: boolean
   isHistoriaLoading?: boolean
   onSearchChange: (value: string) => void
   onSpeciesChange: (value: string) => void
   onOpenFilters?: () => void
+  onCreatePet?: () => void
+  onEditPet?: (petId?: string) => void
+  onDeletePet?: (petId?: string) => void
   onSelect: (petId: string) => void
   onCloseDetail: () => void
   onViewClinicalHistory?: () => void
@@ -40,12 +46,18 @@ export function VetMascotasView({
   pageStart,
   pageEnd,
   totalCount,
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
   historia,
   isHistoriaOpen,
   isHistoriaLoading = false,
   onSearchChange,
   onSpeciesChange,
   onOpenFilters,
+  onCreatePet,
+  onEditPet,
+  onDeletePet,
   onSelect,
   onCloseDetail,
   onViewClinicalHistory,
@@ -66,9 +78,11 @@ export function VetMascotasView({
             search={search}
             speciesFilter={speciesFilter}
             speciesOptions={speciesOptions}
+            canCreate={canCreate}
             onSearchChange={onSearchChange}
             onSpeciesChange={onSpeciesChange}
             onOpenFilters={onOpenFilters}
+            onCreatePet={onCreatePet}
           />
         </div>
 
@@ -84,7 +98,11 @@ export function VetMascotasView({
               pageStart={pageStart}
               pageEnd={pageEnd}
               totalCount={totalCount}
+              canEdit={canEdit}
+              canDelete={canDelete}
               onSelect={onSelect}
+              onEditPet={onEditPet}
+              onDeletePet={onDeletePet}
               onPrevPage={onPrevPage}
               onNextPage={onNextPage}
             />
@@ -94,9 +112,13 @@ export function VetMascotasView({
             <div className="absolute inset-0 z-20 lg:static lg:inset-auto lg:z-auto lg:w-[340px] xl:w-[360px] lg:shrink-0 min-h-0 min-w-0">
               <MascotaDetailPanel
                 detail={selectedDetail}
+                canEdit={canEdit}
+                canDelete={canDelete}
                 onClose={onCloseDetail}
                 onViewClinicalHistory={onViewClinicalHistory}
                 onRegistrarAtencion={onRegistrarAtencion}
+                onEditPet={() => onEditPet?.(selectedDetail.id)}
+                onDeletePet={() => onDeletePet?.(selectedDetail.id)}
                 isHistoryLoading={isHistoriaLoading}
               />
             </div>

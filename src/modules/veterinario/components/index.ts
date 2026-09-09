@@ -22,8 +22,12 @@ export type { AvailableAppointmentOption } from './RegistrarAtencionModal'
 export { CitaAccionesModal } from './CitaAccionesModal'
 export type { CitaActionTarget } from './CitaAccionesModal'
 export { VetChangePasswordModal } from './VetChangePasswordModal'
+export { VetMascotaModal } from './VetMascotaModal'
+export type { VetMascotaFormData } from './VetMascotaModal'
+export { VetEliminarMascotaModal } from './VetEliminarMascotaModal'
 export * from './VetHomeIcons'
 export * from './AgendaIcons'
 export * from './MascotasIcons'
 export * from './PerfilIcons'
+
 

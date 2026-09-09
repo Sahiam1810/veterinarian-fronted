@@ -45,6 +45,7 @@ export interface ApiPet {
   observations?: string | null
   speciesId: string
   raceId: string
+  photoUrl?: string | null
 }
 
 export interface ApiClient {
