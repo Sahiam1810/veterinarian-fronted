@@ -52,6 +52,7 @@ test('fetchVetNavPermissions returns all nav keys when all modules have canView 
 
   const permissions = await fetchVetNavPermissions()
   assert.ok(permissions)
+  if (!permissions) return
   assert.deepEqual(permissions, ['vet.inicio', 'vet.agenda', 'vet.mascotas', 'vet.perfil'])
   assert.equal(isNavPermissionGranted(permissions, 'vet.agenda'), true)
   assert.equal(isNavPermissionGranted(permissions, 'vet.mascotas'), true)
@@ -69,6 +70,7 @@ test('fetchVetNavPermissions filters out vet.agenda when Citas canView is false'
 
   const permissions = await fetchVetNavPermissions()
   assert.ok(permissions)
+  if (!permissions) return
   assert.equal(permissions.includes('vet.agenda'), false)
   assert.equal(permissions.includes('vet.mascotas'), true)
   assert.equal(permissions.includes('vet.inicio'), true)
@@ -98,6 +100,7 @@ test('fetchVetNavPermissions filters out vet.mascotas when Mascotas canView is f
 
   const permissions = await fetchVetNavPermissions()
   assert.ok(permissions)
+  if (!permissions) return
   assert.equal(permissions.includes('vet.mascotas'), false)
   assert.equal(permissions.includes('vet.agenda'), true)
   assert.equal(isNavPermissionGranted(permissions, 'vet.mascotas'), false)
@@ -116,6 +119,7 @@ test('fetchVetNavPermissions falls back to VET_ALWAYS_VISIBLE_NAV on network/aut
 
   const permissions = await fetchVetNavPermissions()
   assert.ok(permissions)
+  if (!permissions) return
   assert.deepEqual(
     permissions,
     VET_ALWAYS_VISIBLE_NAV.filter((k) => VET_DEFAULT_PERMISSIONS.includes(k)),
