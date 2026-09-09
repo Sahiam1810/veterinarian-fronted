@@ -61,24 +61,23 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 
 export function isStaffRole(role: string | undefined | null): boolean {
   const normalized = (role || '').trim().toLowerCase()
-  return (
-    normalized === 'superadmin' ||
-    normalized === 'admin' ||
-    normalized === 'veterinario' ||
-    normalized === 'recepcionista' ||
-    normalized === 'auxiliar'
-  )
+  if (!normalized || normalized === 'unknown' || normalized === 'cliente' || normalized === 'client') {
+    return false
+  }
+  return true
 }
 
 // Mapea el nombre de rol Oracle/API al rol del frontend.
-export function mapBackendRole(roleName: string | undefined | null): UserRole | 'unknown' {
+export function mapBackendRole(roleName: string | undefined | null): UserRole | 'cliente' | 'unknown' {
   const normalized = (roleName || '').trim().toLowerCase()
+  if (!normalized) return 'unknown'
+  if (normalized === 'cliente' || normalized === 'client') return 'cliente'
   if (normalized.includes('superadmin') || normalized.includes('super admin')) return 'superadmin'
   if (normalized.includes('administrador') || normalized === 'admin') return 'admin'
   if (normalized.includes('veterinar')) return 'veterinario'
   if (normalized.includes('recep')) return 'recepcionista'
   if (normalized.includes('aux')) return 'auxiliar'
-  return 'unknown'
+  return 'custom'
 }
 
 function readJwtPayload(accessToken: string): Record<string, unknown> | null {

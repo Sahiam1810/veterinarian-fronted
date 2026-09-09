@@ -67,6 +67,19 @@ export default function App() {
   const role = (currentUser.role || '').toLowerCase()
   const roleName = (currentUser.roleName || '').toLowerCase()
 
+  // Bloqueo explícito de clientes
+  if (role === 'cliente' || roleName === 'cliente' || roleName.includes('cliente')) {
+    logout()
+    return (
+      <LoginPage
+        onLogin={login}
+        isSubmitting={isSubmitting}
+        error="Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot."
+      />
+    )
+  }
+
+  // Shells específicos para roles conocidos (retrocompatibilidad)
   if (role === 'veterinario' || roleName.includes('veterinario')) {
     return (
       <VetPuntoInicio
@@ -96,19 +109,9 @@ export default function App() {
     )
   }
 
-  if (role === 'superadmin' || role === 'admin' || roleName.includes('admin') || roleName.includes('superadmin')) {
-    return <SuperAdminApp user={currentUser} onLogout={logout} />
-  }
-
-  // Si no es un rol Staff autorizado (ej. Cliente o desconocido), cerrar sesión y denegar acceso
-  logout()
-  return (
-    <LoginPage
-      onLogin={login}
-      isSubmitting={isSubmitting}
-      error="Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot."
-    />
-  )
+  // Superadmin, Admin y cualquier rol configurable/personalizado (ej. Practicante, Auditor)
+  // acceden al shell SuperAdminApp, el cual filtra las vistas dinámicamente según sus permisos reales.
+  return <SuperAdminApp user={currentUser} onLogout={logout} />
 }
 
 // Shell superadministrador / administrador de clínica

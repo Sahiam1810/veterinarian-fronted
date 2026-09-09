@@ -1,4 +1,4 @@
-export type UserRole = 'superadmin' | 'admin' | 'veterinario' | 'recepcionista' | 'auxiliar'
+export type UserRole = 'superadmin' | 'admin' | 'veterinario' | 'recepcionista' | 'auxiliar' | 'custom'
 
 export interface AuthUser {
   id: string
