@@ -11,7 +11,18 @@ export type {
   ApiUpdateAppointmentStatusRequest,
   FetchVetAgendaParams,
 } from './vetAgendaService'
-export { fetchVetMascotasDirectory, fetchVetMascotasBundle } from './vetMascotasService'
+export {
+  fetchVetMascotasDirectory,
+  fetchVetMascotasBundle,
+  createVetPet,
+  updateVetPet,
+  deleteVetPet,
+} from './vetMascotasService'
+export type {
+  VetMascotasBundle,
+  CreateVetPetPayload,
+  UpdateVetPetPayload,
+} from './vetMascotasService'
 export {
   fetchHistoriaClinica,
   fetchDiagnostics,

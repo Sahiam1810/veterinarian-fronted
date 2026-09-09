@@ -12,6 +12,10 @@ import { buildVetMascotasDirectoryAll } from '../utils/buildVetMascotasDirectory
 export interface VetMascotasBundle {
   directory: MascotasDirectoryPayload
   clientPets: ApiClientPet[]
+  rawPets: ApiPet[]
+  species: ApiNamedCatalog[]
+  races: ApiNamedCatalog[]
+  clients: ApiClient[]
 }
 
 // Carga el directorio de mascotas desde endpoints Staff existentes.
@@ -40,5 +44,76 @@ export async function fetchVetMascotasBundle(): Promise<VetMascotasBundle> {
       appointments,
     }),
     clientPets,
+    rawPets: pets,
+    species,
+    races,
+    clients,
   }
 }
+
+export interface CreateVetPetPayload {
+  name: string
+  age: number
+  gender: string
+  weight: number
+  observations?: string | null
+  speciesId: string
+  raceId: string
+  photoUrl?: string | null
+  clientId?: string
+}
+
+export async function createVetPet(
+  payload: CreateVetPetPayload
+): Promise<{ id: string }> {
+  const { clientId, ...petData } = payload
+  const newPet = await vetApiFetch<{ id: string }>('/api/pets', {
+    method: 'POST',
+    body: JSON.stringify(petData),
+  })
+
+  if (clientId && newPet?.id) {
+    try {
+      await vetApiFetch('/api/clientspets', {
+        method: 'POST',
+        body: JSON.stringify({
+          clientId,
+          petId: newPet.id,
+          isPrimaryOwner: true,
+        }),
+      })
+    } catch (err) {
+      console.warn('No se pudo asociar la mascota al cliente:', err)
+    }
+  }
+
+  return newPet
+}
+
+export interface UpdateVetPetPayload {
+  name: string
+  age: number
+  gender: string
+  weight: number
+  observations?: string | null
+  speciesId: string
+  raceId: string
+  photoUrl?: string | null
+}
+
+export async function updateVetPet(
+  id: string,
+  payload: UpdateVetPetPayload
+): Promise<void> {
+  await vetApiFetch(`/api/pets/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteVetPet(id: string): Promise<void> {
+  await vetApiFetch(`/api/pets/${id}`, {
+    method: 'DELETE',
+  })
+}
+
