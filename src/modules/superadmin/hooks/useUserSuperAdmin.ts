@@ -870,7 +870,8 @@ export function useUserSuperAdmin() {
       const result = await apiCreateFullUser({
         fullName,
         email,
-        password: data.password || 'Huellitas2026!',
+        // Sin fallback literal: vacío lo rechaza createFullUser / UI (UserSuperAdmin).
+        password: data.password ?? '',
         roleId: data.roleId,
       })
 

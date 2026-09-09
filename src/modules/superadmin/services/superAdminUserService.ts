@@ -1,4 +1,5 @@
 import { apiClient } from '@/services'
+import { requireCreateUserPassword } from './requireCreateUserPassword'
 
 export interface ApiUserResponse {
   id: string
@@ -58,7 +59,8 @@ export interface ApiUpdateUserRequest {
 export interface CreateFullUserParams {
   fullName: string
   email: string
-  password: string
+  // Obligatorio en runtime; vacío/undefined lo rechaza requireCreateUserPassword.
+  password?: string
   roleId: string
   username?: string
 }
@@ -100,7 +102,8 @@ export async function createUserCredentials(data: ApiCreateUserCredentialsReques
  * Paso 3: POST /api/UserCredentials (define la contraseña de login con accountId)
  */
 export async function createFullUser(params: CreateFullUserParams): Promise<CreateFullUserResult> {
-  const password = params.password?.trim() || 'Huellitas2026!'
+  // Defensa en profundidad: sin password no se llama a la API ni se usa literal publicado.
+  const password = requireCreateUserPassword(params.password)
   const username = params.username?.trim() || params.email.split('@')[0] || params.fullName.replace(/\s+/g, '').toLowerCase()
 
   // Paso 1: Crear usuario en /api/Users
