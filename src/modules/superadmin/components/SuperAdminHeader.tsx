@@ -39,7 +39,7 @@ export function SuperAdminHeader({
       : notifications.filter((n) => !n.isRead).length
 
   return (
-    <header className="sticky top-0 z-50 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-bone border-b border-border-tan relative overflow-hidden transition-all duration-200">
+    <header className="sticky top-0 z-50 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-bone border-b border-border-tan relative transition-all duration-200">
       {/* Texture & Ambient Lighting Layer */}
       <HeaderBackgroundTexture />
 

@@ -10,11 +10,17 @@ export function useNotificationsSuperAdmin(userId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
-    if (!userId) return
     setIsLoading(true)
     setError(null)
     try {
-      const data = await fetchNotificationsByUser(userId)
+      let data: ApiNotificationResponse[] = []
+      try {
+        data = await fetchNotifications()
+      } catch {
+        if (userId) {
+          data = await fetchNotificationsByUser(userId)
+        }
+      }
       const sorted = [...data].sort(
         (a, b) => new Date(b.sentAt ?? b.createdAt).getTime() - new Date(a.sentAt ?? a.createdAt).getTime()
       )
