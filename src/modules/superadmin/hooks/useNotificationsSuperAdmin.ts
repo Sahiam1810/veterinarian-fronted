@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { ApiNotificationResponse } from '../services/superAdminNotificationsService'
-import { fetchNotifications, fetchNotificationsByUser, updateNotification } from '../services'
+import { fetchNotificationsByUser, updateNotification } from '../services'
 import { mapNotificationToNotificacion, NOTIFICATION_READ_STATUS } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 
@@ -13,14 +13,11 @@ export function useNotificationsSuperAdmin(userId: string | undefined) {
     setIsLoading(true)
     setError(null)
     try {
-      let data: ApiNotificationResponse[] = []
-      try {
-        data = await fetchNotifications()
-      } catch {
-        if (userId) {
-          data = await fetchNotificationsByUser(userId)
-        }
-      }
+      // La campana de notificaciones es personal: solo las del usuario autenticado.
+      // GET /api/Notifications (fetchNotifications) trae las de TODO el sistema —
+      // usarlo acá hacía que cualquier admin viera recordatorios de otros usuarios
+      // (ej. el de un dueño de mascota) como si fueran propios.
+      const data = userId ? await fetchNotificationsByUser(userId) : []
       const sorted = [...data].sort(
         (a, b) => new Date(b.sentAt ?? b.createdAt).getTime() - new Date(a.sentAt ?? a.createdAt).getTime()
       )

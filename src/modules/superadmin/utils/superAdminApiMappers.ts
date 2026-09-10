@@ -297,19 +297,21 @@ export function mapStatusToAppointmentStatus(statusName?: string | null): Appoin
   return 'Agendado'
 }
 
+// El backend serializa ScheduledStart/ScheduledEnd en UTC (con sufijo Z). Hay que
+// pasar por un objeto Date y leer los getters LOCALES (hora de Bogotá en este
+// sistema) — nunca recortar los dígitos crudos del string, porque esos dígitos
+// son la hora UTC, no la hora local (ej. 8am Bogotá llega como "...T13:00:00Z").
 function toDateKey(iso: string): string {
   if (!iso) return ''
-  if (iso.includes('T')) {
-    return iso.slice(0, 10)
+  const d = new Date(iso)
+  if (!Number.isNaN(d.getTime())) {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
   }
   const match = iso.match(/^\d{4}-\d{2}-\d{2}/)
-  if (match) return match[0]
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso.slice(0, 10)
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return match ? match[0] : iso.slice(0, 10)
 }
 
 function toTimeLabel(iso: string): string {
@@ -324,22 +326,17 @@ function toTimeLabel(iso: string): string {
 
 function toTime24(iso: string): string {
   if (!iso) return '08:00'
-  if (iso.includes('T')) {
-    const timePart = iso.slice(iso.indexOf('T') + 1)
-    const match = timePart.match(/^(\d{1,2}):(\d{2})/)
-    if (match) {
-      return `${match[1].padStart(2, '0')}:${match[2]}`
-    }
+  const d = new Date(iso)
+  if (!Number.isNaN(d.getTime())) {
+    const h = String(d.getHours()).padStart(2, '0')
+    const m = String(d.getMinutes()).padStart(2, '0')
+    return `${h}:${m}`
   }
   const match = iso.match(/^(\d{1,2}):(\d{2})/)
   if (match) {
     return `${match[1].padStart(2, '0')}:${match[2]}`
   }
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '08:00'
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${h}:${m}`
+  return '08:00'
 }
 
 // Extrae consultorio y notas limpias de la cadena de texto de la API
