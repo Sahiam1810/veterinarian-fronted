@@ -238,7 +238,7 @@ export function ProfesionalesSuperAdmin({
           {/* Toast Notification */}
           {activeNotification && <PageToast message={activeNotification} />}
 
-          {/* Header de la Vista: Título y Subtítulo + Botón Nueva Cita */}
+          {/* Header de la Vista: Título y Subtítulo */}
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
@@ -247,28 +247,6 @@ export function ProfesionalesSuperAdmin({
               <p className="text-xs sm:text-sm text-sage font-medium mt-1">
                 Administra el equipo médico, sus horarios y agenda nuevas citas.
               </p>
-            </div>
-
-            <div className="flex items-center gap-2.5 flex-wrap justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingProfesional(null)
-                  setIsProfModalOpen(true)
-                }}
-                className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-sm active:translate-y-0.5"
-              >
-                <PlusIcon className="w-4 h-4 text-white" />
-                <span>Agregar Profesional</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsCitaDrawerOpen(true)}
-                className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-sm active:translate-y-0.5"
-              >
-                <PlusIcon className="w-4 h-4 text-white" />
-                <span>Nueva Cita</span>
-              </button>
             </div>
           </div>
 
