@@ -9,16 +9,12 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc -b --pretty false",
-
-
-    "test": "node --test --experimental-strip-types tests/auth/systemRoles.test.ts tests/auth/sessionRefresh.test.ts tests/navigation/vetNavPermissions.test.ts tests/superadmin/createFullUserPassword.test.ts tests/superadmin/mapAppointmentsByStatus.test.ts tests/veterinario/registrarAtencionDiagnostics.test.ts",
-
+    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
     "test:auth": "node --test --experimental-strip-types \"tests/auth/**/*.test.ts\"",
     "test:superadmin": "node --test --experimental-strip-types \"tests/superadmin/**/*.test.ts\"",
     "test:nav": "node --test --experimental-strip-types tests/navigation/vetNavPermissions.test.ts",
-    "test:vet": "node --test --experimental-strip-types \"tests/veterinario/**/*.test.ts\""
+    "test:vet": "node --test --experimental-strip-types \"tests/veterinario/**/*.test.ts\"",
     "test:notifications": "node --test --experimental-strip-types \"tests/notifications/**/*.test.ts\""
-
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.11",
