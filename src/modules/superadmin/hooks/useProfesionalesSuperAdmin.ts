@@ -29,7 +29,6 @@ import {
   createAvailability,
   updateAvailability,
   deleteAvailability,
-  createFullUser,
   updateUser,
   activateUser,
   deactivateUser,
@@ -414,6 +413,11 @@ export function useProfesionalesSuperAdmin() {
   }
 
   const handleSaveProfesional = async (data: ProfesionalFormData) => {
+    if (!editingProfesional?.userId) {
+      showToast('No se puede editar el profesional: faltan datos de usuario vinculados.')
+      return
+    }
+
     const specialtyId = findSpecialtyId(data.especialidad)
     if (!specialtyId) {
       showToast('No hay especialidades configuradas en el sistema.')
@@ -421,68 +425,36 @@ export function useProfesionalesSuperAdmin() {
     }
 
     try {
-      let targetVetId = ''
+      const targetVetId = editingProfesional.id
+      // Actualiza perfil veterinario (CMP / especialidad)
+      await updateVeterinarian(editingProfesional.id, {
+        userId: editingProfesional.userId,
+        specialtyId,
+        licenseNumber: data.cmp.trim(),
+      })
 
-      if (editingProfesional?.userId) {
-        targetVetId = editingProfesional.id
-        // Actualiza perfil veterinario (CMP / especialidad)
-        await updateVeterinarian(editingProfesional.id, {
-          userId: editingProfesional.userId,
-          specialtyId,
-          licenseNumber: data.cmp.trim(),
-        })
-
-        // Sincroniza nombre, correo y estado del usuario vinculado
-        let roleId = editingProfesional.roleId
-        if (!roleId) {
-          const linkedUser = await fetchUsers().then((list) =>
-            list.find((u) => u.id === editingProfesional.userId),
-          )
-          roleId = linkedUser?.roleId
-        }
-        if (roleId) {
-          await updateUser(editingProfesional.userId, {
-            fullName: data.name.trim(),
-            email: data.email.trim(),
-            roleId,
-          })
-          if (data.status === 'Activo' && editingProfesional.status !== 'Activo') {
-            await activateUser(editingProfesional.userId)
-          } else if (data.status === 'Inactivo' && editingProfesional.status !== 'Inactivo') {
-            await deactivateUser(editingProfesional.userId)
-          }
-        }
-
-        showToast(`Profesional "${data.name}" actualizado correctamente.`)
-      } else {
-        const roles = await fetchRoles()
-        const vetRole = roles.find((r) => {
-          const n = r.name.toLowerCase()
-          return n.includes('vet') || n.includes('veterin')
-        })
-        if (!vetRole) {
-          showToast('No se encontró el rol de veterinario.')
-          return
-        }
-
-        const tempPassword = `Tmp${Date.now().toString(36)}!`
-        const { userId } = await createFullUser({
+      // Sincroniza nombre, correo y estado del usuario vinculado
+      let roleId = editingProfesional.roleId
+      if (!roleId) {
+        const linkedUser = await fetchUsers().then((list) =>
+          list.find((u) => u.id === editingProfesional.userId),
+        )
+        roleId = linkedUser?.roleId
+      }
+      if (roleId) {
+        await updateUser(editingProfesional.userId, {
           fullName: data.name.trim(),
           email: data.email.trim(),
-          password: tempPassword,
-          roleId: vetRole.id,
+          roleId,
         })
-
-        const created = await createVeterinarian({
-          userId,
-          specialtyId,
-          licenseNumber: data.cmp.trim(),
-        })
-
-        targetVetId = created.id
-        setSelectedProfesionalId(created.id)
-        showToast(`Profesional "${data.name}" agregado con éxito.`)
+        if (data.status === 'Activo' && editingProfesional.status !== 'Activo') {
+          await activateUser(editingProfesional.userId)
+        } else if (data.status === 'Inactivo' && editingProfesional.status !== 'Inactivo') {
+          await deactivateUser(editingProfesional.userId)
+        }
       }
+
+      showToast(`Profesional "${data.name}" actualizado correctamente.`)
 
       // Sincronizar Horario configurado
       if (data.horarioConfig?.enabled && targetVetId) {
