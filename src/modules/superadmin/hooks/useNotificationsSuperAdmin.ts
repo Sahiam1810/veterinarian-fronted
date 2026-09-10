@@ -3,6 +3,11 @@ import type { ApiNotificationResponse } from '../services/superAdminNotification
 import { fetchNotificationsByUser, updateNotification } from '../services'
 import { mapNotificationToNotificacion, NOTIFICATION_READ_STATUS } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
+import {
+  useNotificationsRealtime,
+  prependNotificationById,
+  type RealtimeNotificationPayload,
+} from '@/global/notifications'
 
 export function useNotificationsSuperAdmin(userId: string | undefined) {
   const [records, setRecords] = useState<ApiNotificationResponse[]>([])
@@ -33,6 +38,32 @@ export function useNotificationsSuperAdmin(userId: string | undefined) {
   useEffect(() => {
     void loadData()
   }, [loadData])
+
+  // Tiempo real: prepend sin refetch; si el hub falla, la campana sigue con REST.
+  const handleRealtimeNotification = useCallback(
+    (incoming: RealtimeNotificationPayload) => {
+      if (userId && incoming.userId.toLowerCase() !== userId.toLowerCase()) return
+      const record: ApiNotificationResponse = {
+        id: incoming.id,
+        userId: incoming.userId,
+        userFullName: incoming.userFullName,
+        appointmentId: incoming.appointmentId,
+        message: incoming.message,
+        sentAt: incoming.sentAt,
+        status: incoming.status,
+        type: incoming.type,
+        createdAt: incoming.createdAt,
+        updatedAt: incoming.updatedAt,
+      }
+      setRecords((curr) => prependNotificationById(curr, record))
+    },
+    [userId],
+  )
+
+  useNotificationsRealtime({
+    enabled: Boolean(userId),
+    onNotification: handleRealtimeNotification,
+  })
 
   const notifications = useMemo(() => records.map(mapNotificationToNotificacion), [records])
   const unreadCount = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications])
