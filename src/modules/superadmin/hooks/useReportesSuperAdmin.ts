@@ -11,15 +11,13 @@ import {
   REPORTES_USE_API,
   resolveReportesDateRange,
   isIsoInRange,
+  fetchAppointmentsSummary,
   fetchAppointmentsByStatus,
   fetchAppointmentsByVeterinarian,
   fetchAppointmentsByDay,
+  fetchTopServices,
 } from '../services/superAdminReportsService'
-import {
-  buildReportesDashboardFromCitas,
-  buildSummaryFromByStatus,
-  buildTopServicesFromCitas,
-} from '../utils/buildReportesDashboard'
+import { buildReportesDashboardFromCitas } from '../utils/buildReportesDashboard'
 import { mapStatusToAppointmentStatus, formatDateEs } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 import type {
@@ -28,7 +26,9 @@ import type {
   ReportesDayVm,
   ReportesPeriodoId,
   ReportesStatusVm,
+  ReportesSummaryVm,
   ReportesTabId,
+  ReportesTopServiceVm,
   ReportesVeterinarianVm,
 } from '../types/reportesSuperAdmin.types'
 import { REPORTES_PERIODO_OPTIONS } from '../types/reportesSuperAdmin.types'
@@ -56,9 +56,11 @@ const EMPTY_DASHBOARD: ReportesDashboardVm = {
 }
 
 interface ReportsApiParts {
+  summary: ReportesSummaryVm
   byStatus: ReportesStatusVm[]
   byVeterinarian: ReportesVeterinarianVm[]
   byDay: ReportesDayVm[]
+  topServices: ReportesTopServiceVm[]
 }
 
 // Hook Reportes: agregaciones vía /api/Reports cuando REPORTES_USE_API; detalle sigue en Appointments.
@@ -81,7 +83,7 @@ export function useReportesSuperAdmin() {
   const loadReportes = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Detalle + topServices: siempre desde Appointments/catálogos (no hay endpoint de detalle).
+      // Detalle: siempre desde Appointments/catálogos (no hay endpoint de detalle).
       const results = await Promise.allSettled([
         fetchAppointments(),
         fetchVeterinarians(),
@@ -147,15 +149,17 @@ export function useReportesSuperAdmin() {
         setCitasDetalle(mapped)
       }
 
-      // Agregaciones reales: by-status / by-veterinarian / by-day
+      // Agregaciones reales: summary / by-status / by-veterinarian / by-day / top-services
       if (REPORTES_USE_API) {
         try {
-          const [byStatus, byVeterinarian, byDay] = await Promise.all([
+          const [summary, byStatus, byVeterinarian, byDay, topServices] = await Promise.all([
+            fetchAppointmentsSummary(range),
             fetchAppointmentsByStatus(range),
             fetchAppointmentsByVeterinarian(range),
             fetchAppointmentsByDay(range),
+            fetchTopServices(range),
           ])
-          setApiParts({ byStatus, byVeterinarian, byDay })
+          setApiParts({ summary, byStatus, byVeterinarian, byDay, topServices })
         } catch (err) {
           setApiParts(null)
           const message =
@@ -197,15 +201,13 @@ export function useReportesSuperAdmin() {
 
   const dashboard: ReportesDashboardVm = useMemo(() => {
     if (REPORTES_USE_API && apiParts) {
-      const topServices = buildTopServicesFromCitas(citasEnPeriodo)
-      const summary = buildSummaryFromByStatus(range, apiParts.byStatus, topServices)
       return {
         range,
-        summary,
+        summary: apiParts.summary,
         byStatus: apiParts.byStatus,
         byVeterinarian: apiParts.byVeterinarian,
         byDay: apiParts.byDay,
-        topServices,
+        topServices: apiParts.topServices,
         citasDetalle: citasEnPeriodo,
       }
     }
@@ -213,6 +215,7 @@ export function useReportesSuperAdmin() {
     const built = buildReportesDashboardFromCitas(range, citasEnPeriodo)
     return { ...built, citasDetalle: citasEnPeriodo }
   }, [range, citasEnPeriodo, apiParts])
+
 
   const filteredCitas = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
