@@ -22,6 +22,7 @@ import {
 
 export interface DiagnosticosSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -40,6 +41,7 @@ export interface DiagnosticosSuperAdminProps {
 
 export function DiagnosticosSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute = 'diagnosticos',
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -126,7 +128,7 @@ export function DiagnosticosSuperAdmin({
         onMarkNotificationRead={onMarkNotificationRead}
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
-        onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
       />
 
       <div className="flex-1 flex overflow-hidden relative">

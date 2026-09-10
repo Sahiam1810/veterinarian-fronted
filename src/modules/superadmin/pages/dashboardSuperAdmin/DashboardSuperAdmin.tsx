@@ -11,6 +11,7 @@ import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 
 export interface DashboardSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -29,6 +30,7 @@ export interface DashboardSuperAdminProps {
 
 export function DashboardSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute: externalActiveRoute,
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -83,6 +85,7 @@ export function DashboardSuperAdmin({
         onReloadNotifications={onReloadNotifications}
         userName={userName}
         userRole={userRole}
+        onProfileClick={externalOnProfileClick || (() => handleNavigate('perfil'))}
       />
 
       {/* Main Body with Left Sidebar & Content */}
