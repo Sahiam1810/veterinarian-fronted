@@ -4,6 +4,7 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
   CitaDrawer,
+  CitaDetalleModal,
 } from '../../components'
 import { useAgendaSuperAdmin } from '../../hooks'
 import type {
@@ -12,7 +13,6 @@ import type {
   NotificacionSuperAdmin,
 } from '../../types'
 import {
-  CalendarIcon,
   PageToast,
 } from '@/global/components'
 
@@ -109,6 +109,9 @@ export function AgendaSuperAdmin({
     externalOnToggleSidebar || (() => setInternalIsSidebarOpen((prev) => !prev))
   const closeSidebar =
     externalOnCloseSidebar || (() => setInternalIsSidebarOpen(false))
+
+  // Apertura del modal de detalle (independiente de selectedCitaId del hook).
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false)
 
   const {
     weekDays: DIAS_SEMANA,
@@ -422,7 +425,10 @@ export function AgendaSuperAdmin({
                           <button
                             key={event.id}
                             type="button"
-                            onClick={() => setSelectedCitaId(event.id)}
+                            onClick={() => {
+                              setSelectedCitaId(event.id)
+                              setIsDetalleModalOpen(true)
+                            }}
                             className={`absolute left-1 right-1 rounded-xl px-2 py-1.5 text-left overflow-hidden cursor-pointer transition-all hover:brightness-95 hover:shadow-md z-10 flex flex-col justify-between ${
                               event.status === 'AGENDADA'
                                 ? 'bg-white border border-brand/25 border-l-4 border-l-brand shadow-2xs'
@@ -491,7 +497,10 @@ export function AgendaSuperAdmin({
                         <button
                           key={event.id}
                           type="button"
-                          onClick={() => setSelectedCitaId(event.id)}
+                          onClick={() => {
+                            setSelectedCitaId(event.id)
+                            setIsDetalleModalOpen(true)
+                          }}
                           className={`absolute left-3 right-3 rounded-2xl p-3 text-left overflow-hidden cursor-pointer transition-all hover:brightness-95 hover:shadow-md z-10 flex flex-col justify-between ${
                             event.status === 'AGENDADA'
                               ? 'bg-white border border-brand/25 border-l-4 border-l-brand shadow-xs'
@@ -545,159 +554,27 @@ export function AgendaSuperAdmin({
 
             </div>
           </div>
-
-          {/* Panel de Detalles de la Cita Seleccionada (Debajo de la Grilla) */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_12px_rgba(35,78,70,0.03)] space-y-4 mb-4 sm:mb-6 shrink-0">
-            <div className="flex items-center justify-between border-b border-border-tan/50 pb-2">
-              <h2 className="text-sm sm:text-base font-bold text-brand">
-                Detalles de la Cita Seleccionada
-              </h2>
-              {selectedCita ? (
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold ${
-                    selectedCita.status === 'AGENDADA'
-                      ? 'bg-[#FBF1E6] text-ochre border border-ochre/25'
-                      : selectedCita.status === 'EN_ESPERA'
-                      ? 'bg-[#E8F2EF] text-brand border border-brand/20'
-                      : 'bg-[#F1EFEA] text-sage border border-border-tan'
-                  }`}
-                >
-                  {selectedCita.status === 'AGENDADA'
-                    ? 'Agendada'
-                    : selectedCita.status === 'ATENDIDA'
-                    ? 'Atendida'
-                    : selectedCita.status === 'CANCELADA'
-                    ? 'Cancelada'
-                    : selectedCita.status === 'NO_ASISTIO'
-                    ? 'No asistió'
-                    : selectedCita.status === 'EN_ESPERA'
-                    ? 'En Espera'
-                    : selectedCita.status}
-                </span>
-              ) : (
-                <span className="text-xs text-sage italic">Ninguna seleccionada</span>
-              )}
-            </div>
-
-            {selectedCita ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs sm:text-sm">
-                {/* Paciente y Dueño */}
-                <div>
-                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
-                    Paciente & Dueño
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <div className="w-9 h-9 rounded-full bg-mint-soft text-brand font-bold text-xs flex items-center justify-center border border-brand/20">
-                      {selectedCita.petName?.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-charcoal leading-tight">
-                        {selectedCita.petName} ({selectedCita.petBreed})
-                      </p>
-                      <p className="text-[11px] text-sage leading-none mt-0.5">
-                        {selectedCita.ownerName}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fecha y Hora */}
-                <div>
-                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
-                    Fecha y Hora
-                  </h4>
-                  <div className="flex items-center gap-2 mt-1.5 text-charcoal font-medium">
-                    <CalendarIcon className="w-4 h-4 text-sage" />
-                    <div>
-                      <p className="leading-tight">
-                        {selectedCita.dateKey}
-                      </p>
-                      <p className="text-[11px] text-sage leading-none mt-0.5">
-                        {selectedCita.startTime} - {selectedCita.endTime}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Profesional y Servicio */}
-                <div>
-                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
-                    Profesional y Servicio
-                  </h4>
-                  <div className="mt-1.5">
-                    <p className="font-bold text-charcoal leading-tight">
-                      {selectedCita.professionalName}
-                    </p>
-                    <p className="text-[11px] text-sage mt-0.5">
-                      {selectedCita.service}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Consultorio Asignado */}
-                <div>
-                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
-                    Consultorio Asignado
-                  </h4>
-                  <div className="mt-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-mint-soft text-brand font-bold text-xs border border-brand/20">
-                      🏢 {selectedCita.consultorio || 'Consultorio 1'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Notas */}
-                <div className="sm:col-span-2 md:col-span-4">
-                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">
-                    Notas
-                  </h4>
-                  <p className="mt-1.5 text-charcoal/80 text-[11px] sm:text-xs leading-relaxed italic">
-                    {selectedCita.notes || 'Sin notas.'}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="py-6 text-center text-sage italic">
-                Selecciona una cita de la grilla para ver sus detalles.
-              </div>
-            )}
-
-            {/* Action buttons */}
-            {selectedCita && (
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-tan/40">
-                <button
-                  type="button"
-                  onClick={() => handleCancelCita(selectedCita.id)}
-                  className="text-danger hover:text-red-700 text-xs sm:text-sm font-bold transition cursor-pointer"
-                >
-                  Cancelar Cita
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingCita(selectedCita)
-                    setIsDrawerOpen(true)
-                  }}
-                  className="border border-border-tan bg-white hover:bg-bone text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
-                >
-                  Reprogramar
-                </button>
-
-                {selectedCita.status === 'AGENDADA' && (
-                  <button
-                    type="button"
-                    onClick={() => handleStartAttention(selectedCita.id)}
-                    className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-xs"
-                  >
-                    Marcar Atendida
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </main>
       </div>
+
+      <CitaDetalleModal
+        cita={selectedCita}
+        isOpen={isDetalleModalOpen}
+        onClose={() => setIsDetalleModalOpen(false)}
+        onCancel={(citaId) => {
+          void handleCancelCita(citaId)
+          setIsDetalleModalOpen(false)
+        }}
+        onReprogramar={(cita) => {
+          setEditingCita(cita)
+          setIsDrawerOpen(true)
+          setIsDetalleModalOpen(false)
+        }}
+        onMarcarAtendida={(citaId) => {
+          void handleStartAttention(citaId)
+          setIsDetalleModalOpen(false)
+        }}
+      />
 
       {/* Drawer para Reprogramar / Editar Cita */}
       <CitaDrawer
