@@ -16,6 +16,7 @@ import {
   ProfesionalesSuperAdmin,
   ServiciosSuperAdmin,
   EspeciesRazasSuperAdmin,
+  DiagnosticosSuperAdmin,
   AgendaSuperAdmin,
   ReportesSuperAdmin,
   PerfilSuperAdmin,
@@ -41,6 +42,7 @@ const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   duenos: 'duenos',
   'especies-razas': 'especiesRazas',
   servicios: 'servicios',
+  diagnosticos: 'historiaClinica',
   profesionales: 'profesionales',
   agenda: 'agenda',
   reportes: 'reportes',
@@ -292,6 +294,15 @@ function SuperAdminApp({
       <ServiciosSuperAdmin
         {...shellProps}
         activeRoute="servicios"
+      />
+    )
+  }
+
+  if (currentRoute === 'diagnosticos') {
+    return (
+      <DiagnosticosSuperAdmin
+        {...shellProps}
+        activeRoute="diagnosticos"
       />
     )
   }

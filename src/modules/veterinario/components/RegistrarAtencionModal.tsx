@@ -10,6 +10,10 @@ import {
 import type { ApiDiagnostic } from '../services'
 import { CloseIcon, MedicalFolderIcon } from './MascotasIcons'
 import { ViewPopup } from './ViewPopup'
+import {
+  pickDefaultDiagnosticId,
+  getMissingDiagnosticError,
+} from '../utils/registrarAtencionDiagnostics'
 
 export interface AvailableAppointmentOption {
   id: string
@@ -71,9 +75,7 @@ export function RegistrarAtencionModal({
         const list = await fetchDiagnostics(false)
         if (!cancelled) {
           setDiagnostics(list)
-          if (list.length > 0 && !selectedDiagnosticId) {
-            setSelectedDiagnosticId(list[0].id)
-          }
+          setSelectedDiagnosticId((current) => pickDefaultDiagnosticId(list, current))
         }
       } catch {
         // Silently handle error or fallback
@@ -115,8 +117,9 @@ export function RegistrarAtencionModal({
       return
     }
 
-    if (!selectedDiagnosticId) {
-      setFormError('Debes seleccionar un diagnóstico del catálogo.')
+    const diagnosticError = getMissingDiagnosticError(selectedDiagnosticId)
+    if (diagnosticError) {
+      setFormError(diagnosticError)
       return
     }
 
