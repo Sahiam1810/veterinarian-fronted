@@ -9,8 +9,11 @@ import type { ApiPetResponse, ApiCreatePetRequest, ApiUpdatePetRequest } from '.
 import type { ApiSpeciesResponse, ApiRaceResponse } from '../../superadmin/services/superAdminCatalogService.ts'
 import type { ApiClientPetResponse, ApiCreateClientPetResponse } from '../../superadmin/services/superAdminClientsPetsService.ts'
 import type { ApiClientResponse } from '../../superadmin/services/superAdminClientsService.ts'
-import type { ApiUserResponse } from '../../superadmin/services/superAdminUserService.ts'
 import type { ApiAppointmentResponse } from '../../superadmin/services/superAdminAppointmentsService.ts'
+import {
+  buildRecepMascotaFormDuenos,
+  mapRecepUiGenderToApi,
+} from '../utils/recepPetMapping.ts'
 
 
 function formatDateLabel(dateStr?: string | null): string {
@@ -154,7 +157,8 @@ export async function createRecepPetWithClient(
     speciesId: petData.speciesId,
     raceId: petData.raceId,
     age: petData.age,
-    gender: petData.gender,
+    // Único punto de mapeo UI (Hembra/Macho) → API (F/M)
+    gender: mapRecepUiGenderToApi(petData.gender),
     weight: petData.weight,
     observations: petData.observations?.trim() || null,
     photoUrl: petData.photoUrl?.trim() || null,
@@ -179,27 +183,17 @@ export interface RecepMascotaFormCatalogs {
 
 // Carga catálogos necesarios para el formulario de nueva mascota
 export async function fetchRecepMascotaFormCatalogs(): Promise<RecepMascotaFormCatalogs> {
-  const [speciesRes, racesRes, clientsRes, usersRes] = await Promise.allSettled([
+  // S20: no llamar GET /api/Users (Recepcionista no tiene permiso); fullName viene en Clients.
+  const [speciesRes, racesRes, clientsRes] = await Promise.allSettled([
     apiClient.get<ApiSpeciesResponse[]>('/api/Species'),
     apiClient.get<ApiRaceResponse[]>('/api/Races'),
     apiClient.get<ApiClientResponse[]>('/api/Clients'),
-    apiClient.get<ApiUserResponse[]>('/api/Users'),
   ])
 
   const species = speciesRes.status === 'fulfilled' ? speciesRes.value : []
   const races = racesRes.status === 'fulfilled' ? racesRes.value : []
   const clients = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-  const users = usersRes.status === 'fulfilled' ? usersRes.value : []
-
-  const usersMap = new Map(users.map((u) => [u.id.toLowerCase(), u]))
-  const duenos = clients.map((c) => {
-    const user = usersMap.get(c.userId?.toLowerCase())
-    return {
-      id: c.id,
-      fullName: user?.fullName || 'Cliente Sin Nombre',
-      documentId: c.identificationNumber || '',
-    }
-  })
+  const duenos = buildRecepMascotaFormDuenos(clients)
 
   return { species, races, duenos }
 }

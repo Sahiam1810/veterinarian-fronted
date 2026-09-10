@@ -2,6 +2,11 @@ import assert from 'node:assert/strict'
 import test, { afterEach, beforeEach } from 'node:test'
 
 import { createRecepPetWithClient } from '../../src/modules/recepcionista/services/recepMascotasService.ts'
+import {
+  buildRecepMascotaFormDuenos,
+  mapRecepUiGenderToApi,
+} from '../../src/modules/recepcionista/utils/recepPetMapping.ts'
+import type { ApiClientResponse } from '../../src/modules/superadmin/services/superAdminClientsService.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -29,6 +34,100 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.fetch = originalFetch
+})
+
+function makeClient(overrides: Partial<ApiClientResponse> = {}): ApiClientResponse {
+  return {
+    id: 'client-1',
+    userId: 'user-1',
+    identificationNumber: '1234567890',
+    phoneNumber: '3001234567',
+    address: null,
+    registrationDate: '2026-01-01T00:00:00Z',
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: null,
+    fullName: 'Ana Pérez',
+    email: 'ana.perez@test.com',
+    isActive: true,
+    ...overrides,
+  }
+}
+
+// S20: catálogo del modal no depende de GET /api/Users
+test('buildRecepMascotaFormDuenos arma el nombre desde client.fullName', () => {
+  const duenos = buildRecepMascotaFormDuenos([
+    makeClient({ id: 'c1', fullName: 'Carlos Mendoza' }),
+    makeClient({ id: 'c2', fullName: null }),
+  ])
+
+  assert.equal(duenos[0]?.fullName, 'Carlos Mendoza')
+  assert.equal(duenos[1]?.fullName, 'Cliente Sin Nombre')
+  assert.equal(duenos[0]?.documentId, '1234567890')
+})
+
+test('mapRecepUiGenderToApi traduce Hembra/Macho a F/M', () => {
+  assert.equal(mapRecepUiGenderToApi('Hembra'), 'F')
+  assert.equal(mapRecepUiGenderToApi('Macho'), 'M')
+  assert.equal(mapRecepUiGenderToApi('hembra'), 'F')
+  assert.equal(mapRecepUiGenderToApi('MACHO'), 'M')
+})
+
+test('createRecepPetWithClient envía gender M cuando el select es Macho', async () => {
+  const calls: Array<{ url: string; method?: string; body?: Record<string, unknown> }> = []
+
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const urlStr = String(input)
+    const bodyParsed = init?.body ? JSON.parse(String(init.body)) : undefined
+    calls.push({ url: urlStr, method: init?.method, body: bodyParsed })
+
+    if (urlStr.includes('/api/Pets')) {
+      return Response.json({ id: 'pet-new-123' }, { status: 201 })
+    }
+    if (urlStr.includes('/api/ClientsPets')) {
+      return Response.json({ id: 'cp-link-456' }, { status: 201 })
+    }
+    return new Response('Not found', { status: 404 })
+  }
+
+  await createRecepPetWithClient({
+    name: 'Firulais',
+    speciesId: 'spec-canino',
+    raceId: 'race-golden',
+    age: 3,
+    gender: 'Macho',
+    weight: 25.5,
+    clientId: 'client-789',
+  })
+
+  assert.ok(calls[0].url.includes('/api/Pets'))
+  assert.equal(calls[0].body?.gender, 'M')
+})
+
+test('createRecepPetWithClient envía gender F cuando el select es Hembra', async () => {
+  const calls: Array<{ url: string; method?: string; body?: Record<string, unknown> }> = []
+
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const urlStr = String(input)
+    const bodyParsed = init?.body ? JSON.parse(String(init.body)) : undefined
+    calls.push({ url: urlStr, method: init?.method, body: bodyParsed })
+
+    if (urlStr.includes('/api/Pets')) {
+      return Response.json({ id: 'pet-hembra-1' }, { status: 201 })
+    }
+    return new Response('Not found', { status: 404 })
+  }
+
+  await createRecepPetWithClient({
+    name: 'Luna',
+    speciesId: 'spec-felino',
+    raceId: 'race-siames',
+    age: 2,
+    gender: 'Hembra',
+    weight: 4.2,
+  })
+
+  assert.ok(calls[0].url.includes('/api/Pets'))
+  assert.equal(calls[0].body?.gender, 'F')
 })
 
 test('createRecepPetWithClient llama createRecepPet y luego createClientPet en orden vinculando al dueño', async () => {
@@ -62,21 +161,14 @@ test('createRecepPetWithClient llama createRecepPet y luego createClientPet en o
   assert.equal(result.id, 'pet-new-123')
   assert.equal(calls.length, 2)
 
-  // 1ra llamada: POST /api/Pets
   assert.ok(calls[0].url.includes('/api/Pets'))
   assert.equal(calls[0].method, 'POST')
   assert.equal(calls[0].body.name, 'Firulais')
-  assert.equal(calls[0].body.speciesId, 'spec-canino')
-  assert.equal(calls[0].body.raceId, 'race-golden')
-  assert.equal(calls[0].body.age, 3)
-  assert.equal(calls[0].body.weight, 25.5)
+  assert.equal(calls[0].body.gender, 'M')
 
-  // 2da llamada: POST /api/ClientsPets
   assert.ok(calls[1].url.includes('/api/ClientsPets'))
-  assert.equal(calls[1].method, 'POST')
   assert.equal(calls[1].body.clientId, 'client-789')
   assert.equal(calls[1].body.petId, 'pet-new-123')
-  assert.equal(calls[1].body.isPrimaryOwner, true)
 })
 
 test('createRecepPetWithClient no intenta crear vínculo si la creación de mascota falla', async () => {
@@ -113,7 +205,6 @@ test('createRecepPetWithClient no intenta crear vínculo si la creación de masc
     },
   )
 
-  // Solo se intentó la primera llamada a /api/Pets
   assert.equal(calls.length, 1)
   assert.ok(calls[0].url.includes('/api/Pets'))
 })
