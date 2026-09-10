@@ -23,6 +23,18 @@ export interface RecepMascotaDetail extends RecepMascotaListItem {
   allergyAlert?: string | null
 }
 
+export interface RecepMascotaFormData {
+  name: string
+  speciesId: string
+  raceId: string
+  age: number
+  gender: string
+  weight: number
+  observations?: string | null
+  clientId: string
+  photoUrl?: string | null
+}
+
 export interface RecepMascotasDirectoryPayload {
   items: RecepMascotaListItem[]
   detailsById: Record<string, RecepMascotaDetail>
@@ -30,3 +42,4 @@ export interface RecepMascotasDirectoryPayload {
   pageStart: number
   pageEnd: number
 }
+

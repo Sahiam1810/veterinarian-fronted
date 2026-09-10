@@ -1,17 +1,20 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 import type {
   RecepMascotaDetail,
   RecepMascotaListItem,
   RecepMascotasDirectoryPayload,
-} from '../types'
-import type { ApiPetResponse, ApiCreatePetRequest, ApiUpdatePetRequest } from '@/modules/superadmin/services/superAdminPetsService'
-import type { ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
-import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
-import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
 
-import type { ApiAppointmentResponse } from '@/modules/superadmin/services/superAdminAppointmentsService'
+} from '../types/index.ts'
+import type { ApiPetResponse, ApiCreatePetRequest, ApiUpdatePetRequest } from '../../superadmin/services/superAdminPetsService.ts'
+import type { ApiSpeciesResponse, ApiRaceResponse } from '../../superadmin/services/superAdminCatalogService.ts'
+import type { ApiClientPetResponse, ApiCreateClientPetResponse } from '../../superadmin/services/superAdminClientsPetsService.ts'
+import type { ApiClientResponse } from '../../superadmin/services/superAdminClientsService.ts'
+import type { ApiUserResponse } from '../../superadmin/services/superAdminUserService.ts'
+import type { ApiAppointmentResponse } from '../../superadmin/services/superAdminAppointmentsService.ts'
+
 
 function formatDateLabel(dateStr?: string | null): string {
+
   if (!dateStr) return 'Sin visitas'
   try {
     const d = new Date(dateStr)
@@ -120,6 +123,7 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
 
 // Crear una nueva mascota
 export async function createRecepPet(data: ApiCreatePetRequest): Promise<{ id: string }> {
+
   return apiClient.post<{ id: string }>('/api/Pets', data)
 }
 
@@ -127,3 +131,77 @@ export async function createRecepPet(data: ApiCreatePetRequest): Promise<{ id: s
 export async function updateRecepPet(id: string, data: ApiUpdatePetRequest): Promise<void> {
   return apiClient.put<void>(`/api/Pets/${id}`, data)
 }
+
+export interface CreateRecepPetWithClientPayload {
+  name: string
+  speciesId: string
+  raceId: string
+  age: number
+  gender: string
+  weight: number
+  observations?: string | null
+  clientId?: string
+  photoUrl?: string | null
+}
+
+// Crea la mascota y opcionalmente la vincula con su dueño en ClientsPets
+export async function createRecepPetWithClient(
+  payload: CreateRecepPetWithClientPayload,
+): Promise<{ id: string }> {
+  const { clientId, ...petData } = payload
+  const newPet = await createRecepPet({
+    name: petData.name.trim(),
+    speciesId: petData.speciesId,
+    raceId: petData.raceId,
+    age: petData.age,
+    gender: petData.gender,
+    weight: petData.weight,
+    observations: petData.observations?.trim() || null,
+    photoUrl: petData.photoUrl?.trim() || null,
+  })
+
+  if (clientId && newPet?.id) {
+    await apiClient.post<ApiCreateClientPetResponse>('/api/ClientsPets', {
+      clientId,
+      petId: newPet.id,
+      isPrimaryOwner: true,
+    })
+  }
+
+  return newPet
+}
+
+export interface RecepMascotaFormCatalogs {
+  species: ApiSpeciesResponse[]
+  races: ApiRaceResponse[]
+  duenos: Array<{ id: string; fullName: string; documentId: string }>
+}
+
+// Carga catálogos necesarios para el formulario de nueva mascota
+export async function fetchRecepMascotaFormCatalogs(): Promise<RecepMascotaFormCatalogs> {
+  const [speciesRes, racesRes, clientsRes, usersRes] = await Promise.allSettled([
+    apiClient.get<ApiSpeciesResponse[]>('/api/Species'),
+    apiClient.get<ApiRaceResponse[]>('/api/Races'),
+    apiClient.get<ApiClientResponse[]>('/api/Clients'),
+    apiClient.get<ApiUserResponse[]>('/api/Users'),
+  ])
+
+  const species = speciesRes.status === 'fulfilled' ? speciesRes.value : []
+  const races = racesRes.status === 'fulfilled' ? racesRes.value : []
+  const clients = clientsRes.status === 'fulfilled' ? clientsRes.value : []
+  const users = usersRes.status === 'fulfilled' ? usersRes.value : []
+
+  const usersMap = new Map(users.map((u) => [u.id.toLowerCase(), u]))
+  const duenos = clients.map((c) => {
+    const user = usersMap.get(c.userId?.toLowerCase())
+    return {
+      id: c.id,
+      fullName: user?.fullName || 'Cliente Sin Nombre',
+      documentId: c.identificationNumber || '',
+    }
+  })
+
+  return { species, races, duenos }
+}
+
+

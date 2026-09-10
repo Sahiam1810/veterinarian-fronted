@@ -1,4 +1,4 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 
 export interface ApiSpeciesResponse {
   id: string

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { RecepMascotasView } from '../../components'
+import { RecepMascotasView, RecepMascotaModal } from '../../components'
 import { useRecepMascotas } from '../../hooks'
 
 interface MascotasPageProps {
@@ -18,12 +18,19 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     pageEnd,
     totalCount,
     isLoading,
+    isSubmitting,
+    isModalOpen,
+    speciesList,
+    racesList,
+    duenosList,
     error,
     notice,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
     handleNewPet,
+    closeModal,
+    handleSavePet,
     handlePrevPage,
     handleNextPage,
     handleViewClinicalHistory,
@@ -73,6 +80,17 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
       />
+
+      <RecepMascotaModal
+        isOpen={isModalOpen}
+        isLoading={isSubmitting}
+        speciesList={speciesList}
+        racesList={racesList}
+        duenosList={duenosList}
+        onClose={closeModal}
+        onSave={handleSavePet}
+      />
     </div>
   )
 }
+

@@ -13,8 +13,10 @@ export type {
   RecepMascotaEstado,
   RecepMascotaListItem,
   RecepMascotaDetail,
+  RecepMascotaFormData,
   RecepMascotasDirectoryPayload,
 } from './mascotas.types'
+
 
 export type {
   RecepAgendaOwnerOption,
