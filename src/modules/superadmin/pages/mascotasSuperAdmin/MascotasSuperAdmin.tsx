@@ -497,6 +497,13 @@ function DuenoDrawer({
       setFormError('Por favor ingresa el teléfono de contacto.')
       return
     }
+    // El backend exige 7-20 dígitos (ClientPhoneNumber); validar acá evita un
+    // 400 silencioso que deja el dueño sin crear tras cerrar el modal.
+    const phoneDigits = phone.replace(/\D/g, '')
+    if (phoneDigits.length < 7 || phoneDigits.length > 20) {
+      setFormError('El teléfono debe tener entre 7 y 20 dígitos.')
+      return
+    }
     if (!email.trim() || !email.includes('@')) {
       setFormError('El correo es obligatorio: se usa para el código de verificación en el chatbot.')
       return
