@@ -5,6 +5,7 @@ import {
   UsersIcon,
   PawIcon,
   StethoscopeIcon,
+  MedicalHistoryIcon,
   DoctorIcon,
   CalendarIcon,
   BarChartIcon,
@@ -52,6 +53,13 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     moduleId: 'servicios',
     label: 'Servicios',
     icon: <StethoscopeIcon className="w-5 h-5 shrink-0" />,
+  },
+  {
+    // Permiso API: Historiales Clínicos (CRUD de DiagnosticsController)
+    id: 'diagnosticos',
+    moduleId: 'historiaClinica',
+    label: 'Diagnósticos',
+    icon: <MedicalHistoryIcon className="w-5 h-5 shrink-0" />,
   },
   {
     id: 'profesionales',

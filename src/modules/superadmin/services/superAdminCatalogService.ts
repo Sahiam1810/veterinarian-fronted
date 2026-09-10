@@ -107,3 +107,28 @@ export async function fetchStatusAppointments(): Promise<ApiStatusAppointmentRes
 export async function fetchDiagnostics(onlyActive = false): Promise<ApiDiagnosticResponse[]> {
   return apiClient.get<ApiDiagnosticResponse[]>('/api/Diagnostics', { params: { onlyActive } })
 }
+
+export async function createDiagnostic(data: {
+  code: string
+  name: string
+  description?: string | null
+}): Promise<ApiDiagnosticResponse> {
+  return apiClient.post<ApiDiagnosticResponse>('/api/Diagnostics', data)
+}
+
+export async function updateDiagnostic(
+  id: string,
+  data: {
+    code: string
+    name: string
+    description?: string | null
+    isActive: boolean
+  },
+): Promise<void> {
+  return apiClient.put<void>(`/api/Diagnostics/${id}`, data)
+}
+
+// Baja lógica: marca el diagnóstico como inactivo (DELETE del API)
+export async function deactivateDiagnostic(id: string): Promise<void> {
+  return apiClient.delete<void>(`/api/Diagnostics/${id}`)
+}

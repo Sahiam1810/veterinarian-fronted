@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
-import { isNavPermissionGranted } from '@/modules/auth'
+import { isNavPermissionGranted, getAccessToken, getStoredUser } from '@/modules/auth'
 import type {
   HistoriaClinicaPayload,
   VetDayAppointment,
@@ -18,6 +18,12 @@ import {
 } from '../services'
 import type { ApiNotification } from '../api/apiTypes'
 import type { CitaActionTarget } from '../components'
+import {
+  useNotificationsRealtime,
+  prependNotificationById,
+  isRealtimeNotificationUnread,
+  type RealtimeNotificationPayload,
+} from '@/global/notifications'
 
 const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
 
@@ -77,6 +83,43 @@ export function useVetHome() {
   useEffect(() => {
     void loadHome()
   }, [loadHome])
+
+  // Tiempo real: prepend a rawNotifications; si el hub falla, sigue el bundle REST.
+  const handleRealtimeNotification = useCallback((incoming: RealtimeNotificationPayload) => {
+    const sessionUserId = getStoredUser()?.personId
+    if (
+      sessionUserId &&
+      incoming.userId.toLowerCase() !== sessionUserId.toLowerCase()
+    ) {
+      return
+    }
+
+    const record: ApiNotification = {
+      id: incoming.id,
+      userId: incoming.userId,
+      userFullName: incoming.userFullName,
+      appointmentId: incoming.appointmentId,
+      message: incoming.message ?? 'Notificación del sistema.',
+      sentAt: incoming.sentAt,
+      status: incoming.status ?? '',
+      type: incoming.type ?? 'General',
+      createdAt: incoming.createdAt,
+      updatedAt: incoming.updatedAt,
+    }
+
+    setRawNotifications((curr) => {
+      if (curr.some((n) => n.id === record.id)) return curr
+      if (isRealtimeNotificationUnread(record.status)) {
+        setUnreadNotificationsCount((count) => count + 1)
+      }
+      return prependNotificationById(curr, record)
+    })
+  }, [])
+
+  useNotificationsRealtime({
+    enabled: Boolean(getAccessToken()),
+    onNotification: handleRealtimeNotification,
+  })
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev)
   const closeSidebar = () => setIsSidebarOpen(false)
