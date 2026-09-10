@@ -111,14 +111,19 @@ export function useMascotasSuperAdmin() {
       if (unlinkedClientUsers.length > 0) {
         for (const u of unlinkedClientUsers) {
           try {
+            // El backend exige phoneNumber (7-20 dígitos) en /api/Clients; sin este
+            // placeholder la creación fallaba con 500 y el usuario quedaba sin
+            // vincular en silencio (nunca aparecía como dueño disponible).
             const createdClient = await createClient({
               userId: u.id,
               identificationNumber: 'DOC-PENDIENTE',
+              phoneNumber: '0000000000',
             })
             clients.push({
               id: createdClient.id,
               userId: u.id,
               identificationNumber: 'DOC-PENDIENTE',
+              phoneNumber: '0000000000',
               address: '',
               registrationDate: new Date().toISOString(),
               createdAt: new Date().toISOString(),
