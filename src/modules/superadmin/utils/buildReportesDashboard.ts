@@ -19,7 +19,10 @@ export {
   buildTopServicesFromCitas,
   buildSummaryFromByStatus,
   mapAppointmentsByStatusToVm,
+  mapAppointmentsSummaryToVm,
+  mapTopServicesToVm,
 } from './reportesApiMappers'
+
 
 // Arma el view-model de reportes a partir del detalle de citas (fallback sin /api/Reports)
 export function buildReportesDashboardFromCitas(

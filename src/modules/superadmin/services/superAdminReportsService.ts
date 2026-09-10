@@ -4,11 +4,19 @@ import type {
   ReportesDayVm,
   ReportesPeriodoId,
   ReportesStatusVm,
+  ReportesSummaryVm,
+  ReportesTopServiceVm,
   ReportesVeterinarianVm,
 } from '../types/reportesSuperAdmin.types'
 import { resolveStatusBarClassName } from '../utils/reportesStatusBar'
+import {
+  mapAppointmentsSummaryToVm,
+  mapTopServicesToVm,
+  type ApiAppointmentsSummaryResponse,
+  type ApiTopServiceItem,
+} from '../utils/reportesApiMappers'
 
-// true: usa agregaciones reales GET /api/Reports/* (summary/top-services aún no).
+// true: usa agregaciones reales GET /api/Reports/*
 export const REPORTES_USE_API = true
 
 // Formatea Date local a yyyy-MM-dd
@@ -93,6 +101,15 @@ interface ApiAppointmentsByDayItem {
   scheduledCount: number
 }
 
+// GET /api/Reports/summary
+export async function fetchAppointmentsSummary(
+  range: ReportesDateRange,
+): Promise<ReportesSummaryVm> {
+  const endpoint = `/api/Reports/summary?${reportsQuery(range)}`
+  const res = await apiClient.get<ApiAppointmentsSummaryResponse>(endpoint)
+  return mapAppointmentsSummaryToVm(res, range)
+}
+
 // GET /api/Reports/appointments-by-status
 export async function fetchAppointmentsByStatus(
   range: ReportesDateRange,
@@ -144,3 +161,19 @@ export async function fetchAppointmentsByDay(
     scheduledCount: row.scheduledCount,
   }))
 }
+
+// GET /api/Reports/top-services?from=&to=&take= (take: default 5, min 1, max 20)
+export async function fetchTopServices(
+  range: ReportesDateRange,
+  take: number = 5,
+): Promise<ReportesTopServiceVm[]> {
+  const clampedTake = Math.min(20, Math.max(1, take))
+  const query = new URLSearchParams()
+  query.set('from', range.from)
+  query.set('to', range.to)
+  query.set('take', String(clampedTake))
+  const endpoint = `/api/Reports/top-services?${query.toString()}`
+  const rows = await apiClient.get<ApiTopServiceItem[]>(endpoint)
+  return mapTopServicesToVm(rows)
+}
+
