@@ -139,9 +139,7 @@ export function RegistrarAtencionModal({
 
     try {
       // 1. Crear el registro médico en el backend
-      const result = await createMedicalRecord({
-        clientPetId,
-        appointmentId: selectedAppointmentId,
+      const result = await createMedicalRecord(selectedAppointmentId, {
         diagnosticId: selectedDiagnosticId,
         symptoms: symptoms.trim() || null,
         treatment: treatment.trim() || null,

@@ -15,8 +15,6 @@ export interface ApiDiagnostic {
 }
 
 export interface ApiCreateMedicalRecordRequest {
-  clientPetId: string
-  appointmentId: string
   diagnosticId: string
   symptoms?: string | null
   treatment?: string | null
@@ -36,18 +34,27 @@ export async function fetchDiagnostics(onlyActive = false): Promise<ApiDiagnosti
   })
 }
 
-// Crea un registro de historia clínica médica (POST /api/medicalrecords)
+// Crea la historia clínica de una cita (POST /api/appointments/{appointmentId}/medical-record).
+// MedicalRecordsController solo expone GET -- la creación vive en AppointmentsController,
+// vinculada a la cita en la URL, no en el body.
 export async function createMedicalRecord(
+  appointmentId: string,
   data: ApiCreateMedicalRecordRequest,
 ): Promise<ApiCreateMedicalRecordResponse> {
-  return vetApiFetch<ApiCreateMedicalRecordResponse>('/api/medicalrecords', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }).catch(async () => {
-    return vetApiFetch<ApiCreateMedicalRecordResponse>('/api/MedicalRecords', {
+  return vetApiFetch<ApiCreateMedicalRecordResponse>(
+    `/api/appointments/${appointmentId}/medical-record`,
+    {
       method: 'POST',
       body: JSON.stringify(data),
-    })
+    },
+  ).catch(async () => {
+    return vetApiFetch<ApiCreateMedicalRecordResponse>(
+      `/api/Appointments/${appointmentId}/medical-record`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    )
   })
 }
 
