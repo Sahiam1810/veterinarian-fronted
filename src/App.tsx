@@ -3,6 +3,7 @@ import {
   LoginPage,
   useAuth,
   isNavPermissionGranted,
+  fetchMyModulePermissions,
   type AuthUser,
 } from '@/modules/auth'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
@@ -54,6 +55,43 @@ export default function App() {
     error,
   } = useAuth()
 
+  const role = (currentUser?.role || '').toLowerCase()
+  const roleName = (currentUser?.roleName || '').toLowerCase()
+
+  const isCliente = role === 'cliente' || roleName === 'cliente' || roleName.includes('cliente')
+  const isVeterinario = role === 'veterinario' || roleName.includes('veterinario')
+  const isRecepcionista = role === 'recepcionista' || roleName.includes('recepcion')
+  const isAuxiliar = role === 'auxiliar' || roleName.includes('auxiliar')
+  const isKnownAdmin =
+    role === 'superadmin' || role === 'admin' || roleName.includes('admin') || roleName.includes('superadmin')
+
+  // Rol configurable/personalizado (ej. Practicante, Auditor): ni un rol Staff
+  // conocido ni Cliente. No se le concede acceso por descarte — hace falta el
+  // permiso explícito Plataforma:AccesoWeb, consultado en /api/auth/permissions.
+  const isCustomRole = !!currentUser && !isCliente && !isVeterinario && !isRecepcionista && !isAuxiliar && !isKnownAdmin
+
+  const [platformAccess, setPlatformAccess] = useState<'checking' | 'granted' | 'denied'>('checking')
+
+  useEffect(() => {
+    if (!isCustomRole) return
+
+    let cancelled = false
+    setPlatformAccess('checking')
+
+    void fetchMyModulePermissions()
+      .then((permissions) => {
+        if (cancelled) return
+        setPlatformAccess(permissions.Plataforma?.canView ? 'granted' : 'denied')
+      })
+      .catch(() => {
+        if (!cancelled) setPlatformAccess('denied')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isCustomRole, currentUser?.id])
+
   if (!currentUser) {
     return (
       <LoginPage
@@ -64,11 +102,8 @@ export default function App() {
     )
   }
 
-  const role = (currentUser.role || '').toLowerCase()
-  const roleName = (currentUser.roleName || '').toLowerCase()
-
   // Bloqueo explícito de clientes
-  if (role === 'cliente' || roleName === 'cliente' || roleName.includes('cliente')) {
+  if (isCliente) {
     logout()
     return (
       <LoginPage
@@ -79,8 +114,8 @@ export default function App() {
     )
   }
 
-  // Shells específicos para roles conocidos (retrocompatibilidad)
-  if (role === 'veterinario' || roleName.includes('veterinario')) {
+  // Shells específicos para roles conocidos (retrocompatibilidad, cero riesgo)
+  if (isVeterinario) {
     return (
       <VetPuntoInicio
         userName={currentUser.name}
@@ -90,7 +125,7 @@ export default function App() {
     )
   }
 
-  if (role === 'recepcionista' || roleName.includes('recepcion')) {
+  if (isRecepcionista) {
     return (
       <RecepPuntoInicio
         userName={currentUser.name}
@@ -100,7 +135,7 @@ export default function App() {
     )
   }
 
-  if (role === 'auxiliar' || roleName.includes('auxiliar')) {
+  if (isAuxiliar) {
     return (
       <AuxApp
         user={currentUser}
@@ -109,9 +144,37 @@ export default function App() {
     )
   }
 
-  // Superadmin, Admin y cualquier rol configurable/personalizado (ej. Practicante, Auditor)
-  // acceden al shell SuperAdminApp, el cual filtra las vistas dinámicamente según sus permisos reales.
-  return <SuperAdminApp user={currentUser} onLogout={logout} />
+  if (isKnownAdmin) {
+    return <SuperAdminApp user={currentUser} onLogout={logout} />
+  }
+
+  // Rol configurable/personalizado: espera la verificación de Plataforma:AccesoWeb
+  // antes de decidir. El shell SuperAdminApp filtra sus vistas dinámicamente según
+  // los permisos reales del usuario (ver useAdminShellAccess).
+  if (platformAccess === 'checking') {
+    return <PlatformAccessCheckScreen />
+  }
+
+  if (platformAccess === 'granted') {
+    return <SuperAdminApp user={currentUser} onLogout={logout} />
+  }
+
+  logout()
+  return (
+    <LoginPage
+      onLogin={login}
+      isSubmitting={isSubmitting}
+      error="Tu rol no tiene acceso concedido al panel web. Pídele a un administrador que active el permiso 'Plataforma' para tu rol."
+    />
+  )
+}
+
+function PlatformAccessCheckScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#FAF7F2] text-charcoal">
+      <p className="text-sm font-medium text-sage">Verificando acceso…</p>
+    </div>
+  )
 }
 
 // Shell superadministrador / administrador de clínica
