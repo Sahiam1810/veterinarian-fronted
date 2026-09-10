@@ -82,15 +82,6 @@ const DIAS_SEMANA: DiaSemana[] = [
   'DOMINGO',
 ]
 
-const TIPOS_ATENCION_OPCIONES = [
-  'Cirugía Programada',
-  'Consulta General',
-  'Emergencias y Triaje',
-  'Control y Vacunación',
-  'Atención Especializada',
-  'Terapia y Rehabilitación',
-]
-
 function EspecialidadBadgeIcon({ especialidad, className = 'w-3.5 h-3.5' }: { especialidad: string; className?: string }) {
   const esp = especialidad.toLowerCase()
   if (esp.includes('cirug') || esp.includes('cardio') || esp.includes('oftalm')) {
@@ -570,6 +561,7 @@ export function ProfesionalesSuperAdmin({
 
                                 <p className="text-[11px] text-sage font-semibold mt-0.5 leading-snug">
                                   {block.tipoAtencion}
+                                  <span className="font-medium text-sage/80"> · especialidad</span>
                                 </p>
                               </div>
                             ))
@@ -1045,14 +1037,13 @@ function BloqueHorarioModal({
   initialDia: DiaSemana
   editingBlock: BloqueHorario | null
   onClose: () => void
-  onSave: (dia: DiaSemana, horaInicio: string, horaFin: string, tipoAtencion: string) => void
+  onSave: (dia: DiaSemana, horaInicio: string, horaFin: string) => void
 }) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
   const [dia, setDia] = useState<DiaSemana>(editingBlock?.dia || initialDia)
   const [horaInicio, setHoraInicio] = useState(editingBlock?.horaInicio || '08:00')
   const [horaFin, setHoraFin] = useState(editingBlock?.horaFin || '12:00')
-  const [tipoAtencion, setTipoAtencion] = useState(editingBlock?.tipoAtencion || 'Consulta General')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -1062,7 +1053,6 @@ function BloqueHorarioModal({
       setDia(editingBlock?.dia || initialDia)
       setHoraInicio(editingBlock?.horaInicio || '08:00')
       setHoraFin(editingBlock?.horaFin || '12:00')
-      setTipoAtencion(editingBlock?.tipoAtencion || 'Consulta General')
       setError(null)
     } else if (isRendered) {
       setIsClosing(true)
@@ -1097,7 +1087,8 @@ function BloqueHorarioModal({
       return
     }
 
-    onSave(dia, horaInicio, horaFin, tipoAtencion)
+    // Availability no persiste tipo de servicio; solo día + franja horaria.
+    onSave(dia, horaInicio, horaFin)
   }
 
   return (
@@ -1178,21 +1169,6 @@ function BloqueHorarioModal({
               onChange={(e) => setHoraFin(e.target.value)}
               className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
             />
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">Tipo de Atención / Servicio</label>
-            <select
-              value={tipoAtencion}
-              onChange={(e) => setTipoAtencion(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer"
-            >
-              {TIPOS_ATENCION_OPCIONES.map((tipo) => (
-                <option key={tipo} value={tipo}>
-                  {tipo}
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Botones */}

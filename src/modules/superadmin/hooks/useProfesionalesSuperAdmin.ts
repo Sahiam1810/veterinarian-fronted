@@ -516,7 +516,6 @@ export function useProfesionalesSuperAdmin() {
     dia: DiaSemana,
     horaInicio: string,
     horaFin: string,
-    _tipoAtencion: string
   ) => {
     if (!selectedProfesional) return
 
