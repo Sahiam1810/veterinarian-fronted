@@ -12,7 +12,7 @@ import type { ApiAppointmentResponse } from '@/modules/superadmin/services/super
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
 import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
 import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
-import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
+
 import type { ApiServiceResponse } from '@/modules/superadmin/services/superAdminVetServicesService'
 import type { ApiVeterinarianResponse } from '@/modules/superadmin/services/superAdminVeterinariansService'
 import type { ApiStatusAppointmentResponse, ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
@@ -61,7 +61,6 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
     cpRes,
     petsRes,
     clientsRes,
-    usersRes,
     servicesRes,
     vetsRes,
     statusesRes,
@@ -73,7 +72,6 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
     apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets'),
     apiClient.get<ApiPetResponse[]>('/api/Pets'),
     apiClient.get<ApiClientResponse[]>('/api/Clients'),
-    apiClient.get<ApiUserResponse[]>('/api/Users'),
     apiClient.get<ApiServiceResponse[]>('/api/Services'),
     apiClient.get<ApiVeterinarianResponse[]>('/api/Veterinarians'),
     apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments'),
@@ -86,7 +84,6 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
   const clientPets = cpRes.status === 'fulfilled' ? cpRes.value : []
   const pets = petsRes.status === 'fulfilled' ? petsRes.value : []
   const clients = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-  const users = usersRes.status === 'fulfilled' ? usersRes.value : []
   const services = servicesRes.status === 'fulfilled' ? servicesRes.value : []
   const vets = vetsRes.status === 'fulfilled' ? vetsRes.value : []
   const statuses = statusesRes.status === 'fulfilled' ? statusesRes.value : []
@@ -96,7 +93,6 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
   const cpMap = new Map(clientPets.map((cp) => [cp.id.toLowerCase(), cp]))
   const petsMap = new Map(pets.map((p) => [p.id.toLowerCase(), p]))
   const clientsMap = new Map(clients.map((c) => [c.id.toLowerCase(), c]))
-  const usersMap = new Map(users.map((u) => [u.id.toLowerCase(), u]))
   const servicesMap = new Map(services.map((s) => [s.id.toLowerCase(), s.name]))
   const vetsMap = new Map(vets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
   const statusesMap = new Map(statuses.map((st) => [st.id.toLowerCase(), st.name]))
@@ -121,12 +117,11 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
     const cp = cpMap.get(apt.clientPetId?.toLowerCase())
     const pet = cp ? petsMap.get(cp.petId?.toLowerCase()) : undefined
     const client = cp ? clientsMap.get(cp.clientId?.toLowerCase()) : undefined
-    const ownerUser = client ? usersMap.get(client.userId?.toLowerCase()) : undefined
 
     const petName = pet?.name || 'Paciente'
     const speciesName = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Mascota' : 'Mascota'
     const raceName = pet ? racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo' : 'Mestizo'
-    const ownerName = ownerUser?.fullName || 'Propietario'
+    const ownerName = client?.fullName || 'Propietario'
     const professionalName = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Dr. Roberto Silva'
     const service = apt.serviceName || servicesMap.get(apt.serviceId?.toLowerCase()) || 'Consulta General'
     const statusName = apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
