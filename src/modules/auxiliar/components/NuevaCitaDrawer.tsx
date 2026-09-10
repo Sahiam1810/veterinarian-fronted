@@ -1,23 +1,35 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { AuxDayAppointment } from '../types'
+import type { ApiPetResponse, ApiClientResponse, ApiUserResponse, ApiClientPetResponse, ApiSpeciesResponse } from '../types'
 import { CustomSelect } from './CustomSelect'
 
 export interface NuevaCitaDrawerProps {
   isOpen: boolean
   onClose: () => void
   onSave: (newAppointment: AuxDayAppointment) => void
+  pets?: ApiPetResponse[]
+  clients?: ApiClientResponse[]
+  users?: ApiUserResponse[]
+  clientsPets?: ApiClientPetResponse[]
+  speciesList?: ApiSpeciesResponse[]
 }
 
 export function NuevaCitaDrawer({
   isOpen,
   onClose,
   onSave,
+  pets = [],
+  clients = [],
+  users = [],
+  clientsPets = [],
+  speciesList = [],
 }: NuevaCitaDrawerProps) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
 
   // Campos del formulario
+  const [petId, setPetId] = useState('')
   const [petName, setPetName] = useState('')
   const [species, setSpecies] = useState('Perro')
   const [breed, setBreed] = useState('')
@@ -29,10 +41,43 @@ export function NuevaCitaDrawer({
   const [notes, setNotes] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
+  // Opciones de clientes con sus datos (usando campos del ClientResponseDto)
+  const clientsOptions = useMemo(() => {
+    return clients.map((client) => {
+      return {
+        value: client.id,
+        label: client.fullName || 'Cliente sin nombre',
+        subtitle: client.phoneNumber || 'Sin teléfono',
+      }
+    })
+  }, [clients])
+
+  // Opciones de mascotas filtradas por el cliente seleccionado
+  const petsOptions = useMemo(() => {
+    if (!ownerName) return [] // Si no hay cliente seleccionado, no mostrar mascotas
+
+    // Encontrar las clientPets del cliente seleccionado
+    const clientPetsIds = clientsPets
+      .filter((cp) => cp.clientId.toLowerCase() === ownerName.toLowerCase())
+      .map((cp) => cp.petId.toLowerCase())
+
+    // Filtrar mascotas que pertenecen al cliente seleccionado
+    return pets
+      .filter((pet) => clientPetsIds.includes(pet.id.toLowerCase()))
+      .map((pet) => {
+        return {
+          value: pet.id,
+          label: pet.name,
+          subtitle: `${pet.age} años • ${pet.weight} kg`,
+        }
+      })
+  }, [pets, clientsPets, ownerName])
+
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true)
       setIsClosing(false)
+      setPetId('')
       setPetName('')
       setSpecies('Perro')
       setBreed('')
@@ -68,19 +113,30 @@ export function NuevaCitaDrawer({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
 
-    if (!petName.trim()) {
-      setFormError('Por favor ingresa el nombre de la mascota.')
+    if (!petId) {
+      setFormError('Por favor selecciona una mascota.')
       return
     }
 
     if (!ownerName.trim()) {
-      setFormError('Por favor ingresa el nombre del dueño o propietario.')
+      setFormError('Por favor selecciona un dueño/propetario.')
       return
     }
 
     const speciesBreedFormatted = breed.trim()
       ? `${species} / ${breed.trim()}`
       : species
+
+    // Encontrar el clientPetId correcto
+    const matchingCP = clientsPets.find(
+      (cp) => cp.petId.toLowerCase() === petId.toLowerCase() &&
+              cp.clientId.toLowerCase() === ownerName.toLowerCase()
+    )
+
+    if (!matchingCP) {
+      setFormError('No existe una relación entre esta mascota y el cliente seleccionado. Por favor selecciona una combinación válida.')
+      return
+    }
 
     const newAppointment: AuxDayAppointment = {
       id: `apt-${Date.now()}`,
@@ -95,10 +151,45 @@ export function NuevaCitaDrawer({
       pretriajeStatus: 'Pendiente',
       ownerName: ownerPhone.trim() ? `${ownerName.trim()} (${ownerPhone.trim()})` : ownerName.trim(),
       notes: notes.trim() || undefined,
+      petId: petId,
+      clientId: ownerName,
+      clientPetId: matchingCP.id,
     }
 
     onSave(newAppointment)
     handleClose()
+  }
+
+  const handlePetChange = (petId: string) => {
+    setPetId(petId)
+    // Autocompletar datos de la mascota seleccionada
+    const pet = pets.find((p) => p.id === petId)
+    if (pet) {
+      setPetName(pet.name)
+      // Encontrar especie
+      const specie = speciesList.find((s) => s.id.toLowerCase() === pet.speciesId.toLowerCase())
+      setSpecies(specie?.name || 'Perro')
+      setWeight(String(pet.weight || ''))
+    }
+  }
+
+  const handleOwnerChange = (clientId: string) => {
+    setOwnerName(clientId)
+    // Limpiar selección de mascota al cambiar de cliente
+    setPetId('')
+    setPetName('')
+    setSpecies('Perro')
+    setBreed('')
+    setWeight('')
+
+    // Autocompletar teléfono basado en el cliente seleccionado
+    const client = clients.find((c) => c.id === clientId)
+    if (client) {
+      const user = users.find((u) => u.id.toLowerCase() === client.userId.toLowerCase())
+      if (user?.phone) {
+        setOwnerPhone(user.phone)
+      }
+    }
   }
 
   const drawerContent = (
@@ -153,69 +244,21 @@ export function NuevaCitaDrawer({
             </div>
           )}
 
-          {/* Sección: Mascota */}
+          {/* Sección: Propietario - PRIMERO */}
           <div className="space-y-3.5">
             <h3 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
-              Datos del Paciente
+              1. Datos del Dueño
             </h3>
 
             <div>
-              <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                Nombre de la Mascota <span className="text-terracotta">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={petName}
-                onChange={(e) => setPetName(e.target.value)}
-                placeholder="Ej. Luna, Max, Thor..."
-                className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <CustomSelect
-                  label="Especie"
-                  required
-                  value={species}
-                  onChange={setSpecies}
-                  options={['Perro', 'Gato', 'Ave', 'Conejo', 'Otro']}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                  Raza
-                </label>
-                <input
-                  type="text"
-                  value={breed}
-                  onChange={(e) => setBreed(e.target.value)}
-                  placeholder="Ej. Golden, Mestizo..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Sección: Propietario */}
-          <div className="space-y-3.5 pt-2">
-            <h3 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
-              Datos del Dueño
-            </h3>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                Nombre del Dueño <span className="text-terracotta">*</span>
-              </label>
-              <input
-                type="text"
+              <CustomSelect
+                label="Dueño/Cliente"
                 required
                 value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Ej. Andrea Gómez"
-                className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                onChange={handleOwnerChange}
+                options={clientsOptions}
+                placeholder="Seleccionar cliente existente..."
+                searchable
               />
             </div>
 
@@ -231,6 +274,47 @@ export function NuevaCitaDrawer({
                 className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
               />
             </div>
+          </div>
+
+          {/* Sección: Mascota - SEGUNDO */}
+          <div className="space-y-3.5 pt-2">
+            <h3 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
+              2. Datos del Paciente
+            </h3>
+
+            <div>
+              <CustomSelect
+                label="Mascota"
+                required
+                value={petId}
+                onChange={handlePetChange}
+                options={petsOptions}
+                placeholder={!ownerName ? "Primero selecciona un cliente..." : petsOptions.length === 0 ? "Este cliente no tiene mascotas registradas" : "Seleccionar mascota existente..."}
+                searchable
+                disabled={!ownerName}
+              />
+              {ownerName && petsOptions.length === 0 && (
+                <p className="text-xs text-terracotta mt-2">
+                  ⚠️ Este cliente no tiene mascotas registradas. Primero debes registrar la mascota en el módulo de Pacientes.
+                </p>
+              )}
+            </div>
+
+            {/* Información de la mascota seleccionada (solo lectura) */}
+            {petId && (
+              <div className="bg-bone/30 border border-border-tan/50 rounded-xl p-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-sage font-semibold">Especie:</span>
+                    <span className="text-charcoal ml-1">{species}</span>
+                  </div>
+                  <div>
+                    <span className="text-sage font-semibold">Peso:</span>
+                    <span className="text-charcoal ml-1">{weight} kg</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sección: Servicio y Asignación */}

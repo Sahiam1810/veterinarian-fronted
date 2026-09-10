@@ -31,6 +31,11 @@ export function InicioAux({
     savePreparation,
     createNewAppointment,
     activeNotification,
+    rawPets,
+    rawClients,
+    rawUsers,
+    rawClientsPets,
+    rawSpecies,
   } = useAuxDashboard()
 
   const [selectedAppointment, setSelectedAppointment] = useState<AuxDayAppointment | null>(null)
@@ -422,6 +427,11 @@ export function InicioAux({
         isOpen={isNewAppointmentDrawerOpen}
         onClose={() => setIsNewAppointmentDrawerOpen(false)}
         onSave={handleSaveNewAppointment}
+        pets={rawPets}
+        clients={rawClients}
+        users={rawUsers}
+        clientsPets={rawClientsPets}
+        speciesList={rawSpecies}
       />
 
       {/* Notificación flotante / Toast */}

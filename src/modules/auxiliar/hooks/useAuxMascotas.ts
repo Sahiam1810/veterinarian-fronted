@@ -13,12 +13,14 @@ import {
   createPet as apiCreatePet,
   fetchClientsPets,
   createClientPet as apiCreateClientPet,
+  fetchAppointments,
+} from '../services'
+import {
   fetchClients,
   fetchUsers,
   fetchSpecies,
   fetchRaces,
-  fetchAppointments,
-} from '../services'
+} from '../services/auxCatalogosService'
 
 export interface MascotaAuxItem {
   id: string
@@ -79,38 +81,53 @@ export function useAuxMascotas() {
         fetchAppointments(),
       ])
 
-      const fetchedPets: ApiPetResponse[] = petsRes.status === 'fulfilled' ? petsRes.value : []
-      const fetchedSpecies: ApiSpeciesResponse[] = speciesRes.status === 'fulfilled' ? speciesRes.value : []
-      const fetchedRaces: ApiRaceResponse[] = racesRes.status === 'fulfilled' ? racesRes.value : []
-      const fetchedCP: ApiClientPetResponse[] = cpRes.status === 'fulfilled' ? cpRes.value : []
-      const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-      const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
-      const fetchedApts: ApiAppointmentResponse[] = aptsRes.status === 'fulfilled' ? aptsRes.value : []
+      const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? value : [])
+      const fetchedPets = asArray<ApiPetResponse>(petsRes.status === 'fulfilled' ? petsRes.value : [])
+      const fetchedSpecies = asArray<ApiSpeciesResponse>(speciesRes.status === 'fulfilled' ? speciesRes.value : [])
+      const fetchedRaces = asArray<ApiRaceResponse>(racesRes.status === 'fulfilled' ? racesRes.value : [])
+      const fetchedCP = asArray<ApiClientPetResponse>(cpRes.status === 'fulfilled' ? cpRes.value : [])
+      const fetchedClients = asArray<ApiClientResponse>(clientsRes.status === 'fulfilled' ? clientsRes.value : [])
+      const fetchedUsers = asArray<ApiUserResponse>(usersRes.status === 'fulfilled' ? usersRes.value : [])
+      const fetchedApts = asArray<ApiAppointmentResponse>(aptsRes.status === 'fulfilled' ? aptsRes.value : [])
 
       setSpeciesList(fetchedSpecies)
       setRacesList(fetchedRaces)
       setClientsList(fetchedClients)
       setUsersList(fetchedUsers)
 
-      const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
-      const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
-      const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
-      const usersMap = new Map(fetchedUsers.map((u) => [u.id.toLowerCase(), u]))
+      const speciesMap = new Map(
+        fetchedSpecies.filter((s) => s.id).map((s) => [s.id.toLowerCase(), s.name]),
+      )
+      const racesMap = new Map(
+        fetchedRaces.filter((r) => r.id).map((r) => [r.id.toLowerCase(), r.name]),
+      )
+      const clientsMap = new Map(
+        fetchedClients.filter((c) => c.id).map((c) => [c.id.toLowerCase(), c]),
+      )
+      const usersMap = new Map(
+        fetchedUsers.filter((u) => u.id).map((u) => [u.id.toLowerCase(), u]),
+      )
 
-      // Relaciones mascota -> cliente
-      const petOwnerMap = new Map<string, string>()
+      // Relaciones mascota -> cliente (nombre desde el cliente o el usuario vinculado)
+      const petOwnerMap = new Map<string, { name: string; phone?: string }>()
       fetchedCP.forEach((cp) => {
-        const client = clientsMap.get(cp.clientId.toLowerCase())
-        if (client) {
-          const user = usersMap.get(client.userId.toLowerCase())
-          if (user) {
-            petOwnerMap.set(cp.petId.toLowerCase(), user.fullName)
-          }
-        }
+        const petKey = cp.petId?.toLowerCase()
+        const client = clientsMap.get(cp.clientId?.toLowerCase() ?? '')
+        if (!petKey || !client) return
+        const user = client.userId ? usersMap.get(client.userId.toLowerCase()) : undefined
+        const ownerName = user?.fullName || client.fullName || 'Propietario'
+        petOwnerMap.set(petKey, {
+          name: ownerName,
+          phone: client.phoneNumber || undefined,
+        })
       })
 
       // Citas próximas por clientPetId
-      const cpToPetMap = new Map(fetchedCP.map((cp) => [cp.id.toLowerCase(), cp.petId.toLowerCase()]))
+      const cpToPetMap = new Map(
+        fetchedCP
+          .filter((cp) => cp.id && cp.petId)
+          .map((cp) => [cp.id.toLowerCase(), cp.petId.toLowerCase()]),
+      )
       const petNextAptMap = new Map<string, ApiAppointmentResponse>()
       fetchedApts.forEach((apt) => {
         const petId = cpToPetMap.get(apt.clientPetId?.toLowerCase())
@@ -122,11 +139,11 @@ export function useAuxMascotas() {
       const mapped: MascotaAuxItem[] = fetchedPets.map((p) => {
         const specieName = speciesMap.get(p.speciesId?.toLowerCase()) || 'Canino'
         const raceName = racesMap.get(p.raceId?.toLowerCase()) || 'Mestizo'
-        const ownerName = petOwnerMap.get(p.id.toLowerCase()) || 'Carlos Mendoza'
-        const nextApt = petNextAptMap.get(p.id.toLowerCase())
+        const owner = petOwnerMap.get(p.id?.toLowerCase() ?? '')
+        const ownerName = owner?.name || 'Propietario'
+        const nextApt = petNextAptMap.get(p.id?.toLowerCase() ?? '')
 
         const genderFormatted = p.gender === 'F' ? 'Hembra' : 'Macho'
-        const isCat = specieName.toLowerCase().includes('gato') || specieName.toLowerCase().includes('felin')
 
         let nextAppointmentText = 'Sin citas'
         let citaActualObj: MascotaAuxItem['citaActual'] = null
@@ -144,37 +161,34 @@ export function useAuxMascotas() {
           }
         }
 
+        const petId = p.id || ''
         return {
-          id: p.id,
-          petId: `#M-${p.id.slice(0, 4).toUpperCase()}`,
-          name: p.name,
+          id: petId,
+          petId: `#M-${petId.slice(0, 4).toUpperCase()}`,
+          name: p.name || 'Mascota',
           specie: specieName,
           breed: raceName,
-          age: `${p.age} Años`,
+          age: `${p.age ?? 0} Años`,
           gender: genderFormatted,
-          weight: String(p.weight),
+          weight: String(p.weight ?? 0),
           ownerName,
-          ownerPhone: '+57 300 123 4567',
+          ownerPhone: owner?.phone,
           nextAppointment: nextAppointmentText,
           sterilized: p.observations?.toLowerCase().includes('esteril') ? 'Sí' : 'No',
-          avatarUrl: isCat
-            ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=120&h=120'
-            : 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=120&h=120',
+          avatarUrl: p.photoUrl || undefined,
           citaActual: citaActualObj,
         }
       })
 
       setMascotas(mapped)
-      if (mapped.length > 0 && !selectedPetId) {
-        setSelectedPetId(mapped[0].id)
-      }
+      setSelectedPetId((current) => (current && mapped.some((m) => m.id === current) ? current : mapped[0]?.id ?? ''))
     } catch (err) {
       console.error('Error al cargar mascotas en módulo auxiliar', err)
       showToast('Error al conectar con la base de datos de mascotas.')
     } finally {
       setIsLoading(false)
     }
-  }, [showToast, selectedPetId])
+  }, [showToast])
 
   useEffect(() => {
     void loadData()
@@ -194,6 +208,7 @@ export function useAuxMascotas() {
     ownerName: string
     ownerPhone?: string
     sterilized: 'Sí' | 'No'
+    clientId?: string
   }) => {
     try {
       // 1. Resolver o tomar ID de especie
@@ -229,10 +244,11 @@ export function useAuxMascotas() {
         raceId: matchingRace.id,
       })
 
-      // 4. Vincular con un cliente en POST /api/ClientsPets si hay clientes disponibles
-      if (clientsList.length > 0) {
+      // 4. Vincular con el cliente seleccionado en POST /api/ClientsPets
+      const targetClientId = data.clientId || (clientsList.length > 0 ? clientsList[0].id : null)
+      if (targetClientId) {
         await apiCreateClientPet({
-          clientId: clientsList[0].id,
+          clientId: targetClientId,
           petId: createdPet.id,
           isPrimaryOwner: true,
         })

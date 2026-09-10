@@ -23,6 +23,12 @@ import {
   fetchPets,
   updatePet,
   fetchClientsPets,
+  fetchMedicalRecords,
+  createMedicalRecord,
+  fetchDiagnostics,
+  type ApiMedicalRecordResponse,
+} from '../services'
+import {
   fetchClients,
   fetchUsers,
   fetchSpecies,
@@ -31,11 +37,7 @@ import {
   fetchVeterinarians,
   fetchStatusAppointments,
   fetchAvailabilities,
-  fetchMedicalRecords,
-  createMedicalRecord,
-  fetchDiagnostics,
-  type ApiMedicalRecordResponse,
-} from '../services'
+} from '../services/auxCatalogosService'
 
 function formatTime(isoString: string): string {
   if (!isoString) return '09:00 AM'
@@ -324,7 +326,23 @@ export function useAuxDashboard() {
   // Crear nueva cita en backend
   const createNewAppointment = async (newApt: AuxDayAppointment) => {
     try {
-      const clientPetId = newApt.clientPetId || rawClientsPets[0]?.id
+      // Usar los IDs proporcionados por el formulario
+      let clientPetId = newApt.clientPetId
+
+      // Si no se proporciona clientPetId, buscarlo basado en petId y clientId
+      if (!clientPetId && newApt.petId && newApt.clientId) {
+        const matchingCP = rawClientsPets.find(
+          (cp) => cp.petId.toLowerCase() === newApt.petId?.toLowerCase() &&
+                  cp.clientId.toLowerCase() === newApt.clientId?.toLowerCase()
+        )
+        clientPetId = matchingCP?.id
+      }
+
+      // Fallback al primer clientPet disponible
+      if (!clientPetId) {
+        clientPetId = rawClientsPets[0]?.id
+      }
+
       const veterinarianId = newApt.veterinarianId || rawVets[0]?.id
       const serviceId = newApt.serviceId || rawServices[0]?.id
 
@@ -373,6 +391,7 @@ export function useAuxDashboard() {
     rawSpecies,
     rawRaces,
     rawStatuses,
+    rawClientsPets,
     stats,
     isLoading,
     activeNotification,

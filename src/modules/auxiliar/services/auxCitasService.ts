@@ -11,7 +11,7 @@ export interface CreateAppointmentResponse {
 
 // 1. Obtener todas las citas
 export async function fetchAppointments(): Promise<ApiAppointmentResponse[]> {
-  return apiClient.get<ApiAppointmentResponse[]>('/api/Appointments')
+  return apiClient.get<ApiAppointmentResponse[]>('/api/Appointments').catch(() => [])
 }
 
 // 2. Obtener cita por ID

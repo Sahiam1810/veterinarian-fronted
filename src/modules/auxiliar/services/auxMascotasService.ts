@@ -9,7 +9,7 @@ import type {
 
 // 1. Obtener todas las mascotas
 export async function fetchPets(): Promise<ApiPetResponse[]> {
-  return apiClient.get<ApiPetResponse[]>('/api/Pets')
+  return apiClient.get<ApiPetResponse[]>('/api/Pets').catch(() => [])
 }
 
 // 2. Obtener mascota por ID
@@ -34,7 +34,7 @@ export async function deletePet(id: string): Promise<void> {
 
 // 6. Obtener relaciones Clientes-Mascotas
 export async function fetchClientsPets(): Promise<ApiClientPetResponse[]> {
-  return apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets')
+  return apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets').catch(() => [])
 }
 
 // 7. Vincular un cliente a una mascota

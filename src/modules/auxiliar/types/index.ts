@@ -33,6 +33,7 @@ export interface AuxDayAppointment {
   statusId?: string
   clientPetId?: string
   petId?: string
+  clientId?: string
   veterinarianId?: string
   serviceId?: string
 }
@@ -139,9 +140,14 @@ export interface ApiClientResponse {
   userId: string
   identificationNumber: string
   address?: string | null
+  phoneNumber?: string | null
   registrationDate: string
   createdAt: string
   updatedAt?: string | null
+  // Campos desde User navigation
+  fullName?: string | null
+  email?: string | null
+  isActive?: boolean
 }
 
 export interface ApiVeterinarianResponse {

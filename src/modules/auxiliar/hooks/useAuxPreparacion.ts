@@ -19,6 +19,12 @@ import {
   fetchPets,
   updatePet,
   fetchClientsPets,
+  fetchMedicalRecords,
+  createMedicalRecord,
+  fetchDiagnostics,
+  type ApiMedicalRecordResponse,
+} from '../services'
+import {
   fetchClients,
   fetchUsers,
   fetchSpecies,
@@ -26,11 +32,7 @@ import {
   fetchServices,
   fetchVeterinarians,
   fetchStatusAppointments,
-  fetchMedicalRecords,
-  createMedicalRecord,
-  fetchDiagnostics,
-  type ApiMedicalRecordResponse,
-} from '../services'
+} from '../services/auxCatalogosService'
 
 export interface PreparacionCitaItem {
   id: string

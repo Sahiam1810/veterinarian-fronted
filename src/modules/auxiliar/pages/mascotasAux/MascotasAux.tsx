@@ -15,7 +15,10 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     setSelectedPetId,
     speciesList,
     racesList,
+    clientsList,
     addPet,
+    isLoading,
+    activeNotification,
   } = useAuxMascotas()
 
   const [activeTab, setActiveTab] = useState<'Todos' | 'Perros' | 'Gatos' | 'Exóticos'>('Todos')
@@ -44,12 +47,28 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     return ['Golden Retriever', 'Siamés', 'Bulldog Francés', 'Persa', 'Mestizo', 'Poodle']
   }, [racesList])
 
+  const clientsOptions = useMemo(() => {
+    // Crear opciones de clientes usando los campos del ClientResponseDto
+    const options = clientsList.map((client) => {
+      return {
+        value: client.id,
+        label: client.fullName || 'Cliente sin nombre',
+        subtitle: client.phoneNumber || 'Sin teléfono',
+      }
+    })
+    return options
+  }, [clientsList])
+
+  // Necesitamos cargar las relaciones clientPets para filtrar mascotas por cliente
+  // Esto ya está disponible en el hook useAuxMascotas a través de rawData si lo implementamos
+
   const filteredMascotas = useMemo(() => {
     return mascotas.filter((p) => {
+      const specie = (p.specie || '').toLowerCase()
       if (activeTab === 'Todos') return true
-      if (activeTab === 'Perros') return p.specie.toLowerCase().includes('canin') || p.specie.toLowerCase().includes('perr')
-      if (activeTab === 'Gatos') return p.specie.toLowerCase().includes('felin') || p.specie.toLowerCase().includes('gat')
-      if (activeTab === 'Exóticos') return p.specie.toLowerCase().includes('exót') || p.specie.toLowerCase().includes('exot')
+      if (activeTab === 'Perros') return specie.includes('canin') || specie.includes('perr')
+      if (activeTab === 'Gatos') return specie.includes('felin') || specie.includes('gat')
+      if (activeTab === 'Exóticos') return specie.includes('exót') || specie.includes('exot')
       return true
     })
   }, [mascotas, activeTab])
@@ -68,6 +87,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
       ownerName: newOwner.trim(),
       ownerPhone: newPhone.trim(),
       sterilized: newSterilized,
+      clientId: newOwner, // Pasar el ID del cliente seleccionado
     })
 
     setIsAddDrawerOpen(false)
@@ -85,13 +105,34 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     setNewSterilized('No')
   }
 
+  const handleOwnerChange = (clientId: string) => {
+    setNewOwner(clientId)
+    // Autocompletar teléfono basado en el cliente seleccionado
+    const client = clientsList.find((c) => c.id === clientId)
+    if (client) {
+      setNewPhone(client.phoneNumber || '')
+    }
+  }
+
 
   return (
     <div className="w-full flex flex-col lg:flex-row gap-5 sm:gap-6 min-w-0">
-      
+      {/* Estado de carga */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+            <span className="text-sm text-sage font-medium">Cargando mascotas...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Contenido principal */}
+      {!isLoading && (
+        <>
       {/* Columna Izquierda: Tabla y filtros */}
       <div className="flex-1 flex flex-col gap-4 min-w-0">
-        
+
         {/* Barra superior de herramientas */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
           <button
@@ -137,6 +178,13 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-tan/60 text-sm">
+                  {filteredMascotas.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-12 px-4 text-center text-sm text-sage">
+                        No hay mascotas para mostrar en este filtro.
+                      </td>
+                    </tr>
+                  )}
                   {filteredMascotas.map((pet) => {
                     const isSelected = pet.id === selectedPetId
                     return (
@@ -158,7 +206,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                pet.name.charAt(0)
+                                (pet.name || '?').charAt(0)
                               )}
                             </div>
                             <div className="flex flex-col min-w-0">
@@ -246,7 +294,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  selectedPet.name.charAt(0)
+                  (selectedPet.name || '?').charAt(0)
                 )}
               </div>
 
@@ -481,16 +529,14 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                   </h3>
 
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Nombre del Dueño <span className="text-terracotta">*</span>
-                    </label>
-                    <input
-                      type="text"
+                    <CustomSelect
+                      label="Dueño/Cliente"
                       required
                       value={newOwner}
-                      onChange={(e) => setNewOwner(e.target.value)}
-                      placeholder="Ej. Laura Torres..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                      onChange={handleOwnerChange}
+                      options={clientsOptions}
+                      placeholder="Seleccionar cliente existente..."
+                      searchable
                     />
                   </div>
 
@@ -530,6 +576,8 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
           </div>,
           document.body
         )}
+        </>
+      )}
     </div>
   )
 }

@@ -18,6 +18,7 @@ export interface CustomSelectProps {
   required?: boolean
   disabled?: boolean
   size?: 'sm' | 'md'
+  searchable?: boolean
 }
 
 export function CustomSelect({
@@ -31,8 +32,10 @@ export function CustomSelect({
   required = false,
   disabled = false,
   size = 'md',
+  searchable = false,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Normalizar opciones
@@ -42,6 +45,14 @@ export function CustomSelect({
     }
     return opt
   })
+
+  // Filtrar opciones si hay búsqueda
+  const filteredOptions = searchable
+    ? normalizedOptions.filter((opt) =>
+        opt.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (opt.subtitle && opt.subtitle.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    : normalizedOptions
 
   const selectedOption = normalizedOptions.find((opt) => opt.value === value)
 
@@ -82,6 +93,12 @@ export function CustomSelect({
   const handleSelect = (val: string) => {
     onChange(val)
     setIsOpen(false)
+    setSearchTerm('')
+  }
+
+  const handleToggle = () => {
+    setIsOpen((prev) => !prev)
+    setSearchTerm('')
   }
 
   const pyClass = size === 'sm' ? 'py-2 px-3.5 text-xs' : 'py-2.5 px-4 text-xs sm:text-sm'
@@ -98,7 +115,7 @@ export function CustomSelect({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleToggle}
         className={`w-full flex items-center justify-between gap-2.5 bg-white border border-border-tan rounded-xl sm:rounded-2xl font-semibold text-charcoal shadow-2xs hover:border-brand/50 focus:outline-none focus:ring-2 focus:ring-brand/20 transition cursor-pointer select-none ${pyClass} ${
           isOpen ? 'border-brand ring-2 ring-brand/20 shadow-xs' : ''
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-bone/30' : ''} ${className}`}
@@ -129,7 +146,19 @@ export function CustomSelect({
           className={`absolute left-0 right-0 z-50 mt-1.5 max-h-60 overflow-y-auto bg-white border border-border-tan/90 rounded-2xl p-1.5 shadow-[0_8px_30px_rgba(35,78,70,0.12)] view-popup min-w-[200px] ${menuClassName}`}
         >
           <div className="flex flex-col gap-0.5">
-            {normalizedOptions.map((opt) => {
+            {searchable && (
+              <div className="mb-2">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar..."
+                  className="w-full px-3 py-2 rounded-lg border border-border-tan text-xs text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
+            {filteredOptions.map((opt) => {
               const isSelected = opt.value === value
               return (
                 <button
