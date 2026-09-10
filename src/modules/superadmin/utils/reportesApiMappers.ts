@@ -79,3 +79,58 @@ export function mapAppointmentsByStatusToVm(
     barClassName: resolveStatusBarClassName(row.statusName),
   }))
 }
+
+// DTOs crudos de /api/Reports/summary y /api/Reports/top-services
+export interface ApiAppointmentsSummaryResponse {
+  from: string
+  to: string
+  totalAppointments: number
+  attendedCount: number
+  canceledCount: number
+  noShowCount: number
+  scheduledCount: number
+  attendanceRate: number
+  topServiceName: string | null
+  topServiceCount: number
+  topServicePercentage: number
+}
+
+export interface ApiTopServiceItem {
+  serviceId: string
+  serviceName: string
+  appointmentsCount: number
+  percentage: number
+}
+
+// Mapea respuesta de GET /api/Reports/summary → VM de UI
+export function mapAppointmentsSummaryToVm(
+  res?: Partial<ApiAppointmentsSummaryResponse> | null,
+  fallbackRange?: ReportesDateRange,
+): ReportesSummaryVm {
+  return {
+    from: res?.from ?? fallbackRange?.from ?? '',
+    to: res?.to ?? fallbackRange?.to ?? '',
+    totalAppointments: res?.totalAppointments ?? 0,
+    attendedCount: res?.attendedCount ?? 0,
+    canceledCount: res?.canceledCount ?? 0,
+    noShowCount: res?.noShowCount ?? 0,
+    scheduledCount: res?.scheduledCount ?? 0,
+    attendanceRate: res?.attendanceRate ?? 0,
+    topServiceName: res?.topServiceName ?? null,
+    topServiceCount: res?.topServiceCount ?? 0,
+    topServicePercentage: res?.topServicePercentage ?? 0,
+  }
+}
+
+// Mapea respuesta de GET /api/Reports/top-services → VM de UI
+export function mapTopServicesToVm(
+  rows?: Array<Partial<ApiTopServiceItem>> | null,
+): ReportesTopServiceVm[] {
+  return (rows ?? []).map((row, idx) => ({
+    serviceId: row.serviceId ?? `service-${idx}`,
+    serviceName: row.serviceName ?? '—',
+    appointmentsCount: row.appointmentsCount ?? 0,
+    percentage: row.percentage ?? 0,
+  }))
+}
+
