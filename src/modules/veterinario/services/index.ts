@@ -1,4 +1,9 @@
-export { fetchVetHomeDashboard, fetchVetHomeBundle } from './vetHomeService'
+export {
+  fetchVetHomeDashboard,
+  fetchVetHomeBundle,
+  markVetNotificationAsRead,
+  mapVetNotification,
+} from './vetHomeService'
 export { fetchVetNavPermissions } from './vetNavPermissionsService'
 export {
   fetchVetAgendaWeek,

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
 import { isNavPermissionGranted } from '@/modules/auth'
 import type {
@@ -13,7 +13,10 @@ import {
   updateAppointmentStatus,
   findStatusId,
   fetchHistoriaClinica,
+  markVetNotificationAsRead,
+  mapVetNotification,
 } from '../services'
+import type { ApiNotification } from '../api/apiTypes'
 import type { CitaActionTarget } from '../components'
 
 const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
@@ -27,6 +30,7 @@ export function useVetHome() {
   const [dashboard, setDashboard] = useState<VetHomeDashboard | null>(null)
   const [grantedPermissions, setGrantedPermissions] =
     useState<GrantedPermissions>(null)
+  const [rawNotifications, setRawNotifications] = useState<ApiNotification[]>([])
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +62,7 @@ export function useVetHome() {
         fetchVetNavPermissions(),
       ])
       setDashboard(home.dashboard)
+      setRawNotifications(home.notifications)
       setUnreadNotificationsCount(home.unreadNotificationsCount)
       setGrantedPermissions(permissions)
     } catch (err) {
@@ -231,9 +236,33 @@ export function useVetHome() {
     }
   }
 
+  const notifications = useMemo(
+    () => rawNotifications.map(mapVetNotification),
+    [rawNotifications],
+  )
+
+  const handleMarkNotificationRead = useCallback(
+    async (id: string) => {
+      const target = rawNotifications.find((n) => n.id === id)
+      if (!target) return
+      try {
+        await markVetNotificationAsRead(target)
+        setRawNotifications((current) =>
+          current.map((n) => (n.id === id ? { ...n, status: 'Leída' } : n)),
+        )
+        setUnreadNotificationsCount((current) => Math.max(0, current - 1))
+      } catch {
+        // Silencioso: marcar como leída es una acción secundaria, no bloquea la vista.
+      }
+    },
+    [rawNotifications],
+  )
+
   return {
     dashboard,
     grantedPermissions,
+    notifications,
+    onMarkNotificationRead: handleMarkNotificationRead,
     unreadNotificationsCount,
     isLoading,
     error,

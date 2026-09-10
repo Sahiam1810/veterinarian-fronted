@@ -10,6 +10,8 @@ import type {
   ApiVeterinarian,
 } from '../api/apiTypes'
 import type { VetHomeDashboard } from '../types'
+import type { NotificacionSuperAdmin } from '@/modules/superadmin/types'
+import { formatDateEs } from '@/modules/superadmin/utils/superAdminApiMappers'
 import {
   buildVetHomeDashboard,
   findVeterinarianForProfile,
@@ -17,14 +19,45 @@ import {
 
 export interface VetHomeLoadResult {
   dashboard: VetHomeDashboard
+  notifications: ApiNotification[]
   unreadNotificationsCount: number
 }
 
+function isUnreadStatus(status?: string | null): boolean {
+  const normalized = (status || '').toLowerCase()
+  return status ? normalized !== 'leída' && normalized !== 'leida' && normalized !== 'read' : true
+}
+
 function countUnreadNotifications(items: ApiNotification[]): number {
-  return items.filter((item) => {
-    const status = (item.status || '').toLowerCase()
-    return status === 'unread' || status === 'pendiente' || status === 'nueva' || status === 'new'
-  }).length
+  return items.filter((item) => isUnreadStatus(item.status)).length
+}
+
+// Mapea la notificación cruda del API al mismo modelo que usa la campana del panel
+// (compartido con SuperAdmin/Recepcionista) para poder reusar el mismo componente.
+export function mapVetNotification(notification: ApiNotification): NotificacionSuperAdmin {
+  return {
+    id: notification.id,
+    message: notification.message || 'Notificación del sistema.',
+    dateLabel: formatDateEs(notification.sentAt),
+    type: notification.type || 'General',
+    isRead: !isUnreadStatus(notification.status),
+    appointmentId: notification.appointmentId,
+  }
+}
+
+// Marca una notificación como leída (mismo contrato que usa el panel SuperAdmin).
+export async function markVetNotificationAsRead(notification: ApiNotification): Promise<void> {
+  await vetApiFetch<void>(`/api/notifications/${notification.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      userId: notification.userId,
+      appointmentId: notification.appointmentId,
+      message: notification.message,
+      sentAt: notification.sentAt,
+      status: 'Leída',
+      type: notification.type,
+    }),
+  })
 }
 
 // Carga el inicio del veterinario desde endpoints Staff existentes.
@@ -71,8 +104,13 @@ export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
     races,
   })
 
+  const sortedNotifications = [...notifications].sort(
+    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
+  )
+
   return {
     dashboard,
+    notifications: sortedNotifications,
     unreadNotificationsCount: countUnreadNotifications(notifications),
   }
 }

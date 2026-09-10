@@ -30,6 +30,8 @@ export function PuntoInicio({
   const {
     dashboard,
     grantedPermissions,
+    notifications,
+    onMarkNotificationRead,
     unreadNotificationsCount,
     isLoading,
     error,
@@ -70,7 +72,9 @@ export function PuntoInicio({
       <SuperAdminHeader
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={toggleSidebar}
+        notifications={notifications}
         unreadNotificationsCount={unreadNotificationsCount}
+        onMarkNotificationRead={onMarkNotificationRead}
         userName={userName || dashboard?.profile.displayName || 'Veterinario'}
         userRole={userRole || 'Veterinario'}
         onProfileClick={() => handleNavigate('perfil')}
