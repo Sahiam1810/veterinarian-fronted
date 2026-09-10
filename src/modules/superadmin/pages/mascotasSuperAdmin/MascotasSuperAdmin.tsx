@@ -390,7 +390,7 @@ function MascotaDrawer({
             >
               {duenos.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.name} ({d.phone} - {d.documentId})
+                  {d.name && d.name !== 'Sin nombre' ? d.name : `Cliente ${d.documentId || d.id.slice(0, 8)}`} ({d.phone || 'Sin tel'} - {d.documentId || 'Sin doc'})
                 </option>
               ))}
             </select>

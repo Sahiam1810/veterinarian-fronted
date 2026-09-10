@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import type { RecepMascotaDetail, RecepMascotasDirectoryPayload } from '../types'
-import { fetchRecepMascotasDirectory } from '../services'
+import {
+  fetchRecepMascotasDirectory,
+  registerRecepPet,
+  type RecepPetFormData,
+} from '../services'
 
 const ITEMS_PER_PAGE = 8
 
 export function useRecepMascotas(enabled: boolean) {
   const [directory, setDirectory] = useState<RecepMascotasDirectoryPayload | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -79,7 +85,27 @@ export function useRecepMascotas(enabled: boolean) {
   const handleSelect = (petId: string) => setSelectedId(petId)
   const handleCloseDetail = () => setSelectedId(null)
   const handleOpenFilters = () => showNotice('Usa el buscador para filtrar rápidamente por nombre, dueño, raza o especie.')
-  const handleNewPet = () => showNotice('Para registrar mascotas nuevas, utiliza la sección de Mascotas del SuperAdmin o asóciala al agendar una cita.')
+
+  const openCreatePet = () => setIsModalOpen(true)
+  const closeModal = () => setIsModalOpen(false)
+
+  const handleSavePet = async (data: RecepPetFormData) => {
+    setIsSubmitting(true)
+    try {
+      await registerRecepPet(data)
+      showNotice(`Mascota "${data.name}" registrada con éxito`)
+      setIsModalOpen(false)
+      await loadDirectory()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al registrar la mascota'
+      showNotice(msg)
+      throw err
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleNewPet = openCreatePet
   
   const handlePrevPage = () => {
     if (currentPage > 1) setCurrentPage((prev) => prev - 1)
@@ -105,12 +131,17 @@ export function useRecepMascotas(enabled: boolean) {
     pageEnd,
     totalCount,
     isLoading,
+    isSubmitting,
+    isModalOpen,
     error,
     notice,
     reloadDirectory: loadDirectory,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
+    openCreatePet,
+    closeModal,
+    handleSavePet,
     handleNewPet,
     handlePrevPage,
     handleNextPage,

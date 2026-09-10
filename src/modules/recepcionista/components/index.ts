@@ -21,4 +21,5 @@ export { RecepDuenosToolbar } from './RecepDuenosToolbar'
 export { RecepDuenosTable } from './RecepDuenosTable'
 export { RecepDuenoDetailPanel } from './RecepDuenoDetailPanel'
 export { RecepDuenoModal } from './RecepDuenoModal'
+export { RecepMascotaModal } from './RecepMascotaModal'
 

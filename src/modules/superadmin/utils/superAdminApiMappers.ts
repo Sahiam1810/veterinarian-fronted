@@ -162,9 +162,9 @@ export function mapClientToDueno(
   const status: EstadoMascota = user?.isActive === false ? 'Inactivo' : 'Activo'
   return {
     id: client.id,
-    name: user?.fullName ?? 'Sin nombre',
+    name: user?.fullName || client.fullName || (client.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Sin nombre'),
     documentId: client.identificationNumber,
-    email: user?.email ?? '',
+    email: user?.email || client.email || '',
     phone: client.phoneNumber || '',
     address: client.address ?? '',
     city: '',

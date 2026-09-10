@@ -68,10 +68,7 @@ function resolveOwnerName(
   if (!clientPet) return 'Dueño no disponible'
   const client = clientsById.get(clientPet.clientId)
   if (!client) return 'Dueño no disponible'
-  // El endpoint de clientes (Staff) no expone el nombre; usamos la identificación.
-  return client.identificationNumber
-    ? `Cliente ${client.identificationNumber}`
-    : 'Dueño no disponible'
+  return client.fullName || (client.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Dueño no disponible')
 }
 
 export function findVeterinarianForProfile(

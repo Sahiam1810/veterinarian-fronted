@@ -103,8 +103,9 @@ export function useAuxMascotas() {
         const client = clientsMap.get(cp.clientId.toLowerCase())
         if (client) {
           const user = usersMap.get(client.userId.toLowerCase())
-          if (user) {
-            petOwnerMap.set(cp.petId.toLowerCase(), user.fullName)
+          const ownerName = user?.fullName || client.fullName || (client.identificationNumber ? `Cliente ${client.identificationNumber}` : undefined)
+          if (ownerName) {
+            petOwnerMap.set(cp.petId.toLowerCase(), ownerName)
           }
         }
       })

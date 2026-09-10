@@ -190,7 +190,7 @@ export function useAuxPreparacion() {
           petAge: pet ? `${pet.age} años` : '2 años',
           petId: pet?.id,
           clientPetId: apt.clientPetId,
-          ownerName: ownerUser?.fullName || 'Propietario',
+          ownerName: ownerUser?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Propietario'),
           service,
           vetName,
           appointmentStatus,

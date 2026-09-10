@@ -173,7 +173,7 @@ export function useAuxAgenda() {
           petName,
           petBreed,
           species,
-          ownerName: ownerUser?.fullName || 'Propietario',
+          ownerName: ownerUser?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Propietario'),
           professional,
           service,
           notes: apt.notes || undefined,

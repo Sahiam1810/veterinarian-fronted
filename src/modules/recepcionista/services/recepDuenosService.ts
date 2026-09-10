@@ -84,7 +84,7 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
     const clientPetSummaries = petsByClientId.get(client.id.toLowerCase()) || []
 
     // Nombre y correo vienen directamente del DTO — sin cruce con /api/Users.
-    const fullName = client.fullName || 'Cliente Sin Nombre'
+    const fullName = client.fullName || (client.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Cliente Sin Nombre')
     const documentId = client.identificationNumber || ''
     const email = client.email || ''
     const phone = client.phoneNumber || ''

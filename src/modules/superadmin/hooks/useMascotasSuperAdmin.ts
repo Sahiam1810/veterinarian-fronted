@@ -89,12 +89,12 @@ export function useMascotasSuperAdmin() {
     try {
       const [clients, users, pets, clientsPets, species, races, roles] = await Promise.all([
         fetchClients(),
-        fetchUsers(),
+        fetchUsers().catch(() => []),
         fetchPets(),
         fetchClientsPets(),
         fetchSpecies(),
         fetchRaces(),
-        fetchRoles(),
+        fetchRoles().catch(() => []),
       ])
 
       // Auto-sincronizar usuarios creados con rol Cliente que aún no tengan registro en Clients

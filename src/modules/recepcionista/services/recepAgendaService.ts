@@ -89,7 +89,7 @@ export async function fetchRecepAgendaCatalog(): Promise<RecepAgendaCatalogPaylo
   const owners: RecepAgendaOwnerOption[] = clients.map((client) => {
     return {
       id: client.id,
-      name: client.fullName || 'Cliente Sin Nombre',
+      name: client.fullName || (client.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Cliente Sin Nombre'),
       documentLabel: `CC ${client.identificationNumber || 'N/A'}`,
       phone: client.phoneNumber || '',
       identificationNumber: client.identificationNumber || '',

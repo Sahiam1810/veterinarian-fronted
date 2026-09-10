@@ -127,3 +127,55 @@ export async function createRecepPet(data: ApiCreatePetRequest): Promise<{ id: s
 export async function updateRecepPet(id: string, data: ApiUpdatePetRequest): Promise<void> {
   return apiClient.put<void>(`/api/Pets/${id}`, data)
 }
+
+export interface RecepPetFormData {
+  name: string
+  speciesId: string
+  raceId: string
+  age: number
+  gender: string
+  weight: number
+  observations?: string | null
+  clientId: string
+}
+
+// Carga catálogos y clientes para el formulario de registro de mascota
+export async function fetchRecepPetFormData(): Promise<{
+  species: ApiSpeciesResponse[]
+  races: ApiRaceResponse[]
+  clients: ApiClientResponse[]
+}> {
+  const [speciesRes, racesRes, clientsRes] = await Promise.allSettled([
+    apiClient.get<ApiSpeciesResponse[]>('/api/Species'),
+    apiClient.get<ApiRaceResponse[]>('/api/Races'),
+    apiClient.get<ApiClientResponse[]>('/api/Clients'),
+  ])
+
+  return {
+    species: speciesRes.status === 'fulfilled' ? speciesRes.value : [],
+    races: racesRes.status === 'fulfilled' ? racesRes.value : [],
+    clients: clientsRes.status === 'fulfilled' ? clientsRes.value : [],
+  }
+}
+
+// Registra mascota y la asocia al cliente dueño en /api/ClientsPets
+export async function registerRecepPet(data: RecepPetFormData): Promise<{ id: string }> {
+  const created = await createRecepPet({
+    name: data.name.trim(),
+    age: data.age,
+    gender: data.gender,
+    weight: data.weight,
+    observations: data.observations?.trim() || null,
+    speciesId: data.speciesId,
+    raceId: data.raceId,
+  })
+
+  await apiClient.post('/api/ClientsPets', {
+    clientId: data.clientId,
+    petId: created.id,
+    isPrimaryOwner: true,
+  })
+
+  return created
+}
+

@@ -129,7 +129,9 @@ export function buildVetMascotasDirectory(input: {
       breed,
       ageLabel: formatAgeLabel(pet.age),
       sexLabel: formatSexLabel(pet.gender),
-      ownerName: client?.identificationNumber
+      ownerName: client?.fullName
+        ? client.fullName
+        : client?.identificationNumber
         ? `Cliente ${client.identificationNumber}`
         : 'Dueño no disponible',
       lastVisitLabel: formatVisitLabel(latest?.scheduledStart),

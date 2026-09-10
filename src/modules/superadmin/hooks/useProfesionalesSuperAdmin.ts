@@ -225,7 +225,7 @@ export function useProfesionalesSuperAdmin() {
             petName: pet?.name ?? 'Mascota',
             breed: raceName,
             species: speciesName,
-            ownerName: user?.fullName ?? 'Dueño',
+            ownerName: user?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Dueño'),
             clientId: cp.clientId,
             ownerPhone: client?.phoneNumber ?? undefined,
           }
@@ -255,7 +255,7 @@ export function useProfesionalesSuperAdmin() {
           petName: pet?.name,
           petBreed: pet ? racesById.get(normId(pet.raceId)) : undefined,
           species: pet ? speciesById.get(normId(pet.speciesId)) : undefined,
-          ownerName: ownerUser?.fullName,
+          ownerName: ownerUser?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : undefined),
           professionalName: vet?.userFullName ?? vetUser?.fullName,
         })
       })

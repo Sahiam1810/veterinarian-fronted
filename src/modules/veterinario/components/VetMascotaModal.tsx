@@ -304,7 +304,11 @@ export function VetMascotaModal({
                 <option value="">Sin propietario asignado</option>
                 {clientsList.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.identificationNumber ? `Cliente Doc: ${c.identificationNumber}` : `Cliente ID: ${c.id.slice(0, 8)}`}
+                    {c.fullName
+                      ? `${c.fullName} (${c.identificationNumber ? `Doc: ${c.identificationNumber}` : 'Sin doc'})`
+                      : c.identificationNumber
+                      ? `Cliente Doc: ${c.identificationNumber}`
+                      : `Cliente ID: ${c.id.slice(0, 8)}`}
                   </option>
                 ))}
               </select>

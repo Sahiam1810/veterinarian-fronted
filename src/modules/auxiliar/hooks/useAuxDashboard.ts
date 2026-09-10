@@ -194,7 +194,7 @@ export function useAuxDashboard() {
           weightAtVisit: medRecord?.weightAtVisit != null ? medRecord.weightAtVisit : pet?.weight,
           temperature: medRecord?.temperature,
           symptoms: medRecord?.symptoms,
-          ownerName: ownerUser?.fullName || 'Propietario',
+          ownerName: ownerUser?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Propietario'),
           notes: apt.notes || undefined,
           statusId: apt.statusId,
           clientPetId: apt.clientPetId,

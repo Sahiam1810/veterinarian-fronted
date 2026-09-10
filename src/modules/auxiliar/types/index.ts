@@ -139,9 +139,12 @@ export interface ApiClientResponse {
   userId: string
   identificationNumber: string
   address?: string | null
+  phoneNumber?: string | null
   registrationDate: string
   createdAt: string
   updatedAt?: string | null
+  fullName?: string | null
+  email?: string | null
 }
 
 export interface ApiVeterinarianResponse {

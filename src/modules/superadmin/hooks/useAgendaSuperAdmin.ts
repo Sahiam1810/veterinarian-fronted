@@ -137,7 +137,7 @@ export function useAgendaSuperAdmin() {
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
-        fetchUsers(),
+        fetchUsers().catch(() => []),
         fetchSpecies(),
         fetchRaces(),
         fetchServices(),
@@ -164,7 +164,7 @@ export function useAgendaSuperAdmin() {
           petName: pet?.name,
           petBreed: pet ? racesById.get(pet.raceId) : undefined,
           species: pet ? speciesById.get(pet.speciesId) : undefined,
-          ownerName: ownerUser?.fullName,
+          ownerName: ownerUser?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : undefined),
           professionalName: vet?.userFullName ?? undefined,
         })
       })
@@ -188,7 +188,7 @@ export function useAgendaSuperAdmin() {
             petName: pet?.name ?? 'Mascota',
             breed: pet ? racesById.get(pet.raceId) ?? '' : '',
             species: pet ? speciesById.get(pet.speciesId) ?? '' : '',
-            ownerName: owner?.fullName ?? 'Dueño',
+            ownerName: owner?.fullName || client?.fullName || (client?.identificationNumber ? `Cliente ${client.identificationNumber}` : 'Dueño'),
             clientId: cp.clientId,
             ownerPhone: client?.phoneNumber ?? undefined,
           }
