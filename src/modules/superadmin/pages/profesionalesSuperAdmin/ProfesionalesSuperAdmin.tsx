@@ -55,6 +55,7 @@ function SaveIcon({ className = 'w-4 h-4' }: { className?: string }) {
 
 export interface ProfesionalesSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -103,6 +104,7 @@ function EspecialidadBadgeIcon({ especialidad, className = 'w-3.5 h-3.5' }: { es
 
 export function ProfesionalesSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute = 'profesionales',
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -215,7 +217,7 @@ export function ProfesionalesSuperAdmin({
         onMarkNotificationRead={onMarkNotificationRead}
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
-        onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
       />
 
       {/* 2. Cuerpo Principal */}

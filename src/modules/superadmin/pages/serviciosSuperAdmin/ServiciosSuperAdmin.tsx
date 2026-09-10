@@ -22,6 +22,7 @@ import {
 
 export interface ServiciosSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -40,6 +41,7 @@ export interface ServiciosSuperAdminProps {
 
 export function ServiciosSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute = 'servicios',
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -137,7 +139,7 @@ export function ServiciosSuperAdmin({
         onMarkNotificationRead={onMarkNotificationRead}
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
-        onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
       />
 
       {/* 2. Cuerpo Principal */}

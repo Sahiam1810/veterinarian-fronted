@@ -23,6 +23,7 @@ import {
 
 export interface EspeciesRazasSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -41,6 +42,7 @@ export interface EspeciesRazasSuperAdminProps {
 
 export function EspeciesRazasSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute = 'especies-razas',
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -132,7 +134,7 @@ export function EspeciesRazasSuperAdmin({
         onMarkNotificationRead={onMarkNotificationRead}
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
-        onProfileClick={() => showToast('Abriendo panel de perfil de superadministrador')}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
       />
 
       <div className="flex-1 flex overflow-hidden relative">

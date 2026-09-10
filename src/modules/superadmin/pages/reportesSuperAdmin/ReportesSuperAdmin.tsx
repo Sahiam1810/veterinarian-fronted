@@ -13,6 +13,7 @@ import type { ModuleId, NotificacionSuperAdmin, ReportesPeriodoId } from '../../
 
 export interface ReportesSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -32,6 +33,7 @@ export interface ReportesSuperAdminProps {
 // Vista Reportes del panel Admin/SuperAdmin (sin cablear /api/Reports todavía)
 export function ReportesSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute = 'reportes',
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -91,7 +93,7 @@ export function ReportesSuperAdmin({
         onMarkNotificationRead={onMarkNotificationRead}
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
-        onProfileClick={() => showToast('Abriendo panel de perfil')}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
       />
 
       <div className="flex-1 flex overflow-hidden relative">

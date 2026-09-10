@@ -12,6 +12,7 @@ export type { SuperAdminProfileData }
 
 export interface PerfilSuperAdminProps {
   onNavigate?: (routeId: string) => void
+  onProfileClick?: () => void
   activeRoute?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
@@ -30,6 +31,7 @@ export interface PerfilSuperAdminProps {
 
 export function PerfilSuperAdmin({
   onNavigate,
+  onProfileClick: externalOnProfileClick,
   activeRoute = 'perfil',
   isSidebarOpen: externalIsSidebarOpen,
   onToggleSidebar: externalOnToggleSidebar,
@@ -108,7 +110,7 @@ export function PerfilSuperAdmin({
         onMarkNotificationRead={onMarkNotificationRead}
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
-        onProfileClick={() => handleSidebarNavigate('perfil')}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
       />
 
       {/* 2. Cuerpo Principal */}
