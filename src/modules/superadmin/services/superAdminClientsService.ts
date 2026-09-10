@@ -9,6 +9,11 @@ export interface ApiClientResponse {
   registrationDate: string
   createdAt: string
   updatedAt?: string | null
+  // Resueltos desde la navegación User en el backend — eliminan la necesidad
+  // de cruzar contra GET /api/Users para obtener el nombre y estado del dueño.
+  fullName?: string | null
+  email?: string | null
+  isActive?: boolean | null
 }
 
 export interface ApiCreateClientRequest {

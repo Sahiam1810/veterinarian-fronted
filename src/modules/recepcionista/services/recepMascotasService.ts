@@ -3,6 +3,7 @@ import type {
   RecepMascotaDetail,
   RecepMascotaListItem,
   RecepMascotasDirectoryPayload,
+
 } from '../types/index.ts'
 import type { ApiPetResponse, ApiCreatePetRequest, ApiUpdatePetRequest } from '../../superadmin/services/superAdminPetsService.ts'
 import type { ApiSpeciesResponse, ApiRaceResponse } from '../../superadmin/services/superAdminCatalogService.ts'
@@ -10,7 +11,6 @@ import type { ApiClientPetResponse, ApiCreateClientPetResponse } from '../../sup
 import type { ApiClientResponse } from '../../superadmin/services/superAdminClientsService.ts'
 import type { ApiUserResponse } from '../../superadmin/services/superAdminUserService.ts'
 import type { ApiAppointmentResponse } from '../../superadmin/services/superAdminAppointmentsService.ts'
-
 
 
 function formatDateLabel(dateStr?: string | null): string {
@@ -31,13 +31,12 @@ function formatDateLabel(dateStr?: string | null): string {
 
 // Obtiene el directorio consolidado de mascotas conectando Pets, Species, Races, Clients y Appointments
 export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirectoryPayload> {
-  const [petsRes, speciesRes, racesRes, cpRes, clientsRes, usersRes, aptsRes] = await Promise.allSettled([
+  const [petsRes, speciesRes, racesRes, cpRes, clientsRes, aptsRes] = await Promise.allSettled([
     apiClient.get<ApiPetResponse[]>('/api/Pets'),
     apiClient.get<ApiSpeciesResponse[]>('/api/Species'),
     apiClient.get<ApiRaceResponse[]>('/api/Races'),
     apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets'),
     apiClient.get<ApiClientResponse[]>('/api/Clients'),
-    apiClient.get<ApiUserResponse[]>('/api/Users'),
     apiClient.get<ApiAppointmentResponse[]>('/api/Appointments'),
   ])
 
@@ -46,13 +45,11 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
   const races = racesRes.status === 'fulfilled' ? racesRes.value : []
   const clientPets = cpRes.status === 'fulfilled' ? cpRes.value : []
   const clients = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-  const users = usersRes.status === 'fulfilled' ? usersRes.value : []
   const appointments = aptsRes.status === 'fulfilled' ? aptsRes.value : []
 
   const speciesMap = new Map(species.map((s) => [s.id.toLowerCase(), s.name]))
   const racesMap = new Map(races.map((r) => [r.id.toLowerCase(), r.name]))
   const clientsMap = new Map(clients.map((c) => [c.id.toLowerCase(), c]))
-  const usersMap = new Map(users.map((u) => [u.id.toLowerCase(), u]))
 
   // Mapear petId -> clientPet
   const cpByPetId = new Map<string, ApiClientPetResponse>()
@@ -80,12 +77,11 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
 
     const cp = cpByPetId.get(pet.id.toLowerCase())
     const client = cp ? clientsMap.get(cp.clientId?.toLowerCase()) : undefined
-    const ownerUser = client ? usersMap.get(client.userId?.toLowerCase()) : undefined
 
     const lastApt = cp ? lastAptByCpId.get(cp.id.toLowerCase()) : undefined
     const lastVisitLabel = lastApt ? formatDateLabel(lastApt.scheduledStart) : 'Sin visitas recientes'
 
-    const ownerName = ownerUser?.fullName || 'Dueño no asignado'
+    const ownerName = client?.fullName || 'Dueño no asignado'
     const ageNum = pet.age || 1
     const ageLabel = `${ageNum} ${ageNum === 1 ? 'año' : 'años'}`
     const sexLabel = pet.gender?.toLowerCase().includes('h') || pet.gender === 'Hembra' ? 'Hembra' : 'Macho'
