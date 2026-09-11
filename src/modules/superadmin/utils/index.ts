@@ -1,2 +1,2 @@
 // Exportaciones de utilidades de superadministrador
-export {}
+export * from './resolveAvailabilityId'
