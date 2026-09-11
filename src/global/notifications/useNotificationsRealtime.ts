@@ -5,7 +5,8 @@ import {
   LogLevel,
   type HubConnection,
 } from '@microsoft/signalr'
-import { getAccessToken } from '@/modules/auth'
+import { ensureSignalRAccessToken } from './ensureSignalRAccessToken'
+import { reconnectNotificationsAfterClose } from './notificationsRealtimeReconnect'
 import { mapRealtimeNotificationPayload } from './mapRealtimeNotification'
 import type { RealtimeNotificationPayload } from './realtimeNotificationTypes'
 
@@ -35,6 +36,16 @@ export function useNotificationsRealtime({
 
     let cancelled = false
     let connection: HubConnection | null = null
+    let reconnectInFlight: Promise<void> | null = null
+    let sleepTimer: ReturnType<typeof setTimeout> | null = null
+
+    const sleep = (ms: number) =>
+      new Promise<void>((resolve) => {
+        sleepTimer = setTimeout(() => {
+          sleepTimer = null
+          resolve()
+        }, ms)
+      })
 
     const stopQuietly = async (conn: HubConnection | null) => {
       if (!conn) return
@@ -47,14 +58,34 @@ export function useNotificationsRealtime({
       }
     }
 
+    const startConnection = async () => {
+      if (!connection) return
+      if (connection.state !== HubConnectionState.Disconnected) return
+      await connection.start()
+    }
+
+    // Tras agotar withAutomaticReconnect, refresca token y vuelve a start() con backoff.
+    const scheduleReconnectAfterClose = () => {
+      if (cancelled || reconnectInFlight) return
+      reconnectInFlight = reconnectNotificationsAfterClose({
+        isCancelled: () => cancelled,
+        ensureToken: ensureSignalRAccessToken,
+        startConnection,
+        sleep,
+      }).finally(() => {
+        reconnectInFlight = null
+      })
+      void reconnectInFlight
+    }
+
     const start = async () => {
-      const token = getAccessToken()
-      if (!token) return
+      const token = await ensureSignalRAccessToken()
+      if (!token || cancelled) return
 
       const next = new HubConnectionBuilder()
         .withUrl(HUB_URL, {
-          // El backend acepta JWT en ?access_token= para esta ruta WebSocket.
-          accessTokenFactory: () => getAccessToken() ?? '',
+          // El backend acepta JWT en ?access_token=; renovamos si está vencido o por vencer.
+          accessTokenFactory: async () => (await ensureSignalRAccessToken()) ?? '',
         })
         .withAutomaticReconnect()
         .configureLogging(LogLevel.None)
@@ -65,6 +96,11 @@ export function useNotificationsRealtime({
         if (mapped) onNotificationRef.current(mapped)
       })
 
+      next.onclose(() => {
+        if (cancelled) return
+        scheduleReconnectAfterClose()
+      })
+
       connection = next
 
       try {
@@ -73,15 +109,19 @@ export function useNotificationsRealtime({
           await stopQuietly(next)
         }
       } catch {
-        // Degradación segura: la campana sigue con fetch REST.
-        connection = null
-        await stopQuietly(next)
+        // Degradación segura: la campana sigue con fetch REST; reintentamos en silencio.
+        scheduleReconnectAfterClose()
       }
     }
 
     void start()
 
     const onSessionExpired = () => {
+      cancelled = true
+      if (sleepTimer) {
+        clearTimeout(sleepTimer)
+        sleepTimer = null
+      }
       void stopQuietly(connection)
       connection = null
     }
@@ -89,6 +129,10 @@ export function useNotificationsRealtime({
 
     return () => {
       cancelled = true
+      if (sleepTimer) {
+        clearTimeout(sleepTimer)
+        sleepTimer = null
+      }
       window.removeEventListener('huellitas:session-expired', onSessionExpired)
       void stopQuietly(connection)
       connection = null
