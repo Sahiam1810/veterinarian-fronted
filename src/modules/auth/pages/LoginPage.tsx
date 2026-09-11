@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { BrandLogo, PawCheckbox } from '@/global/components'
+import { BrandLogo } from '@/global/components'
 import { useAuth } from '../hooks'
 import type { LoginCredentials, AuthUser } from '../types'
 import { hasLoginFieldErrors, validateLoginFields, type LoginFieldErrors } from '../utils/validateLogin'
@@ -29,7 +29,6 @@ export function LoginPage({
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({})
   const [localError, setLocalError] = useState<string | null>(null)
@@ -59,9 +58,9 @@ export function LoginPage({
 
     try {
       if (externalLogin) {
-        await externalLogin({ email, password, remember })
+        await externalLogin({ email, password })
       } else {
-        await internalAuth.login({ email, password, remember })
+        await internalAuth.login({ email, password })
       }
     } catch (err) {
       // useAuth ya deja el mensaje; con login externo lo reflejamos aquí.
@@ -170,16 +169,6 @@ export function LoginPage({
                 </span>
               ) : null}
             </label>
-
-            <div className="login-row-remember">
-              <label className="login-remember flex items-center gap-2 cursor-pointer">
-                <PawCheckbox
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                <span>Recordarme</span>
-              </label>
-            </div>
 
             {formError && !hasLoginFieldErrors(fieldErrors) ? (
               <div className="login-card__error-box" role="alert">

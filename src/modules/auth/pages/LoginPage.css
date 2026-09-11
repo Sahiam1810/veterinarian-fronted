@@ -162,67 +162,6 @@
   outline-offset: 1px;
 }
 
-.login-remember {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-size: 0.9rem;
-  color: var(--color-ink);
-  user-select: none;
-  cursor: pointer;
-}
-
-.login-remember__control {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 1.15rem;
-  height: 1.15rem;
-  flex-shrink: 0;
-}
-
-.login-remember__control input {
-  appearance: none;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  border: 1.5px solid color-mix(in srgb, var(--color-brand-focus) 45%, transparent);
-  border-radius: 0.28rem;
-  background: var(--color-white);
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    border-color 140ms ease;
-}
-
-.login-remember__control input:checked {
-  background: var(--color-brand-teal);
-  border-color: var(--color-brand-teal);
-}
-
-.login-remember__control input:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-brand-focus) 35%, transparent);
-  outline-offset: 2px;
-}
-
-.login-remember__paw {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  color: var(--color-white);
-  opacity: 0;
-  transform: scale(0.7);
-  pointer-events: none;
-  transition:
-    opacity 140ms ease,
-    transform 140ms ease;
-}
-
-.login-remember__control input:checked + .login-remember__paw {
-  opacity: 1;
-  transform: scale(1);
-}
-
 .login-card__submit {
   margin-top: 0.35rem;
   display: inline-flex;
@@ -253,12 +192,6 @@
 .login-card__submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-}
-
-.login-row-remember {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .login-card__error-box {

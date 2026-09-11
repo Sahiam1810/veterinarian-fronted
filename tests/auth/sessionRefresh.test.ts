@@ -52,8 +52,8 @@ beforeEach(() => {
     roleId: '11111111-1111-1111-1111-111111111111',
     accessToken: 'expired-access-token',
     refreshToken: 'refresh-1',
-  }, true)
-  localStorage.setItem('huellitas_auth_tokens', JSON.stringify({
+  })
+  sessionStorage.setItem('huellitas_auth_tokens', JSON.stringify({
     accessToken: 'expired-access-token',
     accessTokenExpiresAt: '2026-09-04T18:00:00Z',
     refreshToken: 'refresh-1',

@@ -217,8 +217,8 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
     refreshToken: tokens.refreshToken,
   }
 
-  setStoredUser(authUser, credentials.remember ?? true)
-  setStoredTokens(tokens, credentials.remember ?? true)
+  setStoredUser(authUser)
+  setStoredTokens(tokens)
   return authUser
 }
 
@@ -227,7 +227,7 @@ export function getAccessToken(): string | null {
   if (user?.accessToken) return user.accessToken
 
   try {
-    const raw = localStorage.getItem(AUTH_TOKENS_KEY) || sessionStorage.getItem(AUTH_TOKENS_KEY)
+    const raw = sessionStorage.getItem(AUTH_TOKENS_KEY)
     if (!raw) return null
     const tokens = JSON.parse(raw) as AuthenticationResponse
     return tokens.accessToken || null
@@ -236,38 +236,19 @@ export function getAccessToken(): string | null {
   }
 }
 
-function setStoredTokens(tokens: AuthenticationResponse, remember: boolean): void {
+function setStoredTokens(tokens: AuthenticationResponse): void {
   try {
-    const serialized = JSON.stringify(tokens)
-    if (remember) {
-      localStorage.setItem(AUTH_TOKENS_KEY, serialized)
-      sessionStorage.removeItem(AUTH_TOKENS_KEY)
-    } else {
-      sessionStorage.setItem(AUTH_TOKENS_KEY, serialized)
-      localStorage.removeItem(AUTH_TOKENS_KEY)
-    }
+    sessionStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify(tokens))
   } catch (err) {
     console.error('Error al persistir tokens', err)
   }
 }
 
-function readStoredTokens(): { tokens: AuthenticationResponse; remember: boolean } | null {
+function readStoredTokens(): AuthenticationResponse | null {
   try {
-    const localTokens = localStorage.getItem(AUTH_TOKENS_KEY)
-    if (localTokens) {
-      return {
-        tokens: JSON.parse(localTokens) as AuthenticationResponse,
-        remember: true,
-      }
-    }
-
     const sessionTokens = sessionStorage.getItem(AUTH_TOKENS_KEY)
     if (!sessionTokens) return null
-
-    return {
-      tokens: JSON.parse(sessionTokens) as AuthenticationResponse,
-      remember: false,
-    }
+    return JSON.parse(sessionTokens) as AuthenticationResponse
   } catch {
     return null
   }
@@ -278,7 +259,7 @@ let activeRefresh: Promise<string> | null = null
 async function executeSessionRefresh(): Promise<string> {
   const storedTokens = readStoredTokens()
   const storedUser = getStoredUser()
-  const refreshToken = storedTokens?.tokens.refreshToken || storedUser?.refreshToken
+  const refreshToken = storedTokens?.refreshToken || storedUser?.refreshToken
 
   if (!refreshToken || !storedUser) {
     throw new Error('No hay una sesión renovable. Inicia sesión de nuevo.')
@@ -314,7 +295,6 @@ async function executeSessionRefresh(): Promise<string> {
   }
 
   const resolvedIdentity = resolvePersistedRoleIdentity(roleId, mappedRole as UserRole)
-  const remember = storedTokens?.remember ?? Boolean(localStorage.getItem(AUTH_STORAGE_KEY))
   const refreshedUser: AuthUser = {
     ...storedUser,
     email: readStringClaim(tokens.accessToken, 'email') || storedUser.email,
@@ -326,8 +306,8 @@ async function executeSessionRefresh(): Promise<string> {
     refreshToken: tokens.refreshToken,
   }
 
-  setStoredTokens(tokens, remember)
-  setStoredUser(refreshedUser, remember)
+  setStoredTokens(tokens)
+  setStoredUser(refreshedUser)
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent<AuthUser>('huellitas:session-refreshed', {
@@ -350,7 +330,7 @@ export function refreshSession(): Promise<string> {
 
 export function getStoredUser(): AuthUser | null {
   try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY)
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
     const stored = JSON.parse(raw) as AuthUser
     const mappedRole = mapBackendRole(stored.roleName || stored.role)
@@ -373,16 +353,9 @@ export function getStoredUser(): AuthUser | null {
   }
 }
 
-export function setStoredUser(user: AuthUser, remember: boolean = true): void {
+export function setStoredUser(user: AuthUser): void {
   try {
-    const serialized = JSON.stringify(user)
-    if (remember) {
-      localStorage.setItem(AUTH_STORAGE_KEY, serialized)
-      sessionStorage.removeItem(AUTH_STORAGE_KEY)
-    } else {
-      sessionStorage.setItem(AUTH_STORAGE_KEY, serialized)
-      localStorage.removeItem(AUTH_STORAGE_KEY)
-    }
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
   } catch (err) {
     console.error('Error al persistir sesión', err)
   }
@@ -390,9 +363,7 @@ export function setStoredUser(user: AuthUser, remember: boolean = true): void {
 
 export function clearStoredUser(): void {
   try {
-    localStorage.removeItem(AUTH_STORAGE_KEY)
     sessionStorage.removeItem(AUTH_STORAGE_KEY)
-    localStorage.removeItem(AUTH_TOKENS_KEY)
     sessionStorage.removeItem(AUTH_TOKENS_KEY)
   } catch (err) {
     console.error('Error al limpiar sesión', err)

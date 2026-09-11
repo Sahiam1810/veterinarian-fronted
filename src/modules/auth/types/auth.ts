@@ -20,7 +20,6 @@ export interface AuthUser {
 export interface LoginCredentials {
   email: string
   password: string
-  remember?: boolean
 }
 
 // Cuentas demo locales (solo referencia UI; el login real va al backend).

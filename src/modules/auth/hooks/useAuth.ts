@@ -42,7 +42,6 @@ export function useAuth() {
       return login({
         email: account.email,
         password: account.password,
-        remember: true,
       })
     },
     [login]
