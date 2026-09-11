@@ -63,7 +63,8 @@ export function CitaAccionesModal({
   const isNoAsistio =
     appointment.status === 'NO_ASISTIO' ||
     appointment.status === 'NO ASISTIÓ' ||
-    /no\s*asist/i.test(appointment.rawStatusName || '')
+    /no[\s_-]*asist|ausent|missed|no[\s_-]?show/i.test(appointment.rawStatusName || '')
+  const isTerminal = isAtendida || isCancelada || isNoAsistio
 
   const handleMarkAtendida = async () => {
     setActionError(null)
@@ -223,8 +224,8 @@ export function CitaAccionesModal({
               <button
                 type="button"
                 onClick={() => onAttendAndRegister(appointment)}
-                disabled={isUpdatingStatus}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm disabled:opacity-60"
+                disabled={isUpdatingStatus || isTerminal}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm disabled:opacity-50 disabled:hover:bg-brand disabled:cursor-not-allowed"
               >
                 <PawIcon className="w-4 h-4" />
                 <span>Atender y Registrar Consulta</span>
@@ -254,39 +255,39 @@ export function CitaAccionesModal({
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  disabled={isUpdatingStatus || isAtendida}
+                  disabled={isUpdatingStatus || isTerminal}
                   onClick={handleMarkAtendida}
-                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border ${
                     isAtendida
                       ? 'bg-terracotta-soft text-terracotta border-terracotta/30 opacity-70 cursor-default'
-                      : 'bg-white text-charcoal border-border-tan hover:border-terracotta/40 hover:text-terracotta'
-                  } disabled:opacity-60`}
+                      : 'bg-white text-charcoal border-border-tan hover:border-terracotta/40 hover:text-terracotta cursor-pointer disabled:opacity-40 disabled:hover:border-border-tan disabled:hover:text-charcoal disabled:cursor-not-allowed'
+                  }`}
                 >
                   {isAtendida ? '✓ Atendida' : 'Atendida'}
                 </button>
 
                 <button
                   type="button"
-                  disabled={isUpdatingStatus || isNoAsistio}
+                  disabled={isUpdatingStatus || isTerminal}
                   onClick={handleMarkNoAsistio}
-                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border ${
                     isNoAsistio
                       ? 'bg-bone text-sage border-sage/40 opacity-70 cursor-default'
-                      : 'bg-white text-charcoal border-border-tan hover:border-sage/50 hover:text-sage'
-                  } disabled:opacity-60`}
+                      : 'bg-white text-charcoal border-border-tan hover:border-sage/50 hover:text-sage cursor-pointer disabled:opacity-40 disabled:hover:border-border-tan disabled:hover:text-charcoal disabled:cursor-not-allowed'
+                  }`}
                 >
                   {isNoAsistio ? '✓ No asistió' : 'No asistió'}
                 </button>
 
                 <button
                   type="button"
-                  disabled={isUpdatingStatus || isCancelada}
+                  disabled={isUpdatingStatus || isTerminal}
                   onClick={() => setShowCancelPrompt(true)}
-                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                  className={`px-2.5 py-2 rounded-xl text-xs font-bold transition border ${
                     isCancelada
                       ? 'bg-danger-soft text-danger border-danger/30 opacity-70 cursor-default'
-                      : 'bg-white text-charcoal border-border-tan hover:border-danger/40 hover:text-danger'
-                  } disabled:opacity-60`}
+                      : 'bg-white text-charcoal border-border-tan hover:border-danger/40 hover:text-danger cursor-pointer disabled:opacity-40 disabled:hover:border-border-tan disabled:hover:text-charcoal disabled:cursor-not-allowed'
+                  }`}
                 >
                   {isCancelada ? '✓ Cancelada' : 'Cancelar'}
                 </button>

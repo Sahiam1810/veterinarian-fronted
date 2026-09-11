@@ -8,7 +8,7 @@ export function mapAppointmentStatus(statusName?: string | null): VetAppointment
     return 'CANCELADO'
   }
 
-  if (/no\s*asist|ausent|missed|no[\s-]?show/.test(name)) {
+  if (/no[\s_-]*asist|ausent|missed|no[\s_-]?show/.test(name)) {
     return 'NO ASISTIÓ'
   }
 
@@ -29,4 +29,8 @@ export function isAttendedStatus(status: VetAppointmentStatus): boolean {
 
 export function isPendingStatus(status: VetAppointmentStatus): boolean {
   return status === 'EN ESPERA' || status === 'AGENDADO'
+}
+
+export function isTerminalAppointmentStatus(status: VetAppointmentStatus): boolean {
+  return status === 'ATENDIDO' || status === 'CANCELADO' || status === 'NO ASISTIÓ'
 }
