@@ -1,4 +1,4 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 import type {
   RecepAgendaCatalogPayload,
   RecepAgendaDayAppointment,
@@ -9,7 +9,7 @@ import type {
   RecepAgendaServiceOption,
   RecepAgendaTimeSlot,
 } from '../types'
-import { mapRecepAgendaStatus } from '../types'
+import { mapRecepAgendaStatus } from '../types/agenda.types.ts'
 import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
 
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
@@ -215,7 +215,15 @@ export async function createRecepAppointment(
   const statusId = agendadoStatus?.id || '22222222-2222-2222-2222-222222222222'
 
   const [hours, minutes] = (form.timeSlotId || '09:00').split(':').map(Number)
-  const dateObj = form.dateValue ? new Date(form.dateValue) : new Date()
+  // "YYYY-MM-DD" con new Date(string) se interpreta como medianoche UTC (desfasa el día
+  // en zonas UTC negativas como Bogotá); se arma con año/mes/día locales, como ya hacen
+  // useRecepAgenda.ts y RecepDayCalendarPanel.tsx en este mismo módulo.
+  const dateObj = form.dateValue
+    ? (() => {
+        const [year, month, day] = form.dateValue.split('-').map(Number)
+        return new Date(year, month - 1, day)
+      })()
+    : new Date()
   dateObj.setHours(hours || 9, minutes || 0, 0, 0)
   const startIso = dateObj.toISOString()
 
