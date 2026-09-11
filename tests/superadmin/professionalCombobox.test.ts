@@ -29,6 +29,13 @@ const MOCK_DUENOS: ProfessionalFilterOption[] = [
   { id: 'd3', name: 'Carlos Andrés Gómez', subtitle: '3201234567 - 98765432' },
 ]
 
+const MOCK_ESPECIES: ProfessionalFilterOption[] = [
+  { id: 'sp1', name: 'Canino' },
+  { id: 'sp2', name: 'Felino' },
+  { id: 'sp3', name: 'Aves' },
+  { id: 'sp4', name: 'Roedores' },
+]
+
 test('normalizeFilterText elimina acentos, convierte a minúsculas y remueve espacios sobrantes', () => {
   assert.equal(normalizeFilterText('  ÁNGEL Pérez  '), 'angel perez')
   assert.equal(normalizeFilterText('María José'), 'maria jose')
@@ -114,6 +121,21 @@ test('filterProfessionals filtra dueños por nombre, teléfono o cédula en tiem
   assert.equal(resultInexistente.length, 0)
 })
 
+test('filterProfessionals filtra especies en RazaDrawer en tiempo real', () => {
+  const resultCan = filterProfessionals(MOCK_ESPECIES, 'can')
+  assert.equal(resultCan.length, 1)
+  assert.equal(resultCan[0]?.id, 'sp1')
+  assert.equal(resultCan[0]?.name, 'Canino')
+
+  const resultFel = filterProfessionals(MOCK_ESPECIES, 'felino')
+  assert.equal(resultFel.length, 1)
+  assert.equal(resultFel[0]?.id, 'sp2')
+  assert.equal(resultFel[0]?.name, 'Felino')
+
+  const resultInexistente = filterProfessionals(MOCK_ESPECIES, 'reptil')
+  assert.equal(resultInexistente.length, 0)
+})
+
 test('resolveProfessionalLabel retorna "Todos los Profesionales" cuando value es "all" o vacío con hasAllOption=true', () => {
   assert.equal(resolveProfessionalLabel(MOCK_PROFESIONALES, 'all'), 'Todos los Profesionales')
   assert.equal(resolveProfessionalLabel(MOCK_PROFESIONALES, ''), 'Todos los Profesionales')
@@ -133,4 +155,5 @@ test('resolveProfessionalLabel con hasAllOption=false retorna cadena vacía cuan
   assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, 's1', 'Todos los Servicios', 'all', false), 'Consulta General')
   assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, 's2', 'Todos los Servicios', 'all', false), 'Vacunación Antirrábica')
   assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, 'no_existe', 'Todos los Servicios', 'all', false), '')
+  assert.equal(resolveProfessionalLabel(MOCK_ESPECIES, 'sp1', 'Todas las Especies', 'all', false), 'Canino')
 })
