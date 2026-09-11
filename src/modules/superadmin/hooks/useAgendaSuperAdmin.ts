@@ -20,15 +20,10 @@ import {
   fetchServices,
   fetchStatusAppointments,
   fetchAvailabilitiesByVeterinarian,
-  createAvailability,
 } from '../services'
 import { mapAppointmentToCita, buildWeekDays, formatNotesWithConsultorio } from '../utils/superAdminApiMappers'
+import { resolveAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../utils/resolveAvailabilityId'
 import { ApiError } from '@/services'
-
-// DayOfWeek .NET: 0=Domingo … 6=Sábado
-function dayOfWeekFromDateKey(dateKey: string): number {
-  return new Date(`${dateKey}T12:00:00`).getDay()
-}
 
 function findStatusId(
   statuses: { id: string; name: string }[],
@@ -220,38 +215,6 @@ export function useAgendaSuperAdmin() {
     })
   }, [citas, selectedProfessionalId])
 
-  // Resuelve availability del vet para el día; si no hay, crea una franja temporal
-  const resolveAvailabilityId = async (
-    veterinarianId: string,
-    dateKey: string,
-    startTime: string,
-    endTime: string,
-    consultingRoom?: string,
-  ): Promise<string> => {
-    const day = dayOfWeekFromDateKey(dateKey)
-    const list = await fetchAvailabilitiesByVeterinarian(veterinarianId)
-    const match = list.find((a) => {
-      const dow = typeof a.dayOfWeek === 'string' ? Number(a.dayOfWeek) : a.dayOfWeek
-      return a.isActive && Number(dow) === day
-    })
-    if (match) return match.id
-
-    const created = await createAvailability({
-      veterinarianId,
-      dayOfWeek: day,
-      startTime: `${startTime}:00`,
-      endTime: `${endTime}:00`,
-      isActive: true,
-      slotDurationMinutes: 30,
-      maxConcurrentAppointments: 1,
-      consultingRoom: consultingRoom || null,
-    })
-    if (!created.id) {
-      throw new Error('No se pudo crear la disponibilidad del veterinario.')
-    }
-    return created.id
-  }
-
   const handleSaveCita = async (data: CitaFormData) => {
     if (!data.clientPetId) {
       const msg = 'Selecciona una mascota registrada.'
@@ -281,7 +244,7 @@ export function useAgendaSuperAdmin() {
             data.dateKey,
             data.startTime,
             data.endTime,
-            data.consultorio,
+            fetchAvailabilitiesByVeterinarian,
           ))
 
         const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
@@ -329,7 +292,7 @@ export function useAgendaSuperAdmin() {
           data.dateKey,
           data.startTime,
           data.endTime,
-          data.consultorio,
+          fetchAvailabilitiesByVeterinarian,
         )
 
         const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
@@ -366,6 +329,8 @@ export function useAgendaSuperAdmin() {
     } catch (err) {
       // Validaciones locales ya hicieron toast; API sí necesita uno.
       if (err instanceof ApiError) {
+        showToast(err.message)
+      } else if (err instanceof Error && err.message === NO_VET_AVAILABILITY_MESSAGE) {
         showToast(err.message)
       } else if (!(err instanceof Error)) {
         showToast('No se pudo guardar la cita.')

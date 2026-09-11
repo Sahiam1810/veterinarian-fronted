@@ -43,11 +43,8 @@ import {
   mapAppointmentToCita,
   formatNotesWithConsultorio,
 } from '../utils/superAdminApiMappers'
+import { resolveAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../utils/resolveAvailabilityId'
 import { ApiError } from '@/services'
-
-function dayOfWeekFromDateKey(dateKey: string): number {
-  return new Date(`${dateKey}T12:00:00`).getDay()
-}
 
 function findStatusId(
   statuses: { id: string; name: string }[],
@@ -302,37 +299,6 @@ export function useProfesionalesSuperAdmin() {
     return match?.id ?? specialties[0]?.id ?? ''
   }
 
-  const resolveAvailabilityId = async (
-    vetId: string,
-    dateKey: string,
-    startTime: string,
-    endTime: string,
-    consultingRoom?: string,
-  ): Promise<string> => {
-    const availabilities = await fetchAvailabilitiesByVeterinarian(vetId)
-    const dayOfWeek = dayOfWeekFromDateKey(dateKey)
-    const matching = availabilities.find((a) => {
-      const dow = typeof a.dayOfWeek === 'string' ? Number(a.dayOfWeek) : a.dayOfWeek
-      return a.isActive && Number(dow) === dayOfWeek
-    })
-    if (matching) return matching.id
-
-    const created = await createAvailability({
-      veterinarianId: vetId,
-      dayOfWeek,
-      startTime: `${startTime}:00`,
-      endTime: `${endTime}:00`,
-      isActive: true,
-      slotDurationMinutes: 30,
-      maxConcurrentAppointments: 1,
-      consultingRoom: consultingRoom || null,
-    })
-    if (!created.id) {
-      throw new Error('No se pudo crear la disponibilidad del veterinario.')
-    }
-    return created.id
-  }
-
   const handleCreateCita = async (data: CitaFormData) => {
     if (!data.clientPetId) {
       const msg = 'Selecciona una mascota del catálogo.'
@@ -366,14 +332,8 @@ export function useProfesionalesSuperAdmin() {
         data.dateKey,
         data.startTime,
         data.endTime,
-        data.consultorio,
+        fetchAvailabilitiesByVeterinarian,
       )
-
-      if (!availabilityId) {
-        const msg = 'No hay disponibilidad válida para el veterinario en ese día.'
-        showToast(msg)
-        throw new Error(msg)
-      }
 
       const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
       const ownerPhone =
@@ -404,6 +364,8 @@ export function useProfesionalesSuperAdmin() {
       await loadData()
     } catch (err) {
       if (err instanceof ApiError) {
+        showToast(err.message)
+      } else if (err instanceof Error && err.message === NO_VET_AVAILABILITY_MESSAGE) {
         showToast(err.message)
       } else if (!(err instanceof Error)) {
         showToast('No se pudo agendar la cita.')
