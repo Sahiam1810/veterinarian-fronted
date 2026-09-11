@@ -5,7 +5,7 @@ export function mapAgendaEventStatus(statusName?: string | null): AgendaEventSta
   const name = (statusName || '').trim().toLowerCase()
 
   if (/cancel/.test(name)) return 'CANCELADA'
-  if (/no\s*asist|ausent|missed|no[\s-]?show/.test(name)) return 'NO_ASISTIO'
+  if (/no[\s_-]*asist|ausent|missed|no[\s_-]?show/.test(name)) return 'NO_ASISTIO'
   if (/complet|atendid|finaliz|cerrad|done|realiz/.test(name)) return 'ATENDIDA'
   if (/espera|progreso|curso|confirm|llegad|presente|check.?in/.test(name)) {
     return 'EN_ESPERA'
