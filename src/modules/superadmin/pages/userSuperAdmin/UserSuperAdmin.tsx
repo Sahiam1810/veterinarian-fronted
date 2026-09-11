@@ -1761,7 +1761,7 @@ export function UserSuperAdmin({
         }}
         onSuccess={({ email, mode }) => {
           if (mode === 'create') {
-            showToast(`Cliente/usuario con ${email} registrado exitosamente`)
+            showToast(`Usuario con ${email} registrado exitosamente`)
             return
           }
           showToast(`Usuario con ${email} fue actualizado exitosamente`)
