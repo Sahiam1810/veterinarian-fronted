@@ -29,7 +29,7 @@ export function LoginPage({
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(true)
+  const [remember, setRemember] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({})
   const [localError, setLocalError] = useState<string | null>(null)
