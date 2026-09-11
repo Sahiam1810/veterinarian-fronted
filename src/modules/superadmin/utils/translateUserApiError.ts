@@ -1,5 +1,5 @@
-import { ApiError } from '@/services'
-import { translateApiError } from '@/modules/auth/utils/toSpanishAuthError'
+import { ApiError } from '../../../services/apiClient.ts'
+import { translateApiError } from '../../auth/utils/toSpanishAuthError.ts'
 
 // Traduce mensajes genéricos del API que aún llegan en inglés
 const EXACT_TRANSLATIONS: Record<string, string> = {
