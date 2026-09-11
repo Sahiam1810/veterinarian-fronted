@@ -12,18 +12,13 @@ import type {
 import {
   fetchVeterinarians,
   fetchAvailabilities,
-  fetchSpecialties,
-  fetchUsers,
   fetchPets,
   fetchClientsPets,
   fetchClients,
-  fetchSpecies,
-  fetchRaces,
   fetchServices,
   fetchStatusAppointments,
   fetchAppointments,
   createAppointment,
-  createVeterinarian,
   updateVeterinarian,
   deleteVeterinarian,
   createAvailability,
@@ -33,9 +28,14 @@ import {
   activateUser,
   deactivateUser,
   deleteUser,
-  fetchRoles,
   fetchAvailabilitiesByVeterinarian,
 } from '../services'
+import {
+  fetchSpecialtiesCached as fetchSpecialties,
+  fetchUsersCached as fetchUsers,
+  fetchSpeciesCached as fetchSpecies,
+  fetchRacesCached as fetchRaces,
+} from '../cache'
 import {
   mapVeterinarianToProfesional,
   mapAvailabilityToBloque,
@@ -55,12 +55,7 @@ function findStatusId(
   return match?.id
 }
 
-// Solo el rol Veterinario (no Auxiliar ni otros)
-function isVeterinarioRoleName(name: string): boolean {
-  const n = name.trim().toLowerCase()
-  return n.includes('veterinar')
-}
-
+// Normaliza GUID para comparar IDs de Oracle/JSON.
 function normId(id: string): string {
   return id.trim().toLowerCase()
 }
@@ -108,7 +103,6 @@ export function useProfesionalesSuperAdmin() {
         fetchAvailabilities(),
         fetchSpecialties(),
         fetchUsers(),
-        fetchRoles(),
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
@@ -119,19 +113,18 @@ export function useProfesionalesSuperAdmin() {
         fetchAppointments(),
       ])
 
-      let vets = settledValue(results[0], [] as Awaited<ReturnType<typeof fetchVeterinarians>>)
+      const vets = settledValue(results[0], [] as Awaited<ReturnType<typeof fetchVeterinarians>>)
       const availabilities = settledValue(results[1], [] as Awaited<ReturnType<typeof fetchAvailabilities>>)
       const specialtyList = settledValue(results[2], [] as Awaited<ReturnType<typeof fetchSpecialties>>)
       const users = settledValue(results[3], [] as Awaited<ReturnType<typeof fetchUsers>>)
-      const roles = settledValue(results[4], [] as Awaited<ReturnType<typeof fetchRoles>>)
-      const pets = settledValue(results[5], [] as Awaited<ReturnType<typeof fetchPets>>)
-      const clientsPets = settledValue(results[6], [] as Awaited<ReturnType<typeof fetchClientsPets>>)
-      const clients = settledValue(results[7], [] as Awaited<ReturnType<typeof fetchClients>>)
-      const species = settledValue(results[8], [] as Awaited<ReturnType<typeof fetchSpecies>>)
-      const races = settledValue(results[9], [] as Awaited<ReturnType<typeof fetchRaces>>)
-      const services = settledValue(results[10], [] as Awaited<ReturnType<typeof fetchServices>>)
-      const statuses = settledValue(results[11], [] as Awaited<ReturnType<typeof fetchStatusAppointments>>)
-      const apiAppointments = settledValue(results[12], [] as Awaited<ReturnType<typeof fetchAppointments>>)
+      const pets = settledValue(results[4], [] as Awaited<ReturnType<typeof fetchPets>>)
+      const clientsPets = settledValue(results[5], [] as Awaited<ReturnType<typeof fetchClientsPets>>)
+      const clients = settledValue(results[6], [] as Awaited<ReturnType<typeof fetchClients>>)
+      const species = settledValue(results[7], [] as Awaited<ReturnType<typeof fetchSpecies>>)
+      const races = settledValue(results[8], [] as Awaited<ReturnType<typeof fetchRaces>>)
+      const services = settledValue(results[9], [] as Awaited<ReturnType<typeof fetchServices>>)
+      const statuses = settledValue(results[10], [] as Awaited<ReturnType<typeof fetchStatusAppointments>>)
+      const apiAppointments = settledValue(results[11], [] as Awaited<ReturnType<typeof fetchAppointments>>)
 
       if (results[0].status === 'rejected') {
         const reason = results[0].reason
@@ -144,42 +137,8 @@ export function useProfesionalesSuperAdmin() {
 
       setSpecialties(specialtyList.map((s) => ({ id: s.id, name: s.name })))
 
+      // El perfil Veterinarian se crea en el backend al alta del usuario (S26); sin auto-sync aquí.
       const usersById = new Map(users.map((u) => [normId(u.id), u]))
-      const rolesById = new Map(roles.map((r) => [normId(r.id), r.name]))
-      const defaultSpecialtyId = specialtyList[0]?.id || ''
-
-      // Usuarios con rol Veterinario sin fila en VETERINARIANS → crear perfil (no reaparece si se borró el usuario)
-      if (defaultSpecialtyId) {
-        const vetUserIdsWithProfile = new Set(vets.map((v) => normId(v.userId)))
-        const missingVetUsers = users.filter((u) => {
-          const roleName = rolesById.get(normId(u.roleId)) || ''
-          return isVeterinarioRoleName(roleName) && !vetUserIdsWithProfile.has(normId(u.id))
-        })
-
-        if (missingVetUsers.length > 0) {
-          let createdCount = 0
-          for (const u of missingVetUsers) {
-            try {
-              const short = u.id.replace(/-/g, '').slice(0, 8).toUpperCase()
-              await createVeterinarian({
-                userId: u.id,
-                specialtyId: defaultSpecialtyId,
-                licenseNumber: `LIC-${short}`,
-              })
-              createdCount += 1
-            } catch {
-              // Conflicto de licencia/usuario: se omite y se sigue
-            }
-          }
-          if (createdCount > 0) {
-            try {
-              vets = await fetchVeterinarians()
-            } catch {
-              // Se mantienen los ya cargados
-            }
-          }
-        }
-      }
 
       const clientsById = new Map(clients.map((c) => [normId(c.id), c]))
       const petsById = new Map(pets.map((p) => [normId(p.id), p]))

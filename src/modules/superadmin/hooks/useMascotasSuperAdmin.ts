@@ -16,18 +16,19 @@ import {
   deletePet,
   createClientPet,
   deleteClientPet,
-  createClient,
   createOwnerWithoutLogin,
   updateClient,
   deleteClient,
-  fetchUsers,
   updateUser,
   activateUser,
   deactivateUser,
-  fetchRoles,
-  fetchSpecies,
-  fetchRaces,
 } from '../services'
+import {
+  fetchUsersCached as fetchUsers,
+  fetchRolesCached as fetchRoles,
+  fetchSpeciesCached as fetchSpecies,
+  fetchRacesCached as fetchRaces,
+} from '../cache'
 import {
   mapClientToDueno,
   mapPetToMascota,
@@ -87,52 +88,15 @@ export function useMascotasSuperAdmin() {
     setIsLoading(true)
     setLoadError(null)
     try {
-      const [clients, users, pets, clientsPets, species, races, roles] = await Promise.all([
+      // El perfil Client se crea en el backend al alta del usuario (S26); sin auto-sync aquí.
+      const [clients, users, pets, clientsPets, species, races] = await Promise.all([
         fetchClients(),
         fetchUsers(),
         fetchPets(),
         fetchClientsPets(),
         fetchSpecies(),
         fetchRaces(),
-        fetchRoles(),
       ])
-
-      // Auto-sincronizar usuarios creados con rol Cliente que aún no tengan registro en Clients
-      const clientRoles = roles.filter((r) => {
-        const n = r.name.toLowerCase()
-        return n.includes('client') || n.includes('cliente') || n.includes('dueño') || n.includes('dueno')
-      })
-      const clientRoleIds = new Set(clientRoles.map((r) => r.id.toLowerCase()))
-      const existingClientUserIds = new Set(clients.map((c) => c.userId.toLowerCase()))
-      const unlinkedClientUsers = users.filter(
-        (u) => u.roleId && clientRoleIds.has(u.roleId.toLowerCase()) && !existingClientUserIds.has(u.id.toLowerCase()),
-      )
-
-      if (unlinkedClientUsers.length > 0) {
-        for (const u of unlinkedClientUsers) {
-          try {
-            // El backend exige phoneNumber (7-20 dígitos) en /api/Clients; sin este
-            // placeholder la creación fallaba con 500 y el usuario quedaba sin
-            // vincular en silencio (nunca aparecía como dueño disponible).
-            const createdClient = await createClient({
-              userId: u.id,
-              identificationNumber: 'DOC-PENDIENTE',
-              phoneNumber: '0000000000',
-            })
-            clients.push({
-              id: createdClient.id,
-              userId: u.id,
-              identificationNumber: 'DOC-PENDIENTE',
-              phoneNumber: '0000000000',
-              address: '',
-              registrationDate: new Date().toISOString(),
-              createdAt: new Date().toISOString(),
-            })
-          } catch (err) {
-            console.error('Error auto-sincronizando perfil de cliente:', err)
-          }
-        }
-      }
 
       // Normaliza GUIDs: Oracle/JSON a veces cambia mayúsculas y rompe el Map
       const normId = (id: string) => id.toLowerCase()

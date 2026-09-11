@@ -7,6 +7,7 @@ import {
   MOCK_ACCOUNTS,
 } from '../services'
 import { toSpanishAuthError } from '../utils/toSpanishAuthError'
+import { invalidateAllReferenceData } from '../../superadmin/cache'
 
 export function useAuth() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getStoredUser())
@@ -50,6 +51,7 @@ export function useAuth() {
 
   const logout = useCallback(() => {
     clearStoredUser()
+    invalidateAllReferenceData()
     setCurrentUser(null)
     setError(null)
   }, [])
@@ -57,6 +59,7 @@ export function useAuth() {
   // Si el API responde 401, apiClient limpia tokens y dispara este evento.
   useEffect(() => {
     const onSessionExpired = () => {
+      invalidateAllReferenceData()
       setCurrentUser(null)
       setError('Tu sesión expiró. Inicia sesión de nuevo.')
     }

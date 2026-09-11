@@ -14,13 +14,15 @@ import {
   fetchPets,
   fetchClientsPets,
   fetchClients,
-  fetchUsers,
-  fetchSpecies,
-  fetchRaces,
   fetchServices,
   fetchStatusAppointments,
   fetchAvailabilitiesByVeterinarian,
 } from '../services'
+import {
+  fetchUsersCached as fetchUsers,
+  fetchSpeciesCached as fetchSpecies,
+  fetchRacesCached as fetchRaces,
+} from '../cache'
 import { mapAppointmentToCita, buildWeekDays, formatNotesWithConsultorio } from '../utils/superAdminApiMappers'
 import { resolveAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../utils/resolveAvailabilityId'
 import { ApiError } from '@/services'

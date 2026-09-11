@@ -5,8 +5,8 @@ import {
   fetchVeterinarians,
   fetchPets,
   fetchClientsPets,
-  fetchSpecies,
 } from '../services'
+import { fetchSpeciesCached as fetchSpecies } from '../cache'
 import {
   buildDashboardStats,
   mapAppointmentToDashboard,

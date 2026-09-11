@@ -5,8 +5,8 @@ import {
   fetchPets,
   fetchClientsPets,
   fetchServices,
-  fetchRaces,
 } from '../services'
+import { fetchRacesCached as fetchRaces } from '../cache'
 import {
   REPORTES_USE_API,
   resolveReportesDateRange,

@@ -24,6 +24,12 @@ export interface ApiCreateUserRequest {
   email: string
   password?: string
   roleId: string
+  // S26: el backend crea el perfil Veterinarian en la misma transacción.
+  specialtyId?: string
+  licenseNumber?: string
+  clientIdentificationNumber?: string
+  clientPhoneNumber?: string
+  clientAddress?: string
 }
 
 export interface ApiCreateUserResponse {
@@ -63,6 +69,8 @@ export interface CreateFullUserParams {
   password?: string
   roleId: string
   username?: string
+  specialtyId?: string
+  licenseNumber?: string
 }
 
 export interface CreateFullUserResult {
@@ -106,12 +114,14 @@ export async function createFullUser(params: CreateFullUserParams): Promise<Crea
   const password = requireCreateUserPassword(params.password)
   const username = params.username?.trim() || params.email.split('@')[0] || params.fullName.replace(/\s+/g, '').toLowerCase()
 
-  // Paso 1: Crear usuario en /api/Users
+  // Paso 1: Crear usuario en /api/Users (incluye perfil vet si vienen specialty/license).
   const userRes = await createUser({
     fullName: params.fullName,
     email: params.email,
     password: password,
     roleId: params.roleId,
+    specialtyId: params.specialtyId,
+    licenseNumber: params.licenseNumber,
   })
 
   if (!userRes || !userRes.id) {

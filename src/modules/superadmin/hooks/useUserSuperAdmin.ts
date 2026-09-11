@@ -13,7 +13,6 @@ import type {
 } from '../types'
 import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
 import {
-  fetchUsers,
   fetchUserAccounts,
   deleteUser as apiDeleteUser,
   createFullUser as apiCreateFullUser,
@@ -24,20 +23,24 @@ import {
 } from '../services/superAdminUserService'
 import { createOwnerWithoutLogin } from '../services/superAdminClientsService'
 import {
-  fetchSpecialties,
   createVeterinarian,
   updateVeterinarian,
   fetchVeterinarians,
 } from '../services'
 import {
-  fetchRoles,
   createRole as apiCreateRole,
   type ApiRoleResponse,
 } from '../services/superAdminRolesService'
 import {
-  fetchModules,
   type ApiModuleResponse,
 } from '../services/superAdminModulesService'
+import {
+  fetchUsersCached as fetchUsers,
+  fetchRolesCached as fetchRoles,
+  fetchModulesCached as fetchModules,
+  fetchSpecialtiesCached as fetchSpecialties,
+  invalidateReferenceData,
+} from '../cache'
 import {
   fetchAllRolePermissions,
   createRolePermission as apiCreateRolePermission,
@@ -901,6 +904,8 @@ export function useUserSuperAdmin() {
           await syncUserActiveStatus(result.userId, 'Inactivo')
         }
 
+        invalidateReferenceData('users')
+
         await loadData()
         setActiveTab('usuarios')
         setPendingSelectUserId(result.userId)
@@ -910,23 +915,11 @@ export function useUserSuperAdmin() {
       }
 
       const email = data.email.trim()
-      const result = await apiCreateFullUser({
-        fullName,
-        email,
-        // Sin fallback literal: vacío lo rechaza createFullUser / UI (UserSuperAdmin).
-        password: data.password ?? '',
-        roleId: data.roleId,
-      })
+      const specialtyId = data.specialtyId?.trim() || specialties[0]?.id || ''
+      const licenseNumber = data.licenseNumber?.trim() || ''
 
-      // createFullUser siempre deja la cuenta Activa; si eligieron Inactivo, desactivar
-      if (data.status === 'Inactivo') {
-        await syncUserActiveStatus(result.userId, 'Inactivo')
-      }
-
-      // Veterinario: crear perfil profesional con especialidad y CMP
+      // Veterinario: validar perfil antes del alta; el backend crea la fila en CreateUser (S26).
       if (isVeterinarioRoleName(roleName)) {
-        const specialtyId = data.specialtyId?.trim() || specialties[0]?.id || ''
-        const licenseNumber = data.licenseNumber?.trim() || ''
         if (!specialtyId) {
           return {
             ok: false,
@@ -939,12 +932,24 @@ export function useUserSuperAdmin() {
             error: 'La tarjeta profesional (CMP) es obligatoria para veterinarios.',
           }
         }
-        await createVeterinarian({
-          userId: result.userId,
-          specialtyId,
-          licenseNumber,
-        })
       }
+
+      const result = await apiCreateFullUser({
+        fullName,
+        email,
+        // Sin fallback literal: vacío lo rechaza createFullUser / UI (UserSuperAdmin).
+        password: data.password ?? '',
+        roleId: data.roleId,
+        specialtyId: isVeterinarioRoleName(roleName) ? specialtyId : undefined,
+        licenseNumber: isVeterinarioRoleName(roleName) ? licenseNumber : undefined,
+      })
+
+      // createFullUser siempre deja la cuenta Activa; si eligieron Inactivo, desactivar
+      if (data.status === 'Inactivo') {
+        await syncUserActiveStatus(result.userId, 'Inactivo')
+      }
+
+      invalidateReferenceData('users')
 
       await loadData()
       setActiveTab('usuarios')
@@ -1008,6 +1013,7 @@ export function useUserSuperAdmin() {
         }
       }
 
+      invalidateReferenceData('users')
       await loadData()
       setEditingUser(null)
 
@@ -1034,6 +1040,7 @@ export function useUserSuperAdmin() {
     try {
       await apiDeleteUser(user.id)
       showToast(`Usuario "${user.name}" eliminado.`)
+      invalidateReferenceData('users')
       await loadData()
     } catch (err) {
       showToast(extractUserApiErrorMessage(err), 'warning')
@@ -1070,6 +1077,7 @@ export function useUserSuperAdmin() {
         description: data.description,
       })
 
+      invalidateReferenceData('roles')
       await loadData()
       setActiveTab('roles')
       setSelectedRoleId(res.id)

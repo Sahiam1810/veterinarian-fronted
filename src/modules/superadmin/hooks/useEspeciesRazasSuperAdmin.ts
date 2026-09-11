@@ -10,11 +10,14 @@ import {
   createSpecies,
   deleteRace,
   deleteSpecies,
-  fetchRaces,
-  fetchSpecies,
   updateRace,
   updateSpecies,
 } from '../services'
+import {
+  fetchRacesCached as fetchRaces,
+  fetchSpeciesCached as fetchSpecies,
+  invalidateReferenceData,
+} from '../cache'
 import { ApiError } from '@/services'
 
 export function useEspeciesRazasSuperAdmin() {
@@ -116,6 +119,7 @@ export function useEspeciesRazasSuperAdmin() {
         showToast(`Especie "${name}" creada.`)
         setSelectedSpeciesId(created.id)
       }
+      invalidateReferenceData('species')
       await loadData()
       return true
     } catch (err) {
@@ -130,6 +134,8 @@ export function useEspeciesRazasSuperAdmin() {
       await deleteSpecies(especie.id)
       showToast(`Especie "${especie.name}" eliminada.`)
       if (selectedSpeciesId === especie.id) setSelectedSpeciesId(null)
+      invalidateReferenceData('species')
+      invalidateReferenceData('races')
       await loadData()
       return true
     } catch (err) {
@@ -162,6 +168,7 @@ export function useEspeciesRazasSuperAdmin() {
         await createRace({ name, speciesId: data.speciesId })
         showToast(`Raza "${name}" creada.`)
       }
+      invalidateReferenceData('races')
       await loadData()
       return true
     } catch (err) {
@@ -175,6 +182,7 @@ export function useEspeciesRazasSuperAdmin() {
     try {
       await deleteRace(raza.id)
       showToast(`Raza "${raza.name}" eliminada.`)
+      invalidateReferenceData('races')
       await loadData()
       return true
     } catch (err) {
