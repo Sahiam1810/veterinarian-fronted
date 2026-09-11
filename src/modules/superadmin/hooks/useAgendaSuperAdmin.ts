@@ -274,6 +274,13 @@ export function useAgendaSuperAdmin() {
 
     try {
       if (editingCita) {
+        if (editingCita.status !== 'AGENDADA') {
+          const msg =
+            'No se puede reprogramar una cita que ya fue atendida, cancelada o marcada como no asistida.'
+          showToast(msg)
+          throw new Error(msg)
+        }
+
         const availabilityId =
           editingCita.availabilityId ||
           (await resolveAvailabilityId(
@@ -433,6 +440,39 @@ export function useAgendaSuperAdmin() {
     }
   }
 
+  // Mismo endpoint que el veterinario: AGENDADA → NO_ASISTIO con comentario.
+  const handleMarkNoAsistio = async (id: string): Promise<boolean> => {
+    const target = citas.find((c) => c.id === id)
+    if (!target) return false
+    if (target.status !== 'AGENDADA') {
+      showToast('Solo se puede marcar No Asistió en citas AGENDADA.')
+      return false
+    }
+    if (!window.confirm('¿Marcar esta cita como No Asistió? El horario quedará libre.')) {
+      return false
+    }
+
+    const noShowId = findStatusId(statusCatalog, 'no_asistio', 'no asist')
+    if (!noShowId) {
+      showToast('No hay estado NO_ASISTIO en el catálogo.')
+      return false
+    }
+
+    try {
+      await updateAppointmentStatus(id, {
+        statusId: noShowId,
+        comment: 'Marcada como No asistió desde agenda SuperAdmin',
+      })
+      showToast('Cita marcada como No Asistió.')
+      await loadData()
+      return true
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo marcar la cita como No Asistió.'
+      showToast(message)
+      return false
+    }
+  }
+
   return {
     citas,
     isLoading,
@@ -464,6 +504,7 @@ export function useAgendaSuperAdmin() {
     handleSaveCita,
     handleCancelCita,
     handleStartAttention,
+    handleMarkNoAsistio,
     reload: loadData,
   }
 }

@@ -29,7 +29,7 @@ export type {
   RecepAgendaDayAppointment,
 } from './agenda.types'
 
-export { isRecepAppointmentEditable } from './agenda.types'
+export { isRecepAppointmentEditable, canMarkRecepNoAsistio, mapRecepAgendaStatus } from './agenda.types'
 
 export type {
   RecepDuenoEstado,

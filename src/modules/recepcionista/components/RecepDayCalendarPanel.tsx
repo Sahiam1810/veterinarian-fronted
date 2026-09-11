@@ -7,7 +7,7 @@ import {
   StethoscopeIcon,
 } from '@/global/components'
 import type { RecepAgendaDayAppointment } from '../types'
-import { isRecepAppointmentEditable } from '../types'
+import { canMarkRecepNoAsistio, isRecepAppointmentEditable } from '../types'
 import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
 import { CloseIcon } from './RecepMascotasIcons'
 
@@ -20,6 +20,7 @@ interface RecepDayCalendarPanelProps {
   onClose: () => void
   onChangeDate: (dateValue: string) => void
   onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
+  onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
 }
 
 const HOUR_START = 8
@@ -57,6 +58,7 @@ function eventTone(status: RecepAgendaDayAppointment['status']): string {
     'EN CONSULTORIO': 'bg-ochre border-ochre text-charcoal',
     ATENDIDO: 'bg-sage-soft border-sage/40 text-brand',
     CANCELADO: 'bg-terracotta-soft border-terracotta/30 text-terracotta line-through',
+    'NO ASISTIÓ': 'bg-charcoal/15 border-sage/30 text-sage line-through',
   }
   return tones[status]
 }
@@ -71,6 +73,7 @@ export function RecepDayCalendarPanel({
   onClose,
   onChangeDate,
   onEditAppointment,
+  onMarkNoAsistio,
 }: RecepDayCalendarPanelProps) {
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -302,6 +305,7 @@ export function RecepDayCalendarPanel({
                 appointment={selected}
                 onClear={() => setSelectedId(null)}
                 onEdit={() => onEditAppointment(selected)}
+                onMarkNoAsistio={() => onMarkNoAsistio(selected)}
               />
             )}
           </aside>
@@ -315,12 +319,15 @@ function AppointmentDetail({
   appointment,
   onClear,
   onEdit,
+  onMarkNoAsistio,
 }: {
   appointment: RecepAgendaDayAppointment
   onClear: () => void
   onEdit: () => void
+  onMarkNoAsistio: () => void
 }) {
   const canEdit = isRecepAppointmentEditable(appointment.status)
+  const canNoShow = canMarkRecepNoAsistio(appointment.status)
 
   return (
     <div className="p-4 flex flex-col gap-3 min-h-0">
@@ -376,18 +383,34 @@ function AppointmentDetail({
       )}
 
       {canEdit ? (
-        <button
-          type="button"
-          onClick={onEdit}
-          className="mt-auto w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
-        >
-          <EditIcon className="w-4 h-4" />
-          <span>Editar cita</span>
-        </button>
+        <div className="mt-auto flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
+          >
+            <EditIcon className="w-4 h-4" />
+            <span>Editar cita</span>
+          </button>
+          {canNoShow && (
+            <button
+              type="button"
+              onClick={onMarkNoAsistio}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border-tan bg-white text-charcoal px-4 py-2.5 text-sm font-bold hover:bg-bone transition cursor-pointer"
+            >
+              <span>Marcar No Asistió</span>
+            </button>
+          )}
+        </div>
       ) : (
         <p className="mt-auto text-[11px] text-sage font-medium text-center px-2 py-2 rounded-xl border border-dashed border-border-tan bg-white">
-          Esta cita ya está {appointment.status === 'ATENDIDO' ? 'completada' : 'cancelada'} y
-          no se puede editar.
+          Esta cita ya está{' '}
+          {appointment.status === 'ATENDIDO'
+            ? 'completada'
+            : appointment.status === 'NO ASISTIÓ'
+              ? 'marcada como no asistió'
+              : 'cancelada'}{' '}
+          y no se puede editar.
         </p>
       )}
     </div>

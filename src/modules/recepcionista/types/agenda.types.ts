@@ -1,3 +1,5 @@
+import type { RecepAppointmentStatus } from './home.types'
+
 // Tipos del formulario de agendar cita (recepción)
 
 export interface RecepAgendaOwnerOption {
@@ -65,7 +67,7 @@ export interface RecepAgendaDayAppointment {
   professionalName: string
   service: string
   notes?: string
-  status: 'AGENDADO' | 'EN CONSULTORIO' | 'ATENDIDO' | 'CANCELADO'
+  status: RecepAppointmentStatus
 }
 
 // Indica si la cita aún se puede editar (no finalizada ni cancelada)
@@ -73,4 +75,32 @@ export function isRecepAppointmentEditable(
   status: RecepAgendaDayAppointment['status'],
 ): boolean {
   return status === 'AGENDADO' || status === 'EN CONSULTORIO'
+}
+
+// Solo AGENDADO puede marcarse No Asistió (mismo criterio que SuperAdmin).
+export function canMarkRecepNoAsistio(
+  status: RecepAgendaDayAppointment['status'],
+): boolean {
+  return status === 'AGENDADO'
+}
+
+// Mapea el nombre canónico del backend al estado de la agenda de recepción.
+export function mapRecepAgendaStatus(
+  rawStatus?: string | null,
+): RecepAgendaDayAppointment['status'] {
+  if (!rawStatus) return 'AGENDADO'
+  const normalized = rawStatus.trim().toUpperCase()
+  if (normalized.includes('NO_ASIST') || normalized.includes('NO ASIST')) {
+    return 'NO ASISTIÓ'
+  }
+  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES')) {
+    return 'EN CONSULTORIO'
+  }
+  if (normalized.includes('ATEND') || normalized.includes('COMPLET') || normalized.includes('FINALIZ')) {
+    return 'ATENDIDO'
+  }
+  if (normalized.includes('CANCEL') || normalized.includes('ANUL')) {
+    return 'CANCELADO'
+  }
+  return 'AGENDADO'
 }
