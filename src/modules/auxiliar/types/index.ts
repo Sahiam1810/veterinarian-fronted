@@ -138,6 +138,8 @@ export interface ApiClientResponse {
   id: string
   userId: string
   identificationNumber: string
+  fullName?: string | null
+  phoneNumber?: string | null
   address?: string | null
   registrationDate: string
   createdAt: string
@@ -192,4 +194,13 @@ export interface ApiAvailabilityResponse {
   endTime: string
   isActive: boolean
 }
+
+export interface ApiAvailableSlotResponse {
+  availabilityId: string
+  scheduledStartUtc: string
+  scheduledEndUtc: string
+  consultingRoom?: string | null
+  shiftName?: string | null
+}
+
 

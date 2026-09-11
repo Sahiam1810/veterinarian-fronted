@@ -29,7 +29,7 @@ export function InicioAux({
     stats,
     isLoading,
     savePreparation,
-    createNewAppointment,
+    loadData,
     activeNotification,
   } = useAuxDashboard()
 
@@ -72,7 +72,7 @@ export function InicioAux({
   }
 
   const handleSaveNewAppointment = async (newApt: AuxDayAppointment) => {
-    await createNewAppointment(newApt)
+    await loadData()
     onNotice?.(`¡Cita agendada para ${newApt.petName} exitosamente!`)
   }
 
