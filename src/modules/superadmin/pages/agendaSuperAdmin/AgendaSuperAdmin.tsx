@@ -5,6 +5,7 @@ import {
   DashboardBackgroundDecoration,
   CitaDrawer,
   CitaDetalleModal,
+  ProfessionalCombobox,
 } from '../../components'
 import { useAgendaSuperAdmin } from '../../hooks'
 import type {
@@ -227,21 +228,16 @@ export function AgendaSuperAdmin({
 
 
           {/* Barra de Filtros Superior */}
-          <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-3 shadow-[0_2px_12px_rgba(35,78,70,0.03)]">
+          <div className="relative z-30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-3 shadow-[0_2px_12px_rgba(35,78,70,0.03)]">
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* Dropdown Profesional */}
-              <select
+              {/* Buscador de Profesional con Filtro en Vivo */}
+              <ProfessionalCombobox
                 value={selectedProfessionalId}
-                onChange={(e) => setSelectedProfessionalId(e.target.value)}
-                className="px-3.5 py-2 rounded-xl border border-border-tan bg-bone/35 text-xs sm:text-sm text-charcoal font-semibold focus:outline-none cursor-pointer"
-              >
-                <option value="all">Todos los Profesionales</option>
-                {profesionalesOpciones.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedProfessionalId}
+                options={profesionalesOpciones}
+                allOptionLabel="Todos los Profesionales"
+                allOptionValue="all"
+              />
 
               {/* Toggles Semana / Día */}
               <div className="flex items-center bg-bone/40 p-0.5 rounded-xl border border-border-tan/70">
