@@ -45,10 +45,19 @@ export function resolveProfessionalLabel(
   selectedValue: string,
   allLabel = 'Todos los Profesionales',
   allValue = 'all',
+  hasAllOption = true,
 ): string {
-  if (!selectedValue || selectedValue === allValue) {
-    return allLabel
+  if (hasAllOption) {
+    if (!selectedValue || selectedValue === allValue) {
+      return allLabel
+    }
+    const found = options.find((p) => p.id === selectedValue)
+    return found ? found.name : allLabel
+  }
+
+  if (!selectedValue) {
+    return ''
   }
   const found = options.find((p) => p.id === selectedValue)
-  return found ? found.name : allLabel
+  return found ? found.name : ''
 }

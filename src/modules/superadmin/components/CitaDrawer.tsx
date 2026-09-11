@@ -12,6 +12,7 @@ import {
   HORARIO_CIERRE,
 } from '../types'
 import { CalendarIcon } from '@/global/components'
+import { ProfessionalCombobox } from './ProfessionalCombobox'
 
 export interface CitaDrawerProps {
   isOpen: boolean
@@ -362,48 +363,42 @@ export function CitaDrawer({
           </p>
 
           {/* 4. Médico Profesional */}
-          <div>
+          <div className="relative z-20">
             <label className="block font-bold text-charcoal mb-1">
               Médico Veterinario <span className="text-terracotta">*</span>
             </label>
-            <select
+            <ProfessionalCombobox
               value={professionalId}
-              onChange={(e) => {
-                setProfessionalId(e.target.value)
+              onChange={(id) => {
+                setProfessionalId(id)
                 setError(null)
               }}
-              required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer font-medium"
-            >
-              {profesionalesOpciones.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              options={profesionalesOpciones}
+              hasAllOption={false}
+              placeholder="Seleccionar médico veterinario..."
+              searchPlaceholder="Buscar veterinario por nombre..."
+              className="w-full bg-white"
+            />
           </div>
 
           {/* 5. Servicio y Consultorio en Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
             <div>
               <label className="block font-bold text-charcoal mb-1">
                 Servicio <span className="text-terracotta">*</span>
               </label>
-              <select
+              <ProfessionalCombobox
                 value={serviceId}
-                onChange={(e) => {
-                  setServiceId(e.target.value)
+                onChange={(id) => {
+                  setServiceId(id)
                   setError(null)
                 }}
-                required
-                className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer font-medium"
-              >
-                {serviciosOpciones.map((srv) => (
-                  <option key={srv.id} value={srv.id}>
-                    {srv.name}
-                  </option>
-                ))}
-              </select>
+                options={serviciosOpciones}
+                hasAllOption={false}
+                placeholder="Seleccionar servicio..."
+                searchPlaceholder="Buscar servicio por nombre..."
+                className="w-full bg-white"
+              />
             </div>
 
             <div>

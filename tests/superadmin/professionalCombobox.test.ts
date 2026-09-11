@@ -16,6 +16,13 @@ const MOCK_PROFESIONALES: ProfessionalFilterOption[] = [
   { id: 'p5', name: 'Dr. Carlos Mendoza' },
 ]
 
+const MOCK_SERVICIOS: ProfessionalFilterOption[] = [
+  { id: 's1', name: 'Consulta General', subtitle: 'Atención básica y revisión' },
+  { id: 's2', name: 'Vacunación Antirrábica', subtitle: 'Inmunización canina y felina' },
+  { id: 's3', name: 'Cirugía Menor', subtitle: 'Procedimiento ambulatorio' },
+  { id: 's4', name: 'Desparasitación Integral' },
+]
+
 test('normalizeFilterText elimina acentos, convierte a minúsculas y remueve espacios sobrantes', () => {
   assert.equal(normalizeFilterText('  ÁNGEL Pérez  '), 'angel perez')
   assert.equal(normalizeFilterText('María José'), 'maria jose')
@@ -64,7 +71,22 @@ test('filterProfessionals retorna lista vacía cuando no hay coincidencias', () 
   assert.equal(result.length, 0)
 })
 
-test('resolveProfessionalLabel retorna "Todos los Profesionales" cuando value es "all" o vacío', () => {
+test('filterProfessionals filtra servicios en CitaDrawer en tiempo real', () => {
+  const resultVac = filterProfessionals(MOCK_SERVICIOS, 'vac')
+  assert.equal(resultVac.length, 1)
+  assert.equal(resultVac[0]?.id, 's2')
+  assert.equal(resultVac[0]?.name, 'Vacunación Antirrábica')
+
+  const resultCirugia = filterProfessionals(MOCK_SERVICIOS, 'cirugia')
+  assert.equal(resultCirugia.length, 1)
+  assert.equal(resultCirugia[0]?.id, 's3')
+  assert.equal(resultCirugia[0]?.name, 'Cirugía Menor')
+
+  const resultInexistente = filterProfessionals(MOCK_SERVICIOS, 'radiologia avanzada')
+  assert.equal(resultInexistente.length, 0)
+})
+
+test('resolveProfessionalLabel retorna "Todos los Profesionales" cuando value es "all" o vacío con hasAllOption=true', () => {
   assert.equal(resolveProfessionalLabel(MOCK_PROFESIONALES, 'all'), 'Todos los Profesionales')
   assert.equal(resolveProfessionalLabel(MOCK_PROFESIONALES, ''), 'Todos los Profesionales')
 })
@@ -74,6 +96,13 @@ test('resolveProfessionalLabel retorna el nombre del profesional cuando value co
   assert.equal(resolveProfessionalLabel(MOCK_PROFESIONALES, 'p3'), 'Dr. Ángel Ramírez')
 })
 
-test('resolveProfessionalLabel maneja IDs no encontrados retornando allOptionLabel', () => {
+test('resolveProfessionalLabel maneja IDs no encontrados retornando allOptionLabel con hasAllOption=true', () => {
   assert.equal(resolveProfessionalLabel(MOCK_PROFESIONALES, 'id_desconocido'), 'Todos los Profesionales')
+})
+
+test('resolveProfessionalLabel con hasAllOption=false retorna cadena vacía cuando value es vacío o no coincide', () => {
+  assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, '', 'Todos los Servicios', 'all', false), '')
+  assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, 's1', 'Todos los Servicios', 'all', false), 'Consulta General')
+  assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, 's2', 'Todos los Servicios', 'all', false), 'Vacunación Antirrábica')
+  assert.equal(resolveProfessionalLabel(MOCK_SERVICIOS, 'no_existe', 'Todos los Servicios', 'all', false), '')
 })

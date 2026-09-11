@@ -10,6 +10,7 @@ export interface ProfessionalComboboxProps {
   value: string
   onChange: (value: string) => void
   options: ProfessionalFilterOption[]
+  hasAllOption?: boolean
   allOptionLabel?: string
   allOptionValue?: string
   placeholder?: string
@@ -24,10 +25,11 @@ export function ProfessionalCombobox({
   value,
   onChange,
   options,
+  hasAllOption = true,
   allOptionLabel = 'Todos los Profesionales',
   allOptionValue = 'all',
-  placeholder = 'Seleccionar profesional...',
-  searchPlaceholder = 'Buscar profesional por nombre...',
+  placeholder = 'Seleccionar...',
+  searchPlaceholder = 'Buscar por nombre...',
   className = '',
   menuClassName = '',
   disabled = false,
@@ -77,7 +79,6 @@ export function ProfessionalCombobox({
   // Enfocar el input de búsqueda automáticamente al abrir el combobox
   useEffect(() => {
     if (isOpen) {
-      // Breve timeout para permitir que la animación y renderizado terminen
       const timer = setTimeout(() => {
         searchInputRef.current?.focus()
       }, 50)
@@ -85,23 +86,25 @@ export function ProfessionalCombobox({
     }
   }, [isOpen])
 
-  // Filtrado de profesionales según el texto buscado
-  const filteredProfessionals = useMemo(() => {
+  // Filtrado de opciones según el texto buscado
+  const filteredOptions = useMemo(() => {
     return filterProfessionals(options, searchQuery)
   }, [options, searchQuery])
 
   // Determinar si se muestra la opción "Todos los Profesionales"
   const showAllOption = useMemo(() => {
+    if (!hasAllOption) return false
     const normalizedQuery = normalizeFilterText(searchQuery)
     if (!normalizedQuery) return true
     return normalizeFilterText(allOptionLabel).includes(normalizedQuery)
-  }, [searchQuery, allOptionLabel])
+  }, [hasAllOption, searchQuery, allOptionLabel])
 
   const selectedLabel = resolveProfessionalLabel(
     options,
     value,
     allOptionLabel,
     allOptionValue,
+    hasAllOption,
   )
 
   const handleSelect = (val: string) => {
@@ -120,11 +123,12 @@ export function ProfessionalCombobox({
     }
   }
 
-  const hasNoResults = !showAllOption && filteredProfessionals.length === 0
+  const hasNoResults = !showAllOption && filteredOptions.length === 0
+  const isFullWidth = className.includes('w-full')
 
   return (
     <div
-      className={`relative inline-block ${isOpen ? 'z-50' : 'z-10'}`}
+      className={`relative ${isFullWidth ? 'w-full' : 'inline-block'} ${isOpen ? 'z-50' : 'z-10'}`}
       ref={containerRef}
       id={id}
     >
@@ -135,11 +139,17 @@ export function ProfessionalCombobox({
         onClick={toggleDropdown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl border border-border-tan bg-bone/35 text-xs sm:text-sm text-charcoal font-semibold cursor-pointer hover:border-brand/50 focus:outline-none transition select-none min-w-[200px] sm:min-w-[220px] ${
+        className={`flex items-center justify-between gap-2.5 px-3.5 py-2 rounded-xl border border-border-tan bg-bone/35 text-xs sm:text-sm text-charcoal font-semibold cursor-pointer hover:border-brand/50 focus:outline-none transition select-none ${
+          isFullWidth ? 'w-full' : 'min-w-[200px] sm:min-w-[220px]'
+        } ${
           isOpen ? 'border-brand ring-2 ring-brand/20 bg-white shadow-xs' : ''
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-bone/20' : ''} ${className}`}
       >
-        <span className="truncate text-left font-semibold">
+        <span
+          className={`truncate text-left font-semibold ${
+            !selectedLabel ? 'text-text-placeholder font-normal' : ''
+          }`}
+        >
           {selectedLabel || placeholder}
         </span>
 
@@ -236,16 +246,16 @@ export function ProfessionalCombobox({
               </button>
             )}
 
-            {/* Opciones individuales de profesionales */}
-            {filteredProfessionals.map((prof) => {
-              const isSelected = prof.id === value
+            {/* Opciones individuales */}
+            {filteredOptions.map((opt) => {
+              const isSelected = opt.id === value
               return (
                 <button
-                  key={prof.id}
+                  key={opt.id}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => handleSelect(prof.id)}
+                  onClick={() => handleSelect(opt.id)}
                   className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-left text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-[#e8f3ef] text-brand font-bold'
@@ -253,10 +263,10 @@ export function ProfessionalCombobox({
                   }`}
                 >
                   <div className="flex flex-col truncate">
-                    <span className="truncate">{prof.name}</span>
-                    {prof.subtitle && (
+                    <span className="truncate">{opt.name}</span>
+                    {opt.subtitle && (
                       <span className="text-[11px] font-normal text-sage truncate">
-                        {prof.subtitle}
+                        {opt.subtitle}
                       </span>
                     )}
                   </div>
@@ -297,7 +307,7 @@ export function ProfessionalCombobox({
                 </svg>
                 <span className="text-xs font-semibold text-charcoal/80">Sin resultados</span>
                 <span className="text-[11px] text-sage">
-                  No se encontró ningún profesional para "{searchQuery}"
+                  No se encontraron coincidencias para "{searchQuery}"
                 </span>
               </div>
             )}
@@ -307,3 +317,5 @@ export function ProfessionalCombobox({
     </div>
   )
 }
+
+export { ProfessionalCombobox as SearchableCombobox }
