@@ -1,8 +1,9 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, useMemo, type FormEvent, type ReactNode } from 'react'
 import {
   SuperAdminHeader,
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
+  ProfessionalCombobox,
 } from '../../components'
 import { useEspeciesRazasSuperAdmin } from '../../hooks/useEspeciesRazasSuperAdmin'
 import type {
@@ -636,6 +637,13 @@ function RazaDrawer({
     }
   }, [isOpen, editing, defaultSpeciesId, especies])
 
+  const especiesOpciones = useMemo(() => {
+    return especies.map((s) => ({
+      id: s.id,
+      name: s.name,
+    }))
+  }, [especies])
+
   const handleClose = () => {
     setIsClosing(true)
     setTimeout(() => {
@@ -686,26 +694,20 @@ function RazaDrawer({
           </button>
         </div>
         <form onSubmit={(e) => void handleSubmit(e)} className="flex-1 overflow-y-auto p-6 space-y-5">
-          <div>
+          <div className="relative z-20">
             <label className="block font-bold text-charcoal mb-1.5 text-sm">
               Especie <span className="text-terracotta">*</span>
             </label>
-            <select
-              required
+            <ProfessionalCombobox
               value={speciesId}
-              onChange={(e) => setSpeciesId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand cursor-pointer"
-            >
-              {especies.length === 0 ? (
-                <option value="">Sin especies</option>
-              ) : (
-                especies.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))
-              )}
-            </select>
+              onChange={setSpeciesId}
+              options={especiesOpciones}
+              hasAllOption={false}
+              placeholder={especies.length === 0 ? 'Sin especies' : 'Seleccionar especie...'}
+              searchPlaceholder="Buscar especie por nombre..."
+              className="w-full bg-white"
+              disabled={especies.length === 0}
+            />
             <p className="mt-1 text-[11px] text-sage">
               La raza quedará asignada a esta especie.
             </p>

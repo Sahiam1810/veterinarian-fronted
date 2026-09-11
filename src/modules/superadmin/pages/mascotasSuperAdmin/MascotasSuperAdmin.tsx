@@ -4,6 +4,7 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
   HistoriaClinicaSuperAdminModal,
+  ProfessionalCombobox,
 } from '../../components'
 import { useMascotasSuperAdmin } from '../../hooks'
 import { buildDuenoDrawerFormState } from '../../utils/buildDuenoDrawerFormState'
@@ -104,6 +105,14 @@ function MascotaDrawer({
     () => filterRacesBySpecies(species, raceOptions, speciesOptions),
     [species, raceOptions, speciesOptions],
   )
+
+  const duenosOpciones = useMemo(() => {
+    return duenos.map((d) => ({
+      id: d.id,
+      name: d.name,
+      subtitle: `${d.phone || ''}${d.phone && d.documentId ? ' - ' : ''}${d.documentId || ''}`.trim() || undefined,
+    }))
+  }, [duenos])
 
   // Sincroniza el formulario al abrir o cambiar la mascota editada
   useEffect(() => {
@@ -381,21 +390,19 @@ function MascotaDrawer({
             </div>
           </div>
 
-          <div>
+          <div className="relative z-20">
             <label className="block text-xs font-bold text-charcoal mb-1.5">
               Dueño responsable <span className="text-terracotta">*</span>
             </label>
-            <select
+            <ProfessionalCombobox
               value={ownerId}
-              onChange={(e) => setOwnerId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-            >
-              {duenos.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name} ({d.phone} - {d.documentId})
-                </option>
-              ))}
-            </select>
+              onChange={setOwnerId}
+              options={duenosOpciones}
+              hasAllOption={false}
+              placeholder="Seleccionar dueño..."
+              searchPlaceholder="Buscar por nombre, teléfono o cédula..."
+              className="w-full bg-white"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
