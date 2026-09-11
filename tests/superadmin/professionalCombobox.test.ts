@@ -23,6 +23,12 @@ const MOCK_SERVICIOS: ProfessionalFilterOption[] = [
   { id: 's4', name: 'Desparasitación Integral' },
 ]
 
+const MOCK_DUENOS: ProfessionalFilterOption[] = [
+  { id: 'd1', name: 'Ramiro Romero', subtitle: '3055968432 - 05165156' },
+  { id: 'd2', name: 'María Fernanda Ruiz', subtitle: '3104567890 - 10203040' },
+  { id: 'd3', name: 'Carlos Andrés Gómez', subtitle: '3201234567 - 98765432' },
+]
+
 test('normalizeFilterText elimina acentos, convierte a minúsculas y remueve espacios sobrantes', () => {
   assert.equal(normalizeFilterText('  ÁNGEL Pérez  '), 'angel perez')
   assert.equal(normalizeFilterText('María José'), 'maria jose')
@@ -83,6 +89,28 @@ test('filterProfessionals filtra servicios en CitaDrawer en tiempo real', () => 
   assert.equal(resultCirugia[0]?.name, 'Cirugía Menor')
 
   const resultInexistente = filterProfessionals(MOCK_SERVICIOS, 'radiologia avanzada')
+  assert.equal(resultInexistente.length, 0)
+})
+
+test('filterProfessionals filtra dueños por nombre, teléfono o cédula en tiempo real', () => {
+  // Filtro por nombre
+  const resultNombre = filterProfessionals(MOCK_DUENOS, 'ramiro')
+  assert.equal(resultNombre.length, 1)
+  assert.equal(resultNombre[0]?.id, 'd1')
+  assert.equal(resultNombre[0]?.name, 'Ramiro Romero')
+
+  // Filtro por cédula en subtítulo
+  const resultCedula = filterProfessionals(MOCK_DUENOS, '05165156')
+  assert.equal(resultCedula.length, 1)
+  assert.equal(resultCedula[0]?.id, 'd1')
+
+  // Filtro por teléfono en subtítulo
+  const resultTelefono = filterProfessionals(MOCK_DUENOS, '310456')
+  assert.equal(resultTelefono.length, 1)
+  assert.equal(resultTelefono[0]?.id, 'd2')
+
+  // Filtro inexistente
+  const resultInexistente = filterProfessionals(MOCK_DUENOS, '999999999')
   assert.equal(resultInexistente.length, 0)
 })
 
