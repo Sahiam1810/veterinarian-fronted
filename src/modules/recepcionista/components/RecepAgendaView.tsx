@@ -49,6 +49,7 @@ interface RecepAgendaViewProps {
   onCloseDayPanel: () => void
   onChangeDayPanelDate: (dateValue: string) => void
   onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
+  onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
 }
 
 const fieldClass =
@@ -88,6 +89,7 @@ export function RecepAgendaView({
   onCloseDayPanel,
   onChangeDayPanelDate,
   onEditAppointment,
+  onMarkNoAsistio,
 }: RecepAgendaViewProps) {
   const showOwnerSuggestions =
     form.ownerQuery.trim().length > 0 &&
@@ -358,6 +360,7 @@ export function RecepAgendaView({
         onClose={onCloseDayPanel}
         onChangeDate={onChangeDayPanelDate}
         onEditAppointment={onEditAppointment}
+        onMarkNoAsistio={onMarkNoAsistio}
       />
     </>
   )

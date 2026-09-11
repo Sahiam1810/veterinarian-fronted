@@ -9,6 +9,7 @@ import type {
   RecepAgendaServiceOption,
   RecepAgendaTimeSlot,
 } from '../types'
+import { mapRecepAgendaStatus } from '../types'
 import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
 
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
@@ -49,22 +50,6 @@ function formatTimeString(isoString: string): string {
   }
 }
 
-function mapStatus(rawStatus?: string | null): RecepAgendaDayAppointment['status'] {
-  if (!rawStatus) return 'AGENDADO'
-  const normalized = rawStatus.trim().toUpperCase()
-  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES')) {
-    return 'EN CONSULTORIO'
-  }
-  if (normalized.includes('ATEND') || normalized.includes('COMPLET') || normalized.includes('FINALIZ')) {
-    return 'ATENDIDO'
-  }
-  if (normalized.includes('CANCEL') || normalized.includes('ANUL')) {
-    return 'CANCELADO'
-  }
-  return 'AGENDADO'
-}
-
-// Carga el catálogo necesario para agendar citas desde la API
 export async function fetchRecepAgendaCatalog(): Promise<RecepAgendaCatalogPayload> {
   const [clientsRes, cpRes, petsRes, racesRes, servicesRes, vetsRes] = await Promise.allSettled([
     apiClient.get<ApiClientResponse[]>('/api/Clients'),
@@ -185,7 +170,7 @@ export async function fetchRecepDayAppointments(
     const professionalName = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Dr. Roberto Silva'
     const service = apt.serviceName || servicesMap.get(apt.serviceId?.toLowerCase()) || 'Consulta General'
     const statusName = apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
-    const status = mapStatus(statusName)
+    const status = mapRecepAgendaStatus(statusName)
 
     return {
       id: apt.id,
@@ -261,6 +246,7 @@ export async function updateRecepAppointmentStatus(
   if (targetStatus === 'EN CONSULTORIO') statusName = 'En Espera'
   if (targetStatus === 'ATENDIDO') statusName = 'Atendido'
   if (targetStatus === 'CANCELADO') statusName = 'Cancelado'
+  if (targetStatus === 'NO ASISTIÓ') statusName = 'NO_ASISTIO'
 
   const matching = statuses.find((st) => st.name.toLowerCase().includes(statusName.toLowerCase()))
   const statusId = matching ? matching.id : statuses[0]?.id
@@ -270,5 +256,21 @@ export async function updateRecepAppointmentStatus(
   return apiClient.patch<void>(`/api/Appointments/${appointmentId}/status`, {
     statusId,
     comment: `Estado actualizado a ${targetStatus} desde recepción`,
+  })
+}
+
+// AGENDADA → NO_ASISTIO con comentario obligatorio (mismo endpoint que veterinario).
+export async function markRecepAppointmentNoAsistio(appointmentId: string): Promise<void> {
+  const statuses = await apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments')
+  const matching = statuses.find((st) => {
+    const name = st.name.toLowerCase()
+    return name.includes('no_asist') || name.includes('no asist')
+  })
+  const statusId = matching?.id
+  if (!statusId) throw new Error('No hay estado NO_ASISTIO en el catálogo.')
+
+  return apiClient.patch<void>(`/api/Appointments/${appointmentId}/status`, {
+    statusId,
+    comment: 'Marcada como No asistió desde agenda de recepción',
   })
 }

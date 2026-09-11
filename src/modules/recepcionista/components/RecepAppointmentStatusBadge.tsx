@@ -12,6 +12,7 @@ export function RecepAppointmentStatusBadge({
     AGENDADO: 'bg-brand/10 text-brand border border-brand/20',
     ATENDIDO: 'bg-terracotta-soft text-terracotta border border-terracotta/20',
     CANCELADO: 'bg-terracotta-soft/80 text-terracotta border border-terracotta/25',
+    'NO ASISTIÓ': 'bg-charcoal/10 text-sage border border-sage/30',
   }
 
   const labels: Record<RecepAppointmentStatus, string> = {
@@ -19,6 +20,7 @@ export function RecepAppointmentStatusBadge({
     AGENDADO: 'Agendado',
     ATENDIDO: 'Atendido',
     CANCELADO: 'Cancelado',
+    'NO ASISTIÓ': 'No asistió',
   }
 
   return (

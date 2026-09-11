@@ -6,10 +6,12 @@ import type {
   RecepAgendaOwnerOption,
   RecepAgendaPetOption,
 } from '../types'
+import { canMarkRecepNoAsistio } from '../types'
 import {
   fetchRecepAgendaCatalog,
   fetchRecepDayAppointments,
   createRecepAppointment,
+  markRecepAppointmentNoAsistio,
 } from '../services'
 
 const EMPTY_FORM: RecepAgendaFormState = {
@@ -293,7 +295,7 @@ export function useRecepAgenda(enabled: boolean) {
 
   const handleEditAppointment = (appointment: RecepAgendaDayAppointment) => {
     if (!catalog) return
-    if (appointment.status === 'ATENDIDO' || appointment.status === 'CANCELADO') {
+    if (appointment.status === 'ATENDIDO' || appointment.status === 'CANCELADO' || appointment.status === 'NO ASISTIÓ') {
       showNotice('Esta cita ya no se puede editar')
       return
     }
@@ -328,6 +330,27 @@ export function useRecepAgenda(enabled: boolean) {
     showNotice(`Editando cita de ${appointment.petName}`)
   }
 
+  const handleMarkNoAsistio = async (appointment: RecepAgendaDayAppointment) => {
+    if (!canMarkRecepNoAsistio(appointment.status)) {
+      showNotice('Solo se puede marcar No Asistió en citas agendadas.')
+      return
+    }
+    if (!window.confirm(`¿Marcar la cita de ${appointment.petName} como No Asistió?`)) {
+      return
+    }
+
+    try {
+      await markRecepAppointmentNoAsistio(appointment.id)
+      showNotice(`Cita de ${appointment.petName} marcada como No Asistió.`)
+      if (dayPanelDate) {
+        await loadDayAppointments(dayPanelDate)
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo marcar la cita como No Asistió'
+      showNotice(msg)
+    }
+  }
+
   return {
     catalog,
     form,
@@ -357,6 +380,7 @@ export function useRecepAgenda(enabled: boolean) {
     handleCloseDayPanel,
     handleChangeDayPanelDate,
     handleEditAppointment,
+    handleMarkNoAsistio,
     reloadAppointments: () => loadDayAppointments(dayPanelDate || todayIsoDate()),
   }
 }

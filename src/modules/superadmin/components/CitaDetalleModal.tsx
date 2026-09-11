@@ -1,5 +1,6 @@
 import { CalendarIcon } from '@/global/components'
 import type { CitaSuperAdmin } from '../types'
+import { getCitaDetalleFooterActions } from '../utils/citaDetalleActions'
 
 export interface CitaDetalleModalProps {
   cita: CitaSuperAdmin | null
@@ -8,6 +9,7 @@ export interface CitaDetalleModalProps {
   onCancel: (citaId: string) => void
   onReprogramar: (cita: CitaSuperAdmin) => void
   onMarcarAtendida: (citaId: string) => void
+  onMarcarNoAsistio: (citaId: string) => void
 }
 
 function statusBadgeLabel(status: CitaSuperAdmin['status']): string {
@@ -33,8 +35,11 @@ export function CitaDetalleModal({
   onCancel,
   onReprogramar,
   onMarcarAtendida,
+  onMarcarNoAsistio,
 }: CitaDetalleModalProps) {
   if (!isOpen || !cita) return null
+
+  const actions = getCitaDetalleFooterActions(cita.status)
 
   return (
     <div
@@ -144,23 +149,37 @@ export function CitaDetalleModal({
           </div>
 
           <footer className="shrink-0 flex flex-wrap items-center justify-end gap-3 px-4 sm:px-5 py-3.5 border-t border-border-tan/60 bg-white">
-            <button
-              type="button"
-              onClick={() => onCancel(cita.id)}
-              className="text-danger hover:text-red-700 text-xs sm:text-sm font-bold transition cursor-pointer"
-            >
-              Cancelar Cita
-            </button>
+            {actions.showCancelar && (
+              <button
+                type="button"
+                onClick={() => onCancel(cita.id)}
+                className="text-danger hover:text-red-700 text-xs sm:text-sm font-bold transition cursor-pointer"
+              >
+                Cancelar Cita
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => onReprogramar(cita)}
-              className="border border-border-tan bg-white hover:bg-bone text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
-            >
-              Reprogramar
-            </button>
+            {actions.showReprogramar && (
+              <button
+                type="button"
+                onClick={() => onReprogramar(cita)}
+                className="border border-border-tan bg-white hover:bg-bone text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
+              >
+                Reprogramar
+              </button>
+            )}
 
-            {cita.status === 'AGENDADA' && (
+            {actions.showMarcarNoAsistio && (
+              <button
+                type="button"
+                onClick={() => onMarcarNoAsistio(cita.id)}
+                className="border border-border-tan bg-white hover:bg-bone text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
+              >
+                Marcar No Asistió
+              </button>
+            )}
+
+            {actions.showMarcarAtendida && (
               <button
                 type="button"
                 onClick={() => onMarcarAtendida(cita.id)}
@@ -168,6 +187,12 @@ export function CitaDetalleModal({
               >
                 Marcar Atendida
               </button>
+            )}
+
+            {!actions.showReprogramar && (
+              <p className="text-[11px] text-sage font-medium">
+                Esta cita ya está cerrada y no admite reprogramar, cancelar ni marcar no asistencia.
+              </p>
             )}
           </footer>
         </div>
