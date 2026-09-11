@@ -244,7 +244,9 @@ export function ProfesionalesSuperAdmin({
           </div>
 
           {/* Contenedor Unificado: Filtros + Tabla de Profesionales */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2 flex-1 flex flex-col">
+          {/* min-h evita que flexbox lo aplaste a 0 cuando la sección de Horario
+              (shrink-0, debajo) compite por espacio dentro del <main> scrolleable. */}
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2 flex-1 flex flex-col min-h-80">
             {/* Barra superior de Filtros y Buscador */}
             <div className="p-3.5 sm:p-4 border-b border-border-tan/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white">
               {/* Buscador */}
