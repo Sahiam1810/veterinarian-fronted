@@ -141,6 +141,7 @@ export function AgendaSuperAdmin({
     handleSaveCita,
     handleCancelCita,
     handleStartAttention,
+    handleMarkNoAsistio,
   } = useAgendaSuperAdmin()
 
   const { hourStart, hourEnd, hourRows } = useMemo(() => {
@@ -575,6 +576,11 @@ export function AgendaSuperAdmin({
         onMarcarAtendida={(citaId) => {
           void handleStartAttention(citaId)
           setIsDetalleModalOpen(false)
+        }}
+        onMarcarNoAsistio={(citaId) => {
+          void handleMarkNoAsistio(citaId).then((ok) => {
+            if (ok) setIsDetalleModalOpen(false)
+          })
         }}
       />
 

@@ -41,6 +41,9 @@ function formatTimeString(isoString: string): string {
 function mapStatus(rawStatus?: string | null): RecepAppointmentStatus {
   if (!rawStatus) return 'AGENDADO'
   const normalized = rawStatus.trim().toUpperCase()
+  if (normalized.includes('NO_ASIST') || normalized.includes('NO ASIST')) {
+    return 'NO ASISTIÓ'
+  }
   if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES')) {
     return 'EN CONSULTORIO'
   }

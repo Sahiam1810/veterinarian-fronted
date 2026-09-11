@@ -3,6 +3,7 @@ export type RecepAppointmentStatus =
   | 'AGENDADO'
   | 'ATENDIDO'
   | 'CANCELADO'
+  | 'NO ASISTIÓ'
 
 export interface RecepHomeProfile {
   displayName: string
