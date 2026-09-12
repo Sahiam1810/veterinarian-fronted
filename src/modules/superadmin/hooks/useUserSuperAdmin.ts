@@ -221,8 +221,20 @@ export function useUserSuperAdmin() {
           fetchVeterinarians(),
         ])
 
-      const rejected = [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes]
+      const isExpectedForbidden = (r: PromiseSettledResult<unknown>): boolean =>
+        r.status === 'rejected' && r.reason instanceof ApiError && r.reason.status === 403
+
+      // Roles / permisos de rol / permisos de usuario son exclusivos de
+      // SuperAdmin: un 403 ahí (p. ej. para Administrador, que sí puede ver
+      // Usuarios pero no permisos) es el límite de permisos funcionando como
+      // se diseñó, no un error real — no debe mostrarse como advertencia.
+      const concerning = [modulesRes, accountsRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .concat(
+          [rolesRes, rolePermsRes, userPermsRes].filter(
+            (r): r is PromiseRejectedResult => r.status === 'rejected' && !isExpectedForbidden(r),
+          ),
+        )
 
       if (usersRes.status === 'rejected') {
         const first = usersRes.reason
@@ -235,8 +247,8 @@ export function useUserSuperAdmin() {
               : 'No se pudo contactar al API (¿está corriendo en http://localhost:5233?).'
         setLoadError(msg)
         showToast(msg, 'warning')
-      } else if (rejected.length > 0) {
-        const first = rejected[0].reason
+      } else if (concerning.length > 0) {
+        const first = concerning[0].reason
         const status = first instanceof ApiError ? first.status : 0
         if (status === 401) {
           showToast('Sesión expirada. Cierra sesión e inicia de nuevo.', 'warning')
