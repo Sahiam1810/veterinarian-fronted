@@ -12,29 +12,15 @@ import {
   deleteVetPet,
 } from '../services'
 import { fetchMyModulePermissions } from '@/modules/auth'
-import { vetApiFetch } from '../api/vetHttp'
 import type {
-  ApiAppointment,
   ApiClient,
   ApiClientPet,
   ApiNamedCatalog,
   ApiPet,
 } from '../api/apiTypes'
-import type { AvailableAppointmentOption } from '../components'
 import type { VetMascotaFormData } from '../components/VetMascotaModal'
 
 const PAGE_SIZE = 8
-
-export interface MascotasRegistrarTarget {
-  petId: string
-  petName: string
-  speciesBreed?: string
-  clientPetId: string
-  appointmentId: string
-  serviceName?: string
-  scheduledStart?: string
-  availableAppointments?: AvailableAppointmentOption[]
-}
 
 export function useVetMascotas(enabled: boolean) {
   const [directory, setDirectory] = useState<MascotasDirectoryPayload | null>(null)
@@ -68,10 +54,6 @@ export function useVetMascotas(enabled: boolean) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deletingPetId, setDeletingPetId] = useState<string | null>(null)
   const [deletingPetName, setDeletingPetName] = useState('')
-
-  // Modal registrar atención
-  const [isRegistrarOpen, setIsRegistrarOpen] = useState(false)
-  const [registrarTarget, setRegistrarTarget] = useState<MascotasRegistrarTarget | null>(null)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -124,8 +106,6 @@ export function useVetMascotas(enabled: boolean) {
       setSelectedId(null)
       setIsHistoriaOpen(false)
       setHistoria(null)
-      setIsRegistrarOpen(false)
-      setRegistrarTarget(null)
     }
   }, [enabled])
 
@@ -195,103 +175,6 @@ export function useVetMascotas(enabled: boolean) {
 
   const handleCloseHistoria = () => {
     setIsHistoriaOpen(false)
-  }
-
-  const handleOpenRegistrar = async (targetPetId?: string) => {
-    const petId = targetPetId || selectedId || historia?.petId
-    const detail = petId && directory ? directory.detailsById[petId] : selectedDetail
-    if (!petId) {
-      showNotice('Selecciona una mascota primero.')
-      return
-    }
-
-    try {
-      // Buscar el clientPetId y citas asociadas a este paciente
-      const [clientPets, allAppointments] = await Promise.all([
-        vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => []),
-        vetApiFetch<ApiAppointment[]>('/api/appointments').catch(() => []),
-      ])
-
-      const matchedClientPets = clientPets.filter(
-        (cp) => cp.petId.toLowerCase() === petId.toLowerCase(),
-      )
-
-      if (matchedClientPets.length === 0) {
-        showNotice('No se encontró el registro de propiedad de la mascota.')
-        return
-      }
-
-      const clientPetId = matchedClientPets[0].id
-      const clientPetIds = new Set(matchedClientPets.map((cp) => cp.id.toLowerCase()))
-
-      const petAppointments = allAppointments.filter((apt) =>
-        clientPetIds.has(apt.clientPetId.toLowerCase()),
-      )
-
-      if (petAppointments.length === 0) {
-        showNotice(
-          'Esta mascota no tiene citas registradas. Se requiere una cita para asociar la atención.',
-        )
-        return
-      }
-
-      // Ordenar citas por fecha descendente
-      const sortedAppointments = [...petAppointments].sort(
-        (a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime(),
-      )
-
-      const activeAppointment = sortedAppointments[0]
-
-      setRegistrarTarget({
-        petId,
-        petName: detail?.name || historia?.displayName || 'Mascota',
-        speciesBreed: detail ? `${detail.species} / ${detail.breed}` : historia?.breed,
-        clientPetId: activeAppointment.clientPetId || clientPetId,
-        appointmentId: activeAppointment.id,
-        serviceName: activeAppointment.serviceName || undefined,
-        scheduledStart: activeAppointment.scheduledStart,
-        availableAppointments: sortedAppointments.map((apt) => ({
-          id: apt.id,
-          serviceName: apt.serviceName,
-          scheduledStart: apt.scheduledStart,
-          statusName: apt.statusName,
-        })),
-      })
-
-      setIsRegistrarOpen(true)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al preparar el registro de atención'
-      showNotice(msg)
-    }
-  }
-
-  const handleCloseRegistrar = () => {
-    setIsRegistrarOpen(false)
-    setRegistrarTarget(null)
-  }
-
-  const handleRegistrationSuccess = async (result: {
-    recordId: string
-    petId: string
-    appointmentId: string
-  }) => {
-    setIsRegistrarOpen(false)
-    setRegistrarTarget(null)
-    showNotice('¡Consulta médica registrada con éxito!')
-
-    // Recargar historia clínica inmediatamente y mostrar el nuevo registro
-    if (result.petId) {
-      const detail = directory?.detailsById[result.petId] || selectedDetail
-      try {
-        const data = await fetchHistoriaClinica(result.petId, detail)
-        if (data) {
-          setHistoria(data)
-          setIsHistoriaOpen(true)
-        }
-      } catch {
-        // Silently ignore if auto-refresh fails
-      }
-    }
   }
 
   // Handlers CRUD Mascotas
@@ -405,8 +288,6 @@ export function useVetMascotas(enabled: boolean) {
     historia,
     isHistoriaOpen,
     isHistoriaLoading,
-    isRegistrarOpen,
-    registrarTarget,
     permissions,
     speciesList,
     racesList,
@@ -421,9 +302,6 @@ export function useVetMascotas(enabled: boolean) {
     handleOpenFilters,
     handleViewClinicalHistory,
     handleCloseHistoria,
-    handleOpenRegistrar,
-    handleCloseRegistrar,
-    handleRegistrationSuccess,
     handleOpenCreate,
     handleCloseCreate,
     handleCreatePet,

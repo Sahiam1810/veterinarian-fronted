@@ -127,12 +127,6 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         <HistoriaClinicaModal
           historia={historiaModalTarget}
           onClose={handleCloseHistoria}
-          onOpenRegistrarConsulta={() => {
-            handleCloseHistoria()
-            if (selectedAppointment) {
-              handleAttendAndRegister(selectedAppointment)
-            }
-          }}
         />
       )}
     </div>
