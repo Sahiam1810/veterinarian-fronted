@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, type FormEvent } from 'react'
 import type { RecepMascotaFormData } from '../types'
 import { CloseIcon } from './RecepMascotasIcons'
 import { PawIcon } from '@/global/components'
+import { ProfessionalCombobox } from '@/modules/superadmin'
 
 export interface RecepMascotaCatalogOption {
   id: string
@@ -43,6 +44,16 @@ export function RecepMascotaModal({
   const [clientId, setClientId] = useState('')
   const [observations, setObservations] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  const duenoOptions = useMemo(
+    () =>
+      duenosList.map((d) => ({
+        id: d.id,
+        name: d.fullName,
+        subtitle: d.documentId ? `Doc: ${d.documentId}` : undefined,
+      })),
+    [duenosList],
+  )
 
   // Filtrar razas según la especie seleccionada
   const availableRaces = useMemo(() => {
@@ -184,27 +195,20 @@ export function RecepMascotaModal({
 
           {/* Dueño / Propietario */}
           <div>
-            <label className="block text-xs font-bold text-charcoal mb-1.5" htmlFor="mascota-clientId">
+            <label className="block text-xs font-bold text-charcoal mb-1.5" id="mascota-clientId-label">
               Dueño / Propietario <span className="text-brand">*</span>
             </label>
-            <select
+            <ProfessionalCombobox
               id="mascota-clientId"
-              required
-              disabled={isLoading}
               value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm font-semibold text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer disabled:bg-bone"
-            >
-              {duenosList.length === 0 ? (
-                <option value="">No hay dueños disponibles</option>
-              ) : (
-                duenosList.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.fullName} {d.documentId ? `(Doc: ${d.documentId})` : ''}
-                  </option>
-                ))
-              )}
-            </select>
+              onChange={setClientId}
+              options={duenoOptions}
+              hasAllOption={false}
+              disabled={isLoading || duenosList.length === 0}
+              placeholder={duenosList.length === 0 ? 'No hay dueños disponibles' : 'Seleccionar dueño...'}
+              searchPlaceholder="Buscar por nombre o documento..."
+              className="w-full bg-white"
+            />
           </div>
 
           {/* Nombre de la Mascota */}
