@@ -590,11 +590,8 @@ export function useUserSuperAdmin() {
         showToast('El cliente no usa el panel web; no se asignan permisos de sesión.', 'warning')
         return
       }
-      const baseRole = roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
-      if (baseRole?.permissions[moduleId]?.[permissionKey]) {
-        // Heredado del rol base: no se puede desactivar individualmente por usuario
-        return
-      }
+      // S47: las excepciones por usuario ahora pueden tanto agregar como
+      // revocar permisos heredados del rol base; no hay early-return aquí.
       const currentCombined = activePermissions[moduleId] || {
         view: false,
         create: false,
