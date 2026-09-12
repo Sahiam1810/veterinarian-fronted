@@ -25,13 +25,19 @@ export async function fetchVetMascotasDirectory(): Promise<MascotasDirectoryPayl
 }
 
 export async function fetchVetMascotasBundle(): Promise<VetMascotasBundle> {
-  const [pets, clients, clientPets, species, races, appointments] = await Promise.all([
-    vetApiFetch<ApiPet[]>('/api/pets'),
-    vetApiFetch<ApiClient[]>('/api/clients'),
-    vetApiFetch<ApiClientPet[]>('/api/clientspets'),
-    vetApiFetch<ApiNamedCatalog[]>('/api/species'),
-    vetApiFetch<ApiNamedCatalog[]>('/api/races'),
-    vetApiFetch<ApiAppointment[]>('/api/appointments'),
+  // Solo "pets" es indispensable para Mascotas. El resto son catálogos de
+  // apoyo (dueño, especie/raza, citas para "última atención"): si el
+  // SuperAdmin le quita a este usuario el permiso de Ver de Clientes o de
+  // Especies y Razas, esas etiquetas quedan vacías en vez de tumbar toda la
+  // pantalla de Mascotas (antes usaba Promise.all).
+  const pets = await vetApiFetch<ApiPet[]>('/api/pets')
+
+  const [clients, clientPets, species, races, appointments] = await Promise.all([
+    vetApiFetch<ApiClient[]>('/api/clients').catch(() => [] as ApiClient[]),
+    vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => [] as ApiClientPet[]),
+    vetApiFetch<ApiNamedCatalog[]>('/api/species').catch(() => [] as ApiNamedCatalog[]),
+    vetApiFetch<ApiNamedCatalog[]>('/api/races').catch(() => [] as ApiNamedCatalog[]),
+    vetApiFetch<ApiAppointment[]>('/api/appointments').catch(() => [] as ApiAppointment[]),
   ])
 
   return {

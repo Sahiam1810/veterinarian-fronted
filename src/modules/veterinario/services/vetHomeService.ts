@@ -62,9 +62,15 @@ export async function fetchVetHomeDashboard(): Promise<VetHomeDashboard> {
 export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
   const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
 
+  // Solo "appointments" es indispensable para Inicio. Los demás son catálogos
+  // de apoyo (nombre de especie/raza, dueño, veterinario) usados para armar
+  // etiquetas: si el SuperAdmin le quita a este usuario el permiso de Ver de
+  // Especies y Razas, Clientes o Profesionales, esas etiquetas quedan vacías
+  // en vez de tumbar toda la pantalla de Inicio (antes usaba Promise.all).
+  const appointments = await vetApiFetch<ApiAppointment[]>('/api/appointments')
+
   const [
     veterinarians,
-    appointments,
     pets,
     clients,
     clientPets,
@@ -72,13 +78,12 @@ export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
     races,
     notifications,
   ] = await Promise.all([
-    vetApiFetch<ApiVeterinarian[]>('/api/veterinarians'),
-    vetApiFetch<ApiAppointment[]>('/api/appointments'),
-    vetApiFetch<ApiPet[]>('/api/pets'),
-    vetApiFetch<ApiClient[]>('/api/clients'),
-    vetApiFetch<ApiClientPet[]>('/api/clientspets'),
-    vetApiFetch<ApiNamedCatalog[]>('/api/species'),
-    vetApiFetch<ApiNamedCatalog[]>('/api/races'),
+    vetApiFetch<ApiVeterinarian[]>('/api/veterinarians').catch(() => [] as ApiVeterinarian[]),
+    vetApiFetch<ApiPet[]>('/api/pets').catch(() => [] as ApiPet[]),
+    vetApiFetch<ApiClient[]>('/api/clients').catch(() => [] as ApiClient[]),
+    vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => [] as ApiClientPet[]),
+    vetApiFetch<ApiNamedCatalog[]>('/api/species').catch(() => [] as ApiNamedCatalog[]),
+    vetApiFetch<ApiNamedCatalog[]>('/api/races').catch(() => [] as ApiNamedCatalog[]),
     vetApiFetch<ApiNotification[]>(`/api/notifications/user/${profile.personId}`).catch(
       () => [] as ApiNotification[],
     ),

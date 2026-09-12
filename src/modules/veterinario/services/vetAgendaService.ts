@@ -25,7 +25,12 @@ export async function fetchVetAgendaWeek(
   },
 ): Promise<AgendaWeekPayload> {
   const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
-  const veterinarians = await vetApiFetch<ApiVeterinarian[]>('/api/veterinarians')
+  // Si el SuperAdmin le quita a este usuario el permiso de Ver de
+  // Profesionales, no debe tumbar la Agenda entera: se degrada a la rama de
+  // "sin veterinario encontrado" de abajo (agenda vacía) en vez de un 403.
+  const veterinarians = await vetApiFetch<ApiVeterinarian[]>('/api/veterinarians').catch(
+    () => [] as ApiVeterinarian[],
+  )
   const veterinarian = findVeterinarianForProfile(veterinarians, profile)
 
   if (!veterinarian) {
@@ -46,14 +51,20 @@ export async function fetchVetAgendaWeek(
       `/api/availabilities/by-veterinarian/${veterinarian.id}`,
     ).catch(async () => {
       // Fallback si la ruta específica falla: filtrar en cliente.
-      const all = await vetApiFetch<ApiAvailability[]>('/api/availabilities')
-      return all.filter(
-        (item) => item.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
-      )
+      try {
+        const all = await vetApiFetch<ApiAvailability[]>('/api/availabilities')
+        return all.filter(
+          (item) => item.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
+        )
+      } catch {
+        return [] as ApiAvailability[]
+      }
     }),
-    vetApiFetch<ApiPet[]>('/api/pets'),
-    vetApiFetch<ApiClientPet[]>('/api/clientspets'),
-    vetApiFetch<ApiNamedCatalog[]>('/api/species'),
+    // Catálogos de apoyo (especie/raza en las tarjetas de evento): no deben
+    // tumbar la Agenda si el permiso de Ver correspondiente no está.
+    vetApiFetch<ApiPet[]>('/api/pets').catch(() => [] as ApiPet[]),
+    vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => [] as ApiClientPet[]),
+    vetApiFetch<ApiNamedCatalog[]>('/api/species').catch(() => [] as ApiNamedCatalog[]),
   ])
 
   const availabilities = availabilitiesRaw
