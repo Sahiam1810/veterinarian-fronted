@@ -1,9 +1,7 @@
 import { apiClient } from '@/services'
 import type { RecepDuenoFormData, RecepDuenosDirectoryPayload } from '../types'
 import type { ApiClientResponse, ApiCreateClientRequest, ApiUpdateClientRequest } from '@/modules/superadmin/services/superAdminClientsService'
-import { lookupOwner, createOwnerWithoutLogin, updateClient } from '@/modules/superadmin/services/superAdminClientsService'
-import { updateUser } from '@/modules/superadmin/services/superAdminUserService'
-import { fetchRoles } from '@/modules/superadmin/services/superAdminRolesService'
+import { lookupOwner, createOwnerWithoutLogin, updateClient, updateClientOwnerProfile } from '@/modules/superadmin/services/superAdminClientsService'
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
 import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
 import type { ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
@@ -49,7 +47,12 @@ export async function createRecepDueno(
   })
 }
 
-// Actualizar un dueño existente (PUT /api/Clients/{id} + PUT /api/Users/{id})
+// Actualizar un dueño existente (PUT /api/Clients/{id} + PUT /api/Clients/{id}/owner-profile).
+// S51: el nombre/correo ya no pasa por PUT /api/Users (requiere permiso
+// "Usuarios: Editar" y antes resolvía el rol vía GET /api/Roles) — Recepcionista
+// no tiene ninguno de los dos permisos, así que ese paso fallaba en silencio
+// (.catch(() => [])) y el cambio de nombre nunca se guardaba, aunque se
+// mostrara el mensaje de éxito. El endpoint dedicado solo exige "Clientes: Editar".
 export async function updateRecepDueno(
   clientId: string,
   userId: string | undefined,
@@ -64,20 +67,10 @@ export async function updateRecepDueno(
     address: data.address?.trim() || null,
   })
 
-  if (resolvedUserId) {
-    const roles = await fetchRoles().catch(() => [])
-    const clientRole = roles.find((r) => {
-      const n = r.name.toLowerCase()
-      return n.includes('client') || n.includes('cliente') || n.includes('dueño') || n.includes('dueno')
-    })
-    if (clientRole) {
-      await updateUser(resolvedUserId, {
-        fullName: data.fullName.trim(),
-        email: data.email?.trim() || '',
-        roleId: clientRole.id,
-      })
-    }
-  }
+  await updateClientOwnerProfile(clientId, {
+    fullName: data.fullName.trim(),
+    email: data.email?.trim() || '',
+  })
 }
 
 // Crear un nuevo cliente en el sistema

@@ -136,6 +136,21 @@ export async function updateClient(id: string, data: ApiUpdateClientRequest): Pr
   return apiClient.put<void>(`/api/Clients/${id}`, data)
 }
 
+export interface ApiUpdateClientOwnerProfileRequest {
+  fullName: string
+  email: string
+}
+
+// S51: actualiza nombre/correo del dueño sin pasar por /api/Users ni /api/Roles
+// (gateados por "Usuarios"/"Roles", que Recepcionista no tiene) — solo exige
+// "Clientes: Editar", igual que register-owner exige solo "Clientes: Crear".
+export async function updateClientOwnerProfile(
+  id: string,
+  data: ApiUpdateClientOwnerProfileRequest,
+): Promise<void> {
+  return apiClient.put<void>(`/api/Clients/${id}/owner-profile`, data)
+}
+
 export async function deleteClient(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/Clients/${id}`)
 }
