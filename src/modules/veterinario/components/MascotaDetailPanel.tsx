@@ -17,7 +17,6 @@ interface MascotaDetailPanelProps {
   canDelete?: boolean
   onClose: () => void
   onViewClinicalHistory?: () => void
-  onRegistrarAtencion?: () => void
   onEditPet?: () => void
   onDeletePet?: () => void
   isHistoryLoading?: boolean
@@ -30,7 +29,6 @@ export function MascotaDetailPanel({
   canDelete = false,
   onClose,
   onViewClinicalHistory,
-  onRegistrarAtencion,
   onEditPet,
   onDeletePet,
   isHistoryLoading = false,
@@ -131,18 +129,10 @@ export function MascotaDetailPanel({
           )}
         </div>
 
+        {/* S45: "Registrar Consulta / Atención" se quita — atender una cita parte
+            de la Agenda (donde la cita específica ya está identificada), no de
+            la ficha general de la mascota. */}
         <div className="mt-auto flex flex-col gap-2 pt-2">
-          {onRegistrarAtencion && (
-            <button
-              type="button"
-              onClick={onRegistrarAtencion}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm"
-            >
-              <PawIcon className="w-4 h-4" />
-              <span>Registrar Consulta / Atención</span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={onViewClinicalHistory}

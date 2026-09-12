@@ -6,14 +6,15 @@ import { ViewPopup } from './ViewPopup'
 interface HistoriaClinicaModalProps {
   historia: HistoriaClinicaPayload
   onClose: () => void
-  onOpenRegistrarConsulta?: () => void
 }
 
 // Modal de historia clínica; scrollea en pantallas pequeñas.
+// S45: sin botón de "Nueva Atención" — atender una cita parte de la Agenda,
+// donde la cita específica ya está identificada (evita reabrir el formulario
+// sobre una cita que ya tiene historia y terminar en un 409 silencioso).
 export function HistoriaClinicaModal({
   historia,
   onClose,
-  onOpenRegistrarConsulta,
 }: HistoriaClinicaModalProps) {
   return (
     <div
@@ -48,17 +49,6 @@ export function HistoriaClinicaModal({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {onOpenRegistrarConsulta && (
-                    <button
-                      type="button"
-                      onClick={onOpenRegistrarConsulta}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand text-white text-xs font-bold hover:bg-brand-hover transition cursor-pointer shadow-xs"
-                    >
-                      <PawIcon className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Nueva Atención</span>
-                      <span className="sm:hidden">+ Atención</span>
-                    </button>
-                  )}
                   <span className="hidden md:inline-flex px-2.5 py-1 rounded-full bg-sage-soft text-brand text-[11px] font-bold">
                     {historia.breed}
                   </span>
@@ -87,15 +77,6 @@ export function HistoriaClinicaModal({
                   <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage">
                     Historial de Consultas
                   </h3>
-                  {onOpenRegistrarConsulta && (
-                    <button
-                      type="button"
-                      onClick={onOpenRegistrarConsulta}
-                      className="text-xs font-bold text-brand hover:text-brand-hover transition cursor-pointer flex items-center gap-1"
-                    >
-                      <span>+ Registrar Consulta</span>
-                    </button>
-                  )}
                 </div>
                 <div className="flex flex-col gap-2">
                   {historia.consultas.length === 0 ? (

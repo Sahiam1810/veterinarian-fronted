@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import {
   VetMascotasView,
-  RegistrarAtencionModal,
   VetMascotaModal,
   VetEliminarMascotaModal,
 } from '../../components'
@@ -30,8 +29,6 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     historia,
     isHistoriaOpen,
     isHistoriaLoading,
-    isRegistrarOpen,
-    registrarTarget,
     permissions,
     speciesList,
     racesList,
@@ -46,9 +43,6 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     handleOpenFilters,
     handleViewClinicalHistory,
     handleCloseHistoria,
-    handleOpenRegistrar,
-    handleCloseRegistrar,
-    handleRegistrationSuccess,
     handleOpenCreate,
     handleCloseCreate,
     handleCreatePet,
@@ -114,12 +108,6 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onViewClinicalHistory={() => {
           void handleViewClinicalHistory()
         }}
-        onRegistrarAtencion={() => {
-          void handleOpenRegistrar()
-        }}
-        onOpenRegistrarConsulta={() => {
-          void handleOpenRegistrar()
-        }}
         onCloseHistoria={handleCloseHistoria}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
@@ -162,24 +150,6 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         />
       )}
 
-      {/* Modal Registrar Atención */}
-      {isRegistrarOpen && registrarTarget && (
-        <RegistrarAtencionModal
-          isOpen={isRegistrarOpen}
-          petId={registrarTarget.petId}
-          petName={registrarTarget.petName}
-          speciesBreed={registrarTarget.speciesBreed}
-          clientPetId={registrarTarget.clientPetId}
-          appointmentId={registrarTarget.appointmentId}
-          serviceName={registrarTarget.serviceName}
-          scheduledStart={registrarTarget.scheduledStart}
-          availableAppointments={registrarTarget.availableAppointments}
-          onClose={handleCloseRegistrar}
-          onSuccess={(result) => {
-            void handleRegistrationSuccess(result)
-          }}
-        />
-      )}
     </div>
   )
 }
