@@ -52,6 +52,15 @@ interface RecepAgendaViewProps {
   onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
 }
 
+// Fecha local (no UTC) para el min del input date — evita el desfase de día en zonas UTC negativas.
+function todayIsoDateLocal(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const fieldClass =
   'w-full rounded-lg border border-border-tan bg-white px-3 py-2 text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition'
 const labelClass = 'block text-[11px] font-bold text-charcoal mb-1'
@@ -229,6 +238,7 @@ export function RecepAgendaView({
                   <input
                     id="recep-date"
                     type="date"
+                    min={todayIsoDateLocal()}
                     value={form.dateValue}
                     onChange={(event) => onDateChange(event.target.value)}
                     className={`${fieldClass} pl-9`}

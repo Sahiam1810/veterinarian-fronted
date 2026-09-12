@@ -13,6 +13,7 @@ import {
 } from '../types'
 import { CalendarIcon } from '@/global/components'
 import { ProfessionalCombobox } from './ProfessionalCombobox'
+import { isAppointmentDateInThePast, PAST_APPOINTMENT_MESSAGE } from '../utils/appointmentDateGuard'
 
 export interface CitaDrawerProps {
   isOpen: boolean
@@ -24,6 +25,15 @@ export interface CitaDrawerProps {
   serviciosOpciones: AgendaServiceOption[]
   existingCitas?: CitaSuperAdmin[]
   defaultProfessionalId?: string
+}
+
+// Fecha local (no UTC) para el min del input date — evita el desfase de día en zonas UTC negativas.
+function todayIsoDateLocal(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function parseMinutes(time: string): number {
@@ -148,6 +158,11 @@ export function CitaDrawer({
 
     if (startMins >= endMins) {
       return 'La hora de inicio debe ser anterior a la hora de fin.'
+    }
+
+    // S36: ni agendar ni reprogramar hacia una fecha/hora que ya pasó.
+    if (isAppointmentDateInThePast(dateKey, startTime)) {
+      return PAST_APPOINTMENT_MESSAGE
     }
 
     if (!professionalId) {
@@ -316,6 +331,7 @@ export function CitaDrawer({
             <input
               type="date"
               required
+              min={todayIsoDateLocal()}
               value={dateKey}
               onChange={(e) => {
                 setDateKey(e.target.value)
