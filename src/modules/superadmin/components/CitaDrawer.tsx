@@ -106,6 +106,17 @@ export function CitaDrawer({
     [mascotasOpciones, clientPetId],
   )
 
+  // Buscador combinado por mascota o dueño (mismo combobox de S28/S31/S34).
+  const mascotasPetOwnerOpciones = useMemo(
+    () =>
+      mascotasOpciones.map((m) => ({
+        id: m.clientPetId,
+        name: m.petName,
+        subtitle: `Dueño: ${m.ownerName}`,
+      })),
+    [mascotasOpciones],
+  )
+
   const handleClose = () => {
     setIsClosing(true)
     setTimeout(() => {
@@ -278,25 +289,18 @@ export function CitaDrawer({
             <label className="block font-bold text-charcoal mb-1">
               Mascota y Dueño <span className="text-terracotta">*</span>
             </label>
-            <select
+            <ProfessionalCombobox
               value={clientPetId}
-              onChange={(e) => {
-                setClientPetId(e.target.value)
+              onChange={(id) => {
+                setClientPetId(id)
                 setError(null)
               }}
-              required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer font-medium"
-            >
-              {mascotasOpciones.length === 0 ? (
-                <option value="">Sin mascotas disponibles</option>
-              ) : (
-                mascotasOpciones.map((m) => (
-                  <option key={m.clientPetId} value={m.clientPetId}>
-                    {m.petName} — Dueño: {m.ownerName}
-                  </option>
-                ))
-              )}
-            </select>
+              options={mascotasPetOwnerOpciones}
+              hasAllOption={false}
+              placeholder="Sin mascotas disponibles"
+              searchPlaceholder="Buscar por mascota o dueño..."
+              className="w-full"
+            />
             {selectedPet && (
               <p className="text-[11px] text-sage font-semibold mt-1">
                 Paciente: {selectedPet.petName} ({selectedPet.species} · {selectedPet.breed || 'Sin raza'})

@@ -36,6 +36,14 @@ const MOCK_ESPECIES: ProfessionalFilterOption[] = [
   { id: 'sp4', name: 'Roedores' },
 ]
 
+// Mismo mapeo que CitaDrawer.tsx usa para "Mascota y Dueño": {id: clientPetId, name: petName, subtitle: "Dueño: X"}.
+const MOCK_MASCOTAS: ProfessionalFilterOption[] = [
+  { id: 'cp1', name: 'Milu', subtitle: 'Dueño: Susan Cardenas' },
+  { id: 'cp2', name: 'Max', subtitle: 'Dueño: Ana Gomez' },
+  { id: 'cp3', name: 'Luna', subtitle: 'Dueño: Ana Gomez' },
+  { id: 'cp4', name: 'Toby', subtitle: 'Dueño: Roberto Carlos' },
+]
+
 test('normalizeFilterText elimina acentos, convierte a minúsculas y remueve espacios sobrantes', () => {
   assert.equal(normalizeFilterText('  ÁNGEL Pérez  '), 'angel perez')
   assert.equal(normalizeFilterText('María José'), 'maria jose')
@@ -77,6 +85,19 @@ test('filterProfessionals busca también por subtítulo si está disponible', ()
   assert.equal(result.length, 1)
   assert.equal(result[0]?.id, 'p3')
   assert.equal(result[0]?.name, 'Dr. Ángel Ramírez')
+})
+
+// CitaDrawer.tsx: "Mascota y Dueño" busca por nombre de mascota o por nombre del dueño (en el subtítulo).
+test('filterProfessionals filtra mascotas por nombre propio', () => {
+  const result = filterProfessionals(MOCK_MASCOTAS, 'milu')
+  assert.equal(result.length, 1)
+  assert.equal(result[0]?.id, 'cp1')
+})
+
+test('filterProfessionals filtra mascotas por nombre del dueño (subtítulo)', () => {
+  const result = filterProfessionals(MOCK_MASCOTAS, 'ana gomez')
+  assert.equal(result.length, 2)
+  assert.deepEqual(result.map((r) => r.id).sort(), ['cp2', 'cp3'])
 })
 
 test('filterProfessionals retorna lista vacía cuando no hay coincidencias', () => {
