@@ -28,7 +28,9 @@ import {
   createVeterinarian,
   updateVeterinarian,
   fetchVeterinarians,
+  createAvailability,
 } from '../services'
+import { createDefaultVeterinarianSchedule } from '../utils/defaultVeterinarianSchedule'
 import {
   fetchRoles,
   createRole as apiCreateRole,
@@ -939,11 +941,13 @@ export function useUserSuperAdmin() {
             error: 'La tarjeta profesional (CMP) es obligatoria para veterinarios.',
           }
         }
-        await createVeterinarian({
+        const created = await createVeterinarian({
           userId: result.userId,
           specialtyId,
           licenseNumber,
         })
+        // S35: horario por defecto solo al crear el profesional, una sola vez.
+        await createDefaultVeterinarianSchedule(created.id, createAvailability)
       }
 
       await loadData()

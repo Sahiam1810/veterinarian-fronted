@@ -387,7 +387,6 @@ export function useProfesionalesSuperAdmin() {
     }
 
     try {
-      const targetVetId = editingProfesional.id
       // Actualiza perfil veterinario (CMP / especialidad)
       await updateVeterinarian(editingProfesional.id, {
         userId: editingProfesional.userId,
@@ -418,53 +417,7 @@ export function useProfesionalesSuperAdmin() {
 
       showToast(`Profesional "${data.name}" actualizado correctamente.`)
 
-      // Sincronizar Horario configurado
-      if (data.horarioConfig?.enabled && targetVetId) {
-        const { dias, horaInicio, horaFin } = data.horarioConfig
-        const existingAvailabilities = await fetchAvailabilitiesByVeterinarian(targetVetId)
-
-        for (const dia of dias) {
-          const dayNum = Number(mapDiaToDayOfWeek(dia))
-          const existing = existingAvailabilities.find((a) => {
-            const dow = typeof a.dayOfWeek === 'string' ? Number(a.dayOfWeek) : a.dayOfWeek
-            return Number(dow) === dayNum
-          })
-
-          if (existing) {
-            await updateAvailability(existing.id, {
-              veterinarianId: targetVetId,
-              dayOfWeek: dayNum,
-              startTime: `${horaInicio}:00`,
-              endTime: `${horaFin}:00`,
-              isActive: true,
-            })
-          } else {
-            await createAvailability({
-              veterinarianId: targetVetId,
-              dayOfWeek: dayNum,
-              startTime: `${horaInicio}:00`,
-              endTime: `${horaFin}:00`,
-              isActive: true,
-              slotDurationMinutes: 30,
-              maxConcurrentAppointments: 1,
-            })
-          }
-        }
-
-        // Eliminar disponibilidades de días que fueron deseleccionados
-        const selectedDayNums = new Set(dias.map((d) => Number(mapDiaToDayOfWeek(d))))
-        for (const existing of existingAvailabilities) {
-          const dow = typeof existing.dayOfWeek === 'string' ? Number(existing.dayOfWeek) : existing.dayOfWeek
-          if (!selectedDayNums.has(Number(dow))) {
-            try {
-              await deleteAvailability(existing.id)
-            } catch {
-              // ignore
-            }
-          }
-        }
-      }
-
+      // S35: editar perfil no toca disponibilidad; el horario se gestiona solo en la grilla semanal.
       setIsProfModalOpen(false)
       setEditingProfesional(null)
       await loadData()

@@ -6,6 +6,7 @@ import {
   CitaDrawer,
 } from '../../components'
 import { useProfesionalesSuperAdmin } from '../../hooks'
+import { buildProfesionalEditSavePayload } from '../../utils/defaultVeterinarianSchedule'
 import type {
   ProfesionalSuperAdmin,
   ProfesionalFormData,
@@ -722,12 +723,6 @@ function ProfesionalModal({
   const [phone, setPhone] = useState(editingProfesional?.phone || '')
   const [status, setStatus] = useState<EstadoProfesional>(editingProfesional?.status || 'Activo')
   const [avatarUrl, setAvatarUrl] = useState(editingProfesional?.avatarUrl || '')
-
-  // Parámetro: Definir Horario (Hora Inicio y Hora Fin)
-  const [horaInicio, setHoraInicio] = useState('07:00')
-  const [horaFin, setHoraFin] = useState('17:00')
-  const [selectedDias, setSelectedDias] = useState<DiaSemana[]>(['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'])
-
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -743,18 +738,6 @@ function ProfesionalModal({
       setPhone(editingProfesional?.phone || '')
       setStatus(editingProfesional?.status || 'Activo')
       setAvatarUrl(editingProfesional?.avatarUrl || '')
-
-      if (editingProfesional && editingProfesional.horario && editingProfesional.horario.length > 0) {
-        setHoraInicio(editingProfesional.horario[0]?.horaInicio || '07:00')
-        setHoraFin(editingProfesional.horario[0]?.horaFin || '17:00')
-        const dias = Array.from(new Set(editingProfesional.horario.map((h) => h.dia)))
-        setSelectedDias(dias.length > 0 ? dias : ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'])
-      } else {
-        setHoraInicio('07:00')
-        setHoraFin('17:00')
-        setSelectedDias(['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES'])
-      }
-
       setError(null)
     } else if (isRendered) {
       setIsClosing(true)
@@ -792,34 +775,18 @@ function ProfesionalModal({
       setError('Por favor ingresa un correo electrónico válido.')
       return
     }
-    if (!horaInicio || !horaFin) {
-      setError('Por favor selecciona hora de inicio y fin para el horario.')
-      return
-    }
-    if (horaInicio < '07:00' || horaFin > '17:00') {
-      setError('El horario de atención reglamentario debe estar entre las 07:00 y las 17:00.')
-      return
-    }
-    if (horaInicio >= horaFin) {
-      setError('La hora de inicio debe ser anterior a la hora de fin.')
-      return
-    }
 
-    onSave({
-      name: name.trim(),
-      cmp: cmp.trim(),
-      especialidad,
-      email: email.trim(),
-      phone: phone.trim() || undefined,
-      status,
-      avatarUrl: avatarUrl.trim() || undefined,
-      horarioConfig: {
-        enabled: true,
-        dias: selectedDias,
-        horaInicio,
-        horaFin,
-      },
-    })
+    onSave(
+      buildProfesionalEditSavePayload({
+        name,
+        cmp,
+        especialidad,
+        email,
+        phone,
+        status,
+        avatarUrl,
+      }),
+    )
   }
 
   return (
@@ -947,59 +914,6 @@ function ProfesionalModal({
               <option value="Activo">Activo</option>
               <option value="Inactivo">Inactivo</option>
             </select>
-          </div>
-
-          {/* Parámetro: Definir Horario (Hora Inicio y Hora Fin) */}
-          <div className="pt-2 border-t border-border-tan/60 space-y-3">
-            <div>
-              <label className="block font-bold text-charcoal mb-0.5">
-                Definir Horario
-              </label>
-              <p className="text-[11px] text-sage">
-                Rango de atención del profesional (07:00 a 17:00)
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-bold text-charcoal mb-1">
-                  Hora Inicio <span className="text-terracotta">*</span>
-                </label>
-                <input
-                  type="time"
-                  required
-                  min="07:00"
-                  max="17:00"
-                  value={horaInicio}
-                  onChange={(e) => {
-                    setHoraInicio(e.target.value)
-                    setError(null)
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-charcoal mb-1">
-                  Hora Fin <span className="text-terracotta">*</span>
-                </label>
-                <input
-                  type="time"
-                  required
-                  min="07:00"
-                  max="17:00"
-                  value={horaFin}
-                  onChange={(e) => {
-                    setHoraFin(e.target.value)
-                    setError(null)
-                  }}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-medium"
-                />
-              </div>
-            </div>
-            <p className="text-[10px] text-sage -mt-1">
-              Horario de atención permitido: <strong>07:00</strong> a <strong>17:00</strong> (7:00 AM - 5:00 PM).
-            </p>
           </div>
 
           {/* Botones */}

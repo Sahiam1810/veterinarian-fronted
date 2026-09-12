@@ -6,6 +6,7 @@ import {
   PageToast,
 } from '../../components'
 import { useUserSuperAdmin, isProtectedSuperAdminUser, isClienteRoleName, isVeterinarioRoleName } from '../../hooks'
+import { DEFAULT_VET_SCHEDULE_NOTICE } from '../../utils/defaultVeterinarianSchedule'
 import type {
   SystemUser,
   RoleDefinition,
@@ -372,8 +373,13 @@ function UserDrawer({
 
           {isVeterinarioForm && (
             <>
-              <div className="p-3.5 rounded-xl bg-mint-soft/80 text-brand text-xs font-semibold border border-brand/20 leading-snug">
-                Datos profesionales obligatorios: el veterinario aparecerá en Profesionales con esta especialidad y CMP.
+              <div className="p-3.5 rounded-xl bg-mint-soft/80 text-brand text-xs font-semibold border border-brand/20 leading-snug space-y-1.5">
+                <p>
+                  Datos profesionales obligatorios: el veterinario aparecerá en Profesionales con esta especialidad y CMP.
+                </p>
+                <p>
+                  {DEFAULT_VET_SCHEDULE_NOTICE}
+                </p>
               </div>
 
               <div>
