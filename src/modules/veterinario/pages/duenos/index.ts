@@ -1,0 +1,1 @@
+export { DuenosPage } from './DuenosPage'

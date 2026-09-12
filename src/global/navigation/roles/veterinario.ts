@@ -30,6 +30,17 @@ export const VET_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    // S48: solo visible si el SuperAdmin concede Ver sobre "Clientes" (Dueños),
+    // vía rol o excepción por usuario — no forma parte del rol base veterinario.
+    id: 'duenos',
+    label: 'Dueños',
+    permissionKey: 'vet.duenos',
+    iconKey: 'owners',
+    kind: 'link',
+    order: 35,
+    placement: 'main',
+  },
+  {
     id: 'perfil',
     label: 'Perfil',
     permissionKey: 'vet.perfil',

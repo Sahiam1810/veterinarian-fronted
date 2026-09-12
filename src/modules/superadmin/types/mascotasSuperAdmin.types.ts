@@ -38,6 +38,11 @@ export interface SuperAdminDueno {
   mascotasSummary?: string[]
 }
 
+// Ítem para la ficha compartida (MascotaFichaModal): mascota o dueño.
+export type MascotaDuenoDetailItem =
+  | { type: 'mascota'; data: SuperAdminMascota }
+  | { type: 'dueno'; data: SuperAdminDueno }
+
 export interface MascotaFormData {
   name: string
   species: EspecieMascota

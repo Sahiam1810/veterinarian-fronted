@@ -19,6 +19,7 @@ interface AuthPermissionsResponse {
 export const VET_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   Mascotas: 'vet.mascotas',
   Citas: 'vet.agenda',
+  Clientes: 'vet.duenos',
 }
 
 // Claves de menú que siempre quedan visibles (no dependen de un módulo CRUD)

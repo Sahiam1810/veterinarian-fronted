@@ -153,18 +153,22 @@ export function isValidWeightKgInput(value: string): boolean {
   return v === '' || /^\d{1,4}(\.\d{0,2})?$/.test(v)
 }
 
-// Mapea cliente + usuario a dueño para la UI
+// Mapea cliente + usuario a dueño para la UI.
+// /api/Clients ya trae fullName/email/isActive resueltos desde el User del
+// backend (S48): se prefieren esos campos y el cruce con /api/Users (que
+// requiere permiso aparte sobre "Usuarios") queda solo como respaldo.
 export function mapClientToDueno(
   client: ApiClientResponse,
   user: ApiUserResponse | undefined,
   mascotasSummary: string[] = []
 ): SuperAdminDueno {
-  const status: EstadoMascota = user?.isActive === false ? 'Inactivo' : 'Activo'
+  const isActive = client.isActive ?? user?.isActive
+  const status: EstadoMascota = isActive === false ? 'Inactivo' : 'Activo'
   return {
     id: client.id,
-    name: user?.fullName ?? 'Sin nombre',
+    name: client.fullName ?? user?.fullName ?? 'Sin nombre',
     documentId: client.identificationNumber,
-    email: user?.email ?? '',
+    email: client.email ?? user?.email ?? '',
     phone: client.phoneNumber || '',
     address: client.address ?? '',
     city: '',

@@ -12,6 +12,7 @@ import {
 } from '../../components'
 import { AgendaPage } from '../agenda'
 import { MascotasPage } from '../mascotas'
+import { DuenosPage } from '../duenos'
 import { PerfilPage } from '../perfil'
 import { useVetHome } from '../../hooks'
 
@@ -63,8 +64,9 @@ export function PuntoInicio({
 
   const isAgenda = activeRoute === 'agenda'
   const isMascotas = activeRoute === 'mascotas'
+  const isDuenos = activeRoute === 'duenos'
   const isPerfil = activeRoute === 'perfil'
-  const fillHeight = isAgenda || isMascotas
+  const fillHeight = isAgenda || isMascotas || isDuenos
   // Perfil ya no fuerza alto completo: se alinea al contenido
 
   return (
@@ -142,11 +144,14 @@ export function PuntoInicio({
 
           {isMascotas && <MascotasPage onNotice={showToast} />}
 
+          {isDuenos && <DuenosPage onNotice={showToast} />}
+
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
           {activeRoute !== 'inicio' &&
             activeRoute !== 'agenda' &&
             activeRoute !== 'mascotas' &&
+            activeRoute !== 'duenos' &&
             activeRoute !== 'perfil' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">

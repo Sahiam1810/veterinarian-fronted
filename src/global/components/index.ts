@@ -23,3 +23,5 @@ export type {
   SuperAdminHeaderProps as HeaderProps,
   SuperAdminHeaderProps as GlobalHeaderProps,
 } from '@/modules/superadmin/components/SuperAdminHeader'
+export { MascotaFichaModal } from '@/modules/superadmin/components/MascotaFichaModal'
+export type { MascotaFichaModalItem } from '@/modules/superadmin/components/MascotaFichaModal'

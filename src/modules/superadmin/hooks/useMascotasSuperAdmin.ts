@@ -6,6 +6,7 @@ import type {
   DuenoFormData,
   MascotaFilters,
   DuenoFilters,
+  MascotaDuenoDetailItem,
 } from '../types'
 import {
   fetchClients,
@@ -69,10 +70,7 @@ export function useMascotasSuperAdmin() {
   const [editingMascota, setEditingMascota] = useState<SuperAdminMascota | null>(null)
   const [isDuenoModalOpen, setIsDuenoModalOpen] = useState(false)
   const [editingDueno, setEditingDueno] = useState<SuperAdminDueno | null>(null)
-  const [detailItem, setDetailItem] = useState<{
-    type: 'mascota' | 'dueno'
-    data: SuperAdminMascota | SuperAdminDueno
-  } | null>(null)
+  const [detailItem, setDetailItem] = useState<MascotaDuenoDetailItem | null>(null)
 
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
@@ -87,15 +85,32 @@ export function useMascotasSuperAdmin() {
     setIsLoading(true)
     setLoadError(null)
     try {
-      const [clients, users, pets, clientsPets, species, races, roles] = await Promise.all([
-        fetchClients(),
-        fetchUsers(),
-        fetchPets(),
-        fetchClientsPets(),
-        fetchSpecies(),
-        fetchRaces(),
-        fetchRoles(),
-      ])
+      // S48: allSettled en vez de all — un rol sin permiso sobre "Usuarios",
+      // "Plataforma" o "Roles" (ej. veterinario con acceso solo a "Clientes")
+      // no debe tumbar la página entera; esas listas quedan vacías y las
+      // columnas que dependen de ellas se degradan (no rompen).
+      const [clientsResult, usersResult, petsResult, clientsPetsResult, speciesResult, racesResult, rolesResult] =
+        await Promise.allSettled([
+          fetchClients(),
+          fetchUsers(),
+          fetchPets(),
+          fetchClientsPets(),
+          fetchSpecies(),
+          fetchRaces(),
+          fetchRoles(),
+        ])
+
+      if (clientsResult.status === 'rejected') {
+        throw clientsResult.reason
+      }
+
+      const clients = clientsResult.value
+      const users = usersResult.status === 'fulfilled' ? usersResult.value : []
+      const pets = petsResult.status === 'fulfilled' ? petsResult.value : []
+      const clientsPets = clientsPetsResult.status === 'fulfilled' ? clientsPetsResult.value : []
+      const species = speciesResult.status === 'fulfilled' ? speciesResult.value : []
+      const races = racesResult.status === 'fulfilled' ? racesResult.value : []
+      const roles = rolesResult.status === 'fulfilled' ? rolesResult.value : []
 
       // Auto-sincronizar usuarios creados con rol Cliente que aún no tengan registro en Clients
       const clientRoles = roles.filter((r) => {

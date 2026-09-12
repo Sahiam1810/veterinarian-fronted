@@ -25,11 +25,12 @@ import {
   type RealtimeNotificationPayload,
 } from '@/global/notifications'
 
-const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'perfil'])
+const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'duenos', 'perfil'])
 
 const GATED_ROUTES: Record<string, NavPermissionKey> = {
   mascotas: 'vet.mascotas',
   agenda: 'vet.agenda',
+  duenos: 'vet.duenos',
 }
 
 export function useVetHome() {
