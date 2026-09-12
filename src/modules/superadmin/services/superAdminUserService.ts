@@ -1,5 +1,5 @@
-import { apiClient } from '@/services'
-import { requireCreateUserPassword } from './requireCreateUserPassword'
+import { apiClient } from '../../../services/apiClient.ts'
+import { requireCreateUserPassword } from './requireCreateUserPassword.ts'
 
 export interface ApiUserResponse {
   id: string
@@ -24,6 +24,8 @@ export interface ApiCreateUserRequest {
   email: string
   password?: string
   roleId: string
+  specialtyId?: string
+  licenseNumber?: string
 }
 
 export interface ApiCreateUserResponse {
@@ -63,6 +65,10 @@ export interface CreateFullUserParams {
   password?: string
   roleId: string
   username?: string
+  // Veterinario: se mandan en el mismo POST /api/Users para que el backend cree
+  // el perfil con estos datos reales, en vez de caer al placeholder LIC-XXXXXXXX.
+  specialtyId?: string
+  licenseNumber?: string
 }
 
 export interface CreateFullUserResult {
@@ -106,12 +112,15 @@ export async function createFullUser(params: CreateFullUserParams): Promise<Crea
   const password = requireCreateUserPassword(params.password)
   const username = params.username?.trim() || params.email.split('@')[0] || params.fullName.replace(/\s+/g, '').toLowerCase()
 
-  // Paso 1: Crear usuario en /api/Users
+  // Paso 1: Crear usuario en /api/Users (incluye specialtyId/licenseNumber si es
+  // Veterinario, para que el backend cree el perfil con los datos reales)
   const userRes = await createUser({
     fullName: params.fullName,
     email: params.email,
     password: password,
     roleId: params.roleId,
+    specialtyId: params.specialtyId,
+    licenseNumber: params.licenseNumber,
   })
 
   if (!userRes || !userRes.id) {
