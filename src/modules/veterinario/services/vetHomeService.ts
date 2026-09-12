@@ -45,18 +45,11 @@ export function mapVetNotification(notification: ApiNotification): NotificacionS
   }
 }
 
-// Marca una notificación como leída (mismo contrato que usa el panel SuperAdmin).
+// S43: endpoint dedicado (dueño de la notificación) — ya no depende del
+// permiso "Notificaciones.Edit" que ningún rol tiene.
 export async function markVetNotificationAsRead(notification: ApiNotification): Promise<void> {
-  await vetApiFetch<void>(`/api/notifications/${notification.id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      userId: notification.userId,
-      appointmentId: notification.appointmentId,
-      message: notification.message,
-      sentAt: notification.sentAt,
-      status: 'Leída',
-      type: notification.type,
-    }),
+  await vetApiFetch<void>(`/api/notifications/${notification.id}/read`, {
+    method: 'PATCH',
   })
 }
 
