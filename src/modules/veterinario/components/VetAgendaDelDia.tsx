@@ -269,16 +269,13 @@ function RowActions({
   }
 
   if (appointment.status === 'ATENDIDO') {
+    // S46: se quita el botón "Consulta" — llamaba a onAttendNow, que siempre
+    // abre el formulario de registro (RegistrarAtencionModal) en blanco, sin
+    // comprobar si la cita ya tiene una consulta registrada. Eso permitía
+    // crear un registro médico duplicado sobre una cita ya atendida. Ver
+    // detalle (CitaAccionesModal) ya permite consultar la historia clínica.
     return (
       <div className="flex items-center justify-end gap-1.5">
-        <button
-          type="button"
-          onClick={() => onAttendNow?.(appointment)}
-          className="inline-flex items-center justify-center px-2.5 py-1.5 rounded-xl bg-terracotta-soft text-terracotta border border-terracotta/30 text-xs font-bold hover:bg-terracotta/15 transition cursor-pointer"
-          title="Ver o agregar consulta"
-        >
-          Consulta
-        </button>
         <button
           type="button"
           onClick={() => onViewAppointment?.(appointment)}
