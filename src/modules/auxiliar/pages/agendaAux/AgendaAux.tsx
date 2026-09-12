@@ -215,6 +215,16 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                 </svg>
               </button>
             </div>
+
+            {/* Botón Nueva Cita */}
+            <button
+              type="button"
+              onClick={() => setIsNewAppointmentOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-semibold hover:bg-brand-hover active:scale-98 transition shadow-xs cursor-pointer"
+            >
+              <span className="text-base font-bold leading-none">+</span>
+              <span>Nueva Cita</span>
+            </button>
           </div>
         </header>
       </ViewPopup>

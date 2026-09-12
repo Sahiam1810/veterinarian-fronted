@@ -7,12 +7,18 @@ import type {
   ApiRaceResponse,
   ApiStatusAppointmentResponse,
   ApiAvailabilityResponse,
+  ApiClientPetResponse,
+  ApiAvailableSlotResponse,
 } from '../types'
 import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
 
 // 1. Veterinarios
 export async function fetchVeterinarians(): Promise<ApiVeterinarianResponse[]> {
-  return apiClient.get<ApiVeterinarianResponse[]>('/api/Veterinarians').catch(() => [])
+  return apiClient.get<ApiVeterinarianResponse[]>('/api/Veterinarians')
+    .catch((error) => {
+      console.error('Error fetching veterinarians:', error)
+      return []
+    })
 }
 
 // 2. Servicios
@@ -54,4 +60,31 @@ export async function fetchStatusAppointments(): Promise<ApiStatusAppointmentRes
 export async function fetchAvailabilities(): Promise<ApiAvailabilityResponse[]> {
   return apiClient.get<ApiAvailabilityResponse[]>('/api/Availabilities').catch(() => [])
 }
+
+// 9. Relaciones Cliente-Mascota
+export async function fetchClientPets(): Promise<ApiClientPetResponse[]> {
+  return apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets').catch(() => [])
+}
+
+// 10. Horarios disponibles de veterinario para una fecha específica
+export async function fetchAvailableSlots(
+  veterinarianId: string,
+  date: string,
+  serviceId?: string
+): Promise<ApiAvailableSlotResponse[]> {
+  if (!veterinarianId || !date) return []
+  return apiClient
+    .get<ApiAvailableSlotResponse[]>('/api/Availabilities/available-slots', {
+      params: {
+        veterinarianId,
+        date,
+        ...(serviceId ? { serviceId } : {}),
+      },
+    })
+    .catch((error) => {
+      console.error('Error fetching available slots:', error)
+      return []
+    })
+}
+
 

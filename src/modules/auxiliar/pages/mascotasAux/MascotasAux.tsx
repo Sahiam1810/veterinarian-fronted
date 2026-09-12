@@ -15,6 +15,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     setSelectedPetId,
     speciesList,
     racesList,
+    clientsList,
     addPet,
   } = useAuxMascotas()
 
@@ -22,6 +23,8 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
   
   // Slide Drawer Estado
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false)
+  const [mascotaFormError, setMascotaFormError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form states for new Pet
   const [newName, setNewName] = useState('')
@@ -30,7 +33,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
   const [newAge, setNewAge] = useState('')
   const [newGender, setNewGender] = useState('Hembra')
   const [newWeight, setNewWeight] = useState('')
-  const [newOwner, setNewOwner] = useState('')
+  const [newClientId, setNewClientId] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newSterilized, setNewSterilized] = useState<'Sí' | 'No'>('No')
 
@@ -40,9 +43,43 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
   }, [speciesList])
 
   const racesOptions = useMemo(() => {
+    const selectedSpecieObj = speciesList.find(
+      (s) =>
+        s.name.toLowerCase() === newSpecie.toLowerCase() ||
+        s.name.toLowerCase().includes(newSpecie.toLowerCase()) ||
+        newSpecie.toLowerCase().includes(s.name.toLowerCase())
+    )
+    if (selectedSpecieObj) {
+      const filtered = racesList.filter(
+        (r) => (r.speciesId ?? '').toLowerCase() === selectedSpecieObj.id.toLowerCase()
+      )
+      if (filtered.length > 0) {
+        return filtered.map((r) => r.name)
+      }
+    }
     if (racesList.length > 0) return racesList.map((r) => r.name)
     return ['Golden Retriever', 'Siamés', 'Bulldog Francés', 'Persa', 'Mestizo', 'Poodle']
-  }, [racesList])
+  }, [speciesList, racesList, newSpecie])
+
+  const handleSpecieChange = (specie: string) => {
+    setNewSpecie(specie)
+    const selectedSpecieObj = speciesList.find(
+      (s) =>
+        s.name.toLowerCase() === specie.toLowerCase() ||
+        s.name.toLowerCase().includes(specie.toLowerCase()) ||
+        specie.toLowerCase().includes(s.name.toLowerCase())
+    )
+    if (selectedSpecieObj) {
+      const filtered = racesList.filter(
+        (r) => (r.speciesId ?? '').toLowerCase() === selectedSpecieObj.id.toLowerCase()
+      )
+      if (filtered.length > 0) {
+        setNewBreed(filtered[0].name)
+        return
+      }
+    }
+    setNewBreed('Mestizo')
+  }
 
   const filteredMascotas = useMemo(() => {
     return mascotas.filter((p) => {
@@ -54,33 +91,53 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     })
   }, [mascotas, activeTab])
 
+  // Auto-fill phone when client changes
+  const handleClientChange = (clientId: string) => {
+    setNewClientId(clientId)
+    const client = clientsList.find((c) => c.id === clientId)
+    if (client?.phoneNumber) {
+      setNewPhone(client.phoneNumber)
+    } else {
+      setNewPhone('')
+    }
+  }
+
   const handleAddPet = async (e: FormEvent) => {
     e.preventDefault()
-    if (!newName.trim() || !newOwner.trim()) return
+    setMascotaFormError(null)
+    if (!newName.trim() || !newClientId.trim()) return
 
-    await addPet({
+    setIsSubmitting(true)
+    const result = await addPet({
       name: newName.trim(),
       specie: newSpecie,
       breed: newBreed.trim() || 'Mestizo',
       age: newAge.trim() || '1 Año',
       gender: newGender,
       weight: newWeight.trim() || '5.0',
-      ownerName: newOwner.trim(),
+      clientId: newClientId.trim(),
       ownerPhone: newPhone.trim(),
       sterilized: newSterilized,
     })
+    setIsSubmitting(false)
+
+    if (!result.success) {
+      setMascotaFormError(result.error ?? 'Error al registrar la mascota.')
+      return
+    }
 
     setIsAddDrawerOpen(false)
+    setMascotaFormError(null)
     onNotice?.(`¡Mascota ${newName} registrada con éxito!`)
 
     // Reset Form
     setNewName('')
     setNewSpecie('Canino')
-    setNewBreed('')
+    setNewBreed('Mestizo')
     setNewAge('')
     setNewGender('Hembra')
     setNewWeight('')
-    setNewOwner('')
+    setNewClientId('')
     setNewPhone('')
     setNewSterilized('No')
   }
@@ -96,7 +153,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
           <button
             type="button"
-            onClick={() => setIsAddDrawerOpen(true)}
+            onClick={() => { setIsAddDrawerOpen(true); setMascotaFormError(null) }}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover active:scale-98 transition shadow-xs cursor-pointer"
           >
             <span className="text-base font-bold leading-none">+</span>
@@ -377,6 +434,14 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                 onSubmit={handleAddPet}
                 className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-5"
               >
+                {mascotaFormError && (
+                  <div className="p-3.5 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200 flex items-start gap-2">
+                    <svg className="w-4 h-4 mt-0.5 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{mascotaFormError}</span>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
                     Nombre de la Mascota <span className="text-terracotta">*</span>
@@ -397,7 +462,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                       label="Especie"
                       required
                       value={newSpecie}
-                      onChange={setNewSpecie}
+                      onChange={handleSpecieChange}
                       options={speciesOptions}
                     />
                   </div>
@@ -471,21 +536,29 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
 
                   <div>
                     <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Nombre del Dueño <span className="text-terracotta">*</span>
+                      Propietario <span className="text-terracotta">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       required
-                      value={newOwner}
-                      onChange={(e) => setNewOwner(e.target.value)}
-                      placeholder="Ej. Laura Torres..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                    />
+                      value={newClientId}
+                      onChange={(e) => handleClientChange(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                    >
+                      <option value="">Seleccionar propietario...</option>
+                      {clientsList.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.fullName ? `${client.fullName} (${client.identificationNumber || 'N/A'})` : 
+                           client.identificationNumber ? `Cliente ${client.identificationNumber}` : 
+                           `Cliente ${client.id.slice(0, 8)}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
                       Teléfono
+                      {newPhone && <span className="ml-1.5 text-[10px] font-normal text-brand bg-brand/10 px-1.5 py-0.5 rounded-md">Auto-completado</span>}
                     </label>
                     <input
                       type="tel"
@@ -510,9 +583,10 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                 <button
                   type="submit"
                   form="nueva-mascota-form"
-                  className="px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-brand hover:bg-brand-hover text-white transition shadow-xs cursor-pointer active:translate-y-0.5"
+                  disabled={isSubmitting}
+                  className="px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-brand hover:bg-brand-hover text-white transition shadow-xs cursor-pointer active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Registrar Mascota
+                  {isSubmitting ? 'Registrando...' : 'Registrar Mascota'}
                 </button>
               </div>
             </div>

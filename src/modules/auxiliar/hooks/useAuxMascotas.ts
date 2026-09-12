@@ -7,14 +7,12 @@ import type {
   ApiRaceResponse,
   ApiAppointmentResponse,
 } from '../types'
-import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
 import {
   fetchPets,
   createPet as apiCreatePet,
   fetchClientsPets,
   createClientPet as apiCreateClientPet,
   fetchClients,
-  fetchUsers,
   fetchSpecies,
   fetchRaces,
   fetchAppointments,
@@ -47,7 +45,6 @@ export function useAuxMascotas() {
   const [speciesList, setSpeciesList] = useState<ApiSpeciesResponse[]>([])
   const [racesList, setRacesList] = useState<ApiRaceResponse[]>([])
   const [clientsList, setClientsList] = useState<ApiClientResponse[]>([])
-  const [usersList, setUsersList] = useState<ApiUserResponse[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
@@ -67,7 +64,6 @@ export function useAuxMascotas() {
         racesRes,
         cpRes,
         clientsRes,
-        usersRes,
         aptsRes,
       ] = await Promise.allSettled([
         fetchPets(),
@@ -75,7 +71,6 @@ export function useAuxMascotas() {
         fetchRaces(),
         fetchClientsPets(),
         fetchClients(),
-        fetchUsers(),
         fetchAppointments(),
       ])
 
@@ -84,28 +79,22 @@ export function useAuxMascotas() {
       const fetchedRaces: ApiRaceResponse[] = racesRes.status === 'fulfilled' ? racesRes.value : []
       const fetchedCP: ApiClientPetResponse[] = cpRes.status === 'fulfilled' ? cpRes.value : []
       const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-      const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
       const fetchedApts: ApiAppointmentResponse[] = aptsRes.status === 'fulfilled' ? aptsRes.value : []
 
       setSpeciesList(fetchedSpecies)
       setRacesList(fetchedRaces)
       setClientsList(fetchedClients)
-      setUsersList(fetchedUsers)
 
       const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
-      const usersMap = new Map(fetchedUsers.map((u) => [u.id.toLowerCase(), u]))
 
       // Relaciones mascota -> cliente
       const petOwnerMap = new Map<string, string>()
       fetchedCP.forEach((cp) => {
         const client = clientsMap.get(cp.clientId.toLowerCase())
         if (client) {
-          const user = usersMap.get(client.userId.toLowerCase())
-          if (user) {
-            petOwnerMap.set(cp.petId.toLowerCase(), user.fullName)
-          }
+          petOwnerMap.set(cp.petId.toLowerCase(), client.fullName || `Cliente ${client.identificationNumber || ''}`.trim())
         }
       })
 
@@ -191,26 +180,36 @@ export function useAuxMascotas() {
     age: string
     gender: string
     weight: string
-    ownerName: string
+    clientId: string
     ownerPhone?: string
     sterilized: 'Sí' | 'No'
-  }) => {
+  }): Promise<{ success: boolean; error?: string }> => {
     try {
-      // 1. Resolver o tomar ID de especie
-      const matchingSpecies = speciesList.find((s) =>
-        s.name.toLowerCase().includes(data.specie.toLowerCase())
-      ) || speciesList[0]
+      console.log('Creating pet with data:', data)
 
-      // 2. Raza solo dentro de esa especie
+      // 1. Resolver ID de especie
+      const matchingSpecies =
+        speciesList.find((s) => s.name.toLowerCase() === data.specie.toLowerCase()) ||
+        speciesList.find((s) => s.name.toLowerCase().includes(data.specie.toLowerCase())) ||
+        speciesList[0]
+
+      // 2. Raza dentro de esa especie
       const racesForSpecies = racesList.filter(
         (r) => (r.speciesId ?? '').toLowerCase() === (matchingSpecies?.id ?? '').toLowerCase(),
       )
       const matchingRace =
-        racesForSpecies.find((r) => r.name.toLowerCase().includes(data.breed.toLowerCase()))
-        || racesForSpecies[0]
+        racesForSpecies.find((r) => r.name.toLowerCase() === data.breed.toLowerCase()) ||
+        racesForSpecies.find((r) => r.name.toLowerCase().includes(data.breed.toLowerCase())) ||
+        racesForSpecies[0] ||
+        racesList.find((r) => r.name.toLowerCase().includes(data.breed.toLowerCase())) ||
+        racesList[0]
 
       if (!matchingSpecies || !matchingRace) {
         throw new Error('No hay especies o razas registradas para esa combinación.')
+      }
+
+      if (!data.clientId) {
+        throw new Error('Debes seleccionar un propietario para la mascota.')
       }
 
       const parsedAge = parseInt(data.age.replace(/\D/g, ''), 10) || 1
@@ -229,22 +228,22 @@ export function useAuxMascotas() {
         raceId: matchingRace.id,
       })
 
-      // 4. Vincular con un cliente en POST /api/ClientsPets si hay clientes disponibles
-      if (clientsList.length > 0) {
-        await apiCreateClientPet({
-          clientId: clientsList[0].id,
-          petId: createdPet.id,
-          isPrimaryOwner: true,
-        })
-      }
+      // 4. Vincular con el cliente seleccionado en POST /api/ClientsPets
+      await apiCreateClientPet({
+        clientId: data.clientId,
+        petId: createdPet.id,
+        isPrimaryOwner: true,
+      })
 
       showToast(`¡Mascota ${data.name} registrada con éxito en el sistema!`)
       await loadData()
       setSelectedPetId(createdPet.id)
+      return { success: true }
     } catch (err) {
       console.error('Error al registrar mascota', err)
       const msg = err instanceof Error ? err.message : 'Error al registrar mascota'
       showToast(msg)
+      return { success: false, error: msg }
     }
   }
 
@@ -256,7 +255,6 @@ export function useAuxMascotas() {
     speciesList,
     racesList,
     clientsList,
-    usersList,
     isLoading,
     activeNotification,
     showToast,
