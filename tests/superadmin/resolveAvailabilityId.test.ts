@@ -58,6 +58,23 @@ test('resolveAvailabilityId lanza y no crea disponibilidad cuando no hay coincid
   assert.equal(fetchCalls, 1)
 })
 
+// S41: sin tope fijo de 07:00-17:00 — un turno nocturno real debe encontrar coincidencia.
+test('findMatchingAvailabilityId acepta un turno nocturno fuera de 07:00-17:00', () => {
+  const list = [
+    availability({ id: 'night-shift', dayOfWeek: 5, startTime: '19:00:00', endTime: '23:00:00' }),
+  ]
+
+  assert.equal(findMatchingAvailabilityId(list, '2026-09-11', '21:00', '21:30'), 'night-shift')
+})
+
+test('findMatchingAvailabilityId sigue rechazando una hora nocturna sin disponibilidad real', () => {
+  const list = [
+    availability({ id: 'day-shift', dayOfWeek: 5, startTime: '07:00:00', endTime: '17:00:00' }),
+  ]
+
+  assert.equal(findMatchingAvailabilityId(list, '2026-09-11', '21:00', '21:30'), null)
+})
+
 test('resolveAvailabilityId reutiliza el id existente cuando hay coincidencia', async () => {
   const id = await resolveAvailabilityId(
     'vet-1',
