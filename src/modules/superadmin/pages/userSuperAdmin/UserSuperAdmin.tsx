@@ -891,12 +891,12 @@ function PermissionMatrixPanel({
                   <td className="py-1.5 px-1 text-center">
                     <input
                       type="checkbox"
-                      checked={isInheritedView || perms.view}
-                      disabled={matrixLocked || isInheritedView}
+                      checked={perms.view}
+                      disabled={matrixLocked}
                       onChange={() => onTogglePermission(mod.id, 'view')}
                       title={
                         isInheritedView
-                          ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                          ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
                           : undefined
                       }
                       className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
@@ -909,12 +909,12 @@ function PermissionMatrixPanel({
                     {mod.supportsCreate !== false ? (
                       <input
                         type="checkbox"
-                        checked={isInheritedCreate || perms.create}
-                        disabled={matrixLocked || isInheritedCreate}
+                        checked={perms.create}
+                        disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'create')}
                         title={
                           isInheritedCreate
-                            ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                            ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
                             : undefined
                         }
                         className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
@@ -930,12 +930,12 @@ function PermissionMatrixPanel({
                     {mod.supportsEdit !== false ? (
                       <input
                         type="checkbox"
-                        checked={isInheritedEdit || perms.edit}
-                        disabled={matrixLocked || isInheritedEdit}
+                        checked={perms.edit}
+                        disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'edit')}
                         title={
                           isInheritedEdit
-                            ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                            ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
                             : undefined
                         }
                         className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
@@ -951,12 +951,12 @@ function PermissionMatrixPanel({
                     {mod.supportsDelete !== false ? (
                       <input
                         type="checkbox"
-                        checked={isInheritedDelete || perms.delete}
-                        disabled={matrixLocked || isInheritedDelete}
+                        checked={perms.delete}
+                        disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'delete')}
                         title={
                           isInheritedDelete
-                            ? 'Heredado del rol base (se gestiona desde la pestaña Por rol)'
+                            ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
                             : undefined
                         }
                         className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
