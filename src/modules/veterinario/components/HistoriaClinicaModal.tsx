@@ -180,13 +180,11 @@ export function HistoriaClinicaModal({
 
                 <div className="rounded-xl border border-border-tan bg-white p-2.5 sm:p-3">
                   <h3 className="text-[11px] font-bold uppercase tracking-wide text-sage mb-2">
-                    Últimos Signos Vitales
+                    Último Signo Vital
                   </h3>
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* S44: solo Temperatura — F.C./F.R./Mucosas nunca se piden ni se guardan. */}
+                  <div className="grid grid-cols-1">
                     <VitalItem label="Temp" value={historia.signosVitales.temperatura} />
-                    <VitalItem label="F.C." value={historia.signosVitales.frecuenciaCardiaca} />
-                    <VitalItem label="F.R." value={historia.signosVitales.frecuenciaRespiratoria} />
-                    <VitalItem label="Mucosas" value={historia.signosVitales.mucosas} />
                   </div>
                 </div>
               </section>

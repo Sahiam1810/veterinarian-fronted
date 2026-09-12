@@ -17,11 +17,10 @@ export interface HistoriaVacuna {
   nextLabel: string
 }
 
+// S44: solo Temperatura — el modelo (MedicalRecord) nunca tuvo F.C./F.R./Mucosas,
+// esos campos siempre mostraban "Sin dato" fijo.
 export interface HistoriaSignosVitales {
   temperatura: string
-  frecuenciaCardiaca: string
-  frecuenciaRespiratoria: string
-  mucosas: string
 }
 
 export interface HistoriaClinicaPayload {
