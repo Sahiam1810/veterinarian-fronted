@@ -44,6 +44,7 @@ import {
   formatNotesWithConsultorio,
 } from '../utils/superAdminApiMappers'
 import { resolveAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../utils/resolveAvailabilityId'
+import { isAppointmentDateInThePast, PAST_APPOINTMENT_MESSAGE } from '../utils/appointmentDateGuard'
 import { ApiError } from '@/services'
 
 function findStatusId(
@@ -325,6 +326,12 @@ export function useProfesionalesSuperAdmin() {
 
     const start = new Date(`${data.dateKey}T${data.startTime}:00`)
     const end = new Date(`${data.dateKey}T${data.endTime}:00`)
+
+    // S36: ni agendar ni reprogramar hacia una fecha/hora que ya pasó.
+    if (isAppointmentDateInThePast(data.dateKey, data.startTime)) {
+      showToast(PAST_APPOINTMENT_MESSAGE)
+      throw new Error(PAST_APPOINTMENT_MESSAGE)
+    }
 
     try {
       const availabilityId = await resolveAvailabilityId(

@@ -13,6 +13,10 @@ import {
   createRecepAppointment,
   markRecepAppointmentNoAsistio,
 } from '../services'
+import {
+  isAppointmentDateInThePast,
+  PAST_APPOINTMENT_MESSAGE,
+} from '@/modules/superadmin/utils/appointmentDateGuard'
 
 const EMPTY_FORM: RecepAgendaFormState = {
   ownerQuery: '',
@@ -237,6 +241,12 @@ export function useRecepAgenda(enabled: boolean) {
     }
     if (!form.dateValue || !form.timeSlotId) {
       showNotice('Por favor selecciona fecha y horario para la cita')
+      return
+    }
+
+    // S36: ni agendar ni reprogramar hacia una fecha/hora que ya pasó.
+    if (isAppointmentDateInThePast(form.dateValue, form.timeSlotId)) {
+      showNotice(PAST_APPOINTMENT_MESSAGE)
       return
     }
 
