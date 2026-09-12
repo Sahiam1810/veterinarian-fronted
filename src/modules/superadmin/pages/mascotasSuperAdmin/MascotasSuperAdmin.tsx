@@ -7,6 +7,7 @@ import {
   ProfessionalCombobox,
 } from '../../components'
 import { useMascotasSuperAdmin } from '../../hooks'
+import { buildDuenoDrawerFormState } from '../../utils/buildDuenoDrawerFormState'
 import type {
   SuperAdminMascota,
   SuperAdminDueno,
@@ -480,14 +481,28 @@ function DuenoDrawer({
   onSave,
   editingDueno,
 }: DuenoDrawerProps) {
-  const [name, setName] = useState(editingDueno?.name || '')
-  const [documentId, setDocumentId] = useState(editingDueno?.documentId || '')
-  const [email, setEmail] = useState(editingDueno?.email || '')
-  const [phone, setPhone] = useState(editingDueno?.phone || '')
-  const [address, setAddress] = useState(editingDueno?.address || '')
-  const [city, setCity] = useState(editingDueno?.city || 'Bogotá')
-  const [status, setStatus] = useState<EstadoMascota>(editingDueno?.status || 'Activo')
+  const [name, setName] = useState('')
+  const [documentId, setDocumentId] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('Bogotá')
+  const [status, setStatus] = useState<EstadoMascota>('Activo')
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Sincroniza los 7 campos al abrir o cambiar el dueño (mismo patrón que MascotaDrawer / S33).
+  useEffect(() => {
+    if (!isOpen) return
+    const next = buildDuenoDrawerFormState(editingDueno)
+    setName(next.name)
+    setDocumentId(next.documentId)
+    setEmail(next.email)
+    setPhone(next.phone)
+    setAddress(next.address)
+    setCity(next.city)
+    setStatus(next.status)
+    setFormError(null)
+  }, [isOpen, editingDueno])
 
   if (!isOpen) return null
 
