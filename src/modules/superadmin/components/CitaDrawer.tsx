@@ -6,11 +6,7 @@ import type {
   AgendaPetOption,
   AgendaServiceOption,
 } from '../types'
-import {
-  CONSULTORIOS_DISPONIBLES,
-  HORARIO_APERTURA,
-  HORARIO_CIERRE,
-} from '../types'
+import { CONSULTORIOS_DISPONIBLES } from '../types'
 import { CalendarIcon } from '@/global/components'
 import { ProfessionalCombobox } from './ProfessionalCombobox'
 import { isAppointmentDateInThePast, PAST_APPOINTMENT_MESSAGE } from '../utils/appointmentDateGuard'
@@ -146,15 +142,10 @@ export function CitaDrawer({
       return 'Debes especificar la hora de inicio y fin.'
     }
 
-    // 1. Regla: Horario permitido 07:00 a 17:00
+    // S41: sin tope fijo de clínica — el horario real lo valida resolveAvailabilityId
+    // contra la disponibilidad configurada del veterinario elegido (soporta turnos nocturnos).
     const startMins = parseMinutes(startTime)
     const endMins = parseMinutes(endTime)
-    const openMins = parseMinutes(HORARIO_APERTURA) // 420 (07:00)
-    const closeMins = parseMinutes(HORARIO_CIERRE) // 1020 (17:00)
-
-    if (startMins < openMins || endMins > closeMins) {
-      return `El horario permitido para citas es exclusivamente de ${HORARIO_APERTURA} a ${HORARIO_CIERRE} (7:00 AM a 5:00 PM).`
-    }
 
     if (startMins >= endMins) {
       return 'La hora de inicio debe ser anterior a la hora de fin.'
@@ -341,7 +332,7 @@ export function CitaDrawer({
             />
           </div>
 
-          {/* 3. Horario (07:00 a 17:00) */}
+          {/* 3. Horario — sin tope fijo, se valida contra la disponibilidad real del veterinario (S41) */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-charcoal mb-1">
@@ -350,8 +341,6 @@ export function CitaDrawer({
               <input
                 type="time"
                 required
-                min={HORARIO_APERTURA}
-                max={HORARIO_CIERRE}
                 value={startTime}
                 onChange={(e) => {
                   setStartTime(e.target.value)
@@ -367,8 +356,6 @@ export function CitaDrawer({
               <input
                 type="time"
                 required
-                min={HORARIO_APERTURA}
-                max={HORARIO_CIERRE}
                 value={endTime}
                 onChange={(e) => {
                   setEndTime(e.target.value)
@@ -379,7 +366,7 @@ export function CitaDrawer({
             </div>
           </div>
           <p className="text-[10px] text-sage -mt-2">
-            Horario de atención: <strong>{HORARIO_APERTURA}</strong> a <strong>{HORARIO_CIERRE}</strong> (7:00 AM - 5:00 PM).
+            El horario disponible depende de la disponibilidad configurada del veterinario elegido.
           </p>
 
           {/* 4. Médico Profesional */}

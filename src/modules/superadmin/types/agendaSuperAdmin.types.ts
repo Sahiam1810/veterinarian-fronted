@@ -17,10 +17,6 @@ export const CONSULTORIOS_DISPONIBLES = [
 
 export type ConsultorioNombre = typeof CONSULTORIOS_DISPONIBLES[number]
 
-// Rango de horario permitido: 07:00 a 17:00 (7 AM a 5 PM)
-export const HORARIO_APERTURA = '07:00'
-export const HORARIO_CIERRE = '17:00'
-
 export interface CitaSuperAdmin {
   id: string
   dateKey: string // YYYY-MM-DD
