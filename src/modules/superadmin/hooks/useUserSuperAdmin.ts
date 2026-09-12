@@ -911,6 +911,28 @@ export function useUserSuperAdmin() {
         return { ok: true, email, mode: 'create' }
       }
 
+      // Veterinario: validar especialidad/CMP antes de crear, y mandarlos en el
+      // mismo POST /api/Users — el backend crea el perfil en esa misma transacción
+      // (evita el perfil duplicado/placeholder que se creaba al llamar createVeterinarian aparte).
+      let vetSpecialtyId: string | undefined
+      let vetLicenseNumber: string | undefined
+      if (isVeterinarioRoleName(roleName)) {
+        vetSpecialtyId = data.specialtyId?.trim() || specialties[0]?.id || ''
+        vetLicenseNumber = data.licenseNumber?.trim() || ''
+        if (!vetSpecialtyId) {
+          return {
+            ok: false,
+            error: 'No hay especialidades configuradas. Configúralas antes de registrar un veterinario.',
+          }
+        }
+        if (!vetLicenseNumber) {
+          return {
+            ok: false,
+            error: 'La tarjeta profesional (CMP) es obligatoria para veterinarios.',
+          }
+        }
+      }
+
       const email = data.email.trim()
       const result = await apiCreateFullUser({
         fullName,
@@ -918,6 +940,8 @@ export function useUserSuperAdmin() {
         // Sin fallback literal: vacío lo rechaza createFullUser / UI (UserSuperAdmin).
         password: data.password ?? '',
         roleId: data.roleId,
+        specialtyId: vetSpecialtyId,
+        licenseNumber: vetLicenseNumber,
       })
 
       // createFullUser siempre deja la cuenta Activa; si eligieron Inactivo, desactivar
@@ -925,29 +949,14 @@ export function useUserSuperAdmin() {
         await syncUserActiveStatus(result.userId, 'Inactivo')
       }
 
-      // Veterinario: crear perfil profesional con especialidad y CMP
+      // S35: horario por defecto solo al crear el profesional, una sola vez.
+      // El perfil de veterinario ya lo creó /api/Users; se busca su id para agendar el horario.
       if (isVeterinarioRoleName(roleName)) {
-        const specialtyId = data.specialtyId?.trim() || specialties[0]?.id || ''
-        const licenseNumber = data.licenseNumber?.trim() || ''
-        if (!specialtyId) {
-          return {
-            ok: false,
-            error: 'No hay especialidades configuradas. Configúralas antes de registrar un veterinario.',
-          }
+        const vets = await fetchVeterinarians()
+        const created = vets.find((v) => v.userId.toLowerCase() === result.userId.toLowerCase())
+        if (created) {
+          await createDefaultVeterinarianSchedule(created.id, createAvailability)
         }
-        if (!licenseNumber) {
-          return {
-            ok: false,
-            error: 'La tarjeta profesional (CMP) es obligatoria para veterinarios.',
-          }
-        }
-        const created = await createVeterinarian({
-          userId: result.userId,
-          specialtyId,
-          licenseNumber,
-        })
-        // S35: horario por defecto solo al crear el profesional, una sola vez.
-        await createDefaultVeterinarianSchedule(created.id, createAvailability)
       }
 
       await loadData()
