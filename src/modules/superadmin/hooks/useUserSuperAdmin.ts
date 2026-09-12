@@ -768,6 +768,24 @@ export function useUserSuperAdmin() {
               (p) => p.roleId.toLowerCase() === currentRole.id.toLowerCase() && p.moduleId.toLowerCase() === mod.id.toLowerCase()
             )
 
+            // S50: currentRole.permissions[norm] siempre existe (objeto con
+            // los 4 flags, aunque todos sean false), así que el continue de
+            // arriba nunca filtraba nada — esto reenviaba los 11 módulos en
+            // cada guardado, aunque solo se hubiera tocado uno. Comparar
+            // contra lo último cargado de la base evita pisar módulos que no
+            // cambiaron con un valor obsoleto que quedó en el estado local.
+            const existingPerm = existing
+              ? { view: existing.canView, create: existing.canCreate, edit: existing.canEdit, delete: existing.canDelete }
+              : { view: false, create: false, edit: false, delete: false }
+
+            const hasChanged =
+              perm.view !== existingPerm.view ||
+              perm.create !== existingPerm.create ||
+              perm.edit !== existingPerm.edit ||
+              perm.delete !== existingPerm.delete
+
+            if (!hasChanged) continue
+
             if (existing) {
               await apiUpdateRolePermission(existing.id, {
                 canView: perm.view,
