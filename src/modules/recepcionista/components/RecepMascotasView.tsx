@@ -1,8 +1,8 @@
+import { MascotaFichaModal, type MascotaFichaModalItem } from '@/modules/superadmin'
 import type { RecepMascotaDetail, RecepMascotaListItem } from '../types'
 import { ViewPopup } from './ViewPopup'
 import { RecepMascotasToolbar } from './RecepMascotasToolbar'
 import { RecepMascotasTable } from './RecepMascotasTable'
-import { RecepMascotaDetailPanel } from './RecepMascotaDetailPanel'
 
 interface RecepMascotasViewProps {
   items: RecepMascotaListItem[]
@@ -21,7 +21,29 @@ interface RecepMascotasViewProps {
   onNextPage?: () => void
 }
 
-// Vista Mascotas recepción: toolbar + tabla; el panel solo al seleccionar
+// S54: la ficha de la mascota usa el modal compartido con SuperAdmin/Veterinario
+// (MascotaFichaModal) en vez de un panel lateral propio del módulo.
+function toFichaItem(detail: RecepMascotaDetail): MascotaFichaModalItem {
+  return {
+    type: 'vetMascota',
+    data: {
+      name: detail.name,
+      photoUrl: detail.photoUrl,
+      species: detail.species,
+      breed: detail.breed,
+      ageLabel: detail.ageLabel,
+      sexLabel: detail.sexLabel,
+      weightLabel: detail.weightLabel,
+      microchip: detail.microchip,
+      ownerName: detail.ownerName,
+      ownerPhone: detail.ownerPhone,
+      allergyAlert: detail.allergyAlert,
+      status: detail.estado,
+    },
+  }
+}
+
+// Vista Mascotas recepción: toolbar + tabla a ancho completo; ficha en modal
 export function RecepMascotasView({
   items,
   selectedDetail,
@@ -39,39 +61,39 @@ export function RecepMascotasView({
   onNextPage,
 }: RecepMascotasViewProps) {
   return (
-    <ViewPopup
-      animationKey="mascotas"
-      className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden"
-    >
-      <div className="shrink-0 min-w-0">
-        <RecepMascotasToolbar
-          search={search}
-          onSearchChange={onSearchChange}
-          onOpenFilters={onOpenFilters}
-          onNewPet={onNewPet}
-        />
-      </div>
-
-      <div className="flex-1 min-h-0 min-w-0 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden">
-        <RecepMascotasTable
-          items={items}
-          selectedId={selectedDetail?.id ?? null}
-          pageStart={pageStart}
-          pageEnd={pageEnd}
-          totalCount={totalCount}
-          onSelect={onSelect}
-          onPrevPage={onPrevPage}
-          onNextPage={onNextPage}
-        />
-
-        {selectedDetail && (
-          <RecepMascotaDetailPanel
-            detail={selectedDetail}
-            onClose={onCloseDetail}
-            onViewClinicalHistory={onViewClinicalHistory}
+    <>
+      <ViewPopup
+        animationKey="mascotas"
+        className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden"
+      >
+        <div className="shrink-0 min-w-0">
+          <RecepMascotasToolbar
+            search={search}
+            onSearchChange={onSearchChange}
+            onOpenFilters={onOpenFilters}
+            onNewPet={onNewPet}
           />
-        )}
-      </div>
-    </ViewPopup>
+        </div>
+
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+          <RecepMascotasTable
+            items={items}
+            selectedId={selectedDetail?.id ?? null}
+            pageStart={pageStart}
+            pageEnd={pageEnd}
+            totalCount={totalCount}
+            onSelect={onSelect}
+            onPrevPage={onPrevPage}
+            onNextPage={onNextPage}
+          />
+        </div>
+      </ViewPopup>
+
+      <MascotaFichaModal
+        item={selectedDetail ? toFichaItem(selectedDetail) : null}
+        onClose={onCloseDetail}
+        onViewHistoria={onViewClinicalHistory}
+      />
+    </>
   )
 }

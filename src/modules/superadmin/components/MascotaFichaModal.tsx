@@ -1,10 +1,27 @@
 import { EditIcon, MedicalHistoryIcon } from '@/global/components'
 import type { MascotaDuenoDetailItem } from '../types'
-import type { MascotaDetail } from '@/modules/veterinario/types'
+
+// Forma estructural compartida por MascotaDetail (veterinario) y
+// RecepMascotaDetail (recepcionista) -- ambas ya calzan aquí tal cual, sin
+// necesidad de mapear campos, solo el status/estado que cada rol nombra distinto.
+export interface MascotaVitalsFichaData {
+  name: string
+  photoUrl?: string | null
+  species: string
+  breed: string
+  ageLabel: string
+  sexLabel: string
+  weightLabel: string
+  microchip: string
+  ownerName: string
+  ownerPhone: string
+  allergyAlert?: string | null
+  status: string
+}
 
 export type MascotaFichaModalItem =
   | MascotaDuenoDetailItem
-  | { type: 'vetMascota'; data: MascotaDetail }
+  | { type: 'vetMascota'; data: MascotaVitalsFichaData }
 
 interface MascotaFichaModalProps {
   item: MascotaFichaModalItem | null
