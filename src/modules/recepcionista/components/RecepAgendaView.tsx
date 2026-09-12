@@ -16,6 +16,7 @@ import type {
 } from '../types'
 import { ViewPopup } from './ViewPopup'
 import { RecepDayCalendarPanel } from './RecepDayCalendarPanel'
+import { ProfessionalCombobox } from '@/modules/superadmin'
 
 interface RecepAgendaViewProps {
   form: RecepAgendaFormState
@@ -182,36 +183,36 @@ export function RecepAgendaView({
                 <label className={labelClass} htmlFor="recep-service-select">
                   Motivo de Consulta
                 </label>
-                <select
+                <ProfessionalCombobox
                   id="recep-service-select"
                   value={form.serviceId}
-                  onChange={(event) => onServiceChange(event.target.value)}
-                  className={fieldClass}
-                >
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={onServiceChange}
+                  options={services.map((service) => ({ id: service.id, name: service.label }))}
+                  hasAllOption={false}
+                  placeholder="Seleccionar motivo..."
+                  searchPlaceholder="Buscar motivo de consulta..."
+                  className="w-full bg-white"
+                />
               </div>
 
               <div className="min-w-0">
                 <label className={labelClass} htmlFor="recep-pro-select">
                   Profesional Asignado
                 </label>
-                <select
+                <ProfessionalCombobox
                   id="recep-pro-select"
                   value={form.professionalId}
-                  onChange={(event) => onProfessionalChange(event.target.value)}
-                  className={fieldClass}
-                >
-                  {professionals.map((pro) => (
-                    <option key={pro.id} value={pro.id}>
-                      {pro.name} ({pro.roleLabel})
-                    </option>
-                  ))}
-                </select>
+                  onChange={onProfessionalChange}
+                  options={professionals.map((pro) => ({
+                    id: pro.id,
+                    name: pro.name,
+                    subtitle: pro.roleLabel,
+                  }))}
+                  hasAllOption={false}
+                  placeholder="Seleccionar profesional..."
+                  searchPlaceholder="Buscar profesional..."
+                  className="w-full bg-white"
+                />
               </div>
             </div>
           </FormSection>
