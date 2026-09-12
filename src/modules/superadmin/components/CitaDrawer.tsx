@@ -455,23 +455,6 @@ export function CitaDrawer({
             />
           </div>
 
-          {/* 7. Estado (Solo al reprogramar/editar) */}
-          {editingCita && editingCita.status === 'AGENDADA' && (
-            <div>
-              <label className="block font-bold text-charcoal mb-1">Estado de la Cita</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as EstadoCita)}
-                className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer font-medium"
-              >
-                <option value="AGENDADA">Agendada</option>
-                <option value="ATENDIDA">Atendida</option>
-                <option value="CANCELADA">Cancelada</option>
-                <option value="NO_ASISTIO">No asistió</option>
-              </select>
-            </div>
-          )}
-
           {/* Botones de Acción */}
           <div className="pt-4 border-t border-border-tan/60 flex items-center justify-end gap-3 shrink-0">
             <button
