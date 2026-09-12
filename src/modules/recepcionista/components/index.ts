@@ -19,7 +19,6 @@ export { RecepDayCalendarPanel } from './RecepDayCalendarPanel'
 export { RecepDuenosView } from './RecepDuenosView'
 export { RecepDuenosToolbar } from './RecepDuenosToolbar'
 export { RecepDuenosTable } from './RecepDuenosTable'
-export { RecepDuenoDetailPanel } from './RecepDuenoDetailPanel'
 export { RecepDuenoModal } from './RecepDuenoModal'
 export { RecepMascotaModal } from './RecepMascotaModal'
 

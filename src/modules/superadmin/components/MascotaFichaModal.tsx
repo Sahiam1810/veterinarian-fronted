@@ -1,4 +1,4 @@
-import { MedicalHistoryIcon } from '@/global/components'
+import { EditIcon, MedicalHistoryIcon } from '@/global/components'
 import type { MascotaDuenoDetailItem } from '../types'
 import type { MascotaDetail } from '@/modules/veterinario/types'
 
@@ -12,15 +12,21 @@ interface MascotaFichaModalProps {
   // Solo aplica a vetMascota: acceso a la historia clínica completa desde la ficha.
   onViewHistoria?: () => void
   isHistoriaLoading?: boolean
+  // Solo aplica a dueno: algunos roles (ej. Recepcionista) no tienen una fila
+  // de tabla con acciones propias, así que editar se dispara desde la ficha.
+  // SuperAdmin no lo pasa (edita desde la fila) y no cambia en nada para él.
+  onEditDueno?: () => void
 }
 
 // Modal de ficha (mascota / dueño / mascota-veterinario) compartido entre
-// SuperAdmin y Veterinario, para que "Ver" luzca igual en ambos roles.
+// SuperAdmin, Veterinario y Recepcionista, para que "Ver" luzca igual en
+// todos los roles.
 export function MascotaFichaModal({
   item,
   onClose,
   onViewHistoria,
   isHistoriaLoading = false,
+  onEditDueno,
 }: MascotaFichaModalProps) {
   if (!item) return null
 
@@ -228,6 +234,16 @@ export function MascotaFichaModal({
         </div>
 
         <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border-tan/70 bg-bone">
+          {isDueno && onEditDueno && (
+            <button
+              type="button"
+              onClick={onEditDueno}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-border-tan bg-white text-charcoal hover:bg-cream transition cursor-pointer"
+            >
+              <EditIcon className="w-3.5 h-3.5" />
+              <span>Editar</span>
+            </button>
+          )}
           {isVetMascota && onViewHistoria && (
             <button
               type="button"

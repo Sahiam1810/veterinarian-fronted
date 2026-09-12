@@ -1,8 +1,8 @@
+import { MascotaFichaModal, type MascotaFichaModalItem } from '@/modules/superadmin'
 import type { RecepDuenoDetail, RecepDuenoListItem, RecepDuenoStatusFilter } from '../types'
 import { ViewPopup } from './ViewPopup'
 import { RecepDuenosToolbar } from './RecepDuenosToolbar'
 import { RecepDuenosTable } from './RecepDuenosTable'
-import { RecepDuenoDetailPanel } from './RecepDuenoDetailPanel'
 
 interface RecepDuenosViewProps {
   items: RecepDuenoListItem[]
@@ -23,7 +23,27 @@ interface RecepDuenosViewProps {
   onGoToPage?: (page: number) => void
 }
 
-// Vista Dueños: filtros + tabla; panel de detalle solo al seleccionar
+// S53: la ficha del dueño usa el modal compartido con SuperAdmin/Veterinario
+// (MascotaFichaModal) en vez de un panel lateral propio del módulo.
+function toFichaItem(detail: RecepDuenoDetail): MascotaFichaModalItem {
+  return {
+    type: 'dueno',
+    data: {
+      id: detail.id,
+      name: detail.fullName,
+      documentId: detail.documentId,
+      email: detail.email,
+      phone: detail.phone,
+      address: detail.address || '',
+      city: detail.city || '',
+      status: detail.estado,
+      registrationDate: detail.registrationDateLabel || '',
+      mascotasSummary: detail.pets.map((pet) => `${pet.name} (${pet.species})`),
+    },
+  }
+}
+
+// Vista Dueños: filtros + tabla; ficha en modal solo al seleccionar
 export function RecepDuenosView({
   items,
   selectedDetail,
@@ -43,42 +63,43 @@ export function RecepDuenosView({
   onGoToPage,
 }: RecepDuenosViewProps) {
   return (
-    <ViewPopup
-      animationKey="duenos"
-      className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden"
-    >
-      <div className="shrink-0 min-w-0">
-        <RecepDuenosToolbar
-          search={search}
-          statusFilter={statusFilter}
-          onSearchChange={onSearchChange}
-          onStatusFilterChange={onStatusFilterChange}
-          onNewOwner={onNewOwner}
-        />
-      </div>
-
-      <div className="flex-1 min-h-0 min-w-0 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden">
-        <RecepDuenosTable
-          items={items}
-          selectedId={selectedDetail?.id ?? null}
-          pageStart={pageStart}
-          pageEnd={pageEnd}
-          totalCount={totalCount}
-          onSelect={onSelect}
-          onPrevPage={onPrevPage}
-          onNextPage={onNextPage}
-          onGoToPage={onGoToPage}
-        />
-
-        {selectedDetail && (
-          <RecepDuenoDetailPanel
-            detail={selectedDetail}
-            onClose={onCloseDetail}
-            onEdit={onEditOwner}
+    <>
+      <ViewPopup
+        animationKey="duenos"
+        className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden"
+      >
+        <div className="shrink-0 min-w-0">
+          <RecepDuenosToolbar
+            search={search}
+            statusFilter={statusFilter}
+            onSearchChange={onSearchChange}
+            onStatusFilterChange={onStatusFilterChange}
+            onNewOwner={onNewOwner}
           />
-        )}
-      </div>
-    </ViewPopup>
+        </div>
+
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+          <RecepDuenosTable
+            items={items}
+            selectedId={selectedDetail?.id ?? null}
+            pageStart={pageStart}
+            pageEnd={pageEnd}
+            totalCount={totalCount}
+            onSelect={onSelect}
+            onPrevPage={onPrevPage}
+            onNextPage={onNextPage}
+            onGoToPage={onGoToPage}
+          />
+        </div>
+      </ViewPopup>
+
+      <MascotaFichaModal
+        item={selectedDetail ? toFichaItem(selectedDetail) : null}
+        onClose={onCloseDetail}
+        onEditDueno={
+          onEditOwner && selectedDetail ? () => onEditOwner(selectedDetail) : undefined
+        }
+      />
+    </>
   )
 }
-
