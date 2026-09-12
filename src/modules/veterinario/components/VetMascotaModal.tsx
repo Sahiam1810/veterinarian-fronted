@@ -1,8 +1,9 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useMemo, useState, useEffect, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { ApiClient, ApiNamedCatalog } from '../api/apiTypes'
 import { CloseIcon } from './MascotasIcons'
 import { PawIcon } from '@/global/components'
+import { ProfessionalCombobox } from '@/modules/superadmin'
 
 export interface VetMascotaFormData {
   name: string
@@ -48,6 +49,16 @@ export function VetMascotaModal({
   const [photoUrl, setPhotoUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const clientOptions = useMemo(
+    () =>
+      clientsList.map((c) => ({
+        id: c.id,
+        name: c.fullName || `Cliente Doc: ${c.identificationNumber}`,
+        subtitle: c.fullName ? c.identificationNumber : undefined,
+      })),
+    [clientsList],
+  )
 
   useEffect(() => {
     if (isOpen) {
@@ -292,22 +303,21 @@ export function VetMascotaModal({
 
           {/* Dueño / Cliente (solo en modo creación o editable si hay clientes) */}
           {mode === 'create' && clientsList.length > 0 && (
-            <div>
+            <div className="relative z-10">
               <label className="block text-xs font-bold text-charcoal mb-1">
                 Propietario / Cliente
               </label>
-              <select
+              <ProfessionalCombobox
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-border-tan bg-bone/30 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:bg-white transition cursor-pointer"
-              >
-                <option value="">Sin propietario asignado</option>
-                {clientsList.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.identificationNumber ? `Cliente Doc: ${c.identificationNumber}` : `Cliente ID: ${c.id.slice(0, 8)}`}
-                  </option>
-                ))}
-              </select>
+                onChange={setClientId}
+                options={clientOptions}
+                hasAllOption
+                allOptionLabel="Sin propietario asignado"
+                allOptionValue=""
+                placeholder="Seleccionar dueño..."
+                searchPlaceholder="Buscar por nombre o cédula..."
+                className="w-full bg-bone/30"
+              />
             </div>
           )}
 

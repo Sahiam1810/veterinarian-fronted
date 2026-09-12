@@ -117,3 +117,12 @@ export async function deleteVetPet(id: string): Promise<void> {
   })
 }
 
+// La FK CLIENTS_PETS.PET_ID -> PETS.ID es Restrict: borrar una mascota con
+// dueño vinculado sin quitar antes este vínculo devuelve 409 (igual que en
+// SuperAdmin, ver useMascotasSuperAdmin.deleteMascota).
+export async function deleteVetClientPet(clientPetId: string): Promise<void> {
+  await vetApiFetch(`/api/clientspets/${clientPetId}`, {
+    method: 'DELETE',
+  })
+}
+
