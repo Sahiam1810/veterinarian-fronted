@@ -851,7 +851,7 @@ function PermissionMatrixPanel({
         )}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <table className="w-full table-fixed text-left border-collapse">
           <thead>
             <tr className="bg-bone text-[11px] font-bold text-charcoal/80 border border-border-tan/60">
