@@ -251,15 +251,15 @@ export function useAgendaSuperAdmin() {
           throw new Error(msg)
         }
 
-        const availabilityId =
-          editingCita.availabilityId ||
-          (await resolveAvailabilityId(
-            data.professionalId,
-            data.dateKey,
-            data.startTime,
-            data.endTime,
-            fetchAvailabilitiesByVeterinarian,
-          ))
+        // S40: siempre resolver contra los datos actuales del formulario — nunca reutilizar
+        // la disponibilidad de la cita original (podía ser de otro profesional/día/hora).
+        const availabilityId = await resolveAvailabilityId(
+          data.professionalId,
+          data.dateKey,
+          data.startTime,
+          data.endTime,
+          fetchAvailabilitiesByVeterinarian,
+        )
 
         const formattedNotes = formatNotesWithConsultorio(data.consultorio, data.notes)
 
