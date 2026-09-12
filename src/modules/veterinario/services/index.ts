@@ -22,6 +22,7 @@ export {
   createVetPet,
   updateVetPet,
   deleteVetPet,
+  deleteVetClientPet,
 } from './vetMascotasService'
 export type {
   VetMascotasBundle,

@@ -10,8 +10,10 @@ import {
   createVetPet,
   updateVetPet,
   deleteVetPet,
+  deleteVetClientPet,
 } from '../services'
 import { fetchMyModulePermissions } from '@/modules/auth'
+import { mapGenderToSexo, mapSexoToGender } from '@/modules/superadmin/utils/superAdminApiMappers'
 import type {
   ApiClient,
   ApiClientPet,
@@ -187,7 +189,8 @@ export function useVetMascotas(enabled: boolean) {
   }
 
   const handleCreatePet = async (data: VetMascotaFormData) => {
-    await createVetPet(data)
+    // S49: el backend solo acepta género "M"/"F" (PetGender), no "Macho"/"Hembra".
+    await createVetPet({ ...data, gender: mapSexoToGender(data.gender === 'Hembra' ? 'Hembra' : 'Macho') })
     showNotice(`¡Mascota ${data.name} registrada con éxito!`)
     await loadDirectory()
   }
@@ -209,7 +212,9 @@ export function useVetMascotas(enabled: boolean) {
       speciesId: raw?.speciesId || speciesList[0]?.id || '',
       raceId: raw?.raceId || racesList[0]?.id || '',
       age: typeof raw?.age === 'number' ? raw.age : 1,
-      gender: raw?.gender || (detail?.sexLabel === 'Macho' ? 'Macho' : 'Hembra'),
+      // S49: raw.gender viene del backend como "M"/"F" (PetGender), hay que
+      // traducirlo a "Macho"/"Hembra" para que el formulario lo entienda.
+      gender: raw?.gender ? mapGenderToSexo(raw.gender) : (detail?.sexLabel === 'Macho' ? 'Macho' : 'Hembra'),
       weight: typeof raw?.weight === 'number' ? raw.weight : 5,
       observations: raw?.observations || detail?.allergyAlert || '',
       clientId: matchingCp?.clientId,
@@ -226,7 +231,8 @@ export function useVetMascotas(enabled: boolean) {
 
   const handleUpdatePet = async (data: VetMascotaFormData) => {
     if (!editingPetId) return
-    await updateVetPet(editingPetId, data)
+    // S49: el backend solo acepta género "M"/"F" (PetGender), no "Macho"/"Hembra".
+    await updateVetPet(editingPetId, { ...data, gender: mapSexoToGender(data.gender === 'Hembra' ? 'Hembra' : 'Macho') })
     showNotice(`¡Mascota ${data.name} actualizada con éxito!`)
     await loadDirectory()
   }
@@ -255,6 +261,15 @@ export function useVetMascotas(enabled: boolean) {
 
   const handleDeletePet = async () => {
     if (!deletingPetId) return
+    // La FK CLIENTS_PETS.PET_ID -> PETS.ID es Restrict: si la mascota tiene
+    // dueño(s) vinculado(s) hay que quitar esos vínculos antes, o el DELETE
+    // de la mascota devuelve 409 (mismo orden que useMascotasSuperAdmin.deleteMascota).
+    const linkedClientPets = clientPets.filter(
+      (cp) => cp.petId.toLowerCase() === deletingPetId.toLowerCase(),
+    )
+    for (const link of linkedClientPets) {
+      await deleteVetClientPet(link.id)
+    }
     await deleteVetPet(deletingPetId)
     if (selectedId === deletingPetId) {
       setSelectedId(null)
