@@ -45,10 +45,12 @@ export function AgendaWeekGrid({
 
   return (
     <div className="flex-1 min-h-0 min-w-0 rounded-2xl border border-border-tan bg-white overflow-hidden shadow-[0_2px_16px_rgba(35,78,70,0.04)] flex flex-col">
-      <div className="flex-1 min-h-0 min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain">
-        <div className={`h-full min-h-0 flex flex-col ${minWidthClass}`}>
+      {/* S42: overflow-auto (no solo x) — con rangos de horario anchos (ej. turnos
+          nocturnos) el contenido crece más que el viewport y debe poder scrollearse. */}
+      <div className="flex-1 min-h-0 min-w-0 overflow-auto overscroll-contain">
+        <div className={`flex flex-col ${minWidthClass}`}>
           <div
-            className="shrink-0 grid border-b border-border-tan bg-bone/50"
+            className="sticky top-0 z-30 shrink-0 grid border-b border-border-tan bg-bone/50"
             style={{ gridTemplateColumns: gridTemplate }}
           >
             <div className="border-r border-border-tan/70" />
@@ -72,14 +74,14 @@ export function AgendaWeekGrid({
           </div>
 
           <div
-            className="relative flex-1 min-h-0 grid"
+            className="relative grid"
             style={{ gridTemplateColumns: gridTemplate }}
           >
-            <div className="relative border-r border-border-tan/70 bg-white flex flex-col min-h-0">
+            <div className="relative border-r border-border-tan/70 bg-white flex flex-col">
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="relative flex-1 min-h-0 border-b border-border-tan/40"
+                  className="relative min-h-[48px] border-b border-border-tan/40"
                 >
                   <span className="absolute top-0 right-0.5 sm:right-1 -translate-y-1/2 text-[8px] sm:text-[10px] font-semibold text-sage tabular-nums">
                     {String(hour).padStart(2, '0')}:00
@@ -99,7 +101,7 @@ export function AgendaWeekGrid({
                   {hours.map((hour) => (
                     <div
                       key={`${day.dateKey}-${hour}`}
-                      className="flex-1 min-h-0 border-b border-border-tan/40"
+                      className="min-h-[48px] border-b border-border-tan/40"
                     />
                   ))}
 
