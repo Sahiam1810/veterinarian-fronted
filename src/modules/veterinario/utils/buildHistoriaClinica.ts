@@ -107,9 +107,6 @@ export function buildHistoriaClinica(input: {
     vacunas,
     signosVitales: {
       temperatura: latest?.temperature != null ? `${latest.temperature} °C` : 'Sin dato',
-      frecuenciaCardiaca: 'Sin dato',
-      frecuenciaRespiratoria: 'Sin dato',
-      mucosas: 'Sin dato',
     },
   }
 }
