@@ -46,7 +46,7 @@ export function DuenosTablePanel({
   canDelete = true,
 }: DuenosTablePanelProps) {
   return (
-    <div className="flex-1 flex flex-col gap-4 sm:gap-5 relative z-10 animate-view-popup">
+    <div className="flex-1 min-h-0 flex flex-col gap-4 sm:gap-5 relative z-10 animate-view-popup">
       {/* Barra de Filtros y Botón Registrar */}
       <div
         className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] p-4 sm:p-5 shadow-[0_2px_12px_rgba(35,78,70,0.03)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3"
@@ -110,8 +110,8 @@ export function DuenosTablePanel({
       </div>
 
       {/* Tabla de Dueños */}
-      <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col">
-        <div className="overflow-x-auto">
+      <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className="overflow-auto min-h-0 flex-1">
           <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-bone/80 border-b border-border-tan/60">
