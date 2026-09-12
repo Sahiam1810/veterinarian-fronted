@@ -1,7 +1,7 @@
+import { MascotaFichaModal } from '@/modules/superadmin'
 import type { HistoriaClinicaPayload, MascotaDetail, MascotaListItem } from '../types'
 import { MascotasToolbar } from './MascotasToolbar'
 import { MascotasTable } from './MascotasTable'
-import { MascotaDetailPanel } from './MascotaDetailPanel'
 import { HistoriaClinicaModal } from './HistoriaClinicaModal'
 import { ViewPopup } from './ViewPopup'
 
@@ -34,7 +34,8 @@ interface VetMascotasViewProps {
   onNextPage?: () => void
 }
 
-// Vista Mascotas: en móvil el detalle cubre la lista; en desktop va al lado.
+// Vista Mascotas: tabla a ancho completo (como SuperAdmin); "Ver" abre la
+// misma ficha modal compartida en vez de un panel lateral fijo (S48).
 export function VetMascotasView({
   items,
   selectedDetail,
@@ -69,7 +70,7 @@ export function VetMascotasView({
         animationKey="mascotas"
         className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden"
       >
-        <div className={`shrink-0 min-w-0 ${selectedDetail ? 'hidden lg:block' : ''}`}>
+        <div className="shrink-0 min-w-0">
           <MascotasToolbar
             search={search}
             speciesFilter={speciesFilter}
@@ -82,44 +83,30 @@ export function VetMascotasView({
           />
         </div>
 
-        <div className="relative flex-1 min-h-0 min-w-0 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden">
-          <div
-            className={`min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden ${
-              selectedDetail ? 'hidden lg:flex' : 'flex'
-            }`}
-          >
-            <MascotasTable
-              items={items}
-              selectedId={selectedDetail?.id ?? null}
-              pageStart={pageStart}
-              pageEnd={pageEnd}
-              totalCount={totalCount}
-              canEdit={canEdit}
-              canDelete={canDelete}
-              onSelect={onSelect}
-              onEditPet={onEditPet}
-              onDeletePet={onDeletePet}
-              onPrevPage={onPrevPage}
-              onNextPage={onNextPage}
-            />
-          </div>
-
-          {selectedDetail ? (
-            <div className="absolute inset-0 z-20 lg:static lg:inset-auto lg:z-auto lg:w-[340px] xl:w-[360px] lg:shrink-0 min-h-0 min-w-0">
-              <MascotaDetailPanel
-                detail={selectedDetail}
-                canEdit={canEdit}
-                canDelete={canDelete}
-                onClose={onCloseDetail}
-                onViewClinicalHistory={onViewClinicalHistory}
-                onEditPet={() => onEditPet?.(selectedDetail.id)}
-                onDeletePet={() => onDeletePet?.(selectedDetail.id)}
-                isHistoryLoading={isHistoriaLoading}
-              />
-            </div>
-          ) : null}
+        <div className="relative flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+          <MascotasTable
+            items={items}
+            selectedId={selectedDetail?.id ?? null}
+            pageStart={pageStart}
+            pageEnd={pageEnd}
+            totalCount={totalCount}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onSelect={onSelect}
+            onEditPet={onEditPet}
+            onDeletePet={onDeletePet}
+            onPrevPage={onPrevPage}
+            onNextPage={onNextPage}
+          />
         </div>
       </ViewPopup>
+
+      <MascotaFichaModal
+        item={selectedDetail ? { type: 'vetMascota', data: selectedDetail } : null}
+        onClose={onCloseDetail}
+        onViewHistoria={onViewClinicalHistory}
+        isHistoriaLoading={isHistoriaLoading}
+      />
 
       {isHistoriaOpen && historia && (
         <HistoriaClinicaModal
