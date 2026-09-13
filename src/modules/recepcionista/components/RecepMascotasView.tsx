@@ -16,6 +16,7 @@ interface RecepMascotasViewProps {
   onNewPet?: () => void
   onSelect: (petId: string) => void
   onCloseDetail: () => void
+  onEditMascota?: (petId: string) => void
   onPrevPage?: () => void
   onNextPage?: () => void
 }
@@ -55,6 +56,7 @@ export function RecepMascotasView({
   onNewPet,
   onSelect,
   onCloseDetail,
+  onEditMascota,
   onPrevPage,
   onNextPage,
 }: RecepMascotasViewProps) {
@@ -92,6 +94,9 @@ export function RecepMascotasView({
       <MascotaFichaModal
         item={selectedDetail ? toFichaItem(selectedDetail) : null}
         onClose={onCloseDetail}
+        onEditMascota={
+          selectedDetail && onEditMascota ? () => onEditMascota(selectedDetail.id) : undefined
+        }
       />
     </>
   )

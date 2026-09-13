@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import test, { afterEach, beforeEach } from 'node:test'
 
-import { createRecepPetWithClient } from '../../src/modules/recepcionista/services/recepMascotasService.ts'
+import { createRecepPetWithClient, updateRecepPet } from '../../src/modules/recepcionista/services/recepMascotasService.ts'
 import {
   buildRecepMascotaFormDuenos,
   mapRecepUiGenderToApi,
+  mapRecepApiGenderToUi,
 } from '../../src/modules/recepcionista/utils/recepPetMapping.ts'
 import type { ApiClientResponse } from '../../src/modules/superadmin/services/superAdminClientsService.ts'
 
@@ -70,6 +71,15 @@ test('mapRecepUiGenderToApi traduce Hembra/Macho a F/M', () => {
   assert.equal(mapRecepUiGenderToApi('Macho'), 'M')
   assert.equal(mapRecepUiGenderToApi('hembra'), 'F')
   assert.equal(mapRecepUiGenderToApi('MACHO'), 'M')
+})
+
+// Feature: editar mascota (Recepcionista) precarga el formulario con el
+// género que ya viene del backend (M/F) -- inverso de mapRecepUiGenderToApi.
+test('mapRecepApiGenderToUi traduce F/M a Hembra/Macho', () => {
+  assert.equal(mapRecepApiGenderToUi('F'), 'Hembra')
+  assert.equal(mapRecepApiGenderToUi('M'), 'Macho')
+  assert.equal(mapRecepApiGenderToUi('f'), 'Hembra')
+  assert.equal(mapRecepApiGenderToUi('m'), 'Macho')
 })
 
 test('createRecepPetWithClient envía gender M cuando el select es Macho', async () => {
@@ -234,4 +244,36 @@ test('createRecepPetWithClient no llama a ClientsPets si no se especifica client
   assert.equal(result.id, 'pet-orphan-999')
   assert.equal(calls.length, 1)
   assert.ok(calls[0].url.includes('/api/Pets'))
+})
+
+// Feature: editar mascota (Recepcionista) -- updateRecepPet ya existía en el
+// servicio pero nunca se usaba desde la UI. Verifica que llama al PUT
+// correcto sin reasignar dueño (no forma parte de ApiUpdatePetRequest).
+test('updateRecepPet llama PUT /api/Pets/{id} con los datos de la mascota', async () => {
+  const calls: Array<{ url: string; method?: string; body?: Record<string, unknown> }> = []
+
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const urlStr = String(input)
+    const bodyParsed = init?.body ? JSON.parse(String(init.body)) : undefined
+    calls.push({ url: urlStr, method: init?.method, body: bodyParsed })
+    return new Response(null, { status: 204 })
+  }
+
+  await updateRecepPet('pet-existing-1', {
+    name: 'Firulais',
+    speciesId: 'spec-canino',
+    raceId: 'race-golden',
+    age: 4,
+    gender: 'M',
+    weight: 26,
+    observations: 'Ninguna',
+    photoUrl: null,
+  })
+
+  assert.equal(calls.length, 1)
+  assert.ok(calls[0].url.includes('/api/Pets/pet-existing-1'))
+  assert.equal(calls[0].method, 'PUT')
+  assert.equal(calls[0].body?.gender, 'M')
+  assert.equal(calls[0].body?.name, 'Firulais')
+  assert.equal('clientId' in (calls[0].body || {}), false)
 })

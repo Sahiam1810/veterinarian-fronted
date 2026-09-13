@@ -9,6 +9,11 @@ export function mapRecepUiGenderToApi(genderLabel: string): 'M' | 'F' {
   return normalized.startsWith('h') ? 'F' : 'M'
 }
 
+// Inverso de mapRecepUiGenderToApi: precarga del formulario al editar (API M/F -> UI).
+export function mapRecepApiGenderToUi(apiGender: string): 'Hembra' | 'Macho' {
+  return apiGender?.trim().toUpperCase().startsWith('F') ? 'Hembra' : 'Macho'
+}
+
 export interface RecepMascotaFormDueno {
   id: string
   fullName: string

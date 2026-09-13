@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, type FormEvent } from 'react'
-import type { RecepMascotaFormData } from '../types'
+import type { RecepMascotaFormData, RecepMascotaRawFields } from '../types'
 import { CloseIcon } from './RecepMascotasIcons'
 import { PawIcon } from '@/global/components'
 import { ProfessionalCombobox } from '@/modules/superadmin'
+import { mapRecepApiGenderToUi } from '../utils/recepPetMapping'
 
 export interface RecepMascotaCatalogOption {
   id: string
@@ -22,6 +23,9 @@ interface RecepMascotaModalProps {
   speciesList: RecepMascotaCatalogOption[]
   racesList: RecepMascotaCatalogOption[]
   duenosList: RecepMascotaOwnerOption[]
+  // Presente = modo edición (precarga datos, oculta el selector de dueño,
+  // que no se reasigna desde aquí -- igual que en Veterinario/SuperAdmin).
+  editingPet?: RecepMascotaRawFields | null
   onClose: () => void
   onSave: (data: RecepMascotaFormData) => Promise<void> | void
 }
@@ -32,9 +36,11 @@ export function RecepMascotaModal({
   speciesList,
   racesList,
   duenosList,
+  editingPet = null,
   onClose,
   onSave,
 }: RecepMascotaModalProps) {
+  const isEditMode = Boolean(editingPet)
   const [name, setName] = useState('')
   const [speciesId, setSpeciesId] = useState('')
   const [raceId, setRaceId] = useState('')
@@ -66,6 +72,20 @@ export function RecepMascotaModal({
 
   useEffect(() => {
     if (!isOpen) return
+
+    if (editingPet) {
+      setName(editingPet.name || '')
+      setSpeciesId(editingPet.speciesId || speciesList[0]?.id || '')
+      setRaceId(editingPet.raceId || racesList[0]?.id || '')
+      setAge(typeof editingPet.age === 'number' ? editingPet.age : 1)
+      setGender(mapRecepApiGenderToUi(editingPet.gender))
+      setWeight(typeof editingPet.weight === 'number' ? editingPet.weight : 5)
+      setClientId('')
+      setObservations(editingPet.observations || '')
+      setError(null)
+      return
+    }
+
     const initialSpeciesId = speciesList[0]?.id || ''
     const initialRaces = initialSpeciesId
       ? racesList.filter((r) => r.speciesId && r.speciesId.toLowerCase() === initialSpeciesId.toLowerCase())
@@ -81,7 +101,7 @@ export function RecepMascotaModal({
     setClientId(duenosList[0]?.id || '')
     setObservations('')
     setError(null)
-  }, [isOpen, speciesList, racesList, duenosList])
+  }, [isOpen, editingPet, speciesList, racesList, duenosList])
 
   // Ajustar raza si la especie cambia y la raza actual no pertenece a esa especie
   const handleSpeciesChange = (newSpeciesId: string) => {
@@ -100,7 +120,7 @@ export function RecepMascotaModal({
       setError('Por favor ingresa el nombre de la mascota.')
       return
     }
-    if (!clientId) {
+    if (!isEditMode && !clientId) {
       setError('Debes seleccionar un dueño para la mascota.')
       return
     }
@@ -163,10 +183,12 @@ export function RecepMascotaModal({
             </span>
             <div>
               <h2 className="text-base sm:text-lg font-extrabold text-brand tracking-tight">
-                Registrar Nueva Mascota
+                {isEditMode ? `Editar Mascota: ${editingPet?.name || ''}` : 'Registrar Nueva Mascota'}
               </h2>
               <p className="text-xs text-sage font-medium">
-                Ingresa los datos para registrar el paciente y asociarlo a su dueño
+                {isEditMode
+                  ? 'Modifica los datos del paciente'
+                  : 'Ingresa los datos para registrar el paciente y asociarlo a su dueño'}
               </p>
             </div>
           </div>
@@ -193,23 +215,25 @@ export function RecepMascotaModal({
             </div>
           )}
 
-          {/* Dueño / Propietario */}
-          <div>
-            <label className="block text-xs font-bold text-charcoal mb-1.5" id="mascota-clientId-label">
-              Dueño / Propietario <span className="text-brand">*</span>
-            </label>
-            <ProfessionalCombobox
-              id="mascota-clientId"
-              value={clientId}
-              onChange={setClientId}
-              options={duenoOptions}
-              hasAllOption={false}
-              disabled={isLoading || duenosList.length === 0}
-              placeholder={duenosList.length === 0 ? 'No hay dueños disponibles' : 'Seleccionar dueño...'}
-              searchPlaceholder="Buscar por nombre o documento..."
-              className="w-full bg-white"
-            />
-          </div>
+          {/* Dueño / Propietario -- no se reasigna al editar (igual que Veterinario/SuperAdmin) */}
+          {!isEditMode && (
+            <div>
+              <label className="block text-xs font-bold text-charcoal mb-1.5" id="mascota-clientId-label">
+                Dueño / Propietario <span className="text-brand">*</span>
+              </label>
+              <ProfessionalCombobox
+                id="mascota-clientId"
+                value={clientId}
+                onChange={setClientId}
+                options={duenoOptions}
+                hasAllOption={false}
+                disabled={isLoading || duenosList.length === 0}
+                placeholder={duenosList.length === 0 ? 'No hay dueños disponibles' : 'Seleccionar dueño...'}
+                searchPlaceholder="Buscar por nombre o documento..."
+                className="w-full bg-white"
+              />
+            </div>
+          )}
 
           {/* Nombre de la Mascota */}
           <div>
@@ -368,7 +392,7 @@ export function RecepMascotaModal({
             {isLoading && (
               <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             )}
-            <span>Registrar Mascota</span>
+            <span>{isEditMode ? 'Guardar Cambios' : 'Registrar Mascota'}</span>
           </button>
         </div>
       </div>

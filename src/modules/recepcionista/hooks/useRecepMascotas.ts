@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import type { RecepMascotaDetail, RecepMascotaFormData, RecepMascotasDirectoryPayload } from '../types'
+import type {
+  RecepMascotaDetail,
+  RecepMascotaFormData,
+  RecepMascotaRawFields,
+  RecepMascotasDirectoryPayload,
+} from '../types'
 import {
   fetchRecepMascotasDirectory,
   createRecepPetWithClient,
+  updateRecepPet,
   fetchRecepMascotaFormCatalogs,
 } from '../services'
 import type { RecepMascotaCatalogOption, RecepMascotaOwnerOption } from '../components/RecepMascotaModal'
+import { mapRecepUiGenderToApi } from '../utils/recepPetMapping'
 
 const ITEMS_PER_PAGE = 8
 
@@ -19,12 +26,13 @@ export function useRecepMascotas(enabled: boolean) {
   const [notice, setNotice] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Estado del modal de nueva mascota y sus catálogos
+  // Estado del modal de nueva/editar mascota y sus catálogos
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(false)
   const [speciesList, setSpeciesList] = useState<RecepMascotaCatalogOption[]>([])
   const [racesList, setRacesList] = useState<RecepMascotaCatalogOption[]>([])
   const [duenosList, setDuenosList] = useState<RecepMascotaOwnerOption[]>([])
+  const [editingPet, setEditingPet] = useState<RecepMascotaRawFields | null>(null)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -93,8 +101,7 @@ export function useRecepMascotas(enabled: boolean) {
   const handleCloseDetail = () => setSelectedId(null)
   const handleOpenFilters = () => showNotice('Usa el buscador para filtrar rápidamente por nombre, dueño, raza o especie.')
 
-  const openCreatePet = async () => {
-    setIsModalOpen(true)
+  const loadFormCatalogs = async () => {
     setIsLoadingCatalogs(true)
     try {
       const catalogs = await fetchRecepMascotaFormCatalogs()
@@ -102,25 +109,58 @@ export function useRecepMascotas(enabled: boolean) {
       setRacesList(catalogs.races.map((r) => ({ id: r.id, name: r.name, speciesId: r.speciesId })))
       setDuenosList(catalogs.duenos)
     } catch (err) {
-      console.error('Error cargando catálogos para nueva mascota:', err)
+      console.error('Error cargando catálogos del formulario de mascota:', err)
     } finally {
       setIsLoadingCatalogs(false)
     }
   }
 
+  const openCreatePet = async () => {
+    setEditingPet(null)
+    setIsModalOpen(true)
+    await loadFormCatalogs()
+  }
+
+  const openEditPet = async (petId: string) => {
+    const raw = directory?.rawById[petId]
+    if (!raw) {
+      showNotice('No se encontró la mascota a editar.')
+      return
+    }
+    setEditingPet(raw)
+    setIsModalOpen(true)
+    await loadFormCatalogs()
+  }
+
   const closeModal = () => {
     setIsModalOpen(false)
+    setEditingPet(null)
   }
 
   const handleSavePet = async (data: RecepMascotaFormData) => {
     setIsSubmitting(true)
     try {
-      const result = await createRecepPetWithClient(data)
-      showNotice(`Mascota "${data.name}" registrada con éxito`)
-      if (result.id) {
-        setSelectedId(result.id)
+      if (editingPet) {
+        await updateRecepPet(editingPet.id, {
+          name: data.name,
+          speciesId: data.speciesId,
+          raceId: data.raceId,
+          age: data.age,
+          gender: mapRecepUiGenderToApi(data.gender),
+          weight: data.weight,
+          observations: data.observations,
+          photoUrl: null,
+        })
+        showNotice(`Mascota "${data.name}" actualizada con éxito`)
+      } else {
+        const result = await createRecepPetWithClient(data)
+        showNotice(`Mascota "${data.name}" registrada con éxito`)
+        if (result.id) {
+          setSelectedId(result.id)
+        }
       }
       setIsModalOpen(false)
+      setEditingPet(null)
       await loadDirectory()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar la mascota'
@@ -156,6 +196,7 @@ export function useRecepMascotas(enabled: boolean) {
     speciesList,
     racesList,
     duenosList,
+    editingPet,
     error,
     notice,
     reloadDirectory: loadDirectory,
@@ -164,6 +205,7 @@ export function useRecepMascotas(enabled: boolean) {
     handleOpenFilters,
     handleNewPet: openCreatePet,
     openCreatePet,
+    openEditPet,
     closeModal,
     handleSavePet,
     handlePrevPage,
