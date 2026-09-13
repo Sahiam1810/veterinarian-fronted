@@ -12,13 +12,11 @@ import type {
   ApiRaceResponse,
   ApiStatusAppointmentResponse,
 } from '../types'
-import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
 import {
   fetchAppointments,
   fetchPets,
   fetchClientsPets,
   fetchClients,
-  fetchUsers,
   fetchSpecies,
   fetchRaces,
   fetchServices,
@@ -60,7 +58,6 @@ export function useAuxDashboard() {
   const [rawAppointments, setRawAppointments] = useState<ApiAppointmentResponse[]>([])
   const [rawPets, setRawPets] = useState<ApiPetResponse[]>([])
   const [rawClients, setRawClients] = useState<ApiClientResponse[]>([])
-  const [rawUsers, setRawUsers] = useState<ApiUserResponse[]>([])
   const [rawSpecies, setRawSpecies] = useState<ApiSpeciesResponse[]>([])
   const [rawRaces, setRawRaces] = useState<ApiRaceResponse[]>([])
   const [rawServices, setRawServices] = useState<ApiServiceResponse[]>([])
@@ -85,7 +82,6 @@ export function useAuxDashboard() {
         petsRes,
         cpRes,
         clientsRes,
-        usersRes,
         speciesRes,
         racesRes,
         servicesRes,
@@ -96,7 +92,6 @@ export function useAuxDashboard() {
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
-        fetchUsers(),
         fetchSpecies(),
         fetchRaces(),
         fetchServices(),
@@ -108,7 +103,6 @@ export function useAuxDashboard() {
       const fetchedPets = petsRes.status === 'fulfilled' ? petsRes.value : []
       const fetchedCP = cpRes.status === 'fulfilled' ? cpRes.value : []
       const fetchedClients = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-      const fetchedUsers = usersRes.status === 'fulfilled' ? usersRes.value : []
       const fetchedSpecies = speciesRes.status === 'fulfilled' ? speciesRes.value : []
       const fetchedRaces = racesRes.status === 'fulfilled' ? racesRes.value : []
       const fetchedServices = servicesRes.status === 'fulfilled' ? servicesRes.value : []
@@ -118,7 +112,6 @@ export function useAuxDashboard() {
       setRawAppointments(fetchedApts)
       setRawPets(fetchedPets)
       setRawClients(fetchedClients)
-      setRawUsers(fetchedUsers)
       setRawSpecies(fetchedSpecies)
       setRawRaces(fetchedRaces)
       setRawServices(fetchedServices)
@@ -129,7 +122,6 @@ export function useAuxDashboard() {
       const petsMap = new Map(fetchedPets.map((p) => [p.id.toLowerCase(), p]))
       const cpMap = new Map(fetchedCP.map((cp) => [cp.id.toLowerCase(), cp]))
       const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
-      const usersMap = new Map(fetchedUsers.map((u) => [u.id.toLowerCase(), u]))
       const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const servicesMap = new Map(fetchedServices.map((s) => [s.id.toLowerCase(), s.name]))
@@ -145,7 +137,6 @@ export function useAuxDashboard() {
         const cp = cpMap.get(apt.clientPetId?.toLowerCase())
         const pet = cp ? petsMap.get(cp.petId.toLowerCase()) : undefined
         const client = cp ? clientsMap.get(cp.clientId.toLowerCase()) : undefined
-        const ownerUser = client ? usersMap.get(client.userId.toLowerCase()) : undefined
 
         const petName = pet?.name || 'Paciente'
         const speciesName = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Mascota' : 'Mascota'
@@ -169,7 +160,7 @@ export function useAuxDashboard() {
           service: serviceName,
           professional: vetName,
           status,
-          ownerName: ownerUser?.fullName || 'Propietario',
+          ownerName: client?.fullName || 'Propietario',
           notes: apt.notes || undefined,
           statusId: apt.statusId,
           clientPetId: apt.clientPetId,
@@ -212,7 +203,6 @@ export function useAuxDashboard() {
     rawVets,
     rawServices,
     rawClients,
-    rawUsers,
     rawSpecies,
     rawRaces,
     rawStatuses,
