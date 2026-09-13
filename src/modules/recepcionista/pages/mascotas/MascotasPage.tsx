@@ -33,7 +33,6 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     handleSavePet,
     handlePrevPage,
     handleNextPage,
-    handleViewClinicalHistory,
   } = useRecepMascotas(true)
 
   useEffect(() => {
@@ -76,7 +75,6 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onNewPet={handleNewPet}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
-        onViewClinicalHistory={handleViewClinicalHistory}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
       />
