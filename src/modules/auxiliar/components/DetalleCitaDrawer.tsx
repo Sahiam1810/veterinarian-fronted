@@ -6,14 +6,12 @@ export interface DetalleCitaDrawerProps {
   isOpen: boolean
   appointment: AuxDayAppointment | null
   onClose: () => void
-  onPrepare?: (appointment: AuxDayAppointment) => void
 }
 
 export function DetalleCitaDrawer({
   isOpen,
   appointment,
   onClose,
-  onPrepare,
 }: DetalleCitaDrawerProps) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
@@ -45,7 +43,6 @@ export function DetalleCitaDrawer({
   if (!isRendered && !isOpen) return null
   if (!appointment) return null
 
-  const isPretriajeDone = appointment.pretriajeStatus === 'Realizado'
   const avatarBg =
     appointment.avatarColor === 'peach'
       ? 'bg-[#f09a82] text-white'
@@ -156,34 +153,6 @@ export function DetalleCitaDrawer({
             </div>
           </div>
 
-          {/* Estado de Pre-triaje */}
-          <div className="space-y-3 pt-1">
-            <h4 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
-              Estado de Pre-triaje
-            </h4>
-
-            <div className="bg-bone/40 p-3.5 rounded-2xl border border-border-tan/60 flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-sage block uppercase tracking-wider mb-0.5">
-                  Preparación Clínica
-                </span>
-                <span className="text-xs text-charcoal font-medium">
-                  {isPretriajeDone ? 'Signos vitales registrados en historia clínica' : 'Pendiente de toma de signos vitales'}
-                </span>
-              </div>
-
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  isPretriajeDone
-                    ? 'bg-[#d1fae5] text-[#065f46] border border-[#a7f3d0]'
-                    : 'bg-[#fef0e6] text-[#b45309] border border-[#fed7aa]'
-                }`}
-              >
-                {isPretriajeDone ? 'Realizado' : 'Pendiente'}
-              </span>
-            </div>
-          </div>
-
           {/* Datos del Dueño */}
           <div className="space-y-3 pt-1">
             <h4 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
@@ -226,21 +195,6 @@ export function DetalleCitaDrawer({
           >
             Cerrar
           </button>
-
-          {onPrepare && (
-            <button
-              type="button"
-              onClick={() => {
-                handleClose()
-                setTimeout(() => {
-                  onPrepare(appointment)
-                }, 240)
-              }}
-              className="px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#854d38] hover:bg-[#703d2a] active:scale-98 text-white transition shadow-xs cursor-pointer"
-            >
-              {isPretriajeDone ? 'Actualizar Pre-triaje' : 'Realizar Pre-triaje'}
-            </button>
-          )}
         </div>
       </div>
     </div>

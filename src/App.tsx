@@ -25,14 +25,13 @@ import {
 import { useAdminShellAccess, useNotificationsSuperAdmin } from '@/modules/superadmin/hooks'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
-import { InicioAux, AgendaAux, MascotasAux, PreparacionAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
+import { InicioAux, AgendaAux, MascotasAux, PerfilAux, AuxSidebar, ViewPopup } from '@/modules/auxiliar'
 import { fetchAuxNavPermissions } from '@/modules/auxiliar/services'
 import { PageToast } from '@/global/components'
 
 const AUX_GATED_ROUTES: Record<string, NavPermissionKey> = {
   agenda: 'aux.agenda',
   mascotas: 'aux.mascotas',
-  preparacion: 'aux.preparacion',
 }
 
 const ROUTE_TO_MODULE: Record<string, ModuleId> = {
@@ -465,14 +464,6 @@ function AuxApp({
             </ViewPopup>
           )}
 
-          {currentRoute === 'preparacion' && (
-            <ViewPopup animationKey="preparacion" className="w-full">
-              <PreparacionAux
-                onNotice={showToast}
-              />
-            </ViewPopup>
-          )}
-
           {currentRoute === 'perfil' && (
             <ViewPopup animationKey="perfil" className="w-full">
               <PerfilAux
@@ -483,7 +474,7 @@ function AuxApp({
             </ViewPopup>
           )}
 
-          {currentRoute !== 'inicio' && currentRoute !== 'agenda' && currentRoute !== 'mascotas' && currentRoute !== 'preparacion' && currentRoute !== 'perfil' && (
+          {currentRoute !== 'inicio' && currentRoute !== 'agenda' && currentRoute !== 'mascotas' && currentRoute !== 'perfil' && (
             <ViewPopup animationKey={currentRoute} className="w-full">
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-8 bg-white rounded-3xl border border-border-tan shadow-sm">
                 <div className="w-16 h-16 rounded-2xl bg-terracotta-soft text-terracotta flex items-center justify-center mb-4">

@@ -1,85 +1,20 @@
-import { useState, useMemo, type FormEvent } from 'react'
-import { createPortal } from 'react-dom'
-import { ViewPopup, CustomSelect } from '../../components'
+import { useState, useMemo } from 'react'
+import { ViewPopup } from '../../components'
 import { useAuxMascotas } from '../../hooks'
 
 export interface MascotasAuxProps {
   onNotice?: (msg: string) => void
 }
 
-export function MascotasAux({ onNotice }: MascotasAuxProps) {
+export function MascotasAux(_props: MascotasAuxProps) {
   const {
     mascotas,
     selectedPet,
     selectedPetId,
     setSelectedPetId,
-    speciesList,
-    racesList,
-    clientsList,
-    addPet,
   } = useAuxMascotas()
 
   const [activeTab, setActiveTab] = useState<'Todos' | 'Perros' | 'Gatos' | 'Exóticos'>('Todos')
-  
-  // Slide Drawer Estado
-  const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false)
-  const [mascotaFormError, setMascotaFormError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Form states for new Pet
-  const [newName, setNewName] = useState('')
-  const [newSpecie, setNewSpecie] = useState('Canino')
-  const [newBreed, setNewBreed] = useState('Mestizo')
-  const [newAge, setNewAge] = useState('')
-  const [newGender, setNewGender] = useState('Hembra')
-  const [newWeight, setNewWeight] = useState('')
-  const [newClientId, setNewClientId] = useState('')
-  const [newPhone, setNewPhone] = useState('')
-  const [newSterilized, setNewSterilized] = useState<'Sí' | 'No'>('No')
-
-  const speciesOptions = useMemo(() => {
-    if (speciesList.length > 0) return speciesList.map((s) => s.name)
-    return ['Canino', 'Felino', 'Exótico', 'Otro']
-  }, [speciesList])
-
-  const racesOptions = useMemo(() => {
-    const selectedSpecieObj = speciesList.find(
-      (s) =>
-        s.name.toLowerCase() === newSpecie.toLowerCase() ||
-        s.name.toLowerCase().includes(newSpecie.toLowerCase()) ||
-        newSpecie.toLowerCase().includes(s.name.toLowerCase())
-    )
-    if (selectedSpecieObj) {
-      const filtered = racesList.filter(
-        (r) => (r.speciesId ?? '').toLowerCase() === selectedSpecieObj.id.toLowerCase()
-      )
-      if (filtered.length > 0) {
-        return filtered.map((r) => r.name)
-      }
-    }
-    if (racesList.length > 0) return racesList.map((r) => r.name)
-    return ['Golden Retriever', 'Siamés', 'Bulldog Francés', 'Persa', 'Mestizo', 'Poodle']
-  }, [speciesList, racesList, newSpecie])
-
-  const handleSpecieChange = (specie: string) => {
-    setNewSpecie(specie)
-    const selectedSpecieObj = speciesList.find(
-      (s) =>
-        s.name.toLowerCase() === specie.toLowerCase() ||
-        s.name.toLowerCase().includes(specie.toLowerCase()) ||
-        specie.toLowerCase().includes(s.name.toLowerCase())
-    )
-    if (selectedSpecieObj) {
-      const filtered = racesList.filter(
-        (r) => (r.speciesId ?? '').toLowerCase() === selectedSpecieObj.id.toLowerCase()
-      )
-      if (filtered.length > 0) {
-        setNewBreed(filtered[0].name)
-        return
-      }
-    }
-    setNewBreed('Mestizo')
-  }
 
   const filteredMascotas = useMemo(() => {
     return mascotas.filter((p) => {
@@ -91,75 +26,14 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
     })
   }, [mascotas, activeTab])
 
-  // Auto-fill phone when client changes
-  const handleClientChange = (clientId: string) => {
-    setNewClientId(clientId)
-    const client = clientsList.find((c) => c.id === clientId)
-    if (client?.phoneNumber) {
-      setNewPhone(client.phoneNumber)
-    } else {
-      setNewPhone('')
-    }
-  }
-
-  const handleAddPet = async (e: FormEvent) => {
-    e.preventDefault()
-    setMascotaFormError(null)
-    if (!newName.trim() || !newClientId.trim()) return
-
-    setIsSubmitting(true)
-    const result = await addPet({
-      name: newName.trim(),
-      specie: newSpecie,
-      breed: newBreed.trim() || 'Mestizo',
-      age: newAge.trim() || '1 Año',
-      gender: newGender,
-      weight: newWeight.trim() || '5.0',
-      clientId: newClientId.trim(),
-      ownerPhone: newPhone.trim(),
-      sterilized: newSterilized,
-    })
-    setIsSubmitting(false)
-
-    if (!result.success) {
-      setMascotaFormError(result.error ?? 'Error al registrar la mascota.')
-      return
-    }
-
-    setIsAddDrawerOpen(false)
-    setMascotaFormError(null)
-    onNotice?.(`¡Mascota ${newName} registrada con éxito!`)
-
-    // Reset Form
-    setNewName('')
-    setNewSpecie('Canino')
-    setNewBreed('Mestizo')
-    setNewAge('')
-    setNewGender('Hembra')
-    setNewWeight('')
-    setNewClientId('')
-    setNewPhone('')
-    setNewSterilized('No')
-  }
-
-
   return (
     <div className="w-full flex flex-col lg:flex-row gap-5 sm:gap-6 min-w-0">
-      
+
       {/* Columna Izquierda: Tabla y filtros */}
       <div className="flex-1 flex flex-col gap-4 min-w-0">
-        
+
         {/* Barra superior de herramientas */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <button
-            type="button"
-            onClick={() => { setIsAddDrawerOpen(true); setMascotaFormError(null) }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover active:scale-98 transition shadow-xs cursor-pointer"
-          >
-            <span className="text-base font-bold leading-none">+</span>
-            <span>Nueva Mascota</span>
-          </button>
-
           {/* Filtros rápidos / Pestañas */}
           <div className="flex items-center gap-1 bg-bone/70 p-1 rounded-xl border border-border-tan/70">
             {(['Todos', 'Perros', 'Gatos', 'Exóticos'] as const).map((tab) => (
@@ -292,7 +166,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
       {selectedPet && (
         <div className="w-full lg:w-[360px] xl:w-[400px] shrink-0">
           <div className="bg-white rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] p-5 sm:p-6 flex flex-col gap-6 sticky top-6">
-            
+
             {/* Header / Avatar */}
             <div className="flex flex-col items-center text-center gap-3">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-bone shadow-md bg-bone flex items-center justify-center text-brand text-3xl font-extrabold">
@@ -311,7 +185,7 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
                 <h2 className="text-xl sm:text-2xl font-black text-brand">
                   {selectedPet.name}
                 </h2>
-                
+
                 <div className="flex items-center justify-center gap-1.5 mt-1">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-bone text-sage">
                     {selectedPet.specie}
@@ -370,7 +244,6 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
               )}
             </div>
 
-
             {/* Cita Actual */}
             {selectedPet.citaActual && (
               <div className="flex flex-col gap-2 border-t border-border-tan/50 pt-4">
@@ -396,203 +269,6 @@ export function MascotasAux({ onNotice }: MascotasAuxProps) {
           </div>
         </div>
       )}
-
-      {/* Slide-over Drawer: Registrar Nueva Mascota */}
-      {isAddDrawerOpen &&
-        typeof document !== 'undefined' &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 bg-charcoal/40 backdrop-blur-xs flex justify-end animate-fade-in"
-            onClick={() => setIsAddDrawerOpen(false)}
-          >
-            <div
-              className="w-full sm:w-[460px] lg:w-[500px] bg-white h-full shadow-2xl border-l border-border-tan flex flex-col justify-between overflow-hidden relative drawer-slide-in"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border-tan/70 bg-white">
-                <div className="flex flex-col">
-                  <h2 className="text-xl sm:text-2xl font-bold text-brand tracking-tight">
-                    Registrar Mascota
-                  </h2>
-                  <p className="text-xs text-sage mt-0.5 font-medium">
-                    Ingresa los datos para control veterinario e historial clínico
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddDrawerOpen(false)}
-                  className="text-charcoal/70 hover:text-charcoal p-1.5 rounded-lg hover:bg-bone transition cursor-pointer"
-                >
-                  <span className="text-xl font-medium">✕</span>
-                </button>
-              </div>
-
-              {/* Form Body */}
-              <form
-                id="nueva-mascota-form"
-                onSubmit={handleAddPet}
-                className="flex-1 overflow-y-auto p-6 sm:p-7 space-y-5"
-              >
-                {mascotaFormError && (
-                  <div className="p-3.5 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200 flex items-start gap-2">
-                    <svg className="w-4 h-4 mt-0.5 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{mascotaFormError}</span>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                    Nombre de la Mascota <span className="text-terracotta">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Ej. Bruno, Kira..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <CustomSelect
-                      label="Especie"
-                      required
-                      value={newSpecie}
-                      onChange={handleSpecieChange}
-                      options={speciesOptions}
-                    />
-                  </div>
-
-                  <div>
-                    <CustomSelect
-                      label="Raza"
-                      required
-                      value={newBreed}
-                      onChange={setNewBreed}
-                      options={racesOptions}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Edad
-                    </label>
-                    <input
-                      type="text"
-                      value={newAge}
-                      onChange={(e) => setNewAge(e.target.value)}
-                      placeholder="Ej. 2 Años, 6 Meses..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Peso (kg)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={newWeight}
-                      onChange={(e) => setNewWeight(e.target.value)}
-                      placeholder="Ej. 14.3"
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <CustomSelect
-                      label="Sexo"
-                      required
-                      value={newGender}
-                      onChange={setNewGender}
-                      options={['Hembra', 'Macho']}
-                    />
-                  </div>
-
-                  <div>
-                    <CustomSelect
-                      label="Esterilizado"
-                      required
-                      value={newSterilized}
-                      onChange={(val) => setNewSterilized(val as 'Sí' | 'No')}
-                      options={['Sí', 'No']}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3.5 pt-2">
-                  <h3 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
-                    Información del Propietario
-                  </h3>
-
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Propietario <span className="text-terracotta">*</span>
-                    </label>
-                    <select
-                      required
-                      value={newClientId}
-                      onChange={(e) => handleClientChange(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                    >
-                      <option value="">Seleccionar propietario...</option>
-                      {clientsList.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.fullName ? `${client.fullName} (${client.identificationNumber || 'N/A'})` : 
-                           client.identificationNumber ? `Cliente ${client.identificationNumber}` : 
-                           `Cliente ${client.id.slice(0, 8)}`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-charcoal mb-1.5">
-                      Teléfono
-                      {newPhone && <span className="ml-1.5 text-[10px] font-normal text-brand bg-brand/10 px-1.5 py-0.5 rounded-md">Auto-completado</span>}
-                    </label>
-                    <input
-                      type="tel"
-                      value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
-                      placeholder="Ej. +57 320 000 0000"
-                      className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                    />
-                  </div>
-                </div>
-              </form>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end gap-3 sm:gap-4 px-6 py-4 border-t border-border-tan/70 bg-white">
-                <button
-                  type="button"
-                  onClick={() => setIsAddDrawerOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-charcoal/80 hover:text-charcoal hover:bg-bone transition cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  form="nueva-mascota-form"
-                  disabled={isSubmitting}
-                  className="px-5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-brand hover:bg-brand-hover text-white transition shadow-xs cursor-pointer active:translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? 'Registrando...' : 'Registrar Mascota'}
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
     </div>
   )
 }

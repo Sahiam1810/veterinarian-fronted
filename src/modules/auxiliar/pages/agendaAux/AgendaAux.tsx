@@ -3,8 +3,6 @@ import type { AuxDayAppointment } from '../../types'
 import { useAuxAgenda, type AgendaAppointmentItem } from '../../hooks'
 import {
   ViewPopup,
-  NuevaCitaDrawer,
-  PrepararCitaDrawer,
   DetalleCitaDrawer,
   CustomSelect,
 } from '../../components'
@@ -12,7 +10,6 @@ import {
 export interface AgendaAuxProps {
   userName?: string
   onNotice?: (message: string) => void
-  onNewAppointment?: () => void
 }
 
 interface DayColumn {
@@ -87,21 +84,17 @@ function getDynamicWeeks(): { weekLabel: string; days: DayColumn[] }[] {
 
 const WEEKS_DATA = getDynamicWeeks()
 
-export function AgendaAux({ onNotice }: AgendaAuxProps) {
+export function AgendaAux(_props: AgendaAuxProps) {
   const [weekIndex, setWeekIndex] = useState(0)
   const {
     appointments: filteredAppointments,
     professionals,
     selectedProfessional,
     setSelectedProfessional,
-    showToast,
-    loadData,
   } = useAuxAgenda()
 
-  // Modales / Drawers
+  // Detalle de cita (solo lectura)
   const [selectedAppointment, setSelectedAppointment] = useState<AuxDayAppointment | null>(null)
-  const [prepAppointment, setPrepAppointment] = useState<AuxDayAppointment | null>(null)
-  const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false)
 
   const currentWeek = WEEKS_DATA[weekIndex] || WEEKS_DATA[0]
 
@@ -130,34 +123,11 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
       service: apt.service,
       professional: apt.professional,
       status: mappedStatus,
-      pretriajeStatus: apt.pretriajeStatus,
       ownerName: apt.ownerName,
       notes: apt.notes,
     }
     setSelectedAppointment(auxApt)
   }
-
-  const handlePrepareFromDetail = (auxApt: AuxDayAppointment) => {
-    setSelectedAppointment(null)
-    setPrepAppointment(auxApt)
-  }
-
-  const handleSavePreparation = async (
-    _appointmentId: string,
-    _data: { weight: string; temp: string; notes?: string }
-  ) => {
-    setPrepAppointment(null)
-    showToast('¡Pre-triaje registrado exitosamente en historia clínica!')
-    onNotice?.('¡Pre-triaje registrado exitosamente en historia clínica!')
-    await loadData()
-  }
-
-  const handleSaveNewAppointment = async (_newApt: AuxDayAppointment) => {
-    showToast('¡Cita registrada correctamente en el sistema!')
-    onNotice?.('¡Cita registrada correctamente en el sistema!')
-    await loadData()
-  }
-
 
   return (
     <div className="w-full flex flex-col gap-5 sm:gap-6 min-w-0">
@@ -169,7 +139,7 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
               Agenda Semanal
             </h1>
             <p className="text-xs sm:text-sm text-sage font-medium mt-0.5">
-              Revisa las próximas citas para el pre-triaje y atención de pacientes.
+              Revisa las próximas citas para preparar la atención de pacientes.
             </p>
           </div>
 
@@ -215,16 +185,6 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                 </svg>
               </button>
             </div>
-
-            {/* Botón Nueva Cita */}
-            <button
-              type="button"
-              onClick={() => setIsNewAppointmentOpen(true)}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-semibold hover:bg-brand-hover active:scale-98 transition shadow-xs cursor-pointer"
-            >
-              <span className="text-base font-bold leading-none">+</span>
-              <span>Nueva Cita</span>
-            </button>
           </div>
         </header>
       </ViewPopup>
@@ -296,7 +256,6 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                     const isAtendido = apt.status === 'Atendido'
                     const isCancelado = apt.status === 'Cancelado'
                     const isNoAsistio = apt.status === 'No asistió'
-                    const isPretriajeDone = apt.pretriajeStatus === 'Realizado'
 
                     // Estilo de la píldora de estado oficial
                     let statusBadgeClass = 'bg-[#eef2f6] text-slate-700'
@@ -346,22 +305,12 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
                           </span>
                         </div>
 
-                        {/* Badge de Pre-triaje + Servicio Clínico */}
-                        <div className="mt-1 pt-1.5 border-t border-border-tan/50 flex items-center justify-between gap-1.5 text-[11px]">
+                        {/* Servicio Clínico */}
+                        <div className="mt-1 pt-1.5 border-t border-border-tan/50 flex items-center gap-1.5 text-[11px]">
                           <div className="flex items-center gap-1.5 font-semibold text-brand/90 bg-[#f9f8f6] px-2 py-0.5 rounded-lg truncate min-w-0">
                             <ServiceTagIcon serviceName={apt.service} className="w-3.5 h-3.5 shrink-0 text-brand" />
                             <span className="truncate">{apt.service}</span>
                           </div>
-
-                          <span
-                            className={`px-1.5 py-0.5 rounded-md text-[9px] font-bold shrink-0 ${
-                              isPretriajeDone
-                                ? 'bg-[#d1fae5] text-[#065f46]'
-                                : 'bg-[#fef0e6] text-[#b45309]'
-                            }`}
-                          >
-                            {isPretriajeDone ? 'Triaje ✓' : 'Triaje...'}
-                          </span>
                         </div>
                       </div>
                     )
@@ -382,25 +331,11 @@ export function AgendaAux({ onNotice }: AgendaAuxProps) {
         </div>
       </ViewPopup>
 
-      {/* 3. Drawers integrados para acciones */}
+      {/* 3. Detalle de cita (solo lectura) */}
       <DetalleCitaDrawer
         isOpen={Boolean(selectedAppointment)}
         appointment={selectedAppointment}
         onClose={() => setSelectedAppointment(null)}
-        onPrepare={handlePrepareFromDetail}
-      />
-
-      <PrepararCitaDrawer
-        isOpen={Boolean(prepAppointment)}
-        appointment={prepAppointment}
-        onClose={() => setPrepAppointment(null)}
-        onSave={handleSavePreparation}
-      />
-
-      <NuevaCitaDrawer
-        isOpen={isNewAppointmentOpen}
-        onClose={() => setIsNewAppointmentOpen(false)}
-        onSave={handleSaveNewAppointment}
       />
     </div>
   )
