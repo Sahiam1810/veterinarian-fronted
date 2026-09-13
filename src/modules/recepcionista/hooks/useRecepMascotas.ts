@@ -139,10 +139,6 @@ export function useRecepMascotas(enabled: boolean) {
     if (currentPage < totalPages) setCurrentPage((prev) => prev + 1)
   }
 
-  const handleViewClinicalHistory = () => {
-    showNotice('La historia clínica detallada se gestiona desde el módulo veterinario.')
-  }
-
   return {
     directory,
     filteredItems: paginatedItems,
@@ -172,7 +168,6 @@ export function useRecepMascotas(enabled: boolean) {
     handleSavePet,
     handlePrevPage,
     handleNextPage,
-    handleViewClinicalHistory,
   }
 }
 

@@ -16,7 +16,6 @@ interface RecepMascotasViewProps {
   onNewPet?: () => void
   onSelect: (petId: string) => void
   onCloseDetail: () => void
-  onViewClinicalHistory?: () => void
   onPrevPage?: () => void
   onNextPage?: () => void
 }
@@ -56,7 +55,6 @@ export function RecepMascotasView({
   onNewPet,
   onSelect,
   onCloseDetail,
-  onViewClinicalHistory,
   onPrevPage,
   onNextPage,
 }: RecepMascotasViewProps) {
@@ -89,10 +87,11 @@ export function RecepMascotasView({
         </div>
       </ViewPopup>
 
+      {/* Recepcionista no gestiona historia clínica: sin onViewHistoria, el botón
+          no se renderiza (MascotaFichaModal lo condiciona a que exista el handler). */}
       <MascotaFichaModal
         item={selectedDetail ? toFichaItem(selectedDetail) : null}
         onClose={onCloseDetail}
-        onViewHistoria={onViewClinicalHistory}
       />
     </>
   )
