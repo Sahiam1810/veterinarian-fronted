@@ -5,11 +5,13 @@ import type {
   RecepAgendaFormState,
   RecepAgendaOwnerOption,
   RecepAgendaPetOption,
+  RecepAgendaTimeSlot,
 } from '../types'
 import { canMarkRecepNoAsistio } from '../types'
 import {
   fetchRecepAgendaCatalog,
   fetchRecepDayAppointments,
+  fetchRecepAvailableTimeSlots,
   createRecepAppointment,
   markRecepAppointmentNoAsistio,
 } from '../services'
@@ -25,7 +27,7 @@ const EMPTY_FORM: RecepAgendaFormState = {
   serviceId: '',
   professionalId: '',
   dateValue: '',
-  timeSlotId: '09:00',
+  timeSlotId: '',
   notes: '',
 }
 
@@ -74,6 +76,8 @@ export function useRecepAgenda(enabled: boolean) {
   const [dayAppointments, setDayAppointments] = useState<RecepAgendaDayAppointment[]>([])
   const [isDayLoading, setIsDayLoading] = useState(false)
   const [dayPanelDate, setDayPanelDate] = useState('')
+  const [timeSlots, setTimeSlots] = useState<RecepAgendaTimeSlot[]>([])
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -126,6 +130,40 @@ export function useRecepAgenda(enabled: boolean) {
     void loadDayAppointments(dayPanelDate)
   }, [enabled, isDayPanelOpen, dayPanelDate, loadDayAppointments])
 
+  // S56: las franjas horarias dependen del veterinario y la fecha elegidos —
+  // se recalculan a partir de su disponibilidad real cada vez que cambian.
+  useEffect(() => {
+    if (!enabled || !form.professionalId || !form.dateValue) {
+      setTimeSlots([])
+      return
+    }
+    let cancelled = false
+    setIsLoadingSlots(true)
+    fetchRecepAvailableTimeSlots(form.professionalId, form.dateValue)
+      .then((slots) => {
+        if (!cancelled) setTimeSlots(slots)
+      })
+      .catch(() => {
+        if (!cancelled) setTimeSlots([])
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingSlots(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, form.professionalId, form.dateValue])
+
+  // Si el horario elegido deja de estar disponible (cambió profesional/fecha
+  // o ya pasó), se limpia en vez de dejar seleccionado un horario inválido.
+  useEffect(() => {
+    if (!form.timeSlotId || isLoadingSlots) return
+    const stillValid = timeSlots.some((slot) => slot.id === form.timeSlotId)
+    if (!stillValid) {
+      setForm((prev) => ({ ...prev, timeSlotId: '' }))
+    }
+  }, [timeSlots, isLoadingSlots, form.timeSlotId])
+
   const matchedOwners = useMemo(() => {
     if (!catalog) return [] as RecepAgendaOwnerOption[]
     const query = form.ownerQuery.trim().toLowerCase()
@@ -167,9 +205,9 @@ export function useRecepAgenda(enabled: boolean) {
   }, [catalog, form.professionalId])
 
   const selectedSlot = useMemo(() => {
-    if (!catalog || !form.timeSlotId) return null
-    return catalog.timeSlots.find((slot) => slot.id === form.timeSlotId) ?? null
-  }, [catalog, form.timeSlotId])
+    if (!form.timeSlotId) return null
+    return timeSlots.find((slot) => slot.id === form.timeSlotId) ?? null
+  }, [timeSlots, form.timeSlotId])
 
   const summaryWhen = formatSummaryDate(
     form.dateValue,
@@ -261,7 +299,6 @@ export function useRecepAgenda(enabled: boolean) {
         serviceId: catalog?.services[0]?.id ?? '',
         professionalId: catalog?.professionals[0]?.id ?? '',
         dateValue: form.dateValue || todayIsoDate(),
-        timeSlotId: '09:00',
       })
 
       if (isDayPanelOpen && dayPanelDate) {
@@ -281,7 +318,6 @@ export function useRecepAgenda(enabled: boolean) {
       serviceId: catalog?.services[0]?.id ?? '',
       professionalId: catalog?.professionals[0]?.id ?? '',
       dateValue: todayIsoDate(),
-      timeSlotId: '09:00',
     })
     showNotice('Formulario limpiado')
   }
@@ -323,8 +359,6 @@ export function useRecepAgenda(enabled: boolean) {
     const professional =
       catalog.professionals.find((item) => item.name === appointment.professionalName) ??
       null
-    const slot =
-      catalog.timeSlots.find((item) => item.id === appointment.time) ?? null
 
     setForm({
       ownerQuery: owner?.name ?? appointment.ownerName,
@@ -333,7 +367,9 @@ export function useRecepAgenda(enabled: boolean) {
       serviceId: service?.id ?? catalog.services[0]?.id ?? '',
       professionalId: professional?.id ?? catalog.professionals[0]?.id ?? '',
       dateValue: dayPanelDate || todayIsoDate(),
-      timeSlotId: slot?.id ?? appointment.time,
+      // Franja de la cita ya agendada: se conserva aunque el listado dinámico
+      // de horarios (S56) aún no haya terminado de cargar para este profesional/fecha.
+      timeSlotId: appointment.time,
       notes: appointment.notes ?? '',
     })
     setIsDayPanelOpen(false)
@@ -368,6 +404,8 @@ export function useRecepAgenda(enabled: boolean) {
     isSubmitting,
     error,
     notice,
+    timeSlots,
+    isLoadingSlots,
     matchedOwners,
     selectedOwner,
     petsForOwner,

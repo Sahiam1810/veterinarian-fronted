@@ -62,7 +62,12 @@ function mockScheduleFetch(calls: Array<{ url: string; method?: string; body?: a
       return Response.json([{ id: 'cp-1', clientId: 'owner-1', petId: 'pet-1' }])
     }
     if (urlStr.includes('/api/Availabilities')) {
-      return Response.json([{ id: 'avail-1' }])
+      // Bloques que cubren viernes (2026-09-11) y lunes (2026-01-05) de 07:00 a 17:00,
+      // suficientes para los horarios 09:00 y 14:30 usados en estos tests.
+      return Response.json([
+        { id: 'avail-viernes', veterinarianId: 'vet-1', dayOfWeek: 5, startTime: '07:00', endTime: '17:00', isActive: true },
+        { id: 'avail-lunes', veterinarianId: 'vet-1', dayOfWeek: 1, startTime: '07:00', endTime: '17:00', isActive: true },
+      ])
     }
     if (urlStr.includes('/api/StatusAppointments')) {
       return Response.json([{ id: 'status-agendada', name: 'Agendada' }])
@@ -96,4 +101,31 @@ test('createRecepAppointment respeta la hora elegida del selector de turnos', as
   const createCall = calls.find((c) => c.url.includes('/api/Appointments') && c.method === 'POST')
   // 14:30 hora Bogotá (UTC-5) == 19:30 UTC
   assert.equal(createCall!.body.scheduledStart, '2026-01-05T19:30:00.000Z')
+})
+
+// S56: el availabilityId enviado debe ser el bloque real que cubre el día/hora
+// elegidos, no el primer registro de /api/Availabilities del sistema.
+test('createRecepAppointment usa el availabilityId del bloque que realmente cubre el horario', async () => {
+  const calls: Array<{ url: string; method?: string; body?: any }> = []
+  mockScheduleFetch(calls)
+
+  await createRecepAppointment(baseForm({ dateValue: '2026-09-11', timeSlotId: '09:00' }))
+
+  const createCall = calls.find((c) => c.url.includes('/api/Appointments') && c.method === 'POST')
+  assert.equal(createCall!.body.availabilityId, 'avail-viernes')
+})
+
+// S56: si el veterinario no tiene disponibilidad configurada para ese día/hora,
+// ya no se debe inventar una disponibilidad ("11111111-...") ni crear la cita.
+test('createRecepAppointment rechaza la cita cuando no hay disponibilidad real para ese día/hora', async () => {
+  const calls: Array<{ url: string; method?: string; body?: any }> = []
+  mockScheduleFetch(calls)
+
+  // 2026-09-12 es sábado: los bloques mockeados solo cubren viernes y lunes.
+  await assert.rejects(
+    () => createRecepAppointment(baseForm({ dateValue: '2026-09-12', timeSlotId: '09:00' })),
+  )
+
+  const createCall = calls.find((c) => c.url.includes('/api/Appointments') && c.method === 'POST')
+  assert.equal(createCall, undefined, 'no debió llamar a POST /api/Appointments')
 })

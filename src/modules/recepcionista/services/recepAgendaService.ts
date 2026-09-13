@@ -18,26 +18,66 @@ import type { ApiServiceResponse } from '@/modules/superadmin/services/superAdmi
 import type { ApiVeterinarianResponse } from '@/modules/superadmin/services/superAdminVeterinariansService'
 import type { ApiStatusAppointmentResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
 import type { ApiAppointmentResponse, ApiCreateAppointmentRequest, ApiCreateAppointmentResponse } from '@/modules/superadmin/services/superAdminAppointmentsService'
+import { fetchAvailabilitiesByVeterinarian, type ApiAvailabilityResponse } from '../../superadmin/services/superAdminAvailabilitiesService.ts'
+import { dayOfWeekFromDateKey, findMatchingAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../../superadmin/utils/resolveAvailabilityId.ts'
+import { isAppointmentDateInThePast } from '../../superadmin/utils/appointmentDateGuard.ts'
 
-const DEFAULT_TIME_SLOTS: RecepAgendaTimeSlot[] = [
-  { id: '08:00', label: '08:00', displayLabel: '08:00 AM', available: true },
-  { id: '08:30', label: '08:30', displayLabel: '08:30 AM', available: true },
-  { id: '09:00', label: '09:00', displayLabel: '09:00 AM', available: true },
-  { id: '09:30', label: '09:30', displayLabel: '09:30 AM', available: true },
-  { id: '10:00', label: '10:00', displayLabel: '10:00 AM', available: true },
-  { id: '10:30', label: '10:30', displayLabel: '10:30 AM', available: true },
-  { id: '11:00', label: '11:00', displayLabel: '11:00 AM', available: true },
-  { id: '11:30', label: '11:30', displayLabel: '11:30 AM', available: true },
-  { id: '12:00', label: '12:00', displayLabel: '12:00 PM', available: true },
-  { id: '14:00', label: '14:00', displayLabel: '02:00 PM', available: true },
-  { id: '14:30', label: '14:30', displayLabel: '02:30 PM', available: true },
-  { id: '15:00', label: '15:00', displayLabel: '03:00 PM', available: true },
-  { id: '15:30', label: '15:30', displayLabel: '03:30 PM', available: true },
-  { id: '16:00', label: '16:00', displayLabel: '04:00 PM', available: true },
-  { id: '16:30', label: '16:30', displayLabel: '04:30 PM', available: true },
-  { id: '17:00', label: '17:00', displayLabel: '05:00 PM', available: true },
-  { id: '17:30', label: '17:30', displayLabel: '05:30 PM', available: true },
-]
+const SLOT_DURATION_MINUTES = 30
+
+function toMinutes(hm: string): number {
+  const [h, m] = hm.trim().slice(0, 5).split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+function minutesToHm(mins: number): string {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function toDisplayLabel(hm: string): string {
+  const [h, m] = hm.split(':').map(Number)
+  const period = h < 12 ? 'AM' : 'PM'
+  const displayHour = h % 12 === 0 ? 12 : h % 12
+  return `${String(displayHour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`
+}
+
+// S56: genera las franjas horarias a partir de la disponibilidad real
+// configurada del veterinario para ese día de la semana, en vez de una lista
+// fija -- y excluye del todo (no solo deshabilita) las horas que ya pasaron
+// si la fecha elegida es hoy.
+export async function fetchRecepAvailableTimeSlots(
+  veterinarianId: string,
+  dateKey: string,
+): Promise<RecepAgendaTimeSlot[]> {
+  if (!veterinarianId || !dateKey) return []
+
+  const availabilities = await fetchAvailabilitiesByVeterinarian(veterinarianId).catch(
+    () => [] as ApiAvailabilityResponse[],
+  )
+  const day = dayOfWeekFromDateKey(dateKey)
+
+  const blocks = availabilities.filter((item) => {
+    const dow = typeof item.dayOfWeek === 'string' ? Number(item.dayOfWeek) : item.dayOfWeek
+    return item.isActive && Number(dow) === day
+  })
+
+  const seen = new Set<string>()
+  const slots: RecepAgendaTimeSlot[] = []
+
+  for (const block of blocks) {
+    const start = toMinutes(block.startTime)
+    const end = toMinutes(block.endTime)
+    for (let mins = start; mins + SLOT_DURATION_MINUTES <= end; mins += SLOT_DURATION_MINUTES) {
+      const hm = minutesToHm(mins)
+      if (seen.has(hm) || isAppointmentDateInThePast(dateKey, hm)) continue
+      seen.add(hm)
+      slots.push({ id: hm, label: hm, displayLabel: toDisplayLabel(hm), available: true })
+    }
+  }
+
+  return slots.sort((a, b) => a.id.localeCompare(b.id))
+}
 
 function formatTimeString(isoString: string): string {
   try {
@@ -114,7 +154,6 @@ export async function fetchRecepAgendaCatalog(): Promise<RecepAgendaCatalogPaylo
     pets: petsOptions,
     services: servicesOptions.length > 0 ? servicesOptions : [{ id: 'srv-general', label: 'Consulta General' }],
     professionals: professionals.length > 0 ? professionals : [{ id: 'pro-default', name: 'Dr. Roberto Silva', roleLabel: 'Veterinario' }],
-    timeSlots: DEFAULT_TIME_SLOTS,
   }
 }
 
@@ -192,10 +231,10 @@ export async function fetchRecepDayAppointments(
 export async function createRecepAppointment(
   form: RecepAgendaFormState,
 ): Promise<ApiCreateAppointmentResponse> {
-  const [cpRes, availRes, statusRes] = await Promise.all([
+  const [cpRes, statusRes, availabilities] = await Promise.all([
     apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets'),
-    apiClient.get<Array<{ id: string }>>('/api/Availabilities').catch(() => []),
     apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments').catch(() => []),
+    fetchAvailabilitiesByVeterinarian(form.professionalId).catch(() => [] as ApiAvailabilityResponse[]),
   ])
 
   // Buscar o resolver el clientPetId correspondiente al cliente y la mascota
@@ -210,14 +249,23 @@ export async function createRecepAppointment(
     throw new Error('No se encontró el vínculo entre el dueño y la mascota seleccionados.')
   }
 
-  const availabilityId = availRes[0]?.id || '11111111-1111-1111-1111-111111111111'
   const agendadoStatus = statusRes.find((s) => s.name?.toLowerCase().includes('agend')) || statusRes[0]
   const statusId = agendadoStatus?.id || '22222222-2222-2222-2222-222222222222'
 
-  const [hours, minutes] = (form.timeSlotId || '09:00').split(':').map(Number)
+  const startTime = form.timeSlotId || '09:00'
+  const endTime = minutesToHm(toMinutes(startTime) + SLOT_DURATION_MINUTES)
+
+  // S56: resuelve el bloque de disponibilidad real del veterinario para ese
+  // día/horario (ya no se toma "el primero que exista" en todo el sistema).
+  const availabilityId = findMatchingAvailabilityId(availabilities, form.dateValue, startTime, endTime)
+  if (!availabilityId) {
+    throw new Error(NO_VET_AVAILABILITY_MESSAGE)
+  }
+
   // "YYYY-MM-DD" con new Date(string) se interpreta como medianoche UTC (desfasa el día
   // en zonas UTC negativas como Bogotá); se arma con año/mes/día locales, como ya hacen
   // useRecepAgenda.ts y RecepDayCalendarPanel.tsx en este mismo módulo.
+  const [hours, minutes] = startTime.split(':').map(Number)
   const dateObj = form.dateValue
     ? (() => {
         const [year, month, day] = form.dateValue.split('-').map(Number)
@@ -227,7 +275,7 @@ export async function createRecepAppointment(
   dateObj.setHours(hours || 9, minutes || 0, 0, 0)
   const startIso = dateObj.toISOString()
 
-  const endDateObj = new Date(dateObj.getTime() + 30 * 60 * 1000)
+  const endDateObj = new Date(dateObj.getTime() + SLOT_DURATION_MINUTES * 60 * 1000)
   const endIso = endDateObj.toISOString()
 
   const payload: ApiCreateAppointmentRequest = {

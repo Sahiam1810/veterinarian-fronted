@@ -25,6 +25,7 @@ interface RecepAgendaViewProps {
   services: RecepAgendaServiceOption[]
   professionals: RecepAgendaProfessionalOption[]
   timeSlots: RecepAgendaTimeSlot[]
+  isLoadingSlots?: boolean
   selectedOwner?: RecepAgendaOwnerOption | null
   selectedOwnerName: string | null
   selectedPetLabel: string | null
@@ -74,6 +75,7 @@ export function RecepAgendaView({
   services,
   professionals,
   timeSlots,
+  isLoadingSlots = false,
   selectedOwner,
   selectedOwnerName,
   selectedPetLabel,
@@ -249,6 +251,15 @@ export function RecepAgendaView({
 
               <div className="min-w-0">
                 <p className={labelClass}>Horarios Disponibles</p>
+                {isLoadingSlots ? (
+                  <p className="text-xs text-sage font-medium py-1">Cargando horarios…</p>
+                ) : timeSlots.length === 0 ? (
+                  <p className="text-xs text-sage/80 font-medium py-1">
+                    {form.professionalId && form.dateValue
+                      ? 'El profesional no tiene disponibilidad para esta fecha.'
+                      : 'Selecciona profesional y fecha para ver horarios.'}
+                  </p>
+                ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {timeSlots.map((slot) => {
                     const selected = form.timeSlotId === slot.id
@@ -274,6 +285,7 @@ export function RecepAgendaView({
                     )
                   })}
                 </div>
+                )}
               </div>
             </div>
 
