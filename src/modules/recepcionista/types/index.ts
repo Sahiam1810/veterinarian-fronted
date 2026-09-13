@@ -14,6 +14,7 @@ export type {
   RecepMascotaListItem,
   RecepMascotaDetail,
   RecepMascotaFormData,
+  RecepMascotaRawFields,
   RecepMascotasDirectoryPayload,
 } from './mascotas.types'
 

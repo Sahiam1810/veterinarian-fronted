@@ -2,6 +2,7 @@ import { apiClient } from '../../../services/apiClient.ts'
 import type {
   RecepMascotaDetail,
   RecepMascotaListItem,
+  RecepMascotaRawFields,
   RecepMascotasDirectoryPayload,
 
 } from '../types/index.ts'
@@ -73,6 +74,7 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
 
   const items: RecepMascotaListItem[] = []
   const detailsById: Record<string, RecepMascotaDetail> = {}
+  const rawById: Record<string, RecepMascotaRawFields> = {}
 
   pets.forEach((pet) => {
     const speciesName = speciesMap.get(pet.speciesId?.toLowerCase()) || 'Mascota'
@@ -113,11 +115,23 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
       ownerPhone: client?.phoneNumber || '',
       allergyAlert: pet.observations || null,
     }
+
+    rawById[pet.id] = {
+      id: pet.id,
+      name: pet.name || 'Paciente',
+      speciesId: pet.speciesId,
+      raceId: pet.raceId,
+      age: ageNum,
+      gender: pet.gender,
+      weight: pet.weight || 5,
+      observations: pet.observations || null,
+    }
   })
 
   return {
     items,
     detailsById,
+    rawById,
     totalCount: items.length,
     pageStart: items.length > 0 ? 1 : 0,
     pageEnd: Math.min(items.length, 10),

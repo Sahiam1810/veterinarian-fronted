@@ -23,12 +23,14 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     speciesList,
     racesList,
     duenosList,
+    editingPet,
     error,
     notice,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
     handleNewPet,
+    openEditPet,
     closeModal,
     handleSavePet,
     handlePrevPage,
@@ -75,6 +77,7 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onNewPet={handleNewPet}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
+        onEditMascota={openEditPet}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
       />
@@ -85,6 +88,7 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         speciesList={speciesList}
         racesList={racesList}
         duenosList={duenosList}
+        editingPet={editingPet}
         onClose={closeModal}
         onSave={handleSavePet}
       />

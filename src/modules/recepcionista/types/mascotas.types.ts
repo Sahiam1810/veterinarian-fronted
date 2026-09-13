@@ -35,9 +35,23 @@ export interface RecepMascotaFormData {
   photoUrl?: string | null
 }
 
+// Datos crudos (IDs/números) para precargar el formulario en modo edición;
+// RecepMascotaDetail solo trae textos ya formateados para mostrar en la ficha.
+export interface RecepMascotaRawFields {
+  id: string
+  name: string
+  speciesId: string
+  raceId: string
+  age: number
+  gender: string
+  weight: number
+  observations?: string | null
+}
+
 export interface RecepMascotasDirectoryPayload {
   items: RecepMascotaListItem[]
   detailsById: Record<string, RecepMascotaDetail>
+  rawById: Record<string, RecepMascotaRawFields>
   totalCount: number
   pageStart: number
   pageEnd: number

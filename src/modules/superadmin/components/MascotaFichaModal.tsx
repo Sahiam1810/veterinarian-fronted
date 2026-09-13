@@ -33,6 +33,10 @@ interface MascotaFichaModalProps {
   // de tabla con acciones propias, así que editar se dispara desde la ficha.
   // SuperAdmin no lo pasa (edita desde la fila) y no cambia en nada para él.
   onEditDueno?: () => void
+  // Solo aplica a vetMascota: Recepcionista no tiene acción de editar en su
+  // tabla (a diferencia de Veterinario, que edita desde su propia fila), así
+  // que edita desde la ficha. Veterinario no lo pasa y no cambia para él.
+  onEditMascota?: () => void
 }
 
 // Modal de ficha (mascota / dueño / mascota-veterinario) compartido entre
@@ -44,6 +48,7 @@ export function MascotaFichaModal({
   onViewHistoria,
   isHistoriaLoading = false,
   onEditDueno,
+  onEditMascota,
 }: MascotaFichaModalProps) {
   if (!item) return null
 
@@ -255,6 +260,16 @@ export function MascotaFichaModal({
             <button
               type="button"
               onClick={onEditDueno}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-border-tan bg-white text-charcoal hover:bg-cream transition cursor-pointer"
+            >
+              <EditIcon className="w-3.5 h-3.5" />
+              <span>Editar</span>
+            </button>
+          )}
+          {isVetMascota && onEditMascota && (
+            <button
+              type="button"
+              onClick={onEditMascota}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-border-tan bg-white text-charcoal hover:bg-cream transition cursor-pointer"
             >
               <EditIcon className="w-3.5 h-3.5" />
