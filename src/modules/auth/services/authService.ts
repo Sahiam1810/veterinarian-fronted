@@ -10,7 +10,7 @@ import { translateApiError } from '../utils/toSpanishAuthError.ts'
 import { resolvePersistedRoleIdentity } from '../utils/systemRoles.ts'
 
 const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
-  || 'http://localhost:5233'
+  || 'https://api.huellitas.chatcampuslands.com'
 
 const AUTH_STORAGE_KEY = 'huellitas_auth_user'
 const AUTH_TOKENS_KEY = 'huellitas_auth_tokens'
