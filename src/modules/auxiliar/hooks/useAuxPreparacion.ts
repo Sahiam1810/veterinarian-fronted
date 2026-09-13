@@ -6,7 +6,6 @@ import type {
   ApiClientResponse,
   ApiServiceResponse,
   ApiVeterinarianResponse,
-  ApiSpeciesResponse,
   ApiRaceResponse,
   ApiStatusAppointmentResponse,
   AuxAppointmentStatus,
@@ -21,7 +20,6 @@ import {
   fetchClientsPets,
   fetchClients,
   fetchUsers,
-  fetchSpecies,
   fetchRaces,
   fetchServices,
   fetchVeterinarians,
@@ -49,7 +47,7 @@ export interface PreparacionCitaItem {
   status: 'Pendiente' | 'Realizado'
   lastWeight: string
   lastTemp: string
-  avatarUrl?: string
+  avatarUrl?: string | null
   notes?: string
 }
 
@@ -89,7 +87,6 @@ export function useAuxPreparacion() {
         cpRes,
         clientsRes,
         usersRes,
-        speciesRes,
         racesRes,
         servicesRes,
         vetsRes,
@@ -101,7 +98,6 @@ export function useAuxPreparacion() {
         fetchClientsPets(),
         fetchClients(),
         fetchUsers(),
-        fetchSpecies(),
         fetchRaces(),
         fetchServices(),
         fetchVeterinarians(),
@@ -114,7 +110,6 @@ export function useAuxPreparacion() {
       const fetchedCP: ApiClientPetResponse[] = cpRes.status === 'fulfilled' ? cpRes.value : []
       const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
       const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
-      const fetchedSpecies: ApiSpeciesResponse[] = speciesRes.status === 'fulfilled' ? speciesRes.value : []
       const fetchedRaces: ApiRaceResponse[] = racesRes.status === 'fulfilled' ? racesRes.value : []
       const fetchedServices: ApiServiceResponse[] = servicesRes.status === 'fulfilled' ? servicesRes.value : []
       const fetchedVets: ApiVeterinarianResponse[] = vetsRes.status === 'fulfilled' ? vetsRes.value : []
@@ -129,7 +124,6 @@ export function useAuxPreparacion() {
       const cpMap = new Map(fetchedCP.map((cp) => [cp.id.toLowerCase(), cp]))
       const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
       const usersMap = new Map(fetchedUsers.map((u) => [u.id.toLowerCase(), u]))
-      const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const servicesMap = new Map(fetchedServices.map((s) => [s.id.toLowerCase(), s.name]))
       const vetsMap = new Map(fetchedVets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
@@ -150,7 +144,6 @@ export function useAuxPreparacion() {
         const ownerUser = client ? usersMap.get(client.userId.toLowerCase()) : undefined
 
         const petName = pet?.name || 'Mascota'
-        const species = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Canino' : 'Canino'
         const race = pet ? racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo' : 'Mestizo'
         const service = apt.serviceName || servicesMap.get(apt.serviceId?.toLowerCase()) || 'Consulta General'
         const vetName = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Veterinario'
@@ -169,8 +162,6 @@ export function useAuxPreparacion() {
 
         const isPretriajeDone = hasMedRecord || hasTriageNote
         const pretriajeStatus: AuxPretriajeStatus = isPretriajeDone ? 'Realizado' : 'Pendiente'
-
-        const isCat = species.toLowerCase().includes('gato') || species.toLowerCase().includes('felin')
 
         // Sin registro real -- vacío/etiqueta explícita, nunca un número inventado
         // que pueda pasar por una lectura previa real.
@@ -201,9 +192,9 @@ export function useAuxPreparacion() {
           lastWeight,
           lastTemp,
           notes: apt.notes || undefined,
-          avatarUrl: isCat
-            ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=120&h=120'
-            : 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=120&h=120',
+          // Sin foto real de mascota en ningún rol del sistema -- sin avatarUrl,
+          // la UI ya cae en la inicial del nombre en vez de fingir una foto de stock.
+          avatarUrl: null,
         }
       })
 
