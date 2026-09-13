@@ -37,6 +37,12 @@ function formatTime(isoString: string): string {
   }).toUpperCase()
 }
 
+// Mismo criterio que useAuxAgenda.ts para identificar el día de una cita.
+function dateKeyOf(isoString: string): string {
+  const d = new Date(isoString)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0]
+}
+
 function mapStatus(statusName?: string | null): AuxAppointmentStatus {
   if (!statusName) return 'Agendada'
   const norm = statusName.trim().toLowerCase()
@@ -130,7 +136,12 @@ export function useAuxDashboard() {
       const vetsMap = new Map(fetchedVets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
       const statusesMap = new Map(fetchedStatuses.map((st) => [st.id.toLowerCase(), st.name]))
 
-      const mappedAppointments: AuxDayAppointment[] = fetchedApts.map((apt) => {
+      // Inicio solo debe mostrar las citas de hoy (Agenda ya filtra por día
+      // en su propia vista semanal, pero este dashboard no lo hacía).
+      const todayKey = new Date().toISOString().split('T')[0]
+      const todaysApts = fetchedApts.filter((apt) => dateKeyOf(apt.scheduledStart) === todayKey)
+
+      const mappedAppointments: AuxDayAppointment[] = todaysApts.map((apt) => {
         const cp = cpMap.get(apt.clientPetId?.toLowerCase())
         const pet = cp ? petsMap.get(cp.petId.toLowerCase()) : undefined
         const client = cp ? clientsMap.get(cp.clientId.toLowerCase()) : undefined
