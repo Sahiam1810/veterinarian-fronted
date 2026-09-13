@@ -45,7 +45,6 @@ export const RECEP_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
 export const AUX_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   Mascotas: 'aux.mascotas',
   Citas: 'aux.agenda',
-  'Historiales Clínicos': 'aux.preparacion',
 }
 
 export const AUX_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [

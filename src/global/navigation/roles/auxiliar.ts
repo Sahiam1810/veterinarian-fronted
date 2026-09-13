@@ -21,15 +21,6 @@ export const AUX_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
-    id: 'preparacion',
-    label: 'Preparación',
-    permissionKey: 'aux.preparacion',
-    iconKey: 'clinical-history',
-    kind: 'link',
-    order: 30,
-    placement: 'main',
-  },
-  {
     id: 'mascotas',
     label: 'Mascotas',
     permissionKey: 'aux.mascotas',

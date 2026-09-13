@@ -10,9 +10,7 @@ import type {
 } from '../types'
 import {
   fetchPets,
-  createPet as apiCreatePet,
   fetchClientsPets,
-  createClientPet as apiCreateClientPet,
   fetchClients,
   fetchSpecies,
   fetchRaces,
@@ -44,9 +42,6 @@ export interface MascotaAuxItem {
 export function useAuxMascotas() {
   const [mascotas, setMascotas] = useState<MascotaAuxItem[]>([])
   const [selectedPetId, setSelectedPetId] = useState<string>('')
-  const [speciesList, setSpeciesList] = useState<ApiSpeciesResponse[]>([])
-  const [racesList, setRacesList] = useState<ApiRaceResponse[]>([])
-  const [clientsList, setClientsList] = useState<ApiClientResponse[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
 
@@ -85,10 +80,6 @@ export function useAuxMascotas() {
       const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
       const fetchedApts: ApiAppointmentResponse[] = aptsRes.status === 'fulfilled' ? aptsRes.value : []
       const fetchedVets: ApiVeterinarianResponse[] = vetsRes.status === 'fulfilled' ? vetsRes.value : []
-
-      setSpeciesList(fetchedSpecies)
-      setRacesList(fetchedRaces)
-      setClientsList(fetchedClients)
 
       const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
@@ -184,92 +175,14 @@ export function useAuxMascotas() {
     return mascotas.find((p) => p.id === selectedPetId) || mascotas[0] || null
   }, [mascotas, selectedPetId])
 
-  const addPet = async (data: {
-    name: string
-    specie: string
-    breed: string
-    age: string
-    gender: string
-    weight: string
-    clientId: string
-    ownerPhone?: string
-    sterilized: 'Sí' | 'No'
-  }): Promise<{ success: boolean; error?: string }> => {
-    try {
-      console.log('Creating pet with data:', data)
-
-      // 1. Resolver ID de especie
-      const matchingSpecies =
-        speciesList.find((s) => s.name.toLowerCase() === data.specie.toLowerCase()) ||
-        speciesList.find((s) => s.name.toLowerCase().includes(data.specie.toLowerCase())) ||
-        speciesList[0]
-
-      // 2. Raza dentro de esa especie
-      const racesForSpecies = racesList.filter(
-        (r) => (r.speciesId ?? '').toLowerCase() === (matchingSpecies?.id ?? '').toLowerCase(),
-      )
-      const matchingRace =
-        racesForSpecies.find((r) => r.name.toLowerCase() === data.breed.toLowerCase()) ||
-        racesForSpecies.find((r) => r.name.toLowerCase().includes(data.breed.toLowerCase())) ||
-        racesForSpecies[0] ||
-        racesList.find((r) => r.name.toLowerCase().includes(data.breed.toLowerCase())) ||
-        racesList[0]
-
-      if (!matchingSpecies || !matchingRace) {
-        throw new Error('No hay especies o razas registradas para esa combinación.')
-      }
-
-      if (!data.clientId) {
-        throw new Error('Debes seleccionar un propietario para la mascota.')
-      }
-
-      const parsedAge = parseInt(data.age.replace(/\D/g, ''), 10) || 1
-      const parsedWeight = parseFloat(data.weight) || 5.0
-      const genderCode = data.gender.toLowerCase().startsWith('h') ? 'F' : 'M'
-      const obs = data.sterilized === 'Sí' ? 'Esterilizado' : 'Sin observaciones'
-
-      // 3. Crear mascota en POST /api/Pets
-      const createdPet = await apiCreatePet({
-        name: data.name,
-        age: parsedAge,
-        gender: genderCode,
-        weight: parsedWeight,
-        observations: obs,
-        speciesId: matchingSpecies.id,
-        raceId: matchingRace.id,
-      })
-
-      // 4. Vincular con el cliente seleccionado en POST /api/ClientsPets
-      await apiCreateClientPet({
-        clientId: data.clientId,
-        petId: createdPet.id,
-        isPrimaryOwner: true,
-      })
-
-      showToast(`¡Mascota ${data.name} registrada con éxito en el sistema!`)
-      await loadData()
-      setSelectedPetId(createdPet.id)
-      return { success: true }
-    } catch (err) {
-      console.error('Error al registrar mascota', err)
-      const msg = err instanceof Error ? err.message : 'Error al registrar mascota'
-      showToast(msg)
-      return { success: false, error: msg }
-    }
-  }
-
   return {
     mascotas,
     selectedPet,
     selectedPetId,
     setSelectedPetId,
-    speciesList,
-    racesList,
-    clientsList,
     isLoading,
     activeNotification,
     showToast,
     loadData,
-    addPet,
   }
 }

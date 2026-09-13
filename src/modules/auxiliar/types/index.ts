@@ -1,16 +1,10 @@
 // ===== Tipos UI Auxiliar =====
 export type AuxAppointmentStatus = 'Agendada' | 'Atendida' | 'Cancelada' | 'No asistió' | 'En espera'
-export type AuxPretriajeStatus = 'Pendiente' | 'Realizado'
 
 export interface AuxStatSummary {
   citasDelDia: number
-  pendientesPretriaje: number
-  pretriajesRealizados: number
   atendidas: number
-  // Aliases for compatibility
-  pendientesPrep?: number
   proximas?: number
-  preparadas?: number
 }
 
 export interface AuxDayAppointment {
@@ -23,10 +17,6 @@ export interface AuxDayAppointment {
   service: string
   professional: string
   status: AuxAppointmentStatus
-  pretriajeStatus?: AuxPretriajeStatus
-  weightAtVisit?: number | null
-  temperature?: number | null
-  symptoms?: string | null
   ownerName?: string
   notes?: string
   rawAppointmentId?: string

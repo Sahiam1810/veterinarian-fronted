@@ -1,5 +1,4 @@
 export * from './useAuxDashboard'
 export * from './useAuxMascotas'
 export * from './useAuxAgenda'
-export * from './useAuxPreparacion'
 export * from './useAuxPerfil'
