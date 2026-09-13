@@ -22,26 +22,28 @@ export function PrepararCitaDrawer({
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
 
-  // Campos de preparación
-  const [weight, setWeight] = useState('12.5')
-  const [temp, setTemp] = useState('38.4')
-  const [heartRate, setHeartRate] = useState('110')
+  // Campos de preparación -- se precargan con datos reales de la cita al
+  // abrir (ver useEffect); vacíos si no hay registro previo, nunca un valor
+  // inventado que pueda pasar por una lectura real.
+  const [weight, setWeight] = useState('')
+  const [temp, setTemp] = useState('')
+  const [heartRate, setHeartRate] = useState('')
   const [notes, setNotes] = useState('')
-  const [instrumentsReady, setInstrumentsReady] = useState(true)
-  const [historyChecked, setHistoryChecked] = useState(true)
-  const [petCalm, setPetCalm] = useState(true)
+  const [instrumentsReady, setInstrumentsReady] = useState(false)
+  const [historyChecked, setHistoryChecked] = useState(false)
+  const [petCalm, setPetCalm] = useState(false)
 
   useEffect(() => {
     if (isOpen && appointment) {
       setIsRendered(true)
       setIsClosing(false)
-      setWeight('12.5')
-      setTemp('38.4')
-      setHeartRate('110')
+      setWeight(appointment.weightAtVisit != null ? String(appointment.weightAtVisit) : '')
+      setTemp(appointment.temperature != null ? String(appointment.temperature) : '')
+      setHeartRate('')
       setNotes(appointment.notes || '')
-      setInstrumentsReady(true)
-      setHistoryChecked(true)
-      setPetCalm(true)
+      setInstrumentsReady(false)
+      setHistoryChecked(false)
+      setPetCalm(false)
     } else if (isRendered) {
       setIsClosing(true)
       const timer = setTimeout(() => {

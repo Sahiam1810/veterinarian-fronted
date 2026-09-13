@@ -172,22 +172,24 @@ export function useAuxPreparacion() {
 
         const isCat = species.toLowerCase().includes('gato') || species.toLowerCase().includes('felin')
 
+        // Sin registro real -- vacío/etiqueta explícita, nunca un número inventado
+        // que pueda pasar por una lectura previa real.
         const lastWeight = medRecord?.weightAtVisit != null
           ? String(medRecord.weightAtVisit)
           : pet?.weight != null
             ? String(pet.weight)
-            : '15.0'
+            : ''
 
         const lastTemp = medRecord?.temperature != null
           ? String(medRecord.temperature)
-          : '38.5'
+          : ''
 
         return {
           id: apt.id,
           time,
           petName,
           petBreed: race,
-          petAge: pet ? `${pet.age} años` : '2 años',
+          petAge: pet ? `${pet.age} años` : 'Edad no registrada',
           petId: pet?.id,
           clientPetId: apt.clientPetId,
           ownerName: ownerUser?.fullName || 'Propietario',

@@ -6,6 +6,7 @@ import type {
   ApiSpeciesResponse,
   ApiRaceResponse,
   ApiAppointmentResponse,
+  ApiVeterinarianResponse,
 } from '../types'
 import {
   fetchPets,
@@ -16,6 +17,7 @@ import {
   fetchSpecies,
   fetchRaces,
   fetchAppointments,
+  fetchVeterinarians,
 } from '../services'
 
 export interface MascotaAuxItem {
@@ -65,6 +67,7 @@ export function useAuxMascotas() {
         cpRes,
         clientsRes,
         aptsRes,
+        vetsRes,
       ] = await Promise.allSettled([
         fetchPets(),
         fetchSpecies(),
@@ -72,6 +75,7 @@ export function useAuxMascotas() {
         fetchClientsPets(),
         fetchClients(),
         fetchAppointments(),
+        fetchVeterinarians(),
       ])
 
       const fetchedPets: ApiPetResponse[] = petsRes.status === 'fulfilled' ? petsRes.value : []
@@ -80,6 +84,7 @@ export function useAuxMascotas() {
       const fetchedCP: ApiClientPetResponse[] = cpRes.status === 'fulfilled' ? cpRes.value : []
       const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
       const fetchedApts: ApiAppointmentResponse[] = aptsRes.status === 'fulfilled' ? aptsRes.value : []
+      const fetchedVets: ApiVeterinarianResponse[] = vetsRes.status === 'fulfilled' ? vetsRes.value : []
 
       setSpeciesList(fetchedSpecies)
       setRacesList(fetchedRaces)
@@ -88,13 +93,18 @@ export function useAuxMascotas() {
       const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
+      const vetsMap = new Map(fetchedVets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
 
-      // Relaciones mascota -> cliente
+      // Relaciones mascota -> cliente (nombre + teléfono reales)
       const petOwnerMap = new Map<string, string>()
+      const petOwnerPhoneMap = new Map<string, string>()
       fetchedCP.forEach((cp) => {
         const client = clientsMap.get(cp.clientId.toLowerCase())
         if (client) {
           petOwnerMap.set(cp.petId.toLowerCase(), client.fullName || `Cliente ${client.identificationNumber || ''}`.trim())
+          if (client.phoneNumber) {
+            petOwnerPhoneMap.set(cp.petId.toLowerCase(), client.phoneNumber)
+          }
         }
       })
 
@@ -111,7 +121,8 @@ export function useAuxMascotas() {
       const mapped: MascotaAuxItem[] = fetchedPets.map((p) => {
         const specieName = speciesMap.get(p.speciesId?.toLowerCase()) || 'Canino'
         const raceName = racesMap.get(p.raceId?.toLowerCase()) || 'Mestizo'
-        const ownerName = petOwnerMap.get(p.id.toLowerCase()) || 'Carlos Mendoza'
+        const ownerName = petOwnerMap.get(p.id.toLowerCase()) || 'Dueño no identificado'
+        const ownerPhone = petOwnerPhoneMap.get(p.id.toLowerCase()) || 'No disponible'
         const nextApt = petNextAptMap.get(p.id.toLowerCase())
 
         const genderFormatted = p.gender === 'F' ? 'Hembra' : 'Macho'
@@ -123,13 +134,13 @@ export function useAuxMascotas() {
         if (nextApt) {
           const start = new Date(nextApt.scheduledStart)
           const timeStr = Number.isNaN(start.getTime())
-            ? 'Hoy, 14:30'
+            ? '--:--'
             : start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
           nextAppointmentText = `Hoy, ${timeStr}`
           citaActualObj = {
             service: nextApt.serviceName || 'Control General',
             time: nextAppointmentText,
-            vetName: 'Dr. Silva',
+            vetName: vetsMap.get(nextApt.veterinarianId?.toLowerCase()) || 'Veterinario',
           }
         }
 
@@ -143,7 +154,7 @@ export function useAuxMascotas() {
           gender: genderFormatted,
           weight: String(p.weight),
           ownerName,
-          ownerPhone: '+57 300 123 4567',
+          ownerPhone,
           nextAppointment: nextAppointmentText,
           sterilized: p.observations?.toLowerCase().includes('esteril') ? 'Sí' : 'No',
           avatarUrl: isCat
