@@ -33,7 +33,7 @@ export interface MascotaAuxItem {
   ownerPhone?: string
   nextAppointment: string
   sterilized: 'Sí' | 'No'
-  avatarUrl?: string
+  avatarUrl?: string | null
   citaActual?: {
     service: string
     time: string
@@ -126,7 +126,6 @@ export function useAuxMascotas() {
         const nextApt = petNextAptMap.get(p.id.toLowerCase())
 
         const genderFormatted = p.gender === 'F' ? 'Hembra' : 'Macho'
-        const isCat = specieName.toLowerCase().includes('gato') || specieName.toLowerCase().includes('felin')
 
         let nextAppointmentText = 'Sin citas'
         let citaActualObj: MascotaAuxItem['citaActual'] = null
@@ -157,9 +156,10 @@ export function useAuxMascotas() {
           ownerPhone,
           nextAppointment: nextAppointmentText,
           sterilized: p.observations?.toLowerCase().includes('esteril') ? 'Sí' : 'No',
-          avatarUrl: isCat
-            ? 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=120&h=120'
-            : 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=120&h=120',
+          // Sin foto real de mascota en ningún rol del sistema (photoUrl no se
+          // expone en ningún formulario) -- sin avatarUrl, la UI ya cae en la
+          // inicial del nombre en vez de fingir una foto de stock.
+          avatarUrl: null,
           citaActual: citaActualObj,
         }
       })
