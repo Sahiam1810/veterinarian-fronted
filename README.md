@@ -145,7 +145,7 @@ En la raíz del proyecto `veterinarian-fronted`:
 # Instalar dependencias
 pnpm install
 
-# Iniciar el servidor de desarrollo Vite (http://localhost:5173)
+# Iniciar el servidor de desarrollo Vite (http://localhost:5174)
 pnpm dev
 
 # Compilar tipos TypeScript y generar el bundle optimizado para producción
@@ -173,5 +173,10 @@ pnpm test:nav           # Pruebas de resolución de permisos de navegación
 Crear un archivo `.env` en la raíz de `veterinarian-fronted` si se requiere sobreescribir la URL de la API:
 
 ```env
-VITE_API_URL=http://localhost:5233
+VITE_API_URL=https://api.huellitas.chatcampuslands.com
+# Local: VITE_API_URL=http://localhost:5233
 ```
+
+### Docker / producción
+
+El Dockerfile inyecta `VITE_API_URL` en build (por defecto `https://api.huellitas.chatcampuslands.com`). El stack de producción se define en `../veterinarian-backend/deploy/docker-compose.prod.yml` (frontend en `127.0.0.1:5181`). Guía: `../veterinarian-backend/deploy/DEPLOY.md`. Vite en desarrollo sigue en el puerto **5174**. El navegador usa el dominio público de la API, no `http://backend:8080`.

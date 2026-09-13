@@ -3,7 +3,7 @@ import { getAccessToken } from '@/modules/auth'
 import { fetchWithSession } from '@/services/apiClient'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
-  || 'http://localhost:5233'
+  || 'https://api.huellitas.chatcampuslands.com'
 
 export function getVetApiBaseUrl(): string {
   return API_BASE_URL

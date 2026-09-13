@@ -2,7 +2,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY . .
-ARG VITE_API_URL
+ARG VITE_API_URL=https://api.huellitas.chatcampuslands.com
 ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm install --frozen-lockfile && pnpm run build
 

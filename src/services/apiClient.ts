@@ -31,7 +31,7 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
 }
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:5233'
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'https://api.huellitas.chatcampuslands.com'
 
 export function getApiUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): string {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`

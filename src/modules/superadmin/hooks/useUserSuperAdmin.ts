@@ -244,7 +244,7 @@ export function useUserSuperAdmin() {
             ? 'Sesión expirada. Cierra sesión e inicia de nuevo.'
             : first instanceof Error
               ? first.message
-              : 'No se pudo contactar al API (¿está corriendo en http://localhost:5233?).'
+              : 'No se pudo contactar al API (¿está disponible en https://api.huellitas.chatcampuslands.com?).'
         setLoadError(msg)
         showToast(msg, 'warning')
       } else if (concerning.length > 0) {
