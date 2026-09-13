@@ -41,7 +41,6 @@ export interface RecepAgendaCatalogPayload {
   pets: RecepAgendaPetOption[]
   services: RecepAgendaServiceOption[]
   professionals: RecepAgendaProfessionalOption[]
-  timeSlots: RecepAgendaTimeSlot[]
 }
 
 export interface RecepAgendaFormState {
