@@ -3,6 +3,7 @@ import type { RecepDuenoDetail, RecepDuenoFormData } from '../types'
 import { CloseIcon, PhoneIcon } from './RecepMascotasIcons'
 import { MailIcon } from './PerfilIcons'
 import { UserAvatarIcon } from '@/global/components'
+import { extractUserApiErrorMessage } from '../../superadmin/utils/translateUserApiError.ts'
 
 interface RecepDuenoModalProps {
   isOpen: boolean
@@ -75,8 +76,7 @@ export function RecepDuenoModal({
         address: address.trim() || undefined,
       })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar el dueño'
-      setError(msg)
+      setError(extractUserApiErrorMessage(err))
     }
   }
 
