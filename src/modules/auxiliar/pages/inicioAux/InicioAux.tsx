@@ -100,7 +100,7 @@ export function InicioAux({
               </span>
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-500 mt-3 sm:mt-4">
-              Atendidas por Vet
+              Atendidas
             </span>
           </article>
         </ViewPopup>
