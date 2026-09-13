@@ -6,6 +6,7 @@ import type {
   RecepDuenosDirectoryPayload,
 } from '../types'
 import { fetchRecepDuenosDirectory, createRecepDueno, updateRecepDueno } from '../services'
+import { extractUserApiErrorMessage } from '../../superadmin/utils/translateUserApiError.ts'
 
 const ITEMS_PER_PAGE = 8
 
@@ -130,8 +131,7 @@ export function useRecepDuenos(enabled: boolean) {
       setEditingOwner(null)
       await loadDirectory()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar el dueño'
-      showNotice(msg)
+      showNotice(extractUserApiErrorMessage(err))
       throw err
     } finally {
       setIsSubmitting(false)

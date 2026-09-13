@@ -32,7 +32,8 @@ export function translateApiError(
     cleanCode === 'Client.IdentificationAlreadyExists' ||
     cleanCode === 'IdentificationAlreadyExists' ||
     cleanCode === 'IdentificationConflict' ||
-    cleanCode === 'DuplicateIdentification'
+    cleanCode === 'DuplicateIdentification' ||
+    cleanCode === 'Authentication.IdentificationNumberAlreadyExists'
   ) {
     return 'Ya existe un cliente con este número de identificación o cédula.'
   }
@@ -41,7 +42,8 @@ export function translateApiError(
     cleanCode === 'User.EmailAlreadyInUse' ||
     cleanCode === 'EmailAlreadyInUse' ||
     cleanCode === 'EmailConflict' ||
-    cleanCode === 'DuplicateEmail'
+    cleanCode === 'DuplicateEmail' ||
+    cleanCode === 'Authentication.UserAlreadyExists'
   ) {
     return 'Ya existe un usuario con este correo electrónico.'
   }
@@ -50,9 +52,10 @@ export function translateApiError(
     cleanCode === 'User.PhoneAlreadyInUse' ||
     cleanCode === 'PhoneAlreadyInUse' ||
     cleanCode === 'PhoneConflict' ||
-    cleanCode === 'DuplicatePhone'
+    cleanCode === 'DuplicatePhone' ||
+    cleanCode === 'Clients.PhoneAlreadyInUse'
   ) {
-    return 'Ya existe un usuario con este número de teléfono.'
+    return 'Ya existe un cliente con este número de teléfono.'
   }
 
   if (

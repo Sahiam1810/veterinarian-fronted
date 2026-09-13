@@ -40,6 +40,7 @@ import {
   mapSexoToGender,
 } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
+import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
 
 export function useMascotasSuperAdmin() {
   const [activeTab, setActiveTab] = useState<'mascotas' | 'duenos'>('mascotas')
@@ -390,8 +391,7 @@ export function useMascotasSuperAdmin() {
       showToast(`Dueño "${data.name}" registrado con éxito`)
       await loadData()
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo registrar el dueño.'
-      showToast(message)
+      showToast(extractUserApiErrorMessage(err))
     }
   }
 
@@ -430,8 +430,7 @@ export function useMascotasSuperAdmin() {
       showToast(`Dueño "${data.name}" actualizado con éxito`)
       await loadData()
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudo actualizar el dueño.'
-      showToast(message)
+      showToast(extractUserApiErrorMessage(err))
     }
   }
 
