@@ -238,11 +238,15 @@ export function PreparacionAux({ onNotice }: PreparacionAuxProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-[#fcfbf9] border border-border-tan/60 rounded-xl p-3 flex flex-col">
                 <span className="text-[10px] font-bold text-sage uppercase tracking-wider">PESO (ÚLTIMO)</span>
-                <span className="font-extrabold text-charcoal text-base mt-0.5">{selectedCita.lastWeight} kg</span>
+                <span className="font-extrabold text-charcoal text-base mt-0.5">
+                  {selectedCita.lastWeight ? `${selectedCita.lastWeight} kg` : 'Sin registro previo'}
+                </span>
               </div>
               <div className="bg-[#fcfbf9] border border-border-tan/60 rounded-xl p-3 flex flex-col">
                 <span className="text-[10px] font-bold text-sage uppercase tracking-wider">TEMP (ÚLTIMA)</span>
-                <span className="font-extrabold text-charcoal text-base mt-0.5">{selectedCita.lastTemp} °C</span>
+                <span className="font-extrabold text-charcoal text-base mt-0.5">
+                  {selectedCita.lastTemp ? `${selectedCita.lastTemp} °C` : 'Sin registro previo'}
+                </span>
               </div>
             </div>
 
