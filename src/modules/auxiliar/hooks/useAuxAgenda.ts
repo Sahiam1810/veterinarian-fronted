@@ -10,13 +10,11 @@ import type {
   ApiRaceResponse,
   ApiStatusAppointmentResponse,
 } from '../types'
-import type { ApiUserResponse } from '@/modules/superadmin/services/superAdminUserService'
 import {
   fetchAppointments,
   fetchPets,
   fetchClientsPets,
   fetchClients,
-  fetchUsers,
   fetchSpecies,
   fetchRaces,
   fetchServices,
@@ -71,7 +69,6 @@ export function useAuxAgenda() {
         petsRes,
         cpRes,
         clientsRes,
-        usersRes,
         speciesRes,
         racesRes,
         servicesRes,
@@ -82,7 +79,6 @@ export function useAuxAgenda() {
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
-        fetchUsers(),
         fetchSpecies(),
         fetchRaces(),
         fetchServices(),
@@ -94,7 +90,6 @@ export function useAuxAgenda() {
       const fetchedPets: ApiPetResponse[] = petsRes.status === 'fulfilled' ? petsRes.value : []
       const fetchedCP: ApiClientPetResponse[] = cpRes.status === 'fulfilled' ? cpRes.value : []
       const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
-      const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
       const fetchedSpecies: ApiSpeciesResponse[] = speciesRes.status === 'fulfilled' ? speciesRes.value : []
       const fetchedRaces: ApiRaceResponse[] = racesRes.status === 'fulfilled' ? racesRes.value : []
       const fetchedServices: ApiServiceResponse[] = servicesRes.status === 'fulfilled' ? servicesRes.value : []
@@ -104,7 +99,6 @@ export function useAuxAgenda() {
       const petsMap = new Map(fetchedPets.map((p) => [p.id.toLowerCase(), p]))
       const cpMap = new Map(fetchedCP.map((cp) => [cp.id.toLowerCase(), cp]))
       const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
-      const usersMap = new Map(fetchedUsers.map((u) => [u.id.toLowerCase(), u]))
       const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const servicesMap = new Map(fetchedServices.map((s) => [s.id.toLowerCase(), s.name]))
@@ -119,7 +113,6 @@ export function useAuxAgenda() {
         const cp = cpMap.get(apt.clientPetId?.toLowerCase())
         const pet = cp ? petsMap.get(cp.petId.toLowerCase()) : undefined
         const client = cp ? clientsMap.get(cp.clientId.toLowerCase()) : undefined
-        const ownerUser = client ? usersMap.get(client.userId.toLowerCase()) : undefined
 
         const petName = pet?.name || 'Mascota'
         const species = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Perro' : 'Perro'
@@ -153,7 +146,7 @@ export function useAuxAgenda() {
           petName,
           petBreed,
           species,
-          ownerName: ownerUser?.fullName || 'Propietario',
+          ownerName: client?.fullName || 'Propietario',
           professional,
           service,
           notes: apt.notes || undefined,
