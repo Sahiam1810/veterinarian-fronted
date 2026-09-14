@@ -6,7 +6,6 @@ import type {
   ApiSpeciesResponse,
   ApiRaceResponse,
   ApiAppointmentResponse,
-  ApiVeterinarianResponse,
 } from '../types'
 import {
   fetchPets,
@@ -15,8 +14,8 @@ import {
   fetchSpecies,
   fetchRaces,
   fetchAppointments,
-  fetchVeterinarians,
 } from '../services'
+import { filterAuxMascotas } from '../utils/auxMascotasFilter'
 
 export interface MascotaAuxItem {
   id: string
@@ -30,20 +29,19 @@ export interface MascotaAuxItem {
   ownerName: string
   ownerPhone?: string
   nextAppointment: string
-  sterilized: 'Sí' | 'No'
+  allergyAlert: string | null
   avatarUrl?: string | null
-  citaActual?: {
-    service: string
-    time: string
-    vetName: string
-  } | null
 }
+
+const ITEMS_PER_PAGE = 8
 
 export function useAuxMascotas() {
   const [mascotas, setMascotas] = useState<MascotaAuxItem[]>([])
   const [selectedPetId, setSelectedPetId] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
   const showToast = useCallback((msg: string) => {
     setActiveNotification(msg)
@@ -62,7 +60,6 @@ export function useAuxMascotas() {
         cpRes,
         clientsRes,
         aptsRes,
-        vetsRes,
       ] = await Promise.allSettled([
         fetchPets(),
         fetchSpecies(),
@@ -70,7 +67,6 @@ export function useAuxMascotas() {
         fetchClientsPets(),
         fetchClients(),
         fetchAppointments(),
-        fetchVeterinarians(),
       ])
 
       const fetchedPets: ApiPetResponse[] = petsRes.status === 'fulfilled' ? petsRes.value : []
@@ -79,12 +75,10 @@ export function useAuxMascotas() {
       const fetchedCP: ApiClientPetResponse[] = cpRes.status === 'fulfilled' ? cpRes.value : []
       const fetchedClients: ApiClientResponse[] = clientsRes.status === 'fulfilled' ? clientsRes.value : []
       const fetchedApts: ApiAppointmentResponse[] = aptsRes.status === 'fulfilled' ? aptsRes.value : []
-      const fetchedVets: ApiVeterinarianResponse[] = vetsRes.status === 'fulfilled' ? vetsRes.value : []
 
       const speciesMap = new Map(fetchedSpecies.map((s) => [s.id.toLowerCase(), s.name]))
       const racesMap = new Map(fetchedRaces.map((r) => [r.id.toLowerCase(), r.name]))
       const clientsMap = new Map(fetchedClients.map((c) => [c.id.toLowerCase(), c]))
-      const vetsMap = new Map(fetchedVets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
 
       // Relaciones mascota -> cliente (nombre + teléfono reales)
       const petOwnerMap = new Map<string, string>()
@@ -119,7 +113,6 @@ export function useAuxMascotas() {
         const genderFormatted = p.gender === 'F' ? 'Hembra' : 'Macho'
 
         let nextAppointmentText = 'Sin citas'
-        let citaActualObj: MascotaAuxItem['citaActual'] = null
 
         if (nextApt) {
           const start = new Date(nextApt.scheduledStart)
@@ -127,11 +120,6 @@ export function useAuxMascotas() {
             ? '--:--'
             : start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
           nextAppointmentText = `Hoy, ${timeStr}`
-          citaActualObj = {
-            service: nextApt.serviceName || 'Control General',
-            time: nextAppointmentText,
-            vetName: vetsMap.get(nextApt.veterinarianId?.toLowerCase()) || 'Veterinario',
-          }
         }
 
         return {
@@ -146,12 +134,11 @@ export function useAuxMascotas() {
           ownerName,
           ownerPhone,
           nextAppointment: nextAppointmentText,
-          sterilized: p.observations?.toLowerCase().includes('esteril') ? 'Sí' : 'No',
+          allergyAlert: p.observations || null,
           // Sin foto real de mascota en ningún rol del sistema (photoUrl no se
           // expone en ningún formulario) -- sin avatarUrl, la UI ya cae en la
           // inicial del nombre en vez de fingir una foto de stock.
           avatarUrl: null,
-          citaActual: citaActualObj,
         }
       })
 
@@ -168,6 +155,10 @@ export function useAuxMascotas() {
     void loadData()
   }, [loadData])
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search])
+
   // Ficha en modal: sin selección (id vacío, p.ej. al cerrar) debe significar
   // "modal cerrado", no caer de vuelta a la primera mascota de la lista.
   const selectedPet = useMemo(() => {
@@ -175,8 +166,35 @@ export function useAuxMascotas() {
     return mascotas.find((p) => p.id === selectedPetId) || null
   }, [mascotas, selectedPetId])
 
+  // Búsqueda y paginación: mismo patrón que useRecepMascotas.ts (S54).
+  const filteredMascotas = useMemo(
+    () => filterAuxMascotas(mascotas, search),
+    [mascotas, search],
+  )
+
+  const totalCount = filteredMascotas.length
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE))
+  const pageStart = totalCount === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1
+  const pageEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalCount)
+
+  const paginatedMascotas = useMemo(() => {
+    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredMascotas.slice(startIdx, startIdx + ITEMS_PER_PAGE)
+  }, [filteredMascotas, currentPage])
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage((prev) => prev - 1)
+  }
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage((prev) => prev + 1)
+  }
+
+  const handleOpenFilters = () =>
+    showToast('Usa el buscador para filtrar rápidamente por nombre, dueño, raza o especie.')
+
   return {
-    mascotas,
+    mascotas: paginatedMascotas,
     selectedPet,
     selectedPetId,
     setSelectedPetId,
@@ -184,5 +202,13 @@ export function useAuxMascotas() {
     activeNotification,
     showToast,
     loadData,
+    search,
+    setSearch,
+    pageStart,
+    pageEnd,
+    totalCount,
+    handlePrevPage,
+    handleNextPage,
+    handleOpenFilters,
   }
 }

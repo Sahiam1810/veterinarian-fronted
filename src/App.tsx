@@ -436,7 +436,13 @@ function AuxApp({
           onLogout={onLogout}
         />
 
-        <main className="flex-1 h-full min-w-0 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6 xl:p-7 flex flex-col gap-4 sm:gap-5 max-w-[1400px] w-full mx-auto relative">
+        <main
+          className={`flex-1 h-full min-w-0 overflow-x-hidden flex flex-col max-w-[1400px] w-full mx-auto relative ${
+            currentRoute === 'mascotas'
+              ? 'overflow-y-hidden p-3 sm:p-4 lg:p-5 gap-3'
+              : 'overflow-y-auto p-4 sm:p-5 lg:p-6 xl:p-7 gap-4 sm:gap-5'
+          }`}
+        >
           <DashboardBackgroundDecoration />
           {currentRoute === 'inicio' && (
             <ViewPopup animationKey="inicio" className="w-full">
@@ -457,7 +463,7 @@ function AuxApp({
           )}
 
           {currentRoute === 'mascotas' && (
-            <ViewPopup animationKey="mascotas" className="w-full">
+            <ViewPopup animationKey="mascotas" className="w-full h-full min-h-0">
               <MascotasAux
                 onNotice={showToast}
               />

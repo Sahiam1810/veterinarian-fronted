@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { ViewPopup } from '../../components'
+import { SearchIcon } from '@/global/components'
+import { ViewPopup, FilterLinesIcon } from '../../components'
 import { useAuxMascotas } from '../../hooks'
 import { MascotaFichaModal, type MascotaFichaModalItem } from '@/modules/superadmin'
 import type { MascotaAuxItem } from '../../hooks/useAuxMascotas'
@@ -9,6 +9,9 @@ export interface MascotasAuxProps {
 }
 
 // Ficha compartida con Veterinario/Recepcionista/SuperAdmin (modal, no panel propio).
+// Mismos campos que Recepcionista: sin "Esterilizado" ni "Cita Actual" (esos
+// bloques extra hacían crecer el modal más que la pantalla y ocultaban el
+// footer con los botones Editar/Cerrar).
 function toFichaItem(pet: MascotaAuxItem): MascotaFichaModalItem {
   return {
     type: 'vetMascota',
@@ -23,64 +26,66 @@ function toFichaItem(pet: MascotaAuxItem): MascotaFichaModalItem {
       microchip: 'No disponible',
       ownerName: pet.ownerName,
       ownerPhone: pet.ownerPhone || 'No disponible',
-      allergyAlert: null,
+      allergyAlert: pet.allergyAlert,
       status: 'Activo',
-      sterilizedLabel: pet.sterilized,
-      citaActual: pet.citaActual,
     },
   }
 }
 
+// Vista Mascotas del auxiliar: mismo comportamiento de buscador + paginación +
+// scroll contenido que Recepcionista (S54), pero sin botón "Nueva Mascota"
+// (Auxiliar es de solo lectura).
 export function MascotasAux(_props: MascotasAuxProps) {
   const {
     mascotas,
     selectedPet,
     selectedPetId,
     setSelectedPetId,
+    search,
+    setSearch,
+    pageStart,
+    pageEnd,
+    totalCount,
+    handlePrevPage,
+    handleNextPage,
+    handleOpenFilters,
   } = useAuxMascotas()
 
-  const [activeTab, setActiveTab] = useState<'Todos' | 'Perros' | 'Gatos' | 'Exóticos'>('Todos')
-
-  const filteredMascotas = useMemo(() => {
-    return mascotas.filter((p) => {
-      if (activeTab === 'Todos') return true
-      if (activeTab === 'Perros') return p.specie.toLowerCase().includes('canin') || p.specie.toLowerCase().includes('perr')
-      if (activeTab === 'Gatos') return p.specie.toLowerCase().includes('felin') || p.specie.toLowerCase().includes('gat')
-      if (activeTab === 'Exóticos') return p.specie.toLowerCase().includes('exót') || p.specie.toLowerCase().includes('exot')
-      return true
-    })
-  }, [mascotas, activeTab])
-
   return (
-    <div className="w-full flex flex-col gap-4 min-w-0">
-      {/* Barra superior de herramientas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-border-tan rounded-2xl p-4 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-        {/* Filtros rápidos / Pestañas */}
-        <div className="flex items-center gap-1 bg-bone/70 p-1 rounded-xl border border-border-tan/70">
-          {(['Todos', 'Perros', 'Gatos', 'Exóticos'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                activeTab === tab
-                  ? 'bg-white text-brand shadow-2xs'
-                  : 'text-sage hover:text-brand'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+    <div className="flex flex-col gap-3 sm:gap-4 h-full min-h-0 min-w-0 overflow-hidden">
+      {/* Barra de búsqueda y filtros */}
+      <div className="shrink-0 w-full min-w-0 flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
+        <label className="relative flex-1 min-w-0">
+          <span className="sr-only">Buscar mascota</span>
+          <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-sage pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar mascota, dueño..."
+            className="w-full rounded-xl border border-border-tan bg-white pl-10 pr-3 py-2.5 sm:py-3 text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition shadow-[0_2px_12px_rgba(35,78,70,0.03)]"
+          />
+        </label>
+
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={handleOpenFilters}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-border-tan bg-white px-3.5 py-2.5 sm:py-3 text-sm font-bold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer shadow-[0_2px_12px_rgba(35,78,70,0.03)]"
+          >
+            <FilterLinesIcon className="w-4 h-4" />
+            <span>Filtros</span>
+          </button>
         </div>
       </div>
 
       {/* Tabla de mascotas */}
-      <ViewPopup animationKey={activeTab} className="w-full">
-        <div className="bg-white rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(0,0,0,0.03)] overflow-hidden">
-          <div className="overflow-x-auto">
+      <ViewPopup animationKey="mascotas-tabla" className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
+        <section className="flex-1 min-w-0 min-h-0 flex flex-col rounded-2xl border border-border-tan bg-white overflow-hidden shadow-[0_2px_16px_rgba(35,78,70,0.04)]">
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[650px]">
-              <thead>
-                <tr className="bg-[#dce9e3] text-[#34524a] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+              <thead className="sticky top-0 z-10 bg-[#dce9e3]">
+                <tr className="text-[#34524a] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
                   <th className="py-4 px-4 sm:px-6 font-bold">MASCOTA</th>
                   <th className="py-4 px-4 sm:px-5 font-bold">ESPECIE/RAZA</th>
                   <th className="py-4 px-4 sm:px-5 font-bold">DETALLES</th>
@@ -89,7 +94,7 @@ export function MascotasAux(_props: MascotasAuxProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-tan/60 text-sm">
-                {filteredMascotas.map((pet) => {
+                {mascotas.map((pet) => {
                   const isSelected = pet.id === selectedPetId
                   return (
                     <tr
@@ -179,7 +184,31 @@ export function MascotasAux(_props: MascotasAuxProps) {
               </tbody>
             </table>
           </div>
-        </div>
+
+          <footer className="shrink-0 flex items-center justify-between gap-3 px-3 sm:px-5 py-3.5 border-t border-border-tan bg-white">
+            <p className="text-xs sm:text-sm text-sage font-medium truncate">
+              Mostrando {pageStart} a {pageEnd} de {totalCount}
+            </p>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={handlePrevPage}
+                className="px-2.5 h-8 rounded-lg border border-border-tan text-xs font-semibold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+                aria-label="Página anterior"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={handleNextPage}
+                className="px-2.5 h-8 rounded-lg border border-border-tan text-xs font-semibold text-sage hover:text-brand hover:border-brand/30 transition cursor-pointer inline-flex items-center justify-center"
+                aria-label="Página siguiente"
+              >
+                Siguiente
+              </button>
+            </div>
+          </footer>
+        </section>
       </ViewPopup>
 
       <MascotaFichaModal
