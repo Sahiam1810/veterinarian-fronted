@@ -17,6 +17,9 @@ export interface MascotaVitalsFichaData {
   ownerPhone: string
   allergyAlert?: string | null
   status: string
+  // Solo lo usa Auxiliar hoy; el resto de roles no lo tiene y no se renderiza.
+  sterilizedLabel?: string
+  citaActual?: { service: string; time: string; vetName: string } | null
 }
 
 export type MascotaFichaModalItem =
@@ -237,11 +240,26 @@ export function MascotaFichaModal({
                   <span className="text-[10px] text-sage font-bold uppercase block">Teléfono</span>
                   <span className="font-bold text-charcoal">{vetMascota.ownerPhone}</span>
                 </div>
+                {vetMascota.sterilizedLabel && (
+                  <div className="p-3 rounded-xl bg-bone border border-border-tan/60">
+                    <span className="text-[10px] text-sage font-bold uppercase block">Esterilizado</span>
+                    <span className="font-bold text-charcoal">{vetMascota.sterilizedLabel}</span>
+                  </div>
+                )}
                 <div className="p-3 rounded-xl bg-bone border border-border-tan/60 col-span-2">
                   <span className="text-[10px] text-sage font-bold uppercase block">Microchip</span>
                   <span className="font-bold text-charcoal">{vetMascota.microchip || 'No registrado'}</span>
                 </div>
               </div>
+
+              {vetMascota.citaActual && (
+                <div className="p-3.5 rounded-xl bg-mint-soft/50 border border-brand/10 text-xs">
+                  <span className="font-bold text-brand block mb-1">Cita Actual:</span>
+                  <p className="text-charcoal/90 leading-relaxed">
+                    {vetMascota.citaActual.service} • {vetMascota.citaActual.time} • {vetMascota.citaActual.vetName}
+                  </p>
+                </div>
+              )}
 
               {vetMascota.allergyAlert ? (
                 <div className="p-3.5 rounded-xl bg-terracotta-soft border border-terracotta/25 text-xs">
