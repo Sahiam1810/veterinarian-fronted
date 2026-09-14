@@ -6,11 +6,11 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5174,
+    port: 5173,
     strictPort: true,
   },
   preview: {
-    port: 5174,
+    port: 5173,
     strictPort: true,
   },
   resolve: {

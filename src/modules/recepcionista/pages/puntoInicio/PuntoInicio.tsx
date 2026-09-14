@@ -13,6 +13,7 @@ import { AgendaPage } from '../agenda'
 import { DuenosPage } from '../duenos'
 import { MascotasPage } from '../mascotas'
 import { PerfilPage } from '../perfil'
+import { EscalacionesPage } from '../escalaciones'
 
 interface PuntoInicioProps {
   userName?: string
@@ -20,7 +21,7 @@ interface PuntoInicioProps {
   onLogout?: () => void
 }
 
-// Shell del recepcionista: Home + Dueños + Agenda + Mascotas + Perfil
+// Shell del recepcionista: Home + Dueños + Asesor/Conversaciones + Agenda + Mascotas + Perfil
 export function PuntoInicio({
   userName,
   userRole,
@@ -47,7 +48,8 @@ export function PuntoInicio({
   const isMascotas = activeRoute === 'mascotas'
   const isAgenda = activeRoute === 'agenda'
   const isDuenos = activeRoute === 'duenos'
-  const fillHeight = isMascotas || isAgenda || isDuenos
+  const isConversaciones = activeRoute === 'conversaciones'
+  const fillHeight = isMascotas || isAgenda || isDuenos || isConversaciones
 
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
@@ -125,6 +127,8 @@ export function PuntoInicio({
 
           {isDuenos && <DuenosPage onNotice={showToast} />}
 
+          {isConversaciones && <EscalacionesPage onNotice={showToast} />}
+
           {isAgenda && <AgendaPage onNotice={showToast} />}
 
           {isMascotas && <MascotasPage onNotice={showToast} />}
@@ -135,7 +139,8 @@ export function PuntoInicio({
             activeRoute !== 'perfil' &&
             activeRoute !== 'mascotas' &&
             activeRoute !== 'agenda' &&
-            activeRoute !== 'duenos' && (
+            activeRoute !== 'duenos' &&
+            activeRoute !== 'conversaciones' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">
                   Módulo “{activeRoute}” pendiente de implementación.

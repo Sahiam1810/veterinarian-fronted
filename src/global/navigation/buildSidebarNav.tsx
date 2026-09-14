@@ -8,6 +8,7 @@ import {
   PlusIcon,
   SettingsIcon,
   OwnersIcon,
+  ChatIcon,
 } from '../components/Icons'
 import type { NavCatalogItem, NavIconKey } from './types'
 import type { SidebarNavItem, SidebarPrimaryAction } from '../components/Sidebar'
@@ -31,6 +32,8 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
       return <SettingsIcon className={className} />
     case 'owners':
       return <OwnersIcon className={className} />
+    case 'chat':
+      return <ChatIcon className={className} />
     default:
       return null
   }

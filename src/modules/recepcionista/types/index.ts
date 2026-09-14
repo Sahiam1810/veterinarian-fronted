@@ -5,9 +5,9 @@ export type {
   RecepDayAppointment,
   RecepHomeDashboard,
   RecepQuickActionId,
-} from './home.types'
+} from './home.types.ts'
 
-export * from './perfil.types'
+export * from './perfil.types.ts'
 
 export type {
   RecepMascotaEstado,
@@ -16,8 +16,7 @@ export type {
   RecepMascotaFormData,
   RecepMascotaRawFields,
   RecepMascotasDirectoryPayload,
-} from './mascotas.types'
-
+} from './mascotas.types.ts'
 
 export type {
   RecepAgendaOwnerOption,
@@ -28,9 +27,9 @@ export type {
   RecepAgendaCatalogPayload,
   RecepAgendaFormState,
   RecepAgendaDayAppointment,
-} from './agenda.types'
+} from './agenda.types.ts'
 
-export { isRecepAppointmentEditable, canMarkRecepNoAsistio, canCheckIn, mapRecepAgendaStatus } from './agenda.types'
+export { isRecepAppointmentEditable, canMarkRecepNoAsistio, canCheckIn, mapRecepAgendaStatus } from './agenda.types.ts'
 
 export type {
   RecepDuenoEstado,
@@ -40,5 +39,24 @@ export type {
   RecepDuenoDetail,
   RecepDuenoFormData,
   RecepDuenosDirectoryPayload,
-} from './duenos.types'
+} from './duenos.types.ts'
+
+export type {
+  ChatConversationResponseDto,
+  ChatEscalationResponseDto,
+  EscalationPriority,
+  EscalationStatus,
+  EscalationChannel,
+  EscalationStatusFilter,
+  EscalatedConversationListItem,
+  EscalacionesDirectoryPayload,
+} from './escalaciones.types.ts'
+
+export {
+  ESCALATION_STATUS_GUIDS,
+  ESCALATION_STATUS_NAMES,
+  ESCALATION_PRIORITY_GUIDS,
+  ESCALATION_PRIORITY_NAMES,
+} from './escalaciones.types.ts'
+
 

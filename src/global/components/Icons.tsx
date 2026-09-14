@@ -1,4 +1,4 @@
-﻿import type { SVGProps } from 'react'
+import type { SVGProps } from 'react'
 
 export interface IconProps extends SVGProps<SVGSVGElement> {
   className?: string
@@ -583,7 +583,7 @@ export function EyeOffIcon({ className = 'w-4 h-4', ...props }: IconProps) {
   )
 }
 
-// Icono de documento / historia cl�nica (m�dulo veterinario; distinto de MedicalHistoryIcon admin)
+// Icono de documento / historia clínica (módulo veterinario; distinto de MedicalHistoryIcon admin)
 export function ClinicalHistoryIcon({ className = 'w-5 h-5', ...props }: IconProps) {
   return (
     <svg
@@ -606,3 +606,46 @@ export function ClinicalHistoryIcon({ className = 'w-5 h-5', ...props }: IconPro
   )
 }
 
+// Icono de chat / mensajes / asesor (globo de conversación)
+export function ChatIcon({ className = 'w-5 h-5', ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <line x1="8" y1="9" x2="16" y2="9" />
+      <line x1="8" y1="13" x2="13" y2="13" />
+    </svg>
+  )
+}
+
+// Icono de recargar / refrescar
+export function ReloadIcon({ className = 'w-5 h-5', ...props }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M23 4v6h-6" />
+      <path d="M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  )
+}
+
+export const RefreshIcon = ReloadIcon

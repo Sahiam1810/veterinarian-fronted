@@ -20,5 +20,8 @@ export { RecepDuenosToolbar } from './RecepDuenosToolbar'
 export { RecepDuenosTable } from './RecepDuenosTable'
 export { RecepDuenoModal } from './RecepDuenoModal'
 export { RecepMascotaModal } from './RecepMascotaModal'
+export { RecepEscalacionesToolbar } from './RecepEscalacionesToolbar'
+export { RecepEscalacionesTable } from './RecepEscalacionesTable'
+export { RecepEscalacionesView } from './RecepEscalacionesView'
 
 

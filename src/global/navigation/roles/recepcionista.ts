@@ -21,6 +21,15 @@ export const RECEP_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    id: 'conversaciones',
+    label: 'Asesor',
+    permissionKey: 'recep.conversaciones',
+    iconKey: 'chat',
+    kind: 'link',
+    order: 25,
+    placement: 'main',
+  },
+  {
     id: 'mascotas',
     label: 'Mascotas',
     permissionKey: 'recep.mascotas',
