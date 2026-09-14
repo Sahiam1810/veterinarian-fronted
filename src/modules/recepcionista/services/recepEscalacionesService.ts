@@ -72,14 +72,21 @@ export function resolveStatus(
     return ESCALATION_STATUS_NAMES[statusId] as EscalationStatus
   }
   const norm = `${statusId || ''} ${rawStatusName || ''}`.toLowerCase()
-  if (norm.includes('progreso') || norm.includes('atencion') || norm.includes('in_progress')) {
+  if (norm.includes('asignada') || norm.includes('assigned')) {
+    return 'Asignada'
+  }
+  // 'atenci' (sin tilde) hace match tanto contra "atención" como "atencion" —
+  // evita depender de que el backend mande el tilde exacto.
+  if (norm.includes('progreso') || norm.includes('atenci') || norm.includes('in_progress')) {
     return 'En atención'
   }
-  if (norm.includes('resuelto') || norm.includes('resolved')) {
-    return 'Resuelto'
+  // 'resuel'/'cancel' cubren las formas femenina y masculina ("Resuelta"/
+  // "Resuelto", "Cancelada"/"Cancelado") con el mismo radical.
+  if (norm.includes('resuel') || norm.includes('resolved')) {
+    return 'Resuelta'
   }
-  if (norm.includes('cancelado') || norm.includes('cancelled')) {
-    return 'Cancelado'
+  if (norm.includes('cancel')) {
+    return 'Cancelada'
   }
   return 'Pendiente'
 }
@@ -194,8 +201,10 @@ export function buildEscalatedDirectory(
     if (esc.statusId === ESCALATION_STATUS_GUIDS.RESOLVED || esc.statusId === ESCALATION_STATUS_GUIDS.CANCELLED) {
       return false
     }
+    // Formas femenina ("Resuelta"/"Cancelada", como las manda el backend real)
+    // y masculina, por si algún origen de datos las manda distinto.
     const statusNorm = (esc.status || '').toLowerCase()
-    if (statusNorm === 'resuelto' || statusNorm === 'resolved' || statusNorm === 'cancelado') {
+    if (statusNorm.includes('resuel') || statusNorm === 'resolved' || statusNorm.includes('cancel')) {
       return false
     }
     return true
