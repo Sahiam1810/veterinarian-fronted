@@ -52,6 +52,7 @@ interface RecepAgendaViewProps {
   onChangeDayPanelDate: (dateValue: string) => void
   onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
   onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
+  onCheckIn: (appointment: RecepAgendaDayAppointment) => void
 }
 
 // Fecha local (no UTC) para el min del input date — evita el desfase de día en zonas UTC negativas.
@@ -102,6 +103,7 @@ export function RecepAgendaView({
   onChangeDayPanelDate,
   onEditAppointment,
   onMarkNoAsistio,
+  onCheckIn,
 }: RecepAgendaViewProps) {
   const showOwnerSuggestions =
     form.ownerQuery.trim().length > 0 &&
@@ -384,6 +386,7 @@ export function RecepAgendaView({
         onChangeDate={onChangeDayPanelDate}
         onEditAppointment={onEditAppointment}
         onMarkNoAsistio={onMarkNoAsistio}
+        onCheckIn={onCheckIn}
       />
     </>
   )

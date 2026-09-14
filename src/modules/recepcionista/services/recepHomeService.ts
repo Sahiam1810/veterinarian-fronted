@@ -44,7 +44,10 @@ function mapStatus(rawStatus?: string | null): RecepAppointmentStatus {
   if (normalized.includes('NO_ASIST') || normalized.includes('NO ASIST')) {
     return 'NO ASISTIÓ'
   }
-  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES')) {
+  if (normalized.includes('CONFIRM')) {
+    return 'EN ESPERA'
+  }
+  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES') || normalized.includes('PROGRESO')) {
     return 'EN CONSULTORIO'
   }
   if (normalized.includes('ATEND') || normalized.includes('COMPLET') || normalized.includes('FINALIZ')) {
@@ -128,7 +131,7 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
     const statusName = apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
     const status = mapStatus(statusName)
 
-    if (status === 'AGENDADO') pendientes++
+    if (status === 'AGENDADO' || status === 'EN ESPERA') pendientes++
     else if (status === 'ATENDIDO' || status === 'EN CONSULTORIO') mascotasAtendidas++
     else if (status === 'CANCELADO') canceladas++
 

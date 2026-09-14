@@ -7,7 +7,7 @@ import {
   StethoscopeIcon,
 } from '@/global/components'
 import type { RecepAgendaDayAppointment } from '../types'
-import { canMarkRecepNoAsistio, isRecepAppointmentEditable } from '../types'
+import { canMarkRecepNoAsistio, canCheckIn, isRecepAppointmentEditable } from '../types'
 import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
 import { CloseIcon } from './RecepMascotasIcons'
 
@@ -21,6 +21,7 @@ interface RecepDayCalendarPanelProps {
   onChangeDate: (dateValue: string) => void
   onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
   onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
+  onCheckIn: (appointment: RecepAgendaDayAppointment) => void
 }
 
 const HOUR_START = 8
@@ -55,6 +56,7 @@ function todayIsoDateLocal(): string {
 function eventTone(status: RecepAgendaDayAppointment['status']): string {
   const tones: Record<RecepAgendaDayAppointment['status'], string> = {
     AGENDADO: 'bg-brand/90 border-brand text-white',
+    'EN ESPERA': 'bg-ochre/80 border-ochre text-charcoal',
     'EN CONSULTORIO': 'bg-ochre border-ochre text-charcoal',
     ATENDIDO: 'bg-sage-soft border-sage/40 text-brand',
     CANCELADO: 'bg-terracotta-soft border-terracotta/30 text-terracotta line-through',
@@ -74,6 +76,7 @@ export function RecepDayCalendarPanel({
   onChangeDate,
   onEditAppointment,
   onMarkNoAsistio,
+  onCheckIn,
 }: RecepDayCalendarPanelProps) {
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -306,6 +309,7 @@ export function RecepDayCalendarPanel({
                 onClear={() => setSelectedId(null)}
                 onEdit={() => onEditAppointment(selected)}
                 onMarkNoAsistio={() => onMarkNoAsistio(selected)}
+                onCheckIn={() => onCheckIn(selected)}
               />
             )}
           </aside>
@@ -320,14 +324,17 @@ function AppointmentDetail({
   onClear,
   onEdit,
   onMarkNoAsistio,
+  onCheckIn,
 }: {
   appointment: RecepAgendaDayAppointment
   onClear: () => void
   onEdit: () => void
   onMarkNoAsistio: () => void
+  onCheckIn: () => void
 }) {
   const canEdit = isRecepAppointmentEditable(appointment.status)
   const canNoShow = canMarkRecepNoAsistio(appointment.status)
+  const canArrive = canCheckIn(appointment.status)
 
   return (
     <div className="p-4 flex flex-col gap-3 min-h-0">
@@ -384,6 +391,15 @@ function AppointmentDetail({
 
       {canEdit ? (
         <div className="mt-auto flex flex-col gap-2">
+          {canArrive && (
+            <button
+              type="button"
+              onClick={onCheckIn}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-ochre text-charcoal px-4 py-2.5 text-sm font-bold hover:bg-ochre/90 transition cursor-pointer"
+            >
+              <span>Marcar llegada</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onEdit}

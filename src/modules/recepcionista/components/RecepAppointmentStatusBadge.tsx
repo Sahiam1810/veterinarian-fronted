@@ -9,6 +9,7 @@ export function RecepAppointmentStatusBadge({
 }: RecepAppointmentStatusBadgeProps) {
   const styles: Record<RecepAppointmentStatus, string> = {
     'EN CONSULTORIO': 'bg-sage/15 text-brand border border-brand/15',
+    'EN ESPERA': 'bg-ochre/15 text-ochre border border-ochre/25',
     AGENDADO: 'bg-brand/10 text-brand border border-brand/20',
     ATENDIDO: 'bg-terracotta-soft text-terracotta border border-terracotta/20',
     CANCELADO: 'bg-terracotta-soft/80 text-terracotta border border-terracotta/25',
@@ -17,6 +18,7 @@ export function RecepAppointmentStatusBadge({
 
   const labels: Record<RecepAppointmentStatus, string> = {
     'EN CONSULTORIO': 'En consultorio',
+    'EN ESPERA': 'En espera',
     AGENDADO: 'Agendado',
     ATENDIDO: 'Atendido',
     CANCELADO: 'Cancelado',

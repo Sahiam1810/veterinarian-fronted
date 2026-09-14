@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { afterEach, beforeEach } from 'node:test'
 
-import { createRecepAppointment, fetchRecepDayAppointments } from '../../src/modules/recepcionista/services/recepAgendaService.ts'
+import { createRecepAppointment, fetchRecepDayAppointments, updateRecepAppointmentStatus } from '../../src/modules/recepcionista/services/recepAgendaService.ts'
 import type { RecepAgendaFormState } from '../../src/modules/recepcionista/types/agenda.types.ts'
 
 const originalFetch = globalThis.fetch
@@ -155,4 +155,40 @@ test('fetchRecepDayAppointments muestra una cita nocturna bajo su fecha local, n
 
   const forDiaSiguiente = await fetchRecepDayAppointments('2026-09-14')
   assert.equal(forDiaSiguiente.length, 0)
+})
+
+function mockStatusCatalogFetch(calls: Array<{ url: string; method?: string; body?: any }>) {
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const urlStr = String(input)
+    const bodyParsed = init?.body ? JSON.parse(String(init.body)) : undefined
+    calls.push({ url: urlStr, method: init?.method, body: bodyParsed })
+
+    if (urlStr.includes('/api/StatusAppointments')) {
+      return Response.json([
+        { id: 'status-agendada', name: 'AGENDADA' },
+        { id: 'status-confirmada', name: 'CONFIRMADA' },
+        { id: 'status-progreso', name: 'EN_PROGRESO' },
+        { id: 'status-atendida', name: 'ATENDIDA' },
+        { id: 'status-cancelada', name: 'CANCELADA' },
+        { id: 'status-no-asistio', name: 'NO_ASISTIO' },
+      ])
+    }
+    if (urlStr.includes('/api/Appointments/')) {
+      return new Response(null, { status: 204 })
+    }
+    return new Response('Not found', { status: 404 })
+  }
+}
+
+// Check-in: "EN ESPERA" en el frontend corresponde al estado real CONFIRMADA
+// del catálogo del backend, no a un estado inventado "En Espera" que no existe.
+test('updateRecepAppointmentStatus resuelve "EN ESPERA" al estado real CONFIRMADA', async () => {
+  const calls: Array<{ url: string; method?: string; body?: any }> = []
+  mockStatusCatalogFetch(calls)
+
+  await updateRecepAppointmentStatus('apt-1', 'EN ESPERA')
+
+  const patchCall = calls.find((c) => c.method === 'PATCH')
+  assert.ok(patchCall, 'debió llamar a PATCH /api/Appointments/{id}/status')
+  assert.equal(patchCall!.body.statusId, 'status-confirmada')
 })

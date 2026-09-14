@@ -1,5 +1,6 @@
 export type RecepAppointmentStatus =
   | 'EN CONSULTORIO'
+  | 'EN ESPERA'
   | 'AGENDADO'
   | 'ATENDIDO'
   | 'CANCELADO'
