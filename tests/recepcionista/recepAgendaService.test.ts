@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { afterEach, beforeEach } from 'node:test'
 
-import { createRecepAppointment } from '../../src/modules/recepcionista/services/recepAgendaService.ts'
+import { createRecepAppointment, fetchRecepDayAppointments } from '../../src/modules/recepcionista/services/recepAgendaService.ts'
 import type { RecepAgendaFormState } from '../../src/modules/recepcionista/types/agenda.types.ts'
 
 const originalFetch = globalThis.fetch
@@ -128,4 +128,31 @@ test('createRecepAppointment rechaza la cita cuando no hay disponibilidad real p
 
   const createCall = calls.find((c) => c.url.includes('/api/Appointments') && c.method === 'POST')
   assert.equal(createCall, undefined, 'no debió llamar a POST /api/Appointments')
+})
+
+function mockDayPanelFetch(appointments: Array<{ id: string; scheduledStart: string; scheduledEnd?: string }>) {
+  globalThis.fetch = async (input: RequestInfo | URL) => {
+    const urlStr = String(input)
+    if (urlStr.includes('/api/Appointments')) {
+      return Response.json(appointments.map((apt) => ({ scheduledEnd: apt.scheduledStart, ...apt })))
+    }
+    return Response.json([])
+  }
+}
+
+// Bug: una cita de la noche en Bogotá (UTC-5) se guarda con fecha UTC del día
+// siguiente (8:00 p.m. del 13/09 -> "2026-09-14T01:00:00.000Z"). El panel
+// "Agenda del día" comparaba por texto crudo contra la fecha local elegida y
+// la perdía. Debe seguir apareciendo bajo el día local en que realmente ocurre.
+test('fetchRecepDayAppointments muestra una cita nocturna bajo su fecha local, no la fecha UTC', async () => {
+  mockDayPanelFetch([
+    { id: 'apt-noche', scheduledStart: '2026-09-14T01:00:00.000Z' }, // 8:00 p.m. del 13/09 en Bogotá
+  ])
+
+  const forHoy = await fetchRecepDayAppointments('2026-09-13')
+  assert.equal(forHoy.length, 1)
+  assert.equal(forHoy[0]?.id, 'apt-noche')
+
+  const forDiaSiguiente = await fetchRecepDayAppointments('2026-09-14')
+  assert.equal(forDiaSiguiente.length, 0)
 })

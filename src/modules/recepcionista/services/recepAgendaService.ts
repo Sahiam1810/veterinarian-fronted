@@ -42,6 +42,24 @@ function toDisplayLabel(hm: string): string {
   return `${String(displayHour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`
 }
 
+// scheduledStart llega en UTC (una cita de la noche en Bogotá puede caer en la
+// fecha UTC del día siguiente); comparar por texto crudo contra la fecha local
+// elegida descarta esas citas. Se compara por año/mes/día locales reales,
+// mismo criterio que ya usa Veterinario (isScheduledToday/toDateKey).
+function isSameLocalDate(iso: string, dateValue: string): boolean {
+  const when = new Date(iso)
+  if (Number.isNaN(when.getTime())) return false
+
+  const [year, month, day] = dateValue.trim().slice(0, 10).split('-').map(Number)
+  if (!year || !month || !day) return false
+
+  return (
+    when.getFullYear() === year &&
+    when.getMonth() === month - 1 &&
+    when.getDate() === day
+  )
+}
+
 // S56: genera las franjas horarias a partir de la disponibilidad real
 // configurada del veterinario para ese día de la semana, en vez de una lista
 // fija -- y excluye del todo (no solo deshabilita) las horas que ya pasaron
@@ -190,12 +208,10 @@ export async function fetchRecepDayAppointments(
   const statusesMap = new Map(statuses.map((st) => [st.id.toLowerCase(), st.name]))
   const racesMap = new Map(races.map((r) => [r.id.toLowerCase(), r.name]))
 
-  // Filtrar por la fecha indicada
-  const targetPrefix = dateValue.trim().slice(0, 10)
-
+  // Filtrar por la fecha local indicada (no por texto crudo del UTC almacenado)
   const dayList = appointments.filter((apt) => {
     if (!apt.scheduledStart) return false
-    return apt.scheduledStart.startsWith(targetPrefix)
+    return isSameLocalDate(apt.scheduledStart, dateValue)
   })
 
   return dayList.map((apt) => {
