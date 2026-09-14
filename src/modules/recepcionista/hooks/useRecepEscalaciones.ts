@@ -4,9 +4,40 @@ import type {
   EscalatedConversationListItem,
   EscalationStatusFilter,
 } from '../types/index.ts'
-import { fetchEscalatedConversations } from '../services/index.ts'
+import {
+  fetchEscalatedConversations,
+  resolveChannel,
+  resolvePriority,
+  resolveStatus,
+  formatWaitingTime,
+} from '../services/index.ts'
+import {
+  useChatEscalationsRealtime,
+  type ChatEscalationCreatedPayload,
+  type ChatMessageReceivedPayload,
+  type ChatEscalationResolvedPayload,
+} from '../../../global/notifications/index.ts'
 
 const ITEMS_PER_PAGE = 8
+
+function recomputeDirectory(
+  items: EscalatedConversationListItem[],
+): EscalacionesDirectoryPayload {
+  const pendingCount = items.filter((i) => i.status === 'Pendiente').length
+  const urgentCount = items.filter(
+    (i) => i.priority === 'Urgente' || i.priority === 'Alta',
+  ).length
+  const inProgressCount = items.filter((i) => i.status === 'En atención').length
+  return {
+    items,
+    totalCount: items.length,
+    pendingCount,
+    urgentCount,
+    inProgressCount,
+    pageStart: items.length > 0 ? 1 : 0,
+    pageEnd: items.length,
+  }
+}
 
 export function useRecepEscalaciones(
   enabled: boolean = true,
@@ -76,7 +107,7 @@ export function useRecepEscalaciones(
     void loadDirectory(false)
   }, [enabled, loadDirectory])
 
-  // Intervalo de auto-refresco en segundo plano
+  // Intervalo de auto-refresco en segundo plano (degradación segura / polling de respaldo)
   useEffect(() => {
     if (!enabled || autoRefreshIntervalMs <= 0) return
 
@@ -90,6 +121,135 @@ export function useRecepEscalaciones(
   useEffect(() => {
     if (!enabled) setSelectedId(null)
   }, [enabled])
+
+  // =========================================================================
+  // Handlers en tiempo real (SignalR)
+  // =========================================================================
+
+  // 1. ChatEscalationCreated: agregar conversación al inicio de la lista
+  const handleRealtimeEscalationCreated = useCallback(
+    (payload: ChatEscalationCreatedPayload) => {
+      setDirectory((curr) => {
+        const currentItems = curr?.items ?? []
+        // Evitar duplicados
+        if (
+          currentItems.some(
+            (i) =>
+              i.escalationId === payload.escalationId ||
+              i.conversationId === payload.conversationId,
+          )
+        ) {
+          return curr
+        }
+
+        const date = new Date(payload.createdAt)
+        const lastMessageTimeLabel = !isNaN(date.getTime())
+          ? date.toLocaleTimeString('es-CO', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            })
+          : 'Ahora'
+
+        const waitingInfo = formatWaitingTime(payload.createdAt)
+
+        const newItem: EscalatedConversationListItem = {
+          id: payload.escalationId,
+          conversationId: payload.conversationId,
+          escalationId: payload.escalationId,
+          clientName: payload.clientName || 'Cliente',
+          clientPhone: payload.clientPhone ?? null,
+          channel: resolveChannel(payload.channel),
+          channelRaw: payload.channel || 'Telegram',
+          lastMessage:
+            payload.lastMessage ||
+            payload.reason ||
+            'Solicitud de asesor humano',
+          lastMessageAt: payload.createdAt,
+          lastMessageTimeLabel,
+          waitingTimeLabel: waitingInfo.label,
+          waitingMinutes: waitingInfo.minutes,
+          priority: resolvePriority(payload.priority),
+          priorityId: payload.priority ?? null,
+          status: resolveStatus(payload.status),
+          statusId: payload.status ?? null,
+          createdAt: payload.createdAt,
+          reason: payload.reason ?? null,
+        }
+
+        const nextItems = [newItem, ...currentItems]
+        return recomputeDirectory(nextItems)
+      })
+
+      showNotice(`Nueva conversación: ${payload.clientName || 'Cliente'}`)
+    },
+    [showNotice],
+  )
+
+  // 2. ChatMessageReceived: actualizar último mensaje en la fila
+  const handleRealtimeMessageReceived = useCallback(
+    (payload: ChatMessageReceivedPayload) => {
+      setDirectory((curr) => {
+        if (!curr) return curr
+
+        const nextItems = curr.items.map((item) => {
+          if (item.conversationId === payload.conversationId) {
+            const date = new Date(payload.sentAt)
+            const lastMessageTimeLabel = !isNaN(date.getTime())
+              ? date.toLocaleTimeString('es-CO', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                })
+              : item.lastMessageTimeLabel
+
+            return {
+              ...item,
+              lastMessage: payload.content,
+              lastMessageAt: payload.sentAt,
+              lastMessageTimeLabel,
+            }
+          }
+          return item
+        })
+
+        return {
+          ...curr,
+          items: nextItems,
+        }
+      })
+    },
+    [],
+  )
+
+  // 3. ChatEscalationResolved: remover conversación de la lista
+  const handleRealtimeEscalationResolved = useCallback(
+    (payload: ChatEscalationResolvedPayload) => {
+      setDirectory((curr) => {
+        if (!curr) return curr
+
+        const nextItems = curr.items.filter(
+          (i) =>
+            i.escalationId !== payload.escalationId &&
+            (!payload.conversationId || i.conversationId !== payload.conversationId),
+        )
+
+        return recomputeDirectory(nextItems)
+      })
+
+      setSelectedId((prev) => (prev === payload.escalationId ? null : prev))
+      showNotice('Conversación resuelta')
+    },
+    [showNotice],
+  )
+
+  // Conexión reactiva a SignalR
+  useChatEscalationsRealtime({
+    enabled,
+    onEscalationCreated: handleRealtimeEscalationCreated,
+    onMessageReceived: handleRealtimeMessageReceived,
+    onEscalationResolved: handleRealtimeEscalationResolved,
+  })
 
   // Reiniciar a la página 1 cuando cambia el filtro o la búsqueda
   useEffect(() => {

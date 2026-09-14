@@ -30,6 +30,7 @@ export function PuntoInicio({
   const {
     dashboard,
     grantedPermissions,
+    unreadEscalationsCount,
     isLoading,
     error,
     isSidebarOpen,
@@ -68,6 +69,7 @@ export function PuntoInicio({
           activeRoute={activeRoute}
           onNavigate={handleNavigate}
           grantedPermissions={grantedPermissions}
+          unreadEscalationsCount={unreadEscalationsCount}
           onLogout={onLogout}
         />
 

@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { SearchIcon, ReloadIcon } from '@/global/components'
 import type { EscalationStatusFilter } from '../types'
+import { notificationsHubManager } from '@/global/notifications'
+import { USE_MOCK_ESCALATIONS } from '../services/recepEscalacionesService.ts'
 
 interface RecepEscalacionesToolbarProps {
   search: string
@@ -29,6 +32,55 @@ export function RecepEscalacionesToolbar({
   onStatusFilterChange,
   onRefresh,
 }: RecepEscalacionesToolbarProps) {
+  const [isSimMenuOpen, setIsSimMenuOpen] = useState(false)
+
+  // Simulación de eventos SignalR para desarrollo y pruebas
+  const showDevSim = import.meta.env.DEV || USE_MOCK_ESCALATIONS
+
+  const handleSimulateNewEscalation = () => {
+    const id = Date.now().toString()
+    notificationsHubManager.simulateEscalationCreated({
+      escalationId: `sim-esc-${id}`,
+      conversationId: `sim-conv-${id}`,
+      clientId: `sim-cli-${id}`,
+      clientName: `Cliente Prueba (${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })})`,
+      clientPhone: '+57 310 987 6543',
+      reason: 'Consulta sobre urgencia veterinaria',
+      priority: 'HIGH',
+      status: 'PENDING',
+      channel: 'TELEGRAM',
+      createdAt: new Date().toISOString(),
+      lastMessage: 'Por favor necesito ayuda con mi mascota',
+    })
+    setIsSimMenuOpen(false)
+  }
+
+  const handleSimulateIncomingMessage = () => {
+    // Envía un mensaje simulado para la primera conversación o mock
+    notificationsHubManager.simulateMessageReceived({
+      messageId: `sim-msg-${Date.now()}`,
+      conversationId: 'c-10000000-0000-0000-0000-000000000001',
+      senderType: 'CLIENT',
+      senderName: 'Carlos Mendoza',
+      content: `Hola asesor, ¿pueden ayudarme? (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })})`,
+      sentAt: new Date().toISOString(),
+      messageType: 'TEXT',
+    })
+    setIsSimMenuOpen(false)
+  }
+
+  const handleSimulateResolution = () => {
+    // Resuelve la conversación mock 1
+    notificationsHubManager.simulateEscalationResolved({
+      escalationId: 'e-10000000-0000-0000-0000-000000000001',
+      conversationId: 'c-10000000-0000-0000-0000-000000000001',
+      resolvedBy: 'otro-agente-id',
+      resolvedAt: new Date().toISOString(),
+      resolutionNotes: 'Resuelto por otro asesor en otra sesión',
+    })
+    setIsSimMenuOpen(false)
+  }
+
   return (
     <div className="w-full min-w-0 flex flex-col gap-2.5 sm:gap-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 min-w-0">
@@ -72,20 +124,75 @@ export function RecepEscalacionesToolbar({
           })}
         </div>
 
-        {onRefresh && (
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-border-tan text-brand hover:bg-sage-soft hover:border-brand/30 px-3.5 py-2 text-xs sm:text-sm font-bold transition cursor-pointer shrink-0 disabled:opacity-50"
-            title="Actualizar bandeja de escalamiento"
-          >
-            <ReloadIcon
-              className={`w-4 h-4 text-brand ${isRefreshing ? 'animate-spin' : ''}`}
-            />
-            <span>{isRefreshing ? 'Actualizando…' : 'Actualizar'}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {showDevSim && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsSimMenuOpen((prev) => !prev)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 px-3 py-2 text-xs font-bold transition cursor-pointer"
+                title="Simular eventos SignalR en tiempo real (desarrollo/QA)"
+              >
+                <span>⚡ Simular</span>
+              </button>
+
+              {isSimMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-30 cursor-default border-0 bg-transparent"
+                    aria-label="Cerrar menú simulación"
+                    onClick={() => setIsSimMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1.5 z-40 w-64 bg-white rounded-xl shadow-lg border border-border-tan p-1.5 flex flex-col gap-1 text-xs">
+                    <p className="px-2.5 py-1 text-[10px] font-bold text-sage uppercase tracking-wider">
+                      Simulación SignalR §16
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSimulateNewEscalation}
+                      className="text-left px-2.5 py-2 rounded-lg hover:bg-bone text-charcoal font-medium transition cursor-pointer flex items-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-terracotta shrink-0" />
+                      <span>Nuevo escalamiento</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSimulateIncomingMessage}
+                      className="text-left px-2.5 py-2 rounded-lg hover:bg-bone text-charcoal font-medium transition cursor-pointer flex items-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <span>Mensaje entrante (hilo 1)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSimulateResolution}
+                      className="text-left px-2.5 py-2 rounded-lg hover:bg-bone text-charcoal font-medium transition cursor-pointer flex items-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span>Escalamiento resuelto (1)</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-border-tan text-brand hover:bg-sage-soft hover:border-brand/30 px-3.5 py-2 text-xs sm:text-sm font-bold transition cursor-pointer shrink-0 disabled:opacity-50"
+              title="Actualizar bandeja de escalamiento"
+            >
+              <ReloadIcon
+                className={`w-4 h-4 text-brand ${isRefreshing ? 'animate-spin' : ''}`}
+              />
+              <span>{isRefreshing ? 'Actualizando…' : 'Actualizar'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <label className="relative w-full min-w-0">

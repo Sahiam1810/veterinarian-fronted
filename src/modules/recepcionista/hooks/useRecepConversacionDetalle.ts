@@ -5,7 +5,14 @@ import {
   fetchConversationThread,
   sendAgentMessage,
   resolveConversation,
+  resolveSenderRole,
+  resolveSenderLabel,
 } from '../services/index.ts'
+import {
+  useChatEscalationsRealtime,
+  type ChatMessageReceivedPayload,
+  type ChatEscalationResolvedPayload,
+} from '../../../global/notifications/index.ts'
 
 interface UseRecepConversacionDetalleOptions {
   conversationId: string | null
@@ -73,6 +80,66 @@ export function useRecepConversacionDetalle({
       setInputContent('')
     }
   }, [conversationId, loadThread])
+
+  // Receptor de mensajes en tiempo real (SignalR) para el hilo abierto
+  const handleRealtimeMessageReceived = useCallback(
+    (payload: ChatMessageReceivedPayload) => {
+      if (!conversationId || payload.conversationId !== conversationId) return
+
+      setMessages((prev) => {
+        // Evitar duplicados si el mensaje ya está en el hilo
+        if (prev.some((m) => m.id === payload.messageId)) return prev
+
+        const role = resolveSenderRole(payload.senderType, payload.senderType)
+        const label = resolveSenderLabel(role, payload.senderName)
+        const date = new Date(payload.sentAt)
+        const timeLabel = !isNaN(date.getTime())
+          ? date.toLocaleTimeString('es-CO', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            })
+          : 'Ahora'
+
+        const incomingItem: ChatMessageItem = {
+          id: payload.messageId,
+          conversationId: payload.conversationId,
+          senderTypeId: payload.senderType,
+          senderRole: role,
+          senderLabel: label,
+          senderName: payload.senderName,
+          content: payload.content,
+          createdAt: payload.sentAt,
+          timeLabel,
+          status: 'sent',
+        }
+
+        return [...prev, incomingItem]
+      })
+    },
+    [conversationId],
+  )
+
+  // Receptor de resolución en tiempo real (si otro agente la resuelve mientras está abierta)
+  const handleRealtimeEscalationResolved = useCallback(
+    (payload: ChatEscalationResolvedPayload) => {
+      const matchesEscalation = escalationId && payload.escalationId === escalationId
+      const matchesConversation =
+        conversationId && payload.conversationId && payload.conversationId === conversationId
+
+      if (matchesEscalation || matchesConversation) {
+        onNotice?.('Esta conversación fue marcada como resuelta por otro agente.')
+        onResolved?.(payload.escalationId)
+      }
+    },
+    [escalationId, conversationId, onNotice, onResolved],
+  )
+
+  useChatEscalationsRealtime({
+    enabled: Boolean(conversationId),
+    onMessageReceived: handleRealtimeMessageReceived,
+    onEscalationResolved: handleRealtimeEscalationResolved,
+  })
 
   const handleSendMessage = useCallback(
     async (textToSend?: string) => {

@@ -18,10 +18,14 @@ export interface RecepSidebarProps {
   activeRoute?: string
   onNavigate?: (routeId: string) => void
   grantedPermissions?: GrantedPermissions
+  unreadEscalationsCount?: number
   onLogout?: () => void
 }
 
-export function resolveRecepSidebarNav(grantedPermissions?: GrantedPermissions): {
+export function resolveRecepSidebarNav(
+  grantedPermissions?: GrantedPermissions,
+  unreadEscalationsCount?: number,
+): {
   navItems: SidebarNavItem[]
   footerNavItems: SidebarNavItem[]
 } {
@@ -33,9 +37,16 @@ export function resolveRecepSidebarNav(grantedPermissions?: GrantedPermissions):
   const { links } = splitNavCatalog(visible)
   const { main, footer } = splitNavByPlacement(links)
 
+  const badgesMap: Record<string, string | number | undefined> = {
+    conversaciones:
+      unreadEscalationsCount && unreadEscalationsCount > 0
+        ? unreadEscalationsCount
+        : undefined,
+  }
+
   return {
-    navItems: toSidebarNavItems(main),
-    footerNavItems: toSidebarNavItems(footer),
+    navItems: toSidebarNavItems(main, badgesMap),
+    footerNavItems: toSidebarNavItems(footer, badgesMap),
   }
 }
 
@@ -46,9 +57,13 @@ export function RecepSidebar({
   activeRoute = 'inicio',
   onNavigate,
   grantedPermissions,
+  unreadEscalationsCount,
   onLogout,
 }: RecepSidebarProps) {
-  const { navItems, footerNavItems } = resolveRecepSidebarNav(grantedPermissions)
+  const { navItems, footerNavItems } = resolveRecepSidebarNav(
+    grantedPermissions,
+    unreadEscalationsCount,
+  )
 
   return (
     <Sidebar

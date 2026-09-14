@@ -56,7 +56,7 @@ export function resolvePriority(
   if (priorityId && ESCALATION_PRIORITY_NAMES[priorityId]) {
     return ESCALATION_PRIORITY_NAMES[priorityId] as EscalationPriority
   }
-  const norm = (rawPriorityName || '').toLowerCase()
+  const norm = `${priorityId || ''} ${rawPriorityName || ''}`.toLowerCase()
   if (norm.includes('urgente') || norm.includes('urgent')) return 'Urgente'
   if (norm.includes('alta') || norm.includes('high')) return 'Alta'
   if (norm.includes('media') || norm.includes('medium')) return 'Media'
@@ -71,7 +71,7 @@ export function resolveStatus(
   if (statusId && ESCALATION_STATUS_NAMES[statusId]) {
     return ESCALATION_STATUS_NAMES[statusId] as EscalationStatus
   }
-  const norm = (rawStatusName || '').toLowerCase()
+  const norm = `${statusId || ''} ${rawStatusName || ''}`.toLowerCase()
   if (norm.includes('progreso') || norm.includes('atencion') || norm.includes('in_progress')) {
     return 'En atención'
   }

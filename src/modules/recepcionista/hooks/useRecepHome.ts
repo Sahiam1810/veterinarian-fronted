@@ -6,7 +6,16 @@ import type {
   RecepHomeDashboard,
   RecepQuickActionId,
 } from '../types'
-import { fetchRecepHomeDashboard, fetchRecepNavPermissions } from '../services'
+import {
+  fetchRecepHomeDashboard,
+  fetchRecepNavPermissions,
+  fetchEscalatedConversations,
+} from '../services'
+import {
+  useChatEscalationsRealtime,
+  type ChatEscalationCreatedPayload,
+  type ChatEscalationResolvedPayload,
+} from '@/global/notifications'
 
 const IMPLEMENTED_ROUTES = new Set([
   'inicio',
@@ -14,23 +23,33 @@ const IMPLEMENTED_ROUTES = new Set([
   'mascotas',
   'agenda',
   'duenos',
+  'conversaciones',
 ])
 
 const GATED_ROUTES: Record<string, NavPermissionKey> = {
   mascotas: 'recep.mascotas',
   agenda: 'recep.agenda',
   duenos: 'recep.duenos',
+  conversaciones: 'recep.conversaciones',
 }
 
 export function useRecepHome(onLogout?: () => void) {
   const [dashboard, setDashboard] = useState<RecepHomeDashboard | null>(null)
   const [grantedPermissions, setGrantedPermissions] =
     useState<GrantedPermissions>(null)
+  const [unreadEscalationsCount, setUnreadEscalationsCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeRoute, setActiveRoute] = useState('inicio')
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
+
+  const showToast = useCallback((message: string) => {
+    setActiveNotification(message)
+    setTimeout(() => {
+      setActiveNotification((current) => (current === message ? null : current))
+    }, 3500)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -39,13 +58,17 @@ export function useRecepHome(onLogout?: () => void) {
       setIsLoading(true)
       setError(null)
       try {
-        const [data, permissions] = await Promise.all([
+        const [data, permissions, escalations] = await Promise.all([
           fetchRecepHomeDashboard(),
           fetchRecepNavPermissions(),
+          fetchEscalatedConversations().catch(() => null),
         ])
         if (!cancelled) {
           setDashboard(data)
           setGrantedPermissions(permissions)
+          if (escalations) {
+            setUnreadEscalationsCount(escalations.pendingCount)
+          }
         }
       } catch {
         if (!cancelled) setError('No se pudo cargar el resumen de recepción')
@@ -60,15 +83,33 @@ export function useRecepHome(onLogout?: () => void) {
     }
   }, [])
 
+  // Suscripción a eventos SignalR de escalamiento a nivel global del shell de Recepción
+  const handleRealtimeEscalationCreated = useCallback(
+    (payload: ChatEscalationCreatedPayload) => {
+      setUnreadEscalationsCount((prev) => prev + 1)
+      if (activeRoute !== 'conversaciones') {
+        const client = payload.clientName || 'Cliente'
+        showToast(`🔔 Nueva conversación escalada: ${client}`)
+      }
+    },
+    [activeRoute, showToast],
+  )
+
+  const handleRealtimeEscalationResolved = useCallback(
+    (_payload: ChatEscalationResolvedPayload) => {
+      setUnreadEscalationsCount((prev) => Math.max(0, prev - 1))
+    },
+    [],
+  )
+
+  useChatEscalationsRealtime({
+    enabled: true,
+    onEscalationCreated: handleRealtimeEscalationCreated,
+    onEscalationResolved: handleRealtimeEscalationResolved,
+  })
+
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev)
   const closeSidebar = () => setIsSidebarOpen(false)
-
-  const showToast = useCallback((message: string) => {
-    setActiveNotification(message)
-    setTimeout(() => {
-      setActiveNotification((current) => (current === message ? null : current))
-    }, 2800)
-  }, [])
 
   const handleNavigate = (routeId: string) => {
     if (routeId === 'logout') {
@@ -126,6 +167,7 @@ export function useRecepHome(onLogout?: () => void) {
   return {
     dashboard,
     grantedPermissions,
+    unreadEscalationsCount,
     isLoading,
     error,
     isSidebarOpen,

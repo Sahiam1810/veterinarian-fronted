@@ -9,9 +9,9 @@ import {
   SettingsIcon,
   OwnersIcon,
   ChatIcon,
-} from '../components/Icons'
-import type { NavCatalogItem, NavIconKey } from './types'
-import type { SidebarNavItem, SidebarPrimaryAction } from '../components/Sidebar'
+} from '../components/Icons.tsx'
+import type { NavCatalogItem, NavIconKey } from './types.ts'
+import type { SidebarNavItem, SidebarPrimaryAction } from '../components/Sidebar.tsx'
 
 // Mapea iconKey del catálogo a componente SVG global
 export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0'): ReactNode {
@@ -39,12 +39,16 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
   }
 }
 
-// Convierte links del catálogo a ítems listos para <Sidebar />
-export function toSidebarNavItems(links: NavCatalogItem[]): SidebarNavItem[] {
+// Convierte links del catálogo a ítems listos para <Sidebar /> con soporte opcional de badges
+export function toSidebarNavItems(
+  links: NavCatalogItem[],
+  badgesMap?: Record<string, string | number | undefined>,
+): SidebarNavItem[] {
   return links.map((item) => ({
     id: item.id,
     label: item.label,
     icon: renderNavIcon(item.iconKey),
+    badge: badgesMap?.[item.id],
     permissionKey: item.permissionKey,
   }))
 }
