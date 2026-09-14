@@ -50,9 +50,6 @@ export function PuntoInicio({
     isHistoriaModalOpen,
     isUpdatingStatus,
     handleViewFullAgenda,
-    handleAttendNow,
-    handleViewAppointment,
-    handleMoreActions,
     handleCloseActionModal,
     handleCloseRegistrar,
     handleCloseHistoria,
@@ -130,9 +127,6 @@ export function PuntoInicio({
                       appointments={dashboard.appointments}
                       totalAppointmentsToday={dashboard.totalAppointmentsToday}
                       onViewFullAgenda={handleViewFullAgenda}
-                      onAttendNow={handleAttendNow}
-                      onViewAppointment={handleViewAppointment}
-                      onMoreActions={handleMoreActions}
                     />
                   </ViewPopup>
                 </>

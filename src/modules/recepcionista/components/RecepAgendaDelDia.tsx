@@ -5,13 +5,11 @@ import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
 interface RecepAgendaDelDiaProps {
   appointments: RecepDayAppointment[]
   onViewFullMonth?: () => void
-  onRowAction?: (appointment: RecepDayAppointment) => void
 }
 
 export function RecepAgendaDelDia({
   appointments,
   onViewFullMonth,
-  onRowAction,
 }: RecepAgendaDelDiaProps) {
   return (
     <section className="bg-white rounded-2xl sm:rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(35,78,70,0.04)] overflow-hidden">
@@ -29,7 +27,7 @@ export function RecepAgendaDelDia({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[880px]">
+        <table className="w-full text-left border-collapse min-w-[760px]">
           <thead>
             <tr className="border-y border-border-tan/70 bg-bone/60 text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wide">
               <th className="py-3 px-4 sm:px-5 font-bold">Hora</th>
@@ -37,56 +35,59 @@ export function RecepAgendaDelDia({
               <th className="py-3 px-3 sm:px-4 font-bold">Dueño</th>
               <th className="py-3 px-3 sm:px-4 font-bold">Profesional</th>
               <th className="py-3 px-3 sm:px-4 font-bold">Servicio</th>
-              <th className="py-3 px-3 sm:px-4 font-bold">Estado</th>
-              <th className="py-3 px-4 sm:px-5 font-bold text-right">Acción</th>
+              <th className="py-3 px-4 sm:px-5 font-bold">Estado</th>
             </tr>
           </thead>
           <tbody>
-            {appointments.map((appointment) => (
-              <tr
-                key={appointment.id}
-                className="border-b border-border-tan/50 last:border-b-0 hover:bg-bone/40 transition-colors"
-              >
-                <td className="py-3.5 sm:py-4 px-4 sm:px-5 font-bold text-charcoal whitespace-nowrap text-sm">
-                  {appointment.time}
-                </td>
-                <td className="py-3.5 sm:py-4 px-3 sm:px-4">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <PetAvatar name={appointment.petName} photoUrl={appointment.petPhotoUrl} />
-                    <div className="min-w-0 flex flex-col">
-                      <span className="font-bold text-charcoal text-sm truncate">
-                        {appointment.petName}
-                      </span>
-                      <span className="text-xs text-sage truncate">
-                        {appointment.speciesBreed}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-sm text-charcoal/85 font-medium whitespace-nowrap">
-                  {appointment.ownerName}
-                </td>
-                <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-sm text-charcoal/85 font-medium whitespace-nowrap">
-                  {appointment.professionalName}
-                </td>
-                <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-sm text-charcoal/85 font-medium whitespace-nowrap">
-                  {appointment.service}
-                </td>
-                <td className="py-3.5 sm:py-4 px-3 sm:px-4">
-                  <RecepAppointmentStatusBadge status={appointment.status} />
-                </td>
-                <td className="py-3.5 sm:py-4 px-4 sm:px-5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onRowAction?.(appointment)}
-                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sage hover:bg-bone hover:text-brand transition cursor-pointer"
-                    aria-label={`Acciones de ${appointment.petName}`}
-                  >
-                    <MoreIcon />
-                  </button>
+            {appointments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="py-10 px-4 text-center text-sm text-sage font-medium"
+                >
+                  No hay citas programadas para hoy.
                 </td>
               </tr>
-            ))}
+            ) : (
+              appointments.map((appointment) => (
+                <tr
+                  key={appointment.id}
+                  className="border-b border-border-tan/50 last:border-b-0 hover:bg-bone/40 transition-colors"
+                >
+                  <td className="py-3.5 sm:py-4 px-4 sm:px-5 font-bold text-charcoal whitespace-nowrap text-sm">
+                    {appointment.time}
+                  </td>
+                  <td className="py-3.5 sm:py-4 px-3 sm:px-4">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <PetAvatar
+                        name={appointment.petName}
+                        photoUrl={appointment.petPhotoUrl}
+                      />
+                      <div className="min-w-0 flex flex-col">
+                        <span className="font-bold text-charcoal text-sm truncate">
+                          {appointment.petName}
+                        </span>
+                        <span className="text-xs text-sage truncate">
+                          {appointment.speciesBreed}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-sm text-charcoal/85 font-medium whitespace-nowrap">
+                    {appointment.ownerName}
+                  </td>
+                  <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-sm text-charcoal/85 font-medium whitespace-nowrap">
+                    {appointment.professionalName}
+                  </td>
+                  <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-sm text-charcoal/85 font-medium whitespace-nowrap">
+                    {appointment.service}
+                  </td>
+                  <td className="py-3.5 sm:py-4 px-4 sm:px-5">
+                    <RecepAppointmentStatusBadge status={appointment.status} />
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -116,15 +117,5 @@ function PetAvatar({
       <PawIcon className="w-3.5 h-3.5" />
       <span className="sr-only">{name}</span>
     </span>
-  )
-}
-
-function MoreIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden>
-      <circle cx="12" cy="5" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="12" cy="19" r="1.6" />
-    </svg>
   )
 }

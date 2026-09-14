@@ -42,7 +42,6 @@ export function PuntoInicio({
     showToast,
     handleQuickAction,
     handleViewFullMonth,
-    handleRowAction,
   } = useRecepHome(onLogout)
 
   const isPerfil = activeRoute === 'perfil'
@@ -119,7 +118,6 @@ export function PuntoInicio({
                     <RecepAgendaDelDia
                       appointments={dashboard.appointments}
                       onViewFullMonth={handleViewFullMonth}
-                      onRowAction={handleRowAction}
                     />
                   </ViewPopup>
                 </>

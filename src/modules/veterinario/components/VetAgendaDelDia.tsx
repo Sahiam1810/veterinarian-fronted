@@ -1,15 +1,12 @@
 import { PawIcon } from '@/global/components'
 import type { VetDayAppointment } from '../types'
 import { AppointmentStatusBadge } from './AppointmentStatusBadge'
-import { EyeIcon, ListBulletIcon, MoreVerticalIcon } from './VetHomeIcons'
+import { ListBulletIcon } from './VetHomeIcons'
 
 interface VetAgendaDelDiaProps {
   appointments: VetDayAppointment[]
   totalAppointmentsToday: number
   onViewFullAgenda?: () => void
-  onAttendNow?: (appointment: VetDayAppointment) => void
-  onViewAppointment?: (appointment: VetDayAppointment) => void
-  onMoreActions?: (appointment: VetDayAppointment) => void
 }
 
 // Agenda del día: cards en móvil, tabla desde md.
@@ -17,14 +14,11 @@ export function VetAgendaDelDia({
   appointments,
   totalAppointmentsToday,
   onViewFullAgenda,
-  onAttendNow,
-  onViewAppointment,
-  onMoreActions,
 }: VetAgendaDelDiaProps) {
   return (
     <section className="bg-white rounded-2xl sm:rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(35,78,70,0.04)] overflow-hidden min-w-0">
       <div className="flex items-center justify-between gap-2 px-3 sm:px-5 lg:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 min-w-0">
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-brand shrink-0">
             <ListBulletIcon className="w-5 h-5" />
           </span>
@@ -37,11 +31,9 @@ export function VetAgendaDelDia({
           onClick={onViewFullAgenda}
           className="text-xs sm:text-sm font-semibold text-brand hover:text-brand-hover transition cursor-pointer flex items-center gap-1 shrink-0 group"
         >
-
           <span className="hidden sm:inline">Ver agenda completa</span>
           <span className="sm:hidden">Ver agenda</span>
           <span className="transition-transform group-hover:translate-x-0.5">→</span>
-
         </button>
       </div>
 
@@ -54,9 +46,6 @@ export function VetAgendaDelDia({
             <MobileAgendaCard
               key={appointment.id}
               appointment={appointment}
-              onAttendNow={onAttendNow}
-              onViewAppointment={onViewAppointment}
-              onMoreActions={onMoreActions}
             />
           ))
         )}
@@ -72,14 +61,13 @@ export function VetAgendaDelDia({
               <th className="py-3 px-3 sm:px-4 font-bold">Especie / Raza</th>
               <th className="py-3 px-3 sm:px-4 font-bold">Dueño</th>
               <th className="py-3 px-3 sm:px-4 font-bold">Servicio</th>
-              <th className="py-3 px-3 sm:px-4 font-bold">Estado</th>
-              <th className="py-3 px-4 sm:px-5 font-bold text-right">Acción</th>
+              <th className="py-3 px-4 sm:px-5 font-bold">Estado</th>
             </tr>
           </thead>
           <tbody>
             {appointments.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 px-4 text-center text-sm text-sage">
+                <td colSpan={6} className="py-10 px-4 text-center text-sm text-sage">
                   No hay citas programadas para hoy.
                 </td>
               </tr>
@@ -88,9 +76,6 @@ export function VetAgendaDelDia({
                 <AgendaRow
                   key={appointment.id}
                   appointment={appointment}
-                  onAttendNow={onAttendNow}
-                  onViewAppointment={onViewAppointment}
-                  onMoreActions={onMoreActions}
                 />
               ))
             )}
@@ -105,11 +90,12 @@ export function VetAgendaDelDia({
   )
 }
 
+interface AgendaRowProps {
+  appointment: VetDayAppointment
+}
+
 function MobileAgendaCard({
   appointment,
-  onAttendNow,
-  onViewAppointment,
-  onMoreActions,
 }: AgendaRowProps) {
   const highlighted = Boolean(appointment.isHighlighted)
 
@@ -144,29 +130,13 @@ function MobileAgendaCard({
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <AppointmentStatusBadge status={appointment.status} />
-        <RowActions
-          appointment={appointment}
-          onAttendNow={onAttendNow}
-          onViewAppointment={onViewAppointment}
-          onMoreActions={onMoreActions}
-        />
       </div>
     </article>
   )
 }
 
-interface AgendaRowProps {
-  appointment: VetDayAppointment
-  onAttendNow?: (appointment: VetDayAppointment) => void
-  onViewAppointment?: (appointment: VetDayAppointment) => void
-  onMoreActions?: (appointment: VetDayAppointment) => void
-}
-
 function AgendaRow({
   appointment,
-  onAttendNow,
-  onViewAppointment,
-  onMoreActions,
 }: AgendaRowProps) {
   const highlighted = Boolean(appointment.isHighlighted)
 
@@ -205,17 +175,8 @@ function AgendaRow({
         {appointment.service}
       </td>
 
-      <td className="py-3.5 sm:py-4 px-3 sm:px-4 whitespace-nowrap">
+      <td className="py-3.5 sm:py-4 px-4 sm:px-5 whitespace-nowrap">
         <AppointmentStatusBadge status={appointment.status} />
-      </td>
-
-      <td className="py-3.5 sm:py-4 px-4 sm:px-5 text-right whitespace-nowrap">
-        <RowActions
-          appointment={appointment}
-          onAttendNow={onAttendNow}
-          onViewAppointment={onViewAppointment}
-          onMoreActions={onMoreActions}
-        />
       </td>
     </tr>
   )
@@ -236,68 +197,5 @@ function PetAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null 
     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-cream text-sage flex items-center justify-center border border-border-tan shrink-0">
       <PawIcon className="w-3.5 h-3.5" />
     </div>
-  )
-}
-
-function RowActions({
-  appointment,
-  onAttendNow,
-  onViewAppointment,
-  onMoreActions,
-}: AgendaRowProps) {
-  if (appointment.status === 'EN ESPERA' || appointment.status === 'AGENDADO') {
-    return (
-      <div className="flex items-center justify-end gap-1.5">
-        <button
-          type="button"
-          onClick={() => onAttendNow?.(appointment)}
-          className="inline-flex items-center justify-center px-3 py-1.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-xs"
-        >
-          Atender
-        </button>
-        <button
-          type="button"
-          onClick={() => onMoreActions?.(appointment)}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer shrink-0"
-          aria-label={`Más acciones para ${appointment.petName}`}
-          title="Gestionar cita"
-        >
-          <MoreVerticalIcon className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    )
-  }
-
-  if (appointment.status === 'ATENDIDO') {
-    // S46: se quita el botón "Consulta" — llamaba a onAttendNow, que siempre
-    // abre el formulario de registro (RegistrarAtencionModal) en blanco, sin
-    // comprobar si la cita ya tiene una consulta registrada. Eso permitía
-    // crear un registro médico duplicado sobre una cita ya atendida. Ver
-    // detalle (CitaAccionesModal) ya permite consultar la historia clínica.
-    return (
-      <div className="flex items-center justify-end gap-1.5">
-        <button
-          type="button"
-          onClick={() => onViewAppointment?.(appointment)}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer shrink-0"
-          aria-label={`Ver cita de ${appointment.petName}`}
-          title="Ver detalle"
-        >
-          <EyeIcon className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => onMoreActions?.(appointment)}
-      className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-bone text-sage border border-border-tan hover:text-brand hover:border-brand/30 transition cursor-pointer"
-      aria-label={`Más acciones para ${appointment.petName}`}
-      title="Más acciones"
-    >
-      <MoreVerticalIcon className="w-3.5 h-3.5" />
-    </button>
   )
 }
