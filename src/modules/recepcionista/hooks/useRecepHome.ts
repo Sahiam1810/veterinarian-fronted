@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
 import { isNavPermissionGranted } from '@/modules/auth'
 import type {
-  RecepDayAppointment,
   RecepHomeDashboard,
   RecepQuickActionId,
 } from '../types'
@@ -160,10 +159,6 @@ export function useRecepHome(onLogout?: () => void) {
     handleNavigate('agenda')
   }
 
-  const handleRowAction = (appointment: RecepDayAppointment) => {
-    showToast(`Acciones: ${appointment.petName}`)
-  }
-
   return {
     dashboard,
     grantedPermissions,
@@ -179,6 +174,5 @@ export function useRecepHome(onLogout?: () => void) {
     showToast,
     handleQuickAction,
     handleViewFullMonth,
-    handleRowAction,
   }
 }
