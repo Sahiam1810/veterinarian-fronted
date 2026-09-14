@@ -1,12 +1,12 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 import type { RecepDayAppointment, RecepHomeDashboard, RecepAppointmentStatus } from '../types'
 import {
   fetchMyModulePermissions,
   filterNavKeysByModuleView,
   RECEP_ALWAYS_VISIBLE_NAV,
   RECEP_MODULE_TO_NAV,
-} from '@/modules/auth'
-import { RECEP_DEFAULT_PERMISSIONS } from '@/global/navigation'
+} from '../../auth/services/myPermissionsService.ts'
+import { RECEP_DEFAULT_PERMISSIONS } from '../../../global/navigation/roles/recepcionista.ts'
 import type { CurrentProfileResponse } from '@/modules/auth/types'
 import type { ApiAppointmentResponse } from '@/modules/superadmin/services/superAdminAppointmentsService'
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
@@ -106,11 +106,9 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
   const now = new Date()
   const todayPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
-  // Filtrar citas del día (o si no hay hoy, mostrar las citas más recientes para no dejar la vista vacía)
-  let todayAppointments = appointments.filter((apt) => apt.scheduledStart?.startsWith(todayPrefix))
-  if (todayAppointments.length === 0 && appointments.length > 0) {
-    todayAppointments = appointments.slice(0, 8)
-  }
+  // Filtrar citas del día -- si no hay ninguna hoy, la vista debe quedar vacía,
+  // no rellenarse con citas de otras fechas presentadas como si fueran de hoy.
+  const todayAppointments = appointments.filter((apt) => apt.scheduledStart?.startsWith(todayPrefix))
 
   let pendientes = 0
   let mascotasAtendidas = 0
