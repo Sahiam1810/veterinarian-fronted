@@ -156,23 +156,23 @@ export function useAuxMascotas() {
       })
 
       setMascotas(mapped)
-      if (mapped.length > 0 && !selectedPetId) {
-        setSelectedPetId(mapped[0].id)
-      }
     } catch (err) {
       console.error('Error al cargar mascotas en módulo auxiliar', err)
       showToast('Error al conectar con la base de datos de mascotas.')
     } finally {
       setIsLoading(false)
     }
-  }, [showToast, selectedPetId])
+  }, [showToast])
 
   useEffect(() => {
     void loadData()
   }, [loadData])
 
+  // Ficha en modal: sin selección (id vacío, p.ej. al cerrar) debe significar
+  // "modal cerrado", no caer de vuelta a la primera mascota de la lista.
   const selectedPet = useMemo(() => {
-    return mascotas.find((p) => p.id === selectedPetId) || mascotas[0] || null
+    if (!selectedPetId) return null
+    return mascotas.find((p) => p.id === selectedPetId) || null
   }, [mascotas, selectedPetId])
 
   return {
