@@ -89,7 +89,7 @@ export function useSuperAdminDashboard() {
       })
 
       setAppointments(mapped)
-      setStats(buildDashboardStats(apiAppointments, veterinarians.length))
+      setStats(buildDashboardStats(todayAppointments, veterinarians.length))
     } catch (err) {
       const raw = err instanceof ApiError ? err.message : 'No se pudo cargar el dashboard.'
       const message =
