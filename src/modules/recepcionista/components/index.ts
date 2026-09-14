@@ -23,5 +23,9 @@ export { RecepMascotaModal } from './RecepMascotaModal'
 export { RecepEscalacionesToolbar } from './RecepEscalacionesToolbar'
 export { RecepEscalacionesTable } from './RecepEscalacionesTable'
 export { RecepEscalacionesView } from './RecepEscalacionesView'
+export { RecepChatMessageBubble } from './RecepChatMessageBubble'
+export { RecepResolverEscalacionModal } from './RecepResolverEscalacionModal'
+export { RecepConversacionDetalleModal } from './RecepConversacionDetalleModal'
+
 
 

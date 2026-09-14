@@ -12,6 +12,7 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
     directory,
     filteredItems,
     selectedId,
+    selectedItem,
     search,
     setSearch,
     statusFilter,
@@ -26,6 +27,7 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
     error,
     notice,
     handleSelect,
+    handleCloseDetail,
     reloadDirectory,
     handlePrevPage,
     handleNextPage,
@@ -36,6 +38,11 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
     if (!notice) return
     onNotice?.(notice)
   }, [notice, onNotice])
+
+  const handleResolved = async () => {
+    handleCloseDetail()
+    await reloadDirectory()
+  }
 
   if (isLoading && !directory) {
     return (
@@ -70,6 +77,7 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
       <RecepEscalacionesView
         items={filteredItems}
         selectedId={selectedId}
+        selectedItem={selectedItem}
         search={search}
         statusFilter={statusFilter}
         isRefreshing={isRefreshing}
@@ -84,6 +92,9 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
         onStatusFilterChange={setStatusFilter}
         onRefresh={() => void reloadDirectory()}
         onSelect={handleSelect}
+        onCloseDetail={handleCloseDetail}
+        onResolved={handleResolved}
+        onNotice={onNotice}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
         onGoToPage={handleGoToPage}

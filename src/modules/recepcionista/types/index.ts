@@ -44,10 +44,21 @@ export type {
 export type {
   ChatConversationResponseDto,
   ChatEscalationResponseDto,
+  ChatMessageResponseDto,
+  CreateChatMessageRequestDto,
+  AgentHumanResponseDto,
+  CreateAgentHumanRequestDto,
+  ChatParticipantResponseDto,
+  CreateChatParticipantRequestDto,
+  CreateEscalationResolutionRequestDto,
+  EscalationResolutionResponseDto,
   EscalationPriority,
   EscalationStatus,
   EscalationChannel,
   EscalationStatusFilter,
+  MessageSenderRole,
+  MessageDeliveryStatus,
+  ChatMessageItem,
   EscalatedConversationListItem,
   EscalacionesDirectoryPayload,
 } from './escalaciones.types.ts'
@@ -57,6 +68,11 @@ export {
   ESCALATION_STATUS_NAMES,
   ESCALATION_PRIORITY_GUIDS,
   ESCALATION_PRIORITY_NAMES,
+  SENDER_TYPE_GUIDS,
+  SENDER_TYPE_NAMES,
+  MESSAGE_TYPE_GUIDS,
+  MESSAGE_TYPE_NAMES,
 } from './escalaciones.types.ts'
+
 
 

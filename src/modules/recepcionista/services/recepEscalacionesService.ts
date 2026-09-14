@@ -1,18 +1,32 @@
 import { apiClient } from '../../../services/apiClient.ts'
+import { getStoredUser } from '../../auth/services/authService.ts'
 import type {
+  AgentHumanResponseDto,
   ChatConversationResponseDto,
   ChatEscalationResponseDto,
+  ChatMessageItem,
+  ChatMessageResponseDto,
+  ChatParticipantResponseDto,
+  CreateAgentHumanRequestDto,
+  CreateChatMessageRequestDto,
+  CreateChatParticipantRequestDto,
+  CreateEscalationResolutionRequestDto,
   EscalatedConversationListItem,
   EscalacionesDirectoryPayload,
   EscalationChannel,
   EscalationPriority,
+  EscalationResolutionResponseDto,
   EscalationStatus,
+  MessageDeliveryStatus,
+  MessageSenderRole,
 } from '../types/index.ts'
 import {
   ESCALATION_PRIORITY_GUIDS,
   ESCALATION_PRIORITY_NAMES,
   ESCALATION_STATUS_GUIDS,
   ESCALATION_STATUS_NAMES,
+  MESSAGE_TYPE_GUIDS,
+  SENDER_TYPE_GUIDS,
 } from '../types/index.ts'
 
 /**
@@ -70,6 +84,37 @@ export function resolveStatus(
   return 'Pendiente'
 }
 
+export function resolveSenderRole(
+  senderTypeId?: string | null,
+  rawSenderType?: string | null,
+): MessageSenderRole {
+  if (senderTypeId === SENDER_TYPE_GUIDS.CLIENT) return 'client'
+  if (senderTypeId === SENDER_TYPE_GUIDS.AI_AGENT) return 'ai_agent'
+  if (senderTypeId === SENDER_TYPE_GUIDS.HUMAN_AGENT) return 'human_agent'
+  if (senderTypeId === SENDER_TYPE_GUIDS.SYSTEM) return 'system'
+
+  const norm = (rawSenderType || '').toLowerCase()
+  if (norm.includes('client') || norm.includes('cliente') || norm.includes('user')) return 'client'
+  if (norm.includes('ai') || norm.includes('bot') || norm.includes('ia')) return 'ai_agent'
+  if (norm.includes('human') || norm.includes('agent') || norm.includes('staff') || norm.includes('recep') || norm.includes('asesor')) {
+    return 'human_agent'
+  }
+  if (norm.includes('system') || norm.includes('sistema')) return 'system'
+  return 'client'
+}
+
+export function resolveSenderLabel(
+  senderRole: MessageSenderRole,
+  senderName?: string | null,
+): string {
+  if (senderName && senderName.trim()) return senderName.trim()
+  if (senderRole === 'client') return 'Cliente'
+  if (senderRole === 'ai_agent') return 'Asistente IA'
+  if (senderRole === 'human_agent') return 'Asesor (Tú)'
+  if (senderRole === 'system') return 'Sistema'
+  return 'Remitente'
+}
+
 export function formatWaitingTime(dateIso: string, now: Date = new Date()): { label: string; minutes: number } {
   try {
     const createdDate = new Date(dateIso)
@@ -108,6 +153,27 @@ export function formatTimeLabel(dateIso?: string | null): string {
   }
 }
 
+export function buildChatMessageItem(
+  dto: ChatMessageResponseDto,
+  status: MessageDeliveryStatus = 'sent',
+): ChatMessageItem {
+  const senderRole = resolveSenderRole(dto.senderTypeId, dto.senderType || dto.senderRole)
+  const senderLabel = resolveSenderLabel(senderRole, dto.senderName)
+
+  return {
+    id: dto.id,
+    conversationId: dto.conversationId,
+    senderTypeId: dto.senderTypeId,
+    senderRole,
+    senderLabel,
+    senderName: dto.senderName || null,
+    content: dto.content,
+    createdAt: dto.createdAt,
+    timeLabel: formatTimeLabel(dto.createdAt),
+    status,
+  }
+}
+
 // =========================================================================
 // Transformación y Cruce de Conversaciones + Escalamientos
 // =========================================================================
@@ -124,7 +190,6 @@ export function buildEscalatedDirectory(
 
   // Una conversación está en la bandeja si tiene un escalamiento sin resolución (§8)
   const activeEscalations = escalations.filter((esc) => {
-    // Si ya está resuelto o cancelado, no está activa en la bandeja
     if (esc.resolvedAt) return false
     if (esc.statusId === ESCALATION_STATUS_GUIDS.RESOLVED || esc.statusId === ESCALATION_STATUS_GUIDS.CANCELLED) {
       return false
@@ -171,7 +236,7 @@ export function buildEscalatedDirectory(
     }
   })
 
-  // Ordenar por prioridad primero (Urgente > Alta > Media > Baja) o por tiempo de espera más largo (más urgente)
+  // Ordenar por prioridad primero (Urgente > Alta > Media > Baja) o por tiempo de espera más largo
   items.sort((a, b) => {
     const priorityWeight: Record<EscalationPriority, number> = {
       Urgente: 4,
@@ -201,8 +266,111 @@ export function buildEscalatedDirectory(
 }
 
 // =========================================================================
-// Datos Mock (§6 y §8)
+// Estado y Almacenamiento Mock en Memoria
 // =========================================================================
+
+const mockResolvedEscalationIds = new Set<string>()
+
+const initialMockThreads: Record<string, ChatMessageResponseDto[]> = {
+  'conv-001': [
+    {
+      id: 'msg-101',
+      conversationId: 'conv-001',
+      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      senderName: 'Carolina Martínez',
+      content: 'Hola buenas tardes, mi perro Max empezó a vomitar espuma blanca hace 20 minutos.',
+      createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'msg-102',
+      conversationId: 'conv-001',
+      senderTypeId: SENDER_TYPE_GUIDS.AI_AGENT,
+      senderName: 'Huellitas Bot',
+      content: 'Hola Carolina. Lamento escuchar eso. ¿Max ha ingerido algún objeto extraño, planta o medicamento?',
+      createdAt: new Date(Date.now() - 34 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'msg-103',
+      conversationId: 'conv-001',
+      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      senderName: 'Carolina Martínez',
+      content: 'No estoy segura, pero está muy decaído y tiembla. Necesito hablar con un asesor o doctor ya por favor.',
+      createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'msg-104',
+      conversationId: 'conv-001',
+      senderTypeId: SENDER_TYPE_GUIDS.SYSTEM,
+      content: 'Conversación escalada a atención humana prioritaria por urgencia médica.',
+      createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    },
+  ],
+  'conv-002': [
+    {
+      id: 'msg-201',
+      conversationId: 'conv-002',
+      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      senderName: 'Andrés Gómez',
+      content: 'Hola, tengo una cirugía programada para mi gata Misi este miércoles.',
+      createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'msg-202',
+      conversationId: 'conv-002',
+      senderTypeId: SENDER_TYPE_GUIDS.AI_AGENT,
+      senderName: 'Huellitas Bot',
+      content: 'Hola Andrés. Veo tu cita de esterilización el Miércoles 16 a las 09:00 AM. ¿En qué te puedo ayudar?',
+      createdAt: new Date(Date.now() - 24 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'conv-203',
+      conversationId: 'conv-002',
+      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      senderName: 'Andrés Gómez',
+      content: 'Quiero reagendarla para el viernes pero el bot no me da cupo en esa fecha. Asesor por favor.',
+      createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'conv-204',
+      conversationId: 'conv-002',
+      senderTypeId: SENDER_TYPE_GUIDS.SYSTEM,
+      content: 'Conversación transferida a Recepción.',
+      createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+    },
+  ],
+  'conv-004': [
+    {
+      id: 'msg-401',
+      conversationId: 'conv-004',
+      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      senderName: 'Valentina Restrepo',
+      content: 'El medicamento recetado ayer le dio alergia a Toby. ¿Puedo suspenderlo?',
+      createdAt: new Date(Date.now() - 130 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'msg-402',
+      conversationId: 'conv-004',
+      senderTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
+      senderName: 'Carlos Méndez (Recepción)',
+      content: 'Hola Valentina, por seguridad suspende la dosis mientras contacto al Dr. Silva.',
+      createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
+    },
+  ],
+  'conv-005': [
+    {
+      id: 'msg-501',
+      conversationId: 'conv-005',
+      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      senderName: 'Santiago Morales',
+      content: 'Buenas tardes, necesito copia de la historia clínica de Luna para viaje.',
+      createdAt: new Date(Date.now() - 310 * 60 * 1000).toISOString(),
+    },
+  ],
+}
+
+const mockThreadStore = new Map<string, ChatMessageResponseDto[]>(
+  Object.entries(initialMockThreads),
+)
 
 export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesDirectoryPayload {
   const m5 = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
@@ -239,7 +407,7 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
     {
       id: 'conv-003',
       clientId: null,
-      clientName: null, // Prueba de "Cliente sin nombre"
+      clientName: null,
       clientPhone: '+57 315 222 3344',
       channel: 'telegram',
       status: 'Escalated',
@@ -325,27 +493,224 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
       createdAt: h5,
       resolvedAt: null,
     },
-  ]
+  ].filter((esc) => !mockResolvedEscalationIds.has(esc.id))
 
   return buildEscalatedDirectory(mockConversations, mockEscalations, now)
 }
 
 // =========================================================================
-// Servicio Principal
+// Caché en Memoria para Flujo de 3 Pasos (§14)
 // =========================================================================
 
+let cachedAgentHumanId: string | null = null
+const cachedParticipantByConv = new Map<string, string>()
+
+export function clearAgentHumanCache(): void {
+  cachedAgentHumanId = null
+  cachedParticipantByConv.clear()
+}
+
+/**
+ * Paso 1 (§14): Obtener o registrar AgentHuman para el usuario en sesión
+ */
+async function resolveAgentHumanId(): Promise<string> {
+  if (cachedAgentHumanId) return cachedAgentHumanId
+
+  const user = getStoredUser()
+  const userId = user?.id || user?.personId || user?.userAccountId || 'unknown-user'
+  const name = user?.name || 'Asesor Recepción'
+  const email = user?.email || 'recepcion@huellitas.com'
+
+  try {
+    const existing = await apiClient.get<AgentHumanResponseDto[]>('/api/chat/agent-humans')
+    const match = existing?.find(
+      (a) => a.userId === userId || (a.email && a.email.toLowerCase() === email.toLowerCase()),
+    )
+    if (match?.id) {
+      cachedAgentHumanId = match.id
+      return match.id
+    }
+  } catch {
+    // Si falla listar, procedemos al POST
+  }
+
+  const created = await apiClient.post<AgentHumanResponseDto>('/api/chat/agent-humans', {
+    userId,
+    name,
+    email,
+  } satisfies CreateAgentHumanRequestDto)
+
+  cachedAgentHumanId = created.id
+  return created.id
+}
+
+/**
+ * Paso 2 (§14): Obtener o registrar ChatParticipant para la conversación
+ */
+async function resolveChatParticipantId(
+  conversationId: string,
+  agentHumanId: string,
+): Promise<string> {
+  if (cachedParticipantByConv.has(conversationId)) {
+    return cachedParticipantByConv.get(conversationId)!
+  }
+
+  try {
+    const existing = await apiClient.get<ChatParticipantResponseDto[]>('/api/chat/participants', {
+      params: { conversationId },
+    })
+    const match = existing?.find((p) => p.conversationId === conversationId && p.agentHumanId === agentHumanId)
+    if (match?.id) {
+      cachedParticipantByConv.set(conversationId, match.id)
+      return match.id
+    }
+  } catch {
+    // Proceder a crear si no existe
+  }
+
+  const created = await apiClient.post<ChatParticipantResponseDto>('/api/chat/participants', {
+    conversationId,
+    agentHumanId,
+    role: 'Agent',
+  } satisfies CreateChatParticipantRequestDto)
+
+  cachedParticipantByConv.set(conversationId, created.id)
+  return created.id
+}
+
+// =========================================================================
+// Servicios Principales
+// =========================================================================
+
+/**
+ * Obtiene la lista de conversaciones escaladas activas
+ */
 export async function fetchEscalatedConversations(): Promise<EscalacionesDirectoryPayload> {
   if (USE_MOCK_ESCALATIONS) {
-    // Simular leve latencia de red para UX natural
     await new Promise((resolve) => setTimeout(resolve, 200))
     return getMockEscalatedDirectory()
   }
 
-  // Llamada al backend real
   const [convsRes, escalationsRes] = await Promise.all([
     apiClient.get<ChatConversationResponseDto[]>('/api/chat/conversations'),
     apiClient.get<ChatEscalationResponseDto[]>('/api/chat/escalations'),
   ])
 
   return buildEscalatedDirectory(convsRes || [], escalationsRes || [])
+}
+
+/**
+ * Obtiene el hilo de mensajes de una conversación (§7)
+ */
+export async function fetchConversationThread(
+  conversationId: string,
+): Promise<ChatMessageItem[]> {
+  if (!conversationId) return []
+
+  if (USE_MOCK_ESCALATIONS) {
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    const rawList = mockThreadStore.get(conversationId) || []
+    return rawList
+      .slice()
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .map((m) => buildChatMessageItem(m))
+  }
+
+  // Llamada al backend real
+  const messagesDto = await apiClient.get<ChatMessageResponseDto[]>(
+    `/api/chat/messages/conversation/${conversationId}`,
+  )
+
+  if (!Array.isArray(messagesDto)) return []
+
+  return messagesDto
+    .slice()
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .map((m) => buildChatMessageItem(m))
+}
+
+/**
+ * Envía una respuesta de agente humano siguiendo el flujo de 3 pasos (§14)
+ */
+export async function sendAgentMessage(
+  conversationId: string,
+  content: string,
+): Promise<ChatMessageItem> {
+  const cleanContent = (content || '').trim()
+  if (!cleanContent) {
+    throw new Error('El mensaje no puede estar vacío.')
+  }
+
+  if (USE_MOCK_ESCALATIONS) {
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const user = getStoredUser()
+    const senderName = user?.name ? `${user.name} (Asesor)` : 'Asesor (Tú)'
+
+    const newDto: ChatMessageResponseDto = {
+      id: `msg-mock-${Date.now()}`,
+      conversationId,
+      senderTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
+      senderName,
+      messageTypeId: MESSAGE_TYPE_GUIDS.TEXT,
+      content: cleanContent,
+      createdAt: new Date().toISOString(),
+      isRead: true,
+    }
+
+    const currentThread = mockThreadStore.get(conversationId) || []
+    mockThreadStore.set(conversationId, [...currentThread, newDto])
+
+    return buildChatMessageItem(newDto, 'sent')
+  }
+
+  // Flujo real de 3 pasos (§14)
+  const agentHumanId = await resolveAgentHumanId()
+  const participantId = await resolveChatParticipantId(conversationId, agentHumanId)
+
+  const createdDto = await apiClient.post<ChatMessageResponseDto>('/api/chat/messages', {
+    conversationId,
+    participantId,
+    senderTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
+    messageTypeId: MESSAGE_TYPE_GUIDS.TEXT,
+    content: cleanContent,
+  } satisfies CreateChatMessageRequestDto)
+
+  return buildChatMessageItem(createdDto, 'sent')
+}
+
+/**
+ * Resuelve una conversación escalada (§9 y §15)
+ */
+export async function resolveConversation(
+  escalationId: string,
+  notes?: string,
+): Promise<EscalationResolutionResponseDto> {
+  if (!escalationId) {
+    throw new Error('Identificador de escalamiento no válido.')
+  }
+
+  if (USE_MOCK_ESCALATIONS) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    mockResolvedEscalationIds.add(escalationId)
+
+    const user = getStoredUser()
+    return {
+      id: `res-${Date.now()}`,
+      escalationId,
+      resolvedById: user?.id || 'usr-recep-1',
+      notes: notes?.trim() || null,
+      resolvedAt: new Date().toISOString(),
+    }
+  }
+
+  const user = getStoredUser()
+  return apiClient.post<EscalationResolutionResponseDto>(
+    '/api/chat/escalation-resolutions',
+    {
+      escalationId,
+      resolvedById: user?.id,
+      notes: notes?.trim() || null,
+      statusId: ESCALATION_STATUS_GUIDS.RESOLVED,
+    } satisfies CreateEscalationResolutionRequestDto,
+  )
 }
