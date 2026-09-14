@@ -66,9 +66,11 @@ function resolveOwnerName(
   clientsById: Map<string, ApiClient>,
 ): string {
   if (!clientPet) return 'Dueño no disponible'
-  const client = clientsById.get(clientPet.clientId)
+  const client = clientsById.get(clientPet.clientId.toLowerCase())
   if (!client) return 'Dueño no disponible'
-  // El endpoint de clientes (Staff) no expone el nombre; usamos la identificación.
+  if (client.fullName && client.fullName.trim()) {
+    return client.fullName.trim()
+  }
   return client.identificationNumber
     ? `Cliente ${client.identificationNumber}`
     : 'Dueño no disponible'

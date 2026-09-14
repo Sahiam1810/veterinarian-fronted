@@ -11,7 +11,7 @@ import type {
   MascotaListItem,
   MascotasDirectoryPayload,
 } from '../types'
-import { mapAgendaEventStatus } from './mapAgendaEventStatus'
+import { mapAgendaEventStatus } from './mapAgendaEventStatus.ts'
 
 function formatSexLabel(gender: string): string {
   const value = gender.trim().toUpperCase()
@@ -121,6 +121,15 @@ export function buildVetMascotasDirectory(input: {
 
     const species = speciesById.get(pet.speciesId.toLowerCase()) || 'Especie'
     const breed = racesById.get(pet.raceId.toLowerCase()) || 'Raza'
+    const ownerName = client?.fullName?.trim()
+      ? client.fullName.trim()
+      : client?.identificationNumber
+      ? `Cliente ${client.identificationNumber}`
+      : 'Dueño no disponible'
+
+    const ownerPhone =
+      client?.phoneNumber?.trim() || client?.address?.trim() || 'Sin teléfono en ficha'
+
     const listItem: MascotaListItem = {
       id: pet.id,
       name: pet.name,
@@ -129,9 +138,7 @@ export function buildVetMascotasDirectory(input: {
       breed,
       ageLabel: formatAgeLabel(pet.age),
       sexLabel: formatSexLabel(pet.gender),
-      ownerName: client?.identificationNumber
-        ? `Cliente ${client.identificationNumber}`
-        : 'Dueño no disponible',
+      ownerName,
       lastVisitLabel: formatVisitLabel(latest?.scheduledStart),
     }
 
@@ -142,7 +149,7 @@ export function buildVetMascotasDirectory(input: {
       weightLabel: formatWeightLabel(pet.weight),
       // El API de pets no expone microchip; se documenta como no registrado.
       microchip: 'No registrado',
-      ownerPhone: client?.address?.trim() || 'Sin teléfono en ficha',
+      ownerPhone,
       allergyAlert: allergyFromObservations(pet.observations),
     }
 

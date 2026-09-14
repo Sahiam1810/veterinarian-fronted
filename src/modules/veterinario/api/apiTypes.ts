@@ -61,6 +61,7 @@ export interface ApiClient {
   fullName?: string | null
   email?: string | null
   isActive?: boolean | null
+  phoneNumber?: string | null
 }
 
 export interface ApiClientPet {
