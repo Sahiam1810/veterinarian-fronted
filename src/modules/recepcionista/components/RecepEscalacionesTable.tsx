@@ -259,9 +259,11 @@ function StatusBadge({ status }: { status: EscalationStatus }) {
   let styles = 'bg-sage-soft text-brand border-border-tan'
   if (status === 'Pendiente') {
     styles = 'bg-amber-50 text-amber-800 border-amber-200'
+  } else if (status === 'Asignada') {
+    styles = 'bg-indigo-50 text-indigo-800 border-indigo-200'
   } else if (status === 'En atención') {
     styles = 'bg-blue-50 text-blue-800 border-blue-200'
-  } else if (status === 'Resuelto') {
+  } else if (status === 'Resuelta') {
     styles = 'bg-emerald-50 text-emerald-800 border-emerald-200'
   }
 

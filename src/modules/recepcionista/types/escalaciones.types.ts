@@ -1,42 +1,16 @@
 // Tipos y contratos para la bandeja de conversaciones escaladas y detalle de chat (Recepción / Asesor)
 
 // ==========================================
-// Contrato §4: Catálogos de Escalamiento y Chat
+// Contrato §4 — GUIDs verificados directamente contra Oracle (VET_APP.SENDER_TYPES,
+// .ESCALATIONS_STATUSES, .PRIORITY, .MESSAGE_TYPES, .CONVERSATIONS_STATUSES),
+// no contra el documento de contrato. Nombres literales tal como están en BD.
 // ==========================================
 
-export const ESCALATION_STATUS_GUIDS = {
-  PENDING: 'd1a10001-0000-0000-0000-000000000001',
-  IN_PROGRESS: 'd1a10001-0000-0000-0000-000000000002',
-  RESOLVED: 'd1a10001-0000-0000-0000-000000000003',
-  CANCELLED: 'd1a10001-0000-0000-0000-000000000004',
-} as const
-
-export const ESCALATION_STATUS_NAMES: Record<string, string> = {
-  [ESCALATION_STATUS_GUIDS.PENDING]: 'Pendiente',
-  [ESCALATION_STATUS_GUIDS.IN_PROGRESS]: 'En atención',
-  [ESCALATION_STATUS_GUIDS.RESOLVED]: 'Resuelto',
-  [ESCALATION_STATUS_GUIDS.CANCELLED]: 'Cancelado',
-}
-
-export const ESCALATION_PRIORITY_GUIDS = {
-  LOW: 'd2b20002-0000-0000-0000-000000000001',
-  MEDIUM: 'd2b20002-0000-0000-0000-000000000002',
-  HIGH: 'd2b20002-0000-0000-0000-000000000003',
-  URGENT: 'd2b20002-0000-0000-0000-000000000004',
-} as const
-
-export const ESCALATION_PRIORITY_NAMES: Record<string, string> = {
-  [ESCALATION_PRIORITY_GUIDS.LOW]: 'Baja',
-  [ESCALATION_PRIORITY_GUIDS.MEDIUM]: 'Media',
-  [ESCALATION_PRIORITY_GUIDS.HIGH]: 'Alta',
-  [ESCALATION_PRIORITY_GUIDS.URGENT]: 'Urgente',
-}
-
 export const SENDER_TYPE_GUIDS = {
-  CLIENT: 'd3c30003-0000-0000-0000-000000000001',
-  AI_AGENT: 'd3c30003-0000-0000-0000-000000000002',
-  HUMAN_AGENT: 'd3c30003-0000-0000-0000-000000000003',
-  SYSTEM: 'd3c30003-0000-0000-0000-000000000004',
+  CLIENT: '82000000-0000-0000-0000-000000000001',
+  AI_AGENT: '82000000-0000-0000-0000-000000000002',
+  HUMAN_AGENT: '82000000-0000-0000-0000-000000000003',
+  SYSTEM: '82000000-0000-0000-0000-000000000004',
 } as const
 
 export const SENDER_TYPE_NAMES: Record<string, string> = {
@@ -46,12 +20,66 @@ export const SENDER_TYPE_NAMES: Record<string, string> = {
   [SENDER_TYPE_GUIDS.SYSTEM]: 'Sistema',
 }
 
+export const ESCALATION_STATUS_GUIDS = {
+  PENDING: '85000000-0000-0000-0000-000000000001',
+  ASSIGNED: '85000000-0000-0000-0000-000000000002',
+  IN_PROGRESS: '85000000-0000-0000-0000-000000000003',
+  RESOLVED: '85000000-0000-0000-0000-000000000004',
+  CANCELLED: '85000000-0000-0000-0000-000000000005',
+} as const
+
+export const ESCALATION_STATUS_NAMES: Record<string, string> = {
+  [ESCALATION_STATUS_GUIDS.PENDING]: 'Pendiente',
+  [ESCALATION_STATUS_GUIDS.ASSIGNED]: 'Asignada',
+  [ESCALATION_STATUS_GUIDS.IN_PROGRESS]: 'En atención',
+  [ESCALATION_STATUS_GUIDS.RESOLVED]: 'Resuelta',
+  [ESCALATION_STATUS_GUIDS.CANCELLED]: 'Cancelada',
+}
+
+export const ESCALATION_PRIORITY_GUIDS = {
+  LOW: '84000000-0000-0000-0000-000000000001',
+  MEDIUM: '84000000-0000-0000-0000-000000000002',
+  HIGH: '84000000-0000-0000-0000-000000000003',
+  URGENT: '84000000-0000-0000-0000-000000000004',
+} as const
+
+export const ESCALATION_PRIORITY_NAMES: Record<string, string> = {
+  [ESCALATION_PRIORITY_GUIDS.LOW]: 'Baja',
+  [ESCALATION_PRIORITY_GUIDS.MEDIUM]: 'Media',
+  [ESCALATION_PRIORITY_GUIDS.HIGH]: 'Alta',
+  [ESCALATION_PRIORITY_GUIDS.URGENT]: 'Urgente',
+}
+
 export const MESSAGE_TYPE_GUIDS = {
-  TEXT: 'd4d40004-0000-0000-0000-000000000001',
+  TEXT: '83000000-0000-0000-0000-000000000001',
+  IMAGE: '83000000-0000-0000-0000-000000000002',
+  AUDIO: '83000000-0000-0000-0000-000000000003',
+  DOCUMENT: '83000000-0000-0000-0000-000000000004',
+  SYSTEM: '83000000-0000-0000-0000-000000000005',
 } as const
 
 export const MESSAGE_TYPE_NAMES: Record<string, string> = {
   [MESSAGE_TYPE_GUIDS.TEXT]: 'Texto',
+  [MESSAGE_TYPE_GUIDS.IMAGE]: 'Imagen',
+  [MESSAGE_TYPE_GUIDS.AUDIO]: 'Audio',
+  [MESSAGE_TYPE_GUIDS.DOCUMENT]: 'Documento',
+  [MESSAGE_TYPE_GUIDS.SYSTEM]: 'Sistema',
+}
+
+// Solo por si la bandeja llega a necesitarlos (hoy la UI de Recepcionista usa
+// ESCALATION_STATUS_GUIDS, no estos).
+export const CONVERSATION_STATUS_GUIDS = {
+  OPEN: '81000000-0000-0000-0000-000000000001',
+  IN_PROGRESS: '81000000-0000-0000-0000-000000000002',
+  ESCALATED: '81000000-0000-0000-0000-000000000003',
+  CLOSED: '81000000-0000-0000-0000-000000000004',
+} as const
+
+export const CONVERSATION_STATUS_NAMES: Record<string, string> = {
+  [CONVERSATION_STATUS_GUIDS.OPEN]: 'Abierta',
+  [CONVERSATION_STATUS_GUIDS.IN_PROGRESS]: 'En atención',
+  [CONVERSATION_STATUS_GUIDS.ESCALATED]: 'Escalada',
+  [CONVERSATION_STATUS_GUIDS.CLOSED]: 'Cerrada',
 }
 
 // ==========================================
@@ -159,7 +187,7 @@ export interface EscalationResolutionResponseDto {
 // ==========================================
 
 export type EscalationPriority = 'Baja' | 'Media' | 'Alta' | 'Urgente' | 'Normal'
-export type EscalationStatus = 'Pendiente' | 'En atención' | 'Resuelto' | 'Cancelado'
+export type EscalationStatus = 'Pendiente' | 'Asignada' | 'En atención' | 'Resuelta' | 'Cancelada'
 export type EscalationChannel = 'Telegram' | 'Web' | 'WhatsApp' | 'Otro'
 
 export type EscalationStatusFilter = 'todos' | 'pendientes' | 'en_atencion' | 'urgentes'

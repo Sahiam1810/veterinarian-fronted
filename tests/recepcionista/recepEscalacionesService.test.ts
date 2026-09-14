@@ -40,11 +40,22 @@ test('resolvePriority resuelve GUIDs del contrato §4 y nombres fallback', () =>
 
 test('resolveStatus resuelve GUIDs del contrato §4 y nombres fallback', () => {
   assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.PENDING), 'Pendiente')
+  assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.ASSIGNED), 'Asignada')
   assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.IN_PROGRESS), 'En atención')
-  assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.RESOLVED), 'Resuelto')
-  assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.CANCELLED), 'Cancelado')
+  assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.RESOLVED), 'Resuelta')
+  assert.equal(resolveStatus(ESCALATION_STATUS_GUIDS.CANCELLED), 'Cancelada')
   assert.equal(resolveStatus(null, 'in_progress'), 'En atención')
   assert.equal(resolveStatus(null, null), 'Pendiente')
+})
+
+test('resolveStatus reconoce los nombres literales reales de BD, con o sin tilde', () => {
+  // FE-4: "En atención" es el nombre literal que manda el backend real — antes
+  // el fallback solo buscaba 'atencion' (sin tilde) y nunca hacía match.
+  assert.equal(resolveStatus(null, 'En atención'), 'En atención')
+  assert.equal(resolveStatus(null, 'en atencion'), 'En atención')
+  assert.equal(resolveStatus(null, 'Asignada'), 'Asignada')
+  assert.equal(resolveStatus(null, 'Resuelta'), 'Resuelta')
+  assert.equal(resolveStatus(null, 'Cancelada'), 'Cancelada')
 })
 
 test('formatWaitingTime calcula correctamente minutos, horas y días', () => {
@@ -148,6 +159,51 @@ test('buildEscalatedDirectory cruza conversaciones y escalamientos activos exclu
   assert.equal(payload.pendingCount, 1)
   assert.equal(payload.inProgressCount, 1)
   assert.equal(payload.urgentCount, 1)
+})
+
+test('buildEscalatedDirectory excluye "Resuelta"/"Cancelada" (nombre real, femenino) sin depender del GUID ni de resolvedAt', () => {
+  // FE-4: antes el filtro comparaba texto exacto contra 'resuelto'/'cancelado'
+  // (masculino) y nunca hacía match con los nombres reales de BD, femeninos —
+  // una conversación resuelta se quedaba pegada en la bandeja de activos.
+  const now = new Date('2026-09-14T12:00:00.000Z')
+
+  const conversations: ChatConversationResponseDto[] = [
+    { id: 'conv-r', clientName: 'Cliente Resuelto', channel: 'telegram', createdAt: now.toISOString() },
+    { id: 'conv-c', clientName: 'Cliente Cancelado', channel: 'telegram', createdAt: now.toISOString() },
+    { id: 'conv-p', clientName: 'Cliente Pendiente', channel: 'telegram', createdAt: now.toISOString() },
+  ]
+
+  const escalations: ChatEscalationResponseDto[] = [
+    {
+      id: 'esc-r',
+      conversationId: 'conv-r',
+      statusId: 'guid-desconocido-resuelta',
+      status: 'Resuelta',
+      createdAt: now.toISOString(),
+      resolvedAt: null,
+    },
+    {
+      id: 'esc-c',
+      conversationId: 'conv-c',
+      statusId: 'guid-desconocido-cancelada',
+      status: 'Cancelada',
+      createdAt: now.toISOString(),
+      resolvedAt: null,
+    },
+    {
+      id: 'esc-p',
+      conversationId: 'conv-p',
+      statusId: ESCALATION_STATUS_GUIDS.PENDING,
+      status: 'Pendiente',
+      createdAt: now.toISOString(),
+      resolvedAt: null,
+    },
+  ]
+
+  const payload = buildEscalatedDirectory(conversations, escalations, now)
+
+  assert.equal(payload.totalCount, 1)
+  assert.equal(payload.items[0]?.id, 'esc-p')
 })
 
 test('RECEP_NAV_CATALOG contiene la entrada Asesor / conversaciones para Recepcionista', () => {
