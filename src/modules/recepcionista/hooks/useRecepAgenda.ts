@@ -7,13 +7,14 @@ import type {
   RecepAgendaPetOption,
   RecepAgendaTimeSlot,
 } from '../types'
-import { canMarkRecepNoAsistio } from '../types'
+import { canMarkRecepNoAsistio, canCheckIn } from '../types'
 import {
   fetchRecepAgendaCatalog,
   fetchRecepDayAppointments,
   fetchRecepAvailableTimeSlots,
   createRecepAppointment,
   markRecepAppointmentNoAsistio,
+  checkInRecepAppointment,
 } from '../services'
 import {
   isAppointmentDateInThePast,
@@ -397,6 +398,24 @@ export function useRecepAgenda(enabled: boolean) {
     }
   }
 
+  const handleCheckIn = async (appointment: RecepAgendaDayAppointment) => {
+    if (!canCheckIn(appointment.status)) {
+      showNotice('Solo se puede marcar la llegada en citas agendadas.')
+      return
+    }
+
+    try {
+      await checkInRecepAppointment(appointment.id)
+      showNotice(`Se marcó la llegada de ${appointment.petName}.`)
+      if (dayPanelDate) {
+        await loadDayAppointments(dayPanelDate)
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudo marcar la llegada de la cita'
+      showNotice(msg)
+    }
+  }
+
   return {
     catalog,
     form,
@@ -429,6 +448,7 @@ export function useRecepAgenda(enabled: boolean) {
     handleChangeDayPanelDate,
     handleEditAppointment,
     handleMarkNoAsistio,
+    handleCheckIn,
     reloadAppointments: () => loadDayAppointments(dayPanelDate || todayIsoDate()),
   }
 }

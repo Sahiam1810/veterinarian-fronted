@@ -308,20 +308,26 @@ export async function createRecepAppointment(
   return apiClient.post<ApiCreateAppointmentResponse>('/api/Appointments', payload)
 }
 
+// Nombres canónicos del catálogo STATUS_APPOINTMENTS (ver insert_all_seeds.sql).
+const RECEP_STATUS_TO_CATALOG_NAME: Record<RecepAgendaDayAppointment['status'], string> = {
+  'AGENDADO': 'AGENDADA',
+  'EN ESPERA': 'CONFIRMADA',
+  'EN CONSULTORIO': 'EN_PROGRESO',
+  'ATENDIDO': 'ATENDIDA',
+  'CANCELADO': 'CANCELADA',
+  'NO ASISTIÓ': 'NO_ASISTIO',
+}
+
 // Actualizar el estado de una cita
 export async function updateRecepAppointmentStatus(
   appointmentId: string,
   targetStatus: RecepAgendaDayAppointment['status'],
 ): Promise<void> {
   const statuses = await apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments')
-  let statusName = 'Agendado'
-  if (targetStatus === 'EN CONSULTORIO') statusName = 'En Espera'
-  if (targetStatus === 'ATENDIDO') statusName = 'Atendido'
-  if (targetStatus === 'CANCELADO') statusName = 'Cancelado'
-  if (targetStatus === 'NO ASISTIÓ') statusName = 'NO_ASISTIO'
+  const catalogName = RECEP_STATUS_TO_CATALOG_NAME[targetStatus]
 
-  const matching = statuses.find((st) => st.name.toLowerCase().includes(statusName.toLowerCase()))
-  const statusId = matching ? matching.id : statuses[0]?.id
+  const matching = statuses.find((st) => st.name.toUpperCase() === catalogName)
+  const statusId = matching?.id
 
   if (!statusId) throw new Error('No se pudo resolver el estado de la cita.')
 
@@ -329,6 +335,12 @@ export async function updateRecepAppointmentStatus(
     statusId,
     comment: `Estado actualizado a ${targetStatus} desde recepción`,
   })
+}
+
+// AGENDADA → CONFIRMADA: la recepcionista marca que el paciente ya llegó
+// (check-in). No requiere comentario, igual que las transiciones no terminales.
+export async function checkInRecepAppointment(appointmentId: string): Promise<void> {
+  return updateRecepAppointmentStatus(appointmentId, 'EN ESPERA')
 }
 
 // AGENDADA → NO_ASISTIO con comentario obligatorio (mismo endpoint que veterinario).

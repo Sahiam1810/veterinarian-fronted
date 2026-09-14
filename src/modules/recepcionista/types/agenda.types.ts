@@ -83,6 +83,14 @@ export function canMarkRecepNoAsistio(
   return status === 'AGENDADO'
 }
 
+// Check-in: solo una cita AGENDADA (paciente aún no ha llegado) puede
+// marcarse como "llegó" (pasa a CONFIRMADA / "EN ESPERA").
+export function canCheckIn(
+  status: RecepAgendaDayAppointment['status'],
+): boolean {
+  return status === 'AGENDADO'
+}
+
 // Mapea el nombre canónico del backend al estado de la agenda de recepción.
 export function mapRecepAgendaStatus(
   rawStatus?: string | null,
@@ -92,7 +100,12 @@ export function mapRecepAgendaStatus(
   if (normalized.includes('NO_ASIST') || normalized.includes('NO ASIST')) {
     return 'NO ASISTIÓ'
   }
-  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES')) {
+  // CONFIRMADA: paciente hizo check-in en recepción, aún no entra con el
+  // veterinario (mismo criterio que ya usa Veterinario para "EN ESPERA").
+  if (normalized.includes('CONFIRM')) {
+    return 'EN ESPERA'
+  }
+  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES') || normalized.includes('PROGRESO')) {
     return 'EN CONSULTORIO'
   }
   if (normalized.includes('ATEND') || normalized.includes('COMPLET') || normalized.includes('FINALIZ')) {

@@ -38,6 +38,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleChangeDayPanelDate,
     handleEditAppointment,
     handleMarkNoAsistio,
+    handleCheckIn,
   } = useRecepAgenda(true)
 
   useEffect(() => {
@@ -100,6 +101,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onChangeDayPanelDate={handleChangeDayPanelDate}
         onEditAppointment={handleEditAppointment}
         onMarkNoAsistio={handleMarkNoAsistio}
+        onCheckIn={handleCheckIn}
       />
     </div>
   )
