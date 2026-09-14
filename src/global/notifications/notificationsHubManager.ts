@@ -59,13 +59,18 @@ class NotificationsHubManager {
     if (typeof window !== 'undefined') {
       window.addEventListener('huellitas:session-expired', this.handleSessionExpired)
 
-      // Exponer helper en consola de depuración/pruebas
-      const win = window as unknown as {
-        __simulateRealtimeChatEvent?: (eventName: string, payload: unknown) => boolean
-        __simulateRealtimeNotification?: (payload: unknown) => boolean
+      // Ticket FE-5: el helper de consola solo se expone en desarrollo — en un
+      // build de producción (import.meta.env.DEV === false) no debe quedar una
+      // forma de fabricar eventos ChatEscalationCreated/ChatMessageReceived/
+      // ChatEscalationResolved falsos desde la consola del navegador.
+      if (import.meta.env?.DEV) {
+        const win = window as unknown as {
+          __simulateRealtimeChatEvent?: (eventName: string, payload: unknown) => boolean
+          __simulateRealtimeNotification?: (payload: unknown) => boolean
+        }
+        win.__simulateRealtimeChatEvent = this.simulateRealtimeEvent.bind(this)
+        win.__simulateRealtimeNotification = this.simulateNotification.bind(this)
       }
-      win.__simulateRealtimeChatEvent = this.simulateRealtimeEvent.bind(this)
-      win.__simulateRealtimeNotification = this.simulateNotification.bind(this)
     }
   }
 
