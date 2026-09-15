@@ -30,10 +30,13 @@ export const VET_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
 ]
 
 // Mapa módulo → menú del recepcionista
+// Chat y Escalamientos deben tener canView; si falta alguno se oculta Asesor.
 export const RECEP_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   Mascotas: 'recep.mascotas',
   Clientes: 'recep.duenos',
   Citas: 'recep.agenda',
+  Chat: 'recep.conversaciones',
+  Escalamientos: 'recep.conversaciones',
 }
 
 export const RECEP_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [

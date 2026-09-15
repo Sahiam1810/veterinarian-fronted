@@ -5,6 +5,8 @@ import { fetchVetNavPermissions } from '../../src/modules/veterinario/services/v
 import {
   filterNavKeysByModuleView,
   isNavPermissionGranted,
+  RECEP_ALWAYS_VISIBLE_NAV,
+  RECEP_MODULE_TO_NAV,
   VET_ALWAYS_VISIBLE_NAV,
   VET_MODULE_TO_NAV,
 } from '../../src/modules/auth/services/myPermissionsService.ts'
@@ -13,6 +15,7 @@ import {
   VET_DEFAULT_PERMISSIONS,
   VET_NAV_CATALOG,
 } from '../../src/global/navigation/roles/veterinario.ts'
+import { RECEP_DEFAULT_PERMISSIONS } from '../../src/global/navigation/roles/recepcionista.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -138,4 +141,33 @@ test('filterNavKeysByModuleView correctly handles empty permissions map', () => 
     VET_ALWAYS_VISIBLE_NAV,
   )
   assert.deepEqual(filtered, ['vet.inicio', 'vet.perfil'])
+})
+
+test('filterNavKeysByModuleView oculta Asesor si falta Chat o Escalamientos', () => {
+  const withBoth = filterNavKeysByModuleView(
+    RECEP_DEFAULT_PERMISSIONS,
+    {
+      Clientes: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      Mascotas: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      Citas: { canView: true, canCreate: true, canEdit: true, canDelete: true },
+      Chat: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      Escalamientos: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+    },
+    RECEP_MODULE_TO_NAV,
+    RECEP_ALWAYS_VISIBLE_NAV,
+  )
+  assert.equal(withBoth.includes('recep.conversaciones'), true)
+
+  const withoutChat = filterNavKeysByModuleView(
+    RECEP_DEFAULT_PERMISSIONS,
+    {
+      Clientes: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      Mascotas: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+      Citas: { canView: true, canCreate: true, canEdit: true, canDelete: true },
+      Escalamientos: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+    },
+    RECEP_MODULE_TO_NAV,
+    RECEP_ALWAYS_VISIBLE_NAV,
+  )
+  assert.equal(withoutChat.includes('recep.conversaciones'), false)
 })
