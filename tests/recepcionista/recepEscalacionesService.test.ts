@@ -6,6 +6,7 @@ import {
   resolveChannel,
   resolvePriority,
   resolveStatus,
+  sortEscalatedConversationItems,
   fetchEscalatedConversations,
   USE_MOCK_ESCALATIONS,
 } from '../../src/modules/recepcionista/services/recepEscalacionesService.ts'
@@ -14,6 +15,7 @@ import {
   ESCALATION_STATUS_GUIDS,
   type ChatConversationResponseDto,
   type ChatEscalationResponseDto,
+  type EscalatedConversationListItem,
 } from '../../src/modules/recepcionista/types/escalaciones.types.ts'
 import { RECEP_NAV_CATALOG } from '../../src/global/navigation/roles/recepcionista.ts'
 import { resolveNavCatalog } from '../../src/global/navigation/resolveNav.ts'
@@ -77,6 +79,54 @@ test('formatWaitingTime calcula correctamente minutos, horas y días', () => {
   // 2 días antes
   const d2 = new Date('2026-09-12T12:00:00.000Z').toISOString()
   assert.equal(formatWaitingTime(d2, now).label, 'Hace 2 d')
+})
+
+test('sortEscalatedConversationItems ordena por prioridad y luego por tiempo de espera (Ticket FE-6, Opción A)', () => {
+  const baseItem: EscalatedConversationListItem = {
+    id: 'base',
+    conversationId: 'conv-base',
+    escalationId: 'esc-base',
+    clientName: 'Cliente',
+    clientPhone: null,
+    channel: 'Telegram',
+    channelRaw: 'telegram',
+    lastMessage: 'Hola',
+    lastMessageAt: new Date().toISOString(),
+    lastMessageTimeLabel: '10:00',
+    waitingTimeLabel: '',
+    waitingMinutes: 0,
+    priority: 'Normal',
+    priorityId: null,
+    status: 'Pendiente',
+    statusId: null,
+    reason: null,
+    createdAt: new Date().toISOString(),
+  }
+
+  const items: EscalatedConversationListItem[] = [
+    { ...baseItem, id: 'media-espera-larga', priority: 'Media', waitingMinutes: 120 },
+    { ...baseItem, id: 'urgente-espera-corta', priority: 'Urgente', waitingMinutes: 1 },
+    { ...baseItem, id: 'alta-espera-media', priority: 'Alta', waitingMinutes: 30 },
+    { ...baseItem, id: 'urgente-espera-larga', priority: 'Urgente', waitingMinutes: 90 },
+    { ...baseItem, id: 'baja-espera-larguisima', priority: 'Baja', waitingMinutes: 500 },
+  ]
+
+  const sorted = sortEscalatedConversationItems(items)
+
+  assert.deepEqual(
+    sorted.map((i) => i.id),
+    [
+      'urgente-espera-larga', // Urgente, y entre los dos Urgente, el que más espera
+      'urgente-espera-corta',
+      'alta-espera-media',
+      'media-espera-larga',
+      'baja-espera-larguisima', // Baja, aunque sea el que más lleva esperando de todos
+    ],
+  )
+
+  // No muta el array original — buildEscalatedDirectory y el reducer de
+  // tiempo real dependen de que devuelva una copia nueva.
+  assert.equal(items[0]?.id, 'media-espera-larga')
 })
 
 test('buildEscalatedDirectory cruza conversaciones y escalamientos activos excluyendo resueltos', () => {
