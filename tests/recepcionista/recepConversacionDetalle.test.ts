@@ -39,8 +39,8 @@ test('resolveSenderLabel retorna etiquetas legibles para la interfaz', () => {
 test('buildChatMessageItem transforma un ChatMessageResponseDto al modelo de presentación', () => {
   const dto: ChatMessageResponseDto = {
     id: 'msg-test-1',
-    conversationId: 'conv-test',
-    senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+    chatConversationId: 'conv-test',
+    senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
     senderName: 'Valentina',
     content: 'Hola, tengo una duda con las vacunas.',
     createdAt: '2026-09-14T15:30:00.000Z',
@@ -118,8 +118,8 @@ test('resolveConversation marca el escalamiento como resuelto y lo remueve de la
     assert.ok(targetEsc, 'El escalamiento esc-005 debe existir antes de resolverlo')
 
     const res = await resolveConversation('esc-005', 'Se envió copia de la historia clínica al correo.')
-    assert.equal(res.escalationId, 'esc-005')
-    assert.equal(res.notes, 'Se envió copia de la historia clínica al correo.')
+    assert.equal(res.chatEscalationId, 'esc-005')
+    assert.equal(res.resolutionNote, 'Se envió copia de la historia clínica al correo.')
     assert.ok(res.resolvedAt)
 
     // Verificar que esc-005 ya no aparece en la bandeja activa

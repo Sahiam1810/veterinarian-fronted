@@ -104,82 +104,87 @@ export interface ChatConversationResponseDto {
 
 export interface ChatEscalationResponseDto {
   id: string
-  conversationId: string
+  chatConversationId: string
+  escalationStatusId: string
+  fromAi?: boolean
   reason?: string | null
+  createdAt: string
+  updateAt?: string | null
+  // Ticket B7 (pendiente): el backend real no trae estos campos hoy en este
+  // DTO — la prioridad vive en ChatConversation, no en ChatEscalation, y
+  // asignación/resolución viven en tablas aparte. Quedan opcionales para no
+  // romper si el backend los agrega más adelante; hoy siempre son undefined.
   priorityId?: string | null
   priority?: string | null
-  statusId?: string | null
   status?: string | null
   assignedToId?: string | null
-  createdAt: string
   resolvedAt?: string | null
   notes?: string | null
 }
 
 export interface ChatMessageResponseDto {
   id: string
-  conversationId: string
-  senderTypeId: string
-  senderType?: string | null
-  senderRole?: string | null
-  senderName?: string | null
-  participantId?: string | null
+  chatConversationId: string
+  senderTypesId: string
+  chatParticipantId?: string | null
   messageTypeId?: string | null
   content: string
+  metadata?: string | null
   createdAt: string
-  isRead?: boolean
+  // El backend real no resuelve estos tres campos (necesitaría un join hasta
+  // ChatUserProfile/AgentHuman/AiModel) — quedan opcionales solo para que el
+  // modo mock pueda mostrar un nombre; resolveSenderLabel ya funciona bien
+  // sin ellos (cae al rol genérico: "Cliente"/"Asesor (Tú)"/"Asistente IA").
+  senderName?: string | null
 }
 
 export interface CreateChatMessageRequestDto {
-  conversationId: string
-  participantId: string
-  senderTypeId: string
+  chatConversationId: string
+  chatParticipantId: string
+  senderTypesId: string
   messageTypeId: string
   content: string
+  metadata?: string | null
 }
 
 export interface AgentHumanResponseDto {
   id: string
-  userId?: string | null
-  name: string
-  email?: string | null
+  userId: string
   isActive: boolean
 }
 
 export interface CreateAgentHumanRequestDto {
   userId: string
-  name: string
-  email: string
 }
 
 export interface ChatParticipantResponseDto {
   id: string
-  conversationId: string
+  chatConversationId: string
+  participantTypeId: string
+  chatUserProfileId?: string | null
   agentHumanId?: string | null
-  clientId?: string | null
-  role?: string | null
-  joinedAt?: string
+  aiModelId?: string | null
 }
 
 export interface CreateChatParticipantRequestDto {
-  conversationId: string
+  chatConversationId: string
+  participantTypeId: string
   agentHumanId: string
-  role: string
 }
 
 export interface CreateEscalationResolutionRequestDto {
-  escalationId: string
-  resolvedById?: string | null
-  notes?: string | null
-  statusId?: string
+  chatEscalationId: string
+  resolvedBy?: string | null
+  resolutionNote?: string | null
+  resolvedAt?: string | null
 }
 
 export interface EscalationResolutionResponseDto {
   id: string
-  escalationId: string
-  resolvedById?: string | null
-  notes?: string | null
-  resolvedAt: string
+  chatEscalationId: string
+  resolvedBy?: string | null
+  resolutionNote?: string | null
+  resolvedAt?: string | null
 }
 
 // ==========================================
