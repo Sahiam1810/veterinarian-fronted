@@ -105,6 +105,22 @@ body {
   animation: week-switch 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Transición suave al cambiar de página en listas */
+@keyframes page-switch {
+  0% {
+    opacity: 0.45;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-switch {
+  animation: page-switch 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Animación Pop Up para notificaciones flotantes superiores */
 @keyframes toastPopUpTop {
   0% {

@@ -28,6 +28,9 @@ import {
   TrashIcon,
   EyeIcon,
   EyeOffIcon,
+  UserAvatarIcon,
+  StethoscopeIcon,
+  PawIcon,
 } from '@/global/components'
 
 function getUserInitials(name: string): string {
@@ -1000,55 +1003,274 @@ function PermissionMatrixPanel({
 }
 
 /* ============================================================================
-   4. MODO POR USUARIO: lista + ficha + permisos
+   4. DETALLE DE USUARIO (FICHA COMPLETA)
+   ============================================================================ */
+interface UserInfoPanelProps {
+  user: SystemUser
+  role: RoleDefinition
+  specialties: { id: string; name: string }[]
+  vetProfile?: { specialtyId: string; licenseNumber: string } | null
+  onOpenEditModal: (user: SystemUser) => void
+  onToggleStatus: (userId: string) => void
+  onDeleteUser: (userId: string) => void
+  onBackToList?: () => void
+}
+
+function UserInfoPanel({
+  user,
+  role,
+  specialties,
+  vetProfile,
+  onOpenEditModal,
+  onToggleStatus,
+  onDeleteUser,
+  onBackToList,
+}: UserInfoPanelProps) {
+  const isProtected = isProtectedSuperAdminUser(user)
+  const isVet = isVeterinarioRoleName(user.roleName) || Boolean(vetProfile)
+  const vetSpecialtyName = useMemo(() => {
+    if (!vetProfile?.specialtyId) return 'Medicina General'
+    return specialties.find((s) => s.id === vetProfile.specialtyId)?.name || 'Medicina General'
+  }, [vetProfile, specialties])
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto pr-1">
+      {onBackToList && (
+        <button
+          type="button"
+          onClick={onBackToList}
+          className="lg:hidden text-sm font-bold text-brand hover:underline cursor-pointer shrink-0 inline-flex items-center gap-1.5 self-start"
+        >
+          <ChevronLeftIcon className="w-4 h-4" />
+          <span>Volver a la lista</span>
+        </button>
+      )}
+
+      {/* 1. Encabezado principal del usuario (Hero Card grande) */}
+      <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-5 sm:p-6 border border-border-tan shadow-[0_4px_24px_rgba(35,78,70,0.035)] shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-mint-soft text-brand border-2 border-brand/20 flex items-center justify-center text-xl sm:text-2xl font-extrabold shrink-0 shadow-xs">
+              {getUserInitials(user.name)}
+            </div>
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-lg sm:text-2xl font-bold text-charcoal tracking-tight truncate">
+                  {user.name}
+                </h2>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold ${
+                    user.status === 'Activo'
+                      ? 'bg-mint-soft text-brand border border-brand/20'
+                      : 'bg-bone text-sage border border-border-tan'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      user.status === 'Activo' ? 'bg-brand' : 'bg-sage'
+                    }`}
+                  />
+                  {user.status}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-sage truncate font-medium">{user.email}</p>
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-cream text-brand border border-border-tan shadow-2xs">
+                  {user.roleName}
+                </span>
+                <span className="text-xs text-sage">
+                  Registrado el {user.registrationDate}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center">
+            {isProtected ? (
+              <span className="text-xs font-semibold text-sage bg-bone/70 border border-border-tan px-3.5 py-2 rounded-xl">
+                SuperAdmin protegido
+              </span>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onOpenEditModal(user)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-tan bg-bone hover:bg-cream text-charcoal text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                >
+                  <EditIcon className="w-4 h-4" />
+                  <span>Editar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToggleStatus(user.id)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-tan bg-bone hover:bg-cream text-charcoal text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                >
+                  <span>{user.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteUser(user.id)}
+                  disabled={user.status !== 'Inactivo'}
+                  title={
+                    user.status !== 'Inactivo'
+                      ? 'Desactiva la cuenta para poder eliminarla'
+                      : 'Eliminar usuario'
+                  }
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-terracotta/20 bg-terracotta-soft text-terracotta text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  <span>Eliminar</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Grid de Información Detallada (Cards amplias y grandes) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+        {/* Card: Datos Personales y de Cuenta */}
+        <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-5 sm:p-6 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] flex flex-col gap-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-border-tan/60">
+            <UserAvatarIcon className="w-5 h-5 text-brand" />
+            <h3 className="text-xs sm:text-sm font-bold text-brand uppercase tracking-wider">
+              Datos Personales y de Cuenta
+            </h3>
+          </div>
+
+          <div className="space-y-3.5 text-xs sm:text-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1">
+              <span className="text-sage font-medium">Nombre(s):</span>
+              <span className="text-charcoal font-bold text-right">
+                {user.firstName || user.name.split(' ')[0] || '—'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1">
+              <span className="text-sage font-medium">Apellidos:</span>
+              <span className="text-charcoal font-bold text-right">
+                {user.lastName || user.name.split(' ').slice(1).join(' ') || '—'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1">
+              <span className="text-sage font-medium">Correo electrónico:</span>
+              <span className="text-charcoal font-bold text-right break-all">
+                {user.email}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1">
+              <span className="text-sage font-medium">Estado de la cuenta:</span>
+              <span className={`font-bold text-right ${user.status === 'Activo' ? 'text-brand' : 'text-sage'}`}>
+                {user.status}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1">
+              <span className="text-sage font-medium">Fecha de registro:</span>
+              <span className="text-charcoal font-bold text-right">
+                {user.registrationDate || '—'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1 sm:items-center">
+              <span className="text-sage font-medium">ID de Usuario:</span>
+              <span className="text-charcoal font-mono text-[11px] sm:text-xs bg-bone/80 px-2 py-0.5 rounded border border-border-tan/60 break-all text-right">
+                {user.id}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 gap-1 sm:items-center">
+              <span className="text-sage font-medium">ID de Cuenta Web:</span>
+              <span className="text-charcoal font-mono text-[11px] sm:text-xs bg-bone/80 px-2 py-0.5 rounded border border-border-tan/60 break-all text-right">
+                {user.accountId || 'Sin cuenta web vinculada'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card: Rol y Perfil Profesional */}
+        <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-5 sm:p-6 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] flex flex-col gap-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-border-tan/60">
+            <StethoscopeIcon className="w-5 h-5 text-brand" />
+            <h3 className="text-xs sm:text-sm font-bold text-brand uppercase tracking-wider">
+              Rol y Perfil Profesional
+            </h3>
+          </div>
+
+          <div className="space-y-3.5 text-xs sm:text-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1 sm:items-center">
+              <span className="text-sage font-medium">Rol Asignado:</span>
+              <span className="px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-cream text-brand border border-border-tan inline-block text-right self-start sm:self-auto">
+                {user.roleName}
+              </span>
+            </div>
+
+            <div className="flex flex-col py-2 border-b border-border-tan/30 gap-1.5">
+              <span className="text-sage font-medium">Descripción del Rol:</span>
+              <p className="text-charcoal text-xs sm:text-sm leading-relaxed bg-bone/50 p-3 rounded-xl border border-border-tan/50">
+                {role.description || 'Rol de acceso estándar en el sistema.'}
+              </p>
+            </div>
+
+            {isVet && (
+              <>
+                <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1 sm:items-center">
+                  <span className="text-sage font-medium">Especialidad Médica:</span>
+                  <span className="px-3 py-1 rounded-lg text-xs sm:text-sm font-bold bg-mint-soft text-brand border border-brand/20 text-right">
+                    {vetSpecialtyName}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1 sm:items-center">
+                  <span className="text-sage font-medium">Colegiatura / Licencia CMP:</span>
+                  <span className="text-charcoal font-mono text-xs sm:text-sm font-bold bg-bone/80 px-2.5 py-1 rounded border border-border-tan/60 text-right">
+                    {vetProfile?.licenseNumber || 'No registrada'}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ============================================================================
+   5. MODO POR USUARIO: lista + información detallada
    ============================================================================ */
 interface ByUserModeViewProps {
   users: SystemUser[]
   roles: RoleDefinition[]
+  specialties: { id: string; name: string }[]
+  vetProfileByUserId: Record<string, { specialtyId: string; licenseNumber: string }>
   filters: UserFilters
   selectedUserId: string | null
-  permissionTarget: PermissionTarget
   selectedTargetUser: SystemUser | null
   activeTargetRole: RoleDefinition
-  activePermissions: Record<ModuleId, ModulePermission>
-  isUserTargetCustomized: boolean
-  isClientePermissionTarget?: boolean
-  modulesInfo: ModuleInfo[]
   onFilterChange: (filters: UserFilters) => void
   onSelectUser: (userId: string) => void
   onOpenEditModal: (user: SystemUser) => void
   onToggleStatus: (userId: string) => void
   onDeleteUser: (userId: string) => void
-  onTogglePermission: (
-    moduleId: ModuleId,
-    permissionKey: keyof ModulePermission
-  ) => void
-  onSavePermissions: () => void
-  onResetUserPermissions: () => void
-  showPermissionMatrix?: boolean
 }
 
 function ByUserModeView({
   users,
   roles,
+  specialties,
+  vetProfileByUserId,
   filters,
   selectedUserId,
-  permissionTarget,
   selectedTargetUser,
   activeTargetRole,
-  activePermissions,
-  isUserTargetCustomized,
-  isClientePermissionTarget = false,
-  modulesInfo,
   onFilterChange,
   onSelectUser,
   onOpenEditModal,
   onToggleStatus,
   onDeleteUser,
-  onTogglePermission,
-  onSavePermissions,
-  onResetUserPermissions,
-  showPermissionMatrix = true,
 }: ByUserModeViewProps) {
   const [showMobileDetail, setShowMobileDetail] = useState(false)
   // Carrusel manual: 10 cuentas por página con flechas.
@@ -1117,13 +1339,15 @@ function ByUserModeView({
             </select>
           </div>
 
-          <div className="space-y-1 flex-1 min-h-0 overflow-y-auto mt-2 pr-0.5">
+          <div
+            key={safeCurrentPage}
+            className="space-y-1 flex-1 min-h-0 overflow-y-auto mt-2 pr-0.5 animate-page-switch"
+          >
             {paginatedUsers.length === 0 ? (
               <p className="text-xs text-sage text-center py-6">No se encontraron usuarios</p>
             ) : (
               paginatedUsers.map((user) => {
                 const isSelected = selectedUserId === user.id
-                const customized = hasCustomPermissions(user)
 
                 return (
                   <div
@@ -1146,21 +1370,13 @@ function ByUserModeView({
                         {getUserInitials(user.name)}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1">
-                          <h4
-                            className={`text-xs font-bold truncate leading-tight ${
-                              isSelected ? 'text-brand' : 'text-charcoal'
-                            }`}
-                          >
-                            {user.name}
-                          </h4>
-                          {customized && (
-                            <span
-                              className="inline-block w-1.5 h-1.5 rounded-full bg-terracotta shrink-0"
-                              title="Tiene excepciones de permisos"
-                            />
-                          )}
-                        </div>
+                        <h4
+                          className={`text-xs font-bold truncate leading-tight ${
+                            isSelected ? 'text-brand' : 'text-charcoal'
+                          }`}
+                        >
+                          {user.name}
+                        </h4>
                         <span className="text-[10px] text-sage truncate block leading-tight">
                           {user.roleName}
                         </span>
@@ -1235,124 +1451,33 @@ function ByUserModeView({
       </div>
 
       <div
-        className={`lg:col-span-8 h-full min-h-0 min-w-0 flex flex-col gap-2 overflow-hidden animate-pop-in stagger-2 ${
+        className={`lg:col-span-8 h-full min-h-0 min-w-0 flex flex-col gap-2 overflow-hidden ${
           showMobileDetail ? 'flex' : 'hidden lg:flex'
         }`}
       >
         {selectedTargetUser ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setShowMobileDetail(false)}
-              className="lg:hidden text-xs font-bold text-brand hover:underline cursor-pointer shrink-0"
-            >
-              Volver a la lista
-            </button>
-
-            <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-3 border border-border-tan shadow-[0_4px_20px_rgba(35,78,70,0.03)] shrink-0">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-mint-soft text-brand border border-brand/15 flex items-center justify-center text-xs font-bold shrink-0">
-                    {getUserInitials(selectedTargetUser.name)}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-charcoal truncate">
-                      {selectedTargetUser.name}
-                    </h3>
-                    <p className="text-[11px] text-sage truncate">{selectedTargetUser.email}</p>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                      <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-cream text-brand border border-border-tan">
-                        {selectedTargetUser.roleName}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${
-                          selectedTargetUser.status === 'Activo'
-                            ? 'bg-mint-soft text-brand border border-brand/10'
-                            : 'bg-bone text-sage border border-border-tan'
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            selectedTargetUser.status === 'Activo' ? 'bg-brand' : 'bg-sage'
-                          }`}
-                        />
-                        {selectedTargetUser.status}
-                      </span>
-                      <span className="text-[9px] text-sage truncate">
-                        Registro: {selectedTargetUser.registrationDate}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                  {isProtectedSuperAdminUser(selectedTargetUser) ? (
-                    <p className="text-[11px] font-semibold text-sage max-w-[16rem] leading-snug">
-                      Cuenta SuperAdmin protegida: no se puede editar, activar, desactivar ni eliminar.
-                    </p>
-                  ) : (
-                    <>
-                  <button
-                    type="button"
-                    onClick={() => onOpenEditModal(selectedTargetUser)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs"
-                  >
-                    <EditIcon className="w-3 h-3" />
-                    <span>Editar</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onToggleStatus(selectedTargetUser.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shadow-2xs"
-                  >
-                    <span>{selectedTargetUser.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteUser(selectedTargetUser.id)}
-                    disabled={selectedTargetUser.status !== 'Inactivo'}
-                    title={
-                      selectedTargetUser.status !== 'Inactivo'
-                        ? 'Desactiva la cuenta para poder eliminarla'
-                        : 'Eliminar usuario'
-                    }
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-terracotta/20 bg-terracotta-soft text-terracotta text-[11px] font-semibold transition cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <TrashIcon className="w-3 h-3" />
-                    <span>Eliminar</span>
-                  </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            {showPermissionMatrix ? (
-            <PermissionMatrixPanel
-              permissionTarget={permissionTarget}
-              selectedRole={activeTargetRole}
-              selectedTargetUser={selectedTargetUser}
-              activeTargetRole={activeTargetRole}
-              activePermissions={activePermissions}
-              isUserTargetCustomized={isUserTargetCustomized}
-              isClientePermissionTarget={isClientePermissionTarget}
-              modulesInfo={modulesInfo}
-              onTogglePermission={onTogglePermission}
-              onSavePermissions={onSavePermissions}
-              onResetUserPermissions={onResetUserPermissions}
+          <div
+            key={selectedTargetUser.id}
+            className="flex-1 min-h-0 flex flex-col overflow-hidden animate-view-popup"
+          >
+            <UserInfoPanel
+              user={selectedTargetUser}
+              role={activeTargetRole}
+              specialties={specialties}
+              vetProfile={
+                vetProfileByUserId[selectedTargetUser.id.toLowerCase()] ?? null
+              }
+              onOpenEditModal={onOpenEditModal}
+              onToggleStatus={onToggleStatus}
+              onDeleteUser={onDeleteUser}
+              onBackToList={() => setShowMobileDetail(false)}
             />
-            ) : (
-              <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-4 border border-border-tan text-sm text-sage">
-                Como administrador de clínica puedes crear y gestionar cuentas, pero no puedes
-                cambiar permisos ni bloquear vistas. Eso solo lo hace el SuperAdmin.
-              </div>
-            )}
-            </div>
-          </>
+          </div>
         ) : (
-          <div className="bg-white/95 backdrop-blur-xs rounded-3xl p-8 border border-border-tan text-center text-sage text-sm">
-            Selecciona un usuario de la lista para ver su ficha y permisos.
+          <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-8 border border-border-tan text-center text-sage text-sm flex flex-col items-center justify-center flex-1 gap-2">
+            <UserAvatarIcon className="w-10 h-10 text-sage/40" />
+            <p className="font-semibold text-charcoal">Ningún usuario seleccionado</p>
+            <p className="text-xs text-sage">Selecciona un usuario de la lista para ver su información detallada.</p>
           </div>
         )}
       </div>
@@ -1655,7 +1780,7 @@ export function UserSuperAdmin({
               <p className="text-[11px] sm:text-xs text-sage">
                 {canManagePermissions
                   ? activeTab === 'usuarios'
-                    ? 'Gestiona cuentas y excepciones individuales.'
+                    ? 'Consulta y gestiona las cuentas de usuario e información de acceso.'
                     : 'Define permisos por defecto para cada rol.'
                   : 'Crea y gestiona cuentas. Los permisos solo los cambia el SuperAdmin.'}
               </p>
@@ -1715,26 +1840,19 @@ export function UserSuperAdmin({
               <ByUserModeView
                 users={filteredUsers}
                 roles={roles}
+                specialties={specialties}
+                vetProfileByUserId={vetProfileByUserId}
                 filters={filters}
                 selectedUserId={
                   permissionTarget.type === 'user' ? permissionTarget.id : null
                 }
-                permissionTarget={permissionTarget}
                 selectedTargetUser={selectedTargetUser}
                 activeTargetRole={activeTargetRole}
-                activePermissions={activePermissions}
-                isUserTargetCustomized={isUserTargetCustomized}
-                isClientePermissionTarget={isClientePermissionTarget}
-                modulesInfo={modulesInfo}
                 onFilterChange={setFilters}
                 onSelectUser={selectUserTarget}
                 onOpenEditModal={openEditUserModal}
                 onToggleStatus={toggleUserStatus}
                 onDeleteUser={requestDeleteUser}
-                onTogglePermission={togglePermission}
-                onSavePermissions={saveRolePermissions}
-                onResetUserPermissions={resetUserPermissions}
-                showPermissionMatrix={canManagePermissions}
               />
             ) : (
               <ByRoleModeView
