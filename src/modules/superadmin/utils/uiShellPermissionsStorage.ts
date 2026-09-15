@@ -1,7 +1,9 @@
 import type { ModuleId, ModulePermission } from '../types'
 
 // Módulos solo de la UI del panel admin (no existen como filas en MODULES de Oracle)
-export const UI_SHELL_MODULE_IDS: ModuleId[] = ['inicio', 'reportes']
+// Inicio no tiene fila en MODULES. Reportes sí es un módulo persistido y debe
+// guardarse en ROLE_PERMISSIONS, igual que el resto de la matriz.
+export const UI_SHELL_MODULE_IDS: ModuleId[] = ['inicio']
 
 const STORAGE_KEY = 'huellitas_ui_shell_permissions'
 
