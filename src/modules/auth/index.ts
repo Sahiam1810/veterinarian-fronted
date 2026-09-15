@@ -10,6 +10,7 @@ export {
   isStaffRole,
   mapBackendRole,
   MOCK_ACCOUNTS,
+  updateMyProfilePhoto,
   fetchMyModulePermissions,
   filterNavKeysByModuleView,
   isNavPermissionGranted,

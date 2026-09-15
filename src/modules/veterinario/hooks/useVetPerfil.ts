@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { VetProfilePayload } from '../types'
 import { fetchVetProfile, changeVetPassword } from '../services'
 import { ApiError } from '@/services'
+import { updateMyProfilePhoto } from '@/modules/auth'
 
 export function useVetPerfil(enabled: boolean) {
   const [profile, setProfile] = useState<VetProfilePayload | null>(null)
@@ -25,16 +26,7 @@ export function useVetPerfil(enabled: boolean) {
     setError(null)
     try {
       const data = await fetchVetProfile()
-      let storedPhoto: string | null = null
-      try {
-        storedPhoto = localStorage.getItem(`huellitas_photo_${data.email?.toLowerCase()}`)
-      } catch {
-        // ignore
-      }
-      setProfile({
-        ...data,
-        photoUrl: storedPhoto || data.photoUrl,
-      })
+      setProfile(data)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo cargar el perfil del veterinario'
       setError(msg)
@@ -117,22 +109,11 @@ export function useVetPerfil(enabled: boolean) {
     }
   }
 
-  const handleChangePhoto = () => {
-    const randomPhotos = [
-      'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150&h=150',
-      'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=150&h=150',
-      'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=150&h=150',
-    ]
-    const nextPhoto = randomPhotos[Math.floor(Math.random() * randomPhotos.length)]
-    if (profile?.email) {
-      try {
-        localStorage.setItem(`huellitas_photo_${profile.email.toLowerCase()}`, nextPhoto)
-      } catch {
-        // ignore
-      }
-    }
-    setProfile((prev) => (prev ? { ...prev, photoUrl: nextPhoto } : prev))
-    showNotice('Foto de perfil actualizada (almacenada únicamente en este navegador)')
+  // Guarda el enlace en USERS.PHOTO_URL. Vacío quita la foto.
+  const savePhoto = async (photoUrl: string) => {
+    await updateMyProfilePhoto(photoUrl)
+    setProfile((prev) => (prev ? { ...prev, photoUrl: photoUrl || null } : prev))
+    showNotice(photoUrl ? 'Foto de perfil actualizada' : 'Foto de perfil eliminada')
   }
 
   return {
@@ -147,7 +128,7 @@ export function useVetPerfil(enabled: boolean) {
     closePasswordModal,
     reloadProfile: loadProfile,
     changePassword,
-    handleChangePhoto,
+    savePhoto,
     handleChangePassword: openPasswordModal,
   }
 }

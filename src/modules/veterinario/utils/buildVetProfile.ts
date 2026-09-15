@@ -49,5 +49,6 @@ export function buildVetProfilePayload(input: {
     mainSpecialty: specialty,
     subSpecialty: description || 'No registrada',
     licenseNumber: veterinarian?.licenseNumber?.trim() || 'Sin colegiatura',
+    photoUrl: profile.photoUrl?.trim() || null,
   }
 }

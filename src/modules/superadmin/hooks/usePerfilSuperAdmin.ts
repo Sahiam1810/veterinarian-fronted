@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getStoredUser } from '@/modules/auth'
+import { getStoredUser, updateMyProfilePhoto } from '@/modules/auth'
 import {
   fetchCurrentProfile,
   changeMyPassword,
@@ -26,7 +26,6 @@ const LOCAL_EXTRAS_KEY = 'huellitas_perfil_extras'
 
 type LocalExtras = {
   phone?: string
-  photoUrl?: string
   clinicName?: string
   clinicBranch?: string
   workHours?: string
@@ -91,7 +90,7 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
         displayName: me.fullName,
         email: me.email,
         phone: extras.phone || '',
-        photoUrl: extras.photoUrl || '',
+        photoUrl: me.photoUrl || '',
         jobTitle: extras.jobTitle || 'Administración de la Clínica',
         systemRole: auth?.isPlatformSuperAdmin
           ? 'SuperAdministrador'
@@ -146,10 +145,10 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
     }
   }
 
-  const savePhoto = (photoUrl: string) => {
-    writeExtras(profile.email, { photoUrl })
+  const savePhoto = async (photoUrl: string) => {
+    await updateMyProfilePhoto(photoUrl)
     setProfile((prev) => ({ ...prev, photoUrl }))
-    showToast('Foto actualizada (almacenada únicamente en este navegador).')
+    showToast(photoUrl ? 'Foto de perfil actualizada' : 'Foto de perfil eliminada')
   }
 
   return {

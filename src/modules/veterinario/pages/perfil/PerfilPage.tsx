@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { ChangePhotoDrawer } from '@/global/components'
 import { VetPerfilView, VetChangePasswordModal } from '../../components'
 import { useVetPerfil } from '../../hooks'
 
 // Página Perfil del veterinario (datos reales de la API).
 export function PerfilPage({ onNotice }: { onNotice?: (message: string) => void } = {}) {
+  const [isPhotoDrawerOpen, setIsPhotoDrawerOpen] = useState(false)
   const {
     profile,
     isLoading,
@@ -15,7 +17,7 @@ export function PerfilPage({ onNotice }: { onNotice?: (message: string) => void 
     openPasswordModal,
     closePasswordModal,
     changePassword,
-    handleChangePhoto,
+    savePhoto,
   } = useVetPerfil(true)
 
   useEffect(() => {
@@ -47,8 +49,18 @@ export function PerfilPage({ onNotice }: { onNotice?: (message: string) => void 
     <div className="min-w-0 overflow-x-hidden">
       <VetPerfilView
         profile={profile}
-        onChangePhoto={handleChangePhoto}
+        onChangePhoto={() => setIsPhotoDrawerOpen(true)}
         onChangePassword={openPasswordModal}
+      />
+
+      <ChangePhotoDrawer
+        isOpen={isPhotoDrawerOpen}
+        photoUrl={profile.photoUrl || ''}
+        onClose={() => setIsPhotoDrawerOpen(false)}
+        onSave={async (url) => {
+          await savePhoto(url)
+          setIsPhotoDrawerOpen(false)
+        }}
       />
 
       <VetChangePasswordModal

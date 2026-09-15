@@ -1,6 +1,6 @@
 import { vetApiFetch } from '../api/vetHttp'
+import { fetchMyVetAppointments } from '../api/fetchMyVetAppointments'
 import type {
-  ApiAppointment,
   ApiAvailability,
   ApiClientPet,
   ApiCurrentProfile,
@@ -46,7 +46,7 @@ export async function fetchVetAgendaWeek(
   }
 
   const [appointments, availabilitiesRaw, pets, clientPets, species] = await Promise.all([
-    vetApiFetch<ApiAppointment[]>('/api/appointments'),
+    fetchMyVetAppointments(),
     vetApiFetch<ApiAvailability[]>(
       `/api/availabilities/by-veterinarian/${veterinarian.id}`,
     ).catch(async () => {

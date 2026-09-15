@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { CurrentProfileResponse } from '@/modules/auth/types'
 import { fetchAuxProfile, changeAuxPassword } from '../services/auxProfileService'
 import { ApiError } from '@/services'
+import { updateMyProfilePhoto } from '@/modules/auth'
 
 export interface UseAuxPerfilResult {
   profile: CurrentProfileResponse | null
@@ -15,6 +16,7 @@ export interface UseAuxPerfilResult {
     newPassword: string,
     confirmPassword: string,
   ) => Promise<{ success: boolean; message: string }>
+  savePhoto: (photoUrl: string) => Promise<void>
 }
 
 export function useAuxPerfil(): UseAuxPerfilResult {
@@ -98,6 +100,12 @@ export function useAuxPerfil(): UseAuxPerfilResult {
     }
   }
 
+  // Guarda el enlace en USERS.PHOTO_URL. Vacío quita la foto.
+  const savePhoto = async (photoUrl: string) => {
+    await updateMyProfilePhoto(photoUrl)
+    setProfile((prev) => (prev ? { ...prev, photoUrl: photoUrl || null } : prev))
+  }
+
   return {
     profile,
     isLoading,
@@ -106,5 +114,6 @@ export function useAuxPerfil(): UseAuxPerfilResult {
     passwordError,
     reloadProfile: loadProfile,
     changePassword,
+    savePhoto,
   }
 }

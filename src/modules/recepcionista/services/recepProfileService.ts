@@ -17,7 +17,7 @@ export async function fetchRecepProfile(): Promise<RecepProfilePayload> {
     jobTitle: profile.role || 'Recepcionista',
     accountStatus: profile.accountStatus || 'Activo',
     initials: profile.initials || profile.fullName.slice(0, 2).toUpperCase(),
-    photoUrl: null,
+    photoUrl: profile.photoUrl?.trim() || null,
     passwordUpdatedLabel: 'Gestionada de forma segura',
   }
 }

@@ -51,4 +51,5 @@ export interface CurrentProfileResponse {
   email: string
   role: string
   accountStatus: string
+  photoUrl?: string | null
 }

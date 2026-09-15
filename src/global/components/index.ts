@@ -13,6 +13,7 @@ export * from './PawCheckbox'
 export * from './HeaderBackgroundTexture'
 export * from './SidebarBackgroundTexture'
 export * from './PageToast'
+export { ChangePhotoDrawer } from './ChangePhotoDrawer'
 export {
   SuperAdminHeader,
   SuperAdminHeader as Header,

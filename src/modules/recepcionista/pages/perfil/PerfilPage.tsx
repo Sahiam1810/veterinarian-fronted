@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { ChangePhotoDrawer } from '@/global/components'
 import { RecepPerfilView, RecepChangePasswordModal } from '../../components'
 import { useRecepPerfil } from '../../hooks'
 
@@ -7,6 +8,7 @@ interface PerfilPageProps {
 }
 
 export function PerfilPage({ onNotice }: PerfilPageProps) {
+  const [isPhotoDrawerOpen, setIsPhotoDrawerOpen] = useState(false)
   const {
     profile,
     isLoading,
@@ -20,7 +22,7 @@ export function PerfilPage({ onNotice }: PerfilPageProps) {
     reloadProfile,
     changePassword,
     handleEditProfile,
-    handleChangePhoto,
+    savePhoto,
   } = useRecepPerfil(true)
 
   useEffect(() => {
@@ -62,7 +64,17 @@ export function PerfilPage({ onNotice }: PerfilPageProps) {
         profile={profile}
         onEditProfile={handleEditProfile}
         onChangePassword={openPasswordModal}
-        onChangePhoto={handleChangePhoto}
+        onChangePhoto={() => setIsPhotoDrawerOpen(true)}
+      />
+
+      <ChangePhotoDrawer
+        isOpen={isPhotoDrawerOpen}
+        photoUrl={profile.photoUrl || ''}
+        onClose={() => setIsPhotoDrawerOpen(false)}
+        onSave={async (url) => {
+          await savePhoto(url)
+          setIsPhotoDrawerOpen(false)
+        }}
       />
 
       <RecepChangePasswordModal

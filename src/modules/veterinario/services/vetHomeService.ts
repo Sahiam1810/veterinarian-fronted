@@ -1,6 +1,6 @@
 import { vetApiFetch } from '../api/vetHttp'
+import { fetchMyVetAppointments } from '../api/fetchMyVetAppointments'
 import type {
-  ApiAppointment,
   ApiClient,
   ApiClientPet,
   ApiCurrentProfile,
@@ -67,7 +67,7 @@ export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
   // etiquetas: si el SuperAdmin le quita a este usuario el permiso de Ver de
   // Especies y Razas, Clientes o Profesionales, esas etiquetas quedan vacías
   // en vez de tumbar toda la pantalla de Inicio (antes usaba Promise.all).
-  const appointments = await vetApiFetch<ApiAppointment[]>('/api/appointments')
+  const appointments = await fetchMyVetAppointments()
 
   const [
     veterinarians,

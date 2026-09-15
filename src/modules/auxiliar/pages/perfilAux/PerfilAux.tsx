@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ChangePhotoDrawer } from '@/global/components'
 import { ViewPopup } from '../../components'
 import { useAuxPerfil } from '../../hooks'
 
@@ -17,6 +18,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
     passwordError,
     reloadProfile,
     changePassword,
+    savePhoto,
   } = useAuxPerfil()
 
   // Password fields state
@@ -30,14 +32,9 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
   const displayRole = profile?.role || 'Auxiliar'
   const displayInitials = profile?.initials || displayName.slice(0, 2).toUpperCase()
   const displayStatus = profile?.accountStatus || 'Activo'
+  const photoUrl = profile?.photoUrl || null
 
-  const [photoUrl, setPhotoUrl] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(`huellitas_photo_${displayEmail.toLowerCase()}`)
-    } catch {
-      return null
-    }
-  })
+  const [isPhotoDrawerOpen, setIsPhotoDrawerOpen] = useState(false)
 
   const handleSavePassword = async (e: FormEvent) => {
     e.preventDefault()
@@ -50,20 +47,10 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
     }
   }
 
-  const handleChangePhoto = () => {
-    const randomPhotos = [
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150',
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150',
-      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150',
-    ]
-    const nextPhoto = randomPhotos[Math.floor(Math.random() * randomPhotos.length)]
-    try {
-      localStorage.setItem(`huellitas_photo_${displayEmail.toLowerCase()}`, nextPhoto)
-    } catch {
-      // ignore
-    }
-    setPhotoUrl(nextPhoto)
-    onNotice?.('Foto de perfil actualizada (guardada únicamente en este navegador)')
+  const handleSavePhoto = async (url: string) => {
+    await savePhoto(url)
+    setIsPhotoDrawerOpen(false)
+    onNotice?.(url ? 'Foto de perfil actualizada' : 'Foto de perfil eliminada')
   }
 
   if (isLoading && !profile) {
@@ -78,6 +65,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
   }
 
   return (
+    <>
     <ViewPopup animationKey="perfil" className="w-full flex flex-col lg:flex-row gap-5 sm:gap-6 min-w-0">
       {/* Columna Izquierda: Resumen del Perfil */}
       <div className="w-full lg:w-[280px] xl:w-[320px] shrink-0">
@@ -99,7 +87,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
             </div>
             <button
               type="button"
-              onClick={handleChangePhoto}
+              onClick={() => setIsPhotoDrawerOpen(true)}
               className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-white hover:bg-bone border border-border-tan shadow-md flex items-center justify-center text-brand transition cursor-pointer"
               title="Cambiar foto de perfil (Almacenada únicamente en este navegador)"
             >
@@ -389,5 +377,13 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
         </div>
       </div>
     </ViewPopup>
+
+    <ChangePhotoDrawer
+      isOpen={isPhotoDrawerOpen}
+      photoUrl={photoUrl || ''}
+      onClose={() => setIsPhotoDrawerOpen(false)}
+      onSave={handleSavePhoto}
+    />
+    </>
   )
 }

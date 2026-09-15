@@ -4,7 +4,7 @@ import {
   SuperAdminSidebar,
   DashboardBackgroundDecoration,
 } from '../../components'
-import { PageToast } from '@/global/components'
+import { ChangePhotoDrawer, PageToast } from '@/global/components'
 import { usePerfilSuperAdmin, type SuperAdminProfileData } from '../../hooks'
 import type { ModuleId, NotificacionSuperAdmin } from '../../types'
 
@@ -91,8 +91,8 @@ export function PerfilSuperAdmin({
     setActiveDrawer(null)
   }
 
-  const handleSavePhoto = (url: string) => {
-    savePhoto(url)
+  const handleSavePhoto = async (url: string) => {
+    await savePhoto(url)
     setActiveDrawer(null)
   }
 
@@ -672,113 +672,3 @@ function ChangePasswordDrawer({
   )
 }
 
-function ChangePhotoDrawer({
-  isOpen,
-  photoUrl,
-  onClose,
-  onSave,
-}: DrawerBaseProps & {
-  photoUrl: string
-  onSave: (url: string) => void
-}) {
-  const [isRendered, setIsRendered] = useState(isOpen)
-  const [isClosing, setIsClosing] = useState(false)
-
-  const [url, setUrl] = useState(photoUrl)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsRendered(true)
-      setIsClosing(false)
-      setUrl(photoUrl)
-      setError(null)
-    } else if (isRendered) {
-      setIsClosing(true)
-      const timer = setTimeout(() => {
-        setIsRendered(false)
-        setIsClosing(false)
-      }, 230)
-      return () => clearTimeout(timer)
-    }
-  }, [isOpen, isRendered, photoUrl])
-
-  const handleClose = () => {
-    if (isClosing) return
-    setIsClosing(true)
-    setTimeout(() => {
-      onClose()
-      setIsRendered(false)
-      setIsClosing(false)
-    }, 230)
-  }
-
-  if (!isRendered && !isOpen) return null
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    onSave(url.trim())
-  }
-
-  return (
-    <div
-      className={`fixed inset-0 z-50 overflow-hidden bg-charcoal/40 backdrop-blur-xs flex justify-end ${
-        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-animate'
-      }`}
-      onClick={handleClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className={`w-full sm:w-[420px] lg:w-[450px] bg-white h-full shadow-2xl border-l border-border-tan flex flex-col justify-between overflow-hidden relative ${
-          isClosing ? 'drawer-slide-out' : 'drawer-slide-in'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-tan/70 bg-white shrink-0">
-          <h3 className="text-xl font-bold text-brand">Actualizar Foto</h3>
-          <button type="button" onClick={handleClose} className="text-charcoal/70 hover:text-charcoal p-1.5 rounded-lg hover:bg-bone transition cursor-pointer">
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5 text-xs sm:text-sm">
-          {error && (
-            <div className="p-3.5 rounded-xl bg-terracotta-soft text-danger text-xs font-semibold border border-danger/20">
-              {error}
-            </div>
-          )}
-
-          <div className="rounded-xl bg-amber-50/80 border border-amber-200/60 p-3.5 text-xs text-amber-900 flex items-start gap-2">
-            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p>
-              La foto de perfil se almacena <strong>únicamente en este navegador</strong> (localStorage) y no se persiste en el servidor.
-            </p>
-          </div>
-
-          <div>
-            <label className="block font-bold text-charcoal mb-1.5">URL de Foto de Perfil</label>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://ejemplo.com/mi-foto.jpg"
-              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
-            />
-          </div>
-
-          <div className="pt-4 border-t border-border-tan/60 flex items-center justify-end gap-3 shrink-0">
-            <button type="button" onClick={handleClose} className="px-4 py-2.5 rounded-xl border border-border-tan text-sage font-bold hover:bg-bone hover:text-charcoal transition cursor-pointer">
-              Cancelar
-            </button>
-            <button type="submit" className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer">
-              Guardar en este Navegador
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}

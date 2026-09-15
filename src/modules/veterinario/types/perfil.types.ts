@@ -2,7 +2,7 @@
 
 export interface VetProfilePayload {
   displayName: string
-  // Iniciales del API; se muestran en avatar (si no hay foto local).
+  // Iniciales del API; se muestran en avatar si no hay foto.
   initials: string
   photoUrl?: string | null
   jobTitle: string

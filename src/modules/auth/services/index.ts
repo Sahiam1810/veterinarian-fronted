@@ -9,6 +9,7 @@ export {
   mapBackendRole,
   MOCK_ACCOUNTS,
 } from './authService'
+export { updateMyProfilePhoto } from './profilePhotoService'
 export {
   fetchMyModulePermissions,
   filterNavKeysByModuleView,

@@ -1,4 +1,5 @@
 import { vetApiFetch } from '../api/vetHttp'
+import { fetchMyVetAppointments } from '../api/fetchMyVetAppointments'
 import type {
   ApiAppointment,
   ApiClient,
@@ -37,7 +38,7 @@ export async function fetchVetMascotasBundle(): Promise<VetMascotasBundle> {
     vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => [] as ApiClientPet[]),
     vetApiFetch<ApiNamedCatalog[]>('/api/species').catch(() => [] as ApiNamedCatalog[]),
     vetApiFetch<ApiNamedCatalog[]>('/api/races').catch(() => [] as ApiNamedCatalog[]),
-    vetApiFetch<ApiAppointment[]>('/api/appointments').catch(() => [] as ApiAppointment[]),
+    fetchMyVetAppointments().catch(() => [] as ApiAppointment[]),
   ])
 
   return {

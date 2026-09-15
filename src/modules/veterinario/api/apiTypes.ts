@@ -9,6 +9,7 @@ export interface ApiCurrentProfile {
   email: string
   role: string
   accountStatus: string
+  photoUrl?: string | null
 }
 
 export interface ApiAppointment {

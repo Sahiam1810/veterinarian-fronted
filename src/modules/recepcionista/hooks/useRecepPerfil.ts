@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import type { RecepProfilePayload } from '../types'
 import { fetchRecepProfile, changeRecepPassword } from '../services'
 import { ApiError } from '@/services'
+import { updateMyProfilePhoto } from '@/modules/auth'
 
 export function useRecepPerfil(enabled: boolean) {
   const [profile, setProfile] = useState<RecepProfilePayload | null>(null)
@@ -25,16 +26,7 @@ export function useRecepPerfil(enabled: boolean) {
     setError(null)
     try {
       const data = await fetchRecepProfile()
-      let storedPhoto: string | null = null
-      try {
-        storedPhoto = localStorage.getItem(`huellitas_photo_${data.email?.toLowerCase()}`)
-      } catch {
-        // ignore
-      }
-      setProfile({
-        ...data,
-        photoUrl: storedPhoto || data.photoUrl,
-      })
+      setProfile(data)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo cargar el perfil del recepcionista'
       setError(msg)
@@ -117,22 +109,11 @@ export function useRecepPerfil(enabled: boolean) {
     }
   }
 
-  const handleChangePhoto = () => {
-    const randomPhotos = [
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150',
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=150&h=150',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150',
-    ]
-    const nextPhoto = randomPhotos[Math.floor(Math.random() * randomPhotos.length)]
-    if (profile?.email) {
-      try {
-        localStorage.setItem(`huellitas_photo_${profile.email.toLowerCase()}`, nextPhoto)
-      } catch {
-        // ignore
-      }
-    }
-    setProfile((prev) => (prev ? { ...prev, photoUrl: nextPhoto } : prev))
-    showNotice('Foto de perfil actualizada (almacenada únicamente en este navegador)')
+  // Guarda el enlace en USERS.PHOTO_URL. Vacío quita la foto.
+  const savePhoto = async (photoUrl: string) => {
+    await updateMyProfilePhoto(photoUrl)
+    setProfile((prev) => (prev ? { ...prev, photoUrl: photoUrl || null } : prev))
+    showNotice(photoUrl ? 'Foto de perfil actualizada' : 'Foto de perfil eliminada')
   }
 
   const handleEditProfile = () => {
@@ -153,6 +134,6 @@ export function useRecepPerfil(enabled: boolean) {
     changePassword,
     handleEditProfile,
     handleChangePassword: openPasswordModal,
-    handleChangePhoto,
+    savePhoto,
   }
 }

@@ -426,7 +426,8 @@ export function useRecepAgenda(enabled: boolean) {
   )
 
   const handleRegisterPayment = useCallback(
-    (appointmentId: string) => {
+    (appointment: RecepAgendaDayAppointment) => {
+      const appointmentId = appointment.id
       setPaidAppointmentIds((prev) => {
         if (prev.includes(appointmentId)) return prev
         const updated = [...prev, appointmentId]
