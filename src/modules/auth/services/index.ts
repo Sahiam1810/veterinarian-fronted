@@ -3,6 +3,7 @@ export {
   getStoredUser,
   setStoredUser,
   clearStoredUser,
+  isAuthStorageKey,
   getAccessToken,
   refreshSession,
   isStaffRole,

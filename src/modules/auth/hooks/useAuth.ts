@@ -4,6 +4,7 @@ import {
   loginRequest,
   getStoredUser,
   clearStoredUser,
+  isAuthStorageKey,
   MOCK_ACCOUNTS,
 } from '../services'
 import { toSpanishAuthError } from '../utils/toSpanishAuthError'
@@ -64,11 +65,17 @@ export function useAuth() {
       const refreshedUser = (event as CustomEvent<AuthUser>).detail
       if (refreshedUser) setCurrentUser(refreshedUser)
     }
+    const onStorage = (event: StorageEvent) => {
+      if (!isAuthStorageKey(event.key)) return
+      setCurrentUser(getStoredUser())
+    }
     window.addEventListener('huellitas:session-expired', onSessionExpired)
     window.addEventListener('huellitas:session-refreshed', onSessionRefreshed)
+    window.addEventListener('storage', onStorage)
     return () => {
       window.removeEventListener('huellitas:session-expired', onSessionExpired)
       window.removeEventListener('huellitas:session-refreshed', onSessionRefreshed)
+      window.removeEventListener('storage', onStorage)
     }
   }, [])
 

@@ -14,6 +14,14 @@ const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.repl
 
 const AUTH_STORAGE_KEY = 'huellitas_auth_user'
 const AUTH_TOKENS_KEY = 'huellitas_auth_tokens'
+const AUTH_REMEMBER_KEY = 'huellitas_auth_remember'
+const AUTH_SESSION_COOKIE = 'huellitas_auth_session'
+
+// True si el evento storage afecta la sesión (incluye clear() con key null).
+export function isAuthStorageKey(key: string | null): boolean {
+  if (key === null) return true
+  return key === AUTH_STORAGE_KEY || key === AUTH_TOKENS_KEY || key === AUTH_REMEMBER_KEY
+}
 
 // Cuentas de referencia para la UI de pruebas exclusivas para Staff (mismas del seed Oracle).
 export const MOCK_ACCOUNTS: MockAccount[] = [
@@ -222,11 +230,81 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
   return authUser
 }
 
+function canUseCookies(): boolean {
+  return typeof document !== 'undefined'
+}
+
+function setAuthSessionCookie(): void {
+  if (!canUseCookies()) return
+  // Cookie de sesión: se comparte entre pestañas y muere al cerrar el navegador.
+  document.cookie = `${AUTH_SESSION_COOKIE}=1; path=/; SameSite=Lax`
+}
+
+function clearAuthSessionCookie(): void {
+  if (!canUseCookies()) return
+  document.cookie = `${AUTH_SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax`
+}
+
+function hasAuthSessionCookie(): boolean {
+  if (!canUseCookies()) return true
+  return document.cookie.split(';').some((part) => part.trim().startsWith(`${AUTH_SESSION_COOKIE}=`))
+}
+
+function isPersistentRemember(): boolean {
+  // Sin bandera se asume Recordarme (sesiones viejas ya iban en localStorage).
+  return localStorage.getItem(AUTH_REMEMBER_KEY) !== '0'
+}
+
+function applyRememberMode(remember: boolean): void {
+  if (remember) {
+    localStorage.setItem(AUTH_REMEMBER_KEY, '1')
+    clearAuthSessionCookie()
+    return
+  }
+
+  localStorage.setItem(AUTH_REMEMBER_KEY, '0')
+  setAuthSessionCookie()
+}
+
+function persistSharedValue(key: string, serialized: string): void {
+  localStorage.setItem(key, serialized)
+  sessionStorage.removeItem(key)
+}
+
+function migrateTabScopedSession(): void {
+  const sessionUser = sessionStorage.getItem(AUTH_STORAGE_KEY)
+  const sessionTokens = sessionStorage.getItem(AUTH_TOKENS_KEY)
+  if (!sessionUser && !sessionTokens) return
+
+  if (sessionUser && !localStorage.getItem(AUTH_STORAGE_KEY)) {
+    localStorage.setItem(AUTH_STORAGE_KEY, sessionUser)
+  }
+  if (sessionTokens && !localStorage.getItem(AUTH_TOKENS_KEY)) {
+    localStorage.setItem(AUTH_TOKENS_KEY, sessionTokens)
+  }
+  if (!localStorage.getItem(AUTH_REMEMBER_KEY)) {
+    localStorage.setItem(AUTH_REMEMBER_KEY, '0')
+  }
+  if (localStorage.getItem(AUTH_REMEMBER_KEY) === '0') {
+    setAuthSessionCookie()
+  }
+  sessionStorage.removeItem(AUTH_STORAGE_KEY)
+  sessionStorage.removeItem(AUTH_TOKENS_KEY)
+}
+
+function isActiveBrowserSession(): boolean {
+  migrateTabScopedSession()
+  if (isPersistentRemember()) return true
+  if (hasAuthSessionCookie()) return true
+  return false
+}
+
 export function getAccessToken(): string | null {
   const user = getStoredUser()
   if (user?.accessToken) return user.accessToken
 
   try {
+    if (!isActiveBrowserSession()) return null
     const raw = localStorage.getItem(AUTH_TOKENS_KEY) || sessionStorage.getItem(AUTH_TOKENS_KEY)
     if (!raw) return null
     const tokens = JSON.parse(raw) as AuthenticationResponse
@@ -238,14 +316,8 @@ export function getAccessToken(): string | null {
 
 function setStoredTokens(tokens: AuthenticationResponse, remember: boolean): void {
   try {
-    const serialized = JSON.stringify(tokens)
-    if (remember) {
-      localStorage.setItem(AUTH_TOKENS_KEY, serialized)
-      sessionStorage.removeItem(AUTH_TOKENS_KEY)
-    } else {
-      sessionStorage.setItem(AUTH_TOKENS_KEY, serialized)
-      localStorage.removeItem(AUTH_TOKENS_KEY)
-    }
+    persistSharedValue(AUTH_TOKENS_KEY, JSON.stringify(tokens))
+    applyRememberMode(remember)
   } catch (err) {
     console.error('Error al persistir tokens', err)
   }
@@ -253,11 +325,13 @@ function setStoredTokens(tokens: AuthenticationResponse, remember: boolean): voi
 
 function readStoredTokens(): { tokens: AuthenticationResponse; remember: boolean } | null {
   try {
+    if (!isActiveBrowserSession()) return null
+
     const localTokens = localStorage.getItem(AUTH_TOKENS_KEY)
     if (localTokens) {
       return {
         tokens: JSON.parse(localTokens) as AuthenticationResponse,
-        remember: true,
+        remember: isPersistentRemember(),
       }
     }
 
@@ -350,6 +424,11 @@ export function refreshSession(): Promise<string> {
 
 export function getStoredUser(): AuthUser | null {
   try {
+    if (!isActiveBrowserSession()) {
+      clearStoredUser()
+      return null
+    }
+
     const raw = localStorage.getItem(AUTH_STORAGE_KEY) || sessionStorage.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
     const stored = JSON.parse(raw) as AuthUser
@@ -375,14 +454,8 @@ export function getStoredUser(): AuthUser | null {
 
 export function setStoredUser(user: AuthUser, remember: boolean = true): void {
   try {
-    const serialized = JSON.stringify(user)
-    if (remember) {
-      localStorage.setItem(AUTH_STORAGE_KEY, serialized)
-      sessionStorage.removeItem(AUTH_STORAGE_KEY)
-    } else {
-      sessionStorage.setItem(AUTH_STORAGE_KEY, serialized)
-      localStorage.removeItem(AUTH_STORAGE_KEY)
-    }
+    persistSharedValue(AUTH_STORAGE_KEY, JSON.stringify(user))
+    applyRememberMode(remember)
   } catch (err) {
     console.error('Error al persistir sesión', err)
   }
@@ -394,7 +467,17 @@ export function clearStoredUser(): void {
     sessionStorage.removeItem(AUTH_STORAGE_KEY)
     localStorage.removeItem(AUTH_TOKENS_KEY)
     sessionStorage.removeItem(AUTH_TOKENS_KEY)
+    localStorage.removeItem(AUTH_REMEMBER_KEY)
+    clearAuthSessionCookie()
   } catch (err) {
     console.error('Error al limpiar sesión', err)
   }
+}
+
+try {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    migrateTabScopedSession()
+  }
+} catch {
+  // Tests o entornos sin storage no deben romper el módulo.
 }
