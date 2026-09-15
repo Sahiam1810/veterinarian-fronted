@@ -13,6 +13,7 @@ export type NavIconKey =
   | 'plus'
   | 'settings'
   | 'owners'
+  | 'users'
   | 'chat'
 
 // Entrada del catálogo (fuente de verdad por rol; no es UI aún)

@@ -13,6 +13,11 @@ import {
   VET_DEFAULT_PERMISSIONS,
   VET_NAV_CATALOG,
 } from '../../src/global/navigation/roles/veterinario.ts'
+import {
+  AUX_ALWAYS_VISIBLE_NAV,
+  AUX_MODULE_TO_NAV,
+} from '../../src/modules/auth/services/myPermissionsService.ts'
+import { AUX_NAV_PERMISSION_KEYS } from '../../src/global/navigation/roles/auxiliar.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -138,4 +143,25 @@ test('filterNavKeysByModuleView correctly handles empty permissions map', () => 
     VET_ALWAYS_VISIBLE_NAV,
   )
   assert.deepEqual(filtered, ['vet.inicio', 'vet.perfil'])
+})
+
+test('auxiliary navigation adds a module disabled by default when the API grants View', () => {
+  const permissions = filterNavKeysByModuleView(
+    AUX_NAV_PERMISSION_KEYS,
+    {
+      Usuarios: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      Mascotas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      Citas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      Clientes: { canView: false, canCreate: false, canEdit: false, canDelete: false },
+    },
+    AUX_MODULE_TO_NAV,
+    AUX_ALWAYS_VISIBLE_NAV,
+  )
+
+  assert.equal(permissions.includes('aux.usuarios'), true)
+  assert.equal(permissions.includes('aux.mascotas'), true)
+  assert.equal(permissions.includes('aux.agenda'), true)
+  assert.equal(permissions.includes('aux.duenos'), false)
+  assert.equal(permissions.includes('aux.inicio'), true)
+  assert.equal(permissions.includes('aux.perfil'), true)
 })
