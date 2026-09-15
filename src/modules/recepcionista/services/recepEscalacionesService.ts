@@ -35,7 +35,7 @@ import {
  * 
  * Cambiar a false cuando el backend autorice el rol Recepcionista en /api/chat/*.
  */
-export const USE_MOCK_ESCALATIONS = true
+export const USE_MOCK_ESCALATIONS = false
 
 // =========================================================================
 // Mappers y Helpers de tiempo y catálogos
@@ -164,13 +164,13 @@ export function buildChatMessageItem(
   dto: ChatMessageResponseDto,
   status: MessageDeliveryStatus = 'sent',
 ): ChatMessageItem {
-  const senderRole = resolveSenderRole(dto.senderTypeId, dto.senderType || dto.senderRole)
+  const senderRole = resolveSenderRole(dto.senderTypesId, dto.senderName)
   const senderLabel = resolveSenderLabel(senderRole, dto.senderName)
 
   return {
     id: dto.id,
-    conversationId: dto.conversationId,
-    senderTypeId: dto.senderTypeId,
+    conversationId: dto.chatConversationId,
+    senderTypeId: dto.senderTypesId,
     senderRole,
     senderLabel,
     senderName: dto.senderName || null,
@@ -223,7 +223,10 @@ export function buildEscalatedDirectory(
   // Una conversación está en la bandeja si tiene un escalamiento sin resolución (§8)
   const activeEscalations = escalations.filter((esc) => {
     if (esc.resolvedAt) return false
-    if (esc.statusId === ESCALATION_STATUS_GUIDS.RESOLVED || esc.statusId === ESCALATION_STATUS_GUIDS.CANCELLED) {
+    if (
+      esc.escalationStatusId === ESCALATION_STATUS_GUIDS.RESOLVED ||
+      esc.escalationStatusId === ESCALATION_STATUS_GUIDS.CANCELLED
+    ) {
       return false
     }
     // Formas femenina ("Resuelta"/"Cancelada", como las manda el backend real)
@@ -236,12 +239,15 @@ export function buildEscalatedDirectory(
   })
 
   const items: EscalatedConversationListItem[] = activeEscalations.map((esc) => {
-    const conv = convMap.get(esc.conversationId)
+    // Ticket FE-7: esc.chatConversationId (no esc.conversationId) es el campo
+    // real que manda el backend — sin este cruce, "conv" siempre salía
+    // undefined y toda la fila caía a los valores por defecto.
+    const conv = convMap.get(esc.chatConversationId)
     const clientName = conv?.clientName || conv?.fullName || 'Cliente sin nombre'
     const clientPhone = conv?.clientPhone || conv?.phoneNumber || null
     const channel = resolveChannel(conv?.channel)
     const priority = resolvePriority(esc.priorityId, esc.priority)
-    const status = resolveStatus(esc.statusId, esc.status)
+    const status = resolveStatus(esc.escalationStatusId, esc.status)
     const waiting = formatWaitingTime(esc.createdAt, now)
     const lastMessage = conv?.lastMessage || esc.reason || 'Solicita atención con un asesor.'
     const lastMessageAt = conv?.lastMessageAt || conv?.updatedAt || esc.createdAt
@@ -249,7 +255,7 @@ export function buildEscalatedDirectory(
 
     return {
       id: esc.id,
-      conversationId: esc.conversationId,
+      conversationId: esc.chatConversationId,
       escalationId: esc.id,
       clientName,
       clientPhone,
@@ -263,7 +269,7 @@ export function buildEscalatedDirectory(
       priority,
       priorityId: esc.priorityId,
       status,
-      statusId: esc.statusId,
+      statusId: esc.escalationStatusId,
       reason: esc.reason || null,
       createdAt: esc.createdAt,
       assignedToId: esc.assignedToId,
@@ -297,32 +303,32 @@ const initialMockThreads: Record<string, ChatMessageResponseDto[]> = {
   'conv-001': [
     {
       id: 'msg-101',
-      conversationId: 'conv-001',
-      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      chatConversationId: 'conv-001',
+      senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
       senderName: 'Carolina Martínez',
       content: 'Hola buenas tardes, mi perro Max empezó a vomitar espuma blanca hace 20 minutos.',
       createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
     },
     {
       id: 'msg-102',
-      conversationId: 'conv-001',
-      senderTypeId: SENDER_TYPE_GUIDS.AI_AGENT,
+      chatConversationId: 'conv-001',
+      senderTypesId: SENDER_TYPE_GUIDS.AI_AGENT,
       senderName: 'Huellitas Bot',
       content: 'Hola Carolina. Lamento escuchar eso. ¿Max ha ingerido algún objeto extraño, planta o medicamento?',
       createdAt: new Date(Date.now() - 34 * 60 * 1000).toISOString(),
     },
     {
       id: 'msg-103',
-      conversationId: 'conv-001',
-      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      chatConversationId: 'conv-001',
+      senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
       senderName: 'Carolina Martínez',
       content: 'No estoy segura, pero está muy decaído y tiembla. Necesito hablar con un asesor o doctor ya por favor.',
       createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     },
     {
       id: 'msg-104',
-      conversationId: 'conv-001',
-      senderTypeId: SENDER_TYPE_GUIDS.SYSTEM,
+      chatConversationId: 'conv-001',
+      senderTypesId: SENDER_TYPE_GUIDS.SYSTEM,
       content: 'Conversación escalada a atención humana prioritaria por urgencia médica.',
       createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     },
@@ -330,32 +336,32 @@ const initialMockThreads: Record<string, ChatMessageResponseDto[]> = {
   'conv-002': [
     {
       id: 'msg-201',
-      conversationId: 'conv-002',
-      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      chatConversationId: 'conv-002',
+      senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
       senderName: 'Andrés Gómez',
       content: 'Hola, tengo una cirugía programada para mi gata Misi este miércoles.',
       createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
     },
     {
       id: 'msg-202',
-      conversationId: 'conv-002',
-      senderTypeId: SENDER_TYPE_GUIDS.AI_AGENT,
+      chatConversationId: 'conv-002',
+      senderTypesId: SENDER_TYPE_GUIDS.AI_AGENT,
       senderName: 'Huellitas Bot',
       content: 'Hola Andrés. Veo tu cita de esterilización el Miércoles 16 a las 09:00 AM. ¿En qué te puedo ayudar?',
       createdAt: new Date(Date.now() - 24 * 60 * 1000).toISOString(),
     },
     {
       id: 'conv-203',
-      conversationId: 'conv-002',
-      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      chatConversationId: 'conv-002',
+      senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
       senderName: 'Andrés Gómez',
       content: 'Quiero reagendarla para el viernes pero el bot no me da cupo en esa fecha. Asesor por favor.',
       createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
     },
     {
       id: 'conv-204',
-      conversationId: 'conv-002',
-      senderTypeId: SENDER_TYPE_GUIDS.SYSTEM,
+      chatConversationId: 'conv-002',
+      senderTypesId: SENDER_TYPE_GUIDS.SYSTEM,
       content: 'Conversación transferida a Recepción.',
       createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
     },
@@ -363,16 +369,16 @@ const initialMockThreads: Record<string, ChatMessageResponseDto[]> = {
   'conv-004': [
     {
       id: 'msg-401',
-      conversationId: 'conv-004',
-      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      chatConversationId: 'conv-004',
+      senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
       senderName: 'Valentina Restrepo',
       content: 'El medicamento recetado ayer le dio alergia a Toby. ¿Puedo suspenderlo?',
       createdAt: new Date(Date.now() - 130 * 60 * 1000).toISOString(),
     },
     {
       id: 'msg-402',
-      conversationId: 'conv-004',
-      senderTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
+      chatConversationId: 'conv-004',
+      senderTypesId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
       senderName: 'Carlos Méndez (Recepción)',
       content: 'Hola Valentina, por seguridad suspende la dosis mientras contacto al Dr. Silva.',
       createdAt: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
@@ -381,8 +387,8 @@ const initialMockThreads: Record<string, ChatMessageResponseDto[]> = {
   'conv-005': [
     {
       id: 'msg-501',
-      conversationId: 'conv-005',
-      senderTypeId: SENDER_TYPE_GUIDS.CLIENT,
+      chatConversationId: 'conv-005',
+      senderTypesId: SENDER_TYPE_GUIDS.CLIENT,
       senderName: 'Santiago Morales',
       content: 'Buenas tardes, necesito copia de la historia clínica de Luna para viaje.',
       createdAt: new Date(Date.now() - 310 * 60 * 1000).toISOString(),
@@ -467,50 +473,50 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
   const mockEscalations: ChatEscalationResponseDto[] = [
     {
       id: 'esc-001',
-      conversationId: 'conv-001',
+      chatConversationId: 'conv-001',
       reason: 'Urgencia médica - Paciente con síntomas agudos',
       priorityId: ESCALATION_PRIORITY_GUIDS.URGENT,
-      statusId: ESCALATION_STATUS_GUIDS.PENDING,
+      escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: m5,
       resolvedAt: null,
     },
     {
       id: 'esc-002',
-      conversationId: 'conv-002',
+      chatConversationId: 'conv-002',
       reason: 'Solicitud de reprogramación de cirugía',
       priorityId: ESCALATION_PRIORITY_GUIDS.HIGH,
-      statusId: ESCALATION_STATUS_GUIDS.PENDING,
+      escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: m18,
       resolvedAt: null,
     },
     {
       id: 'esc-003',
-      conversationId: 'conv-003',
+      chatConversationId: 'conv-003',
       reason: 'Consulta de tarifas y planes de vacunación',
       priorityId: ESCALATION_PRIORITY_GUIDS.LOW,
-      statusId: ESCALATION_STATUS_GUIDS.PENDING,
+      escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: m42,
       resolvedAt: null,
     },
     {
       id: 'esc-004',
-      conversationId: 'conv-004',
+      chatConversationId: 'conv-004',
       reason: 'Reacción adversa a medicamento prescrito',
       priorityId: ESCALATION_PRIORITY_GUIDS.HIGH,
-      statusId: ESCALATION_STATUS_GUIDS.IN_PROGRESS,
+      escalationStatusId: ESCALATION_STATUS_GUIDS.IN_PROGRESS,
       assignedToId: 'usr-recep-1',
       createdAt: h2,
       resolvedAt: null,
     },
     {
       id: 'esc-005',
-      conversationId: 'conv-005',
+      chatConversationId: 'conv-005',
       reason: 'Solicitud de copia de historia clínica',
       priorityId: ESCALATION_PRIORITY_GUIDS.MEDIUM,
-      statusId: ESCALATION_STATUS_GUIDS.PENDING,
+      escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: h5,
       resolvedAt: null,
@@ -540,26 +546,25 @@ async function resolveAgentHumanId(): Promise<string> {
 
   const user = getStoredUser()
   const userId = user?.id || user?.personId || user?.userAccountId || 'unknown-user'
-  const name = user?.name || 'Asesor Recepción'
-  const email = user?.email || 'recepcion@huellitas.com'
 
   try {
-    const existing = await apiClient.get<AgentHumanResponseDto[]>('/api/chat/agent-humans')
-    const match = existing?.find(
-      (a) => a.userId === userId || (a.email && a.email.toLowerCase() === email.toLowerCase()),
+    // Ticket FE-7: lookup directo por usuario — la lista completa
+    // (GET /api/chat/agent-humans) ni siquiera trae email, así que el match
+    // por email nunca podía funcionar contra el backend real.
+    const existing = await apiClient.get<AgentHumanResponseDto[]>(
+      `/api/chat/agent-humans/by-user/${userId}`,
     )
+    const match = existing?.[0]
     if (match?.id) {
       cachedAgentHumanId = match.id
       return match.id
     }
   } catch {
-    // Si falla listar, procedemos al POST
+    // Si falla la consulta, procedemos al POST
   }
 
   const created = await apiClient.post<AgentHumanResponseDto>('/api/chat/agent-humans', {
     userId,
-    name,
-    email,
   } satisfies CreateAgentHumanRequestDto)
 
   cachedAgentHumanId = created.id
@@ -578,10 +583,12 @@ async function resolveChatParticipantId(
   }
 
   try {
-    const existing = await apiClient.get<ChatParticipantResponseDto[]>('/api/chat/participants', {
-      params: { conversationId },
-    })
-    const match = existing?.find((p) => p.conversationId === conversationId && p.agentHumanId === agentHumanId)
+    // Ticket FE-7: la ruta real es /conversation/{chatConversationId} (path
+    // param) — no existe un GET base con ?conversationId= como query string.
+    const existing = await apiClient.get<ChatParticipantResponseDto[]>(
+      `/api/chat/participants/conversation/${conversationId}`,
+    )
+    const match = existing?.find((p) => p.agentHumanId === agentHumanId)
     if (match?.id) {
       cachedParticipantByConv.set(conversationId, match.id)
       return match.id
@@ -591,9 +598,9 @@ async function resolveChatParticipantId(
   }
 
   const created = await apiClient.post<ChatParticipantResponseDto>('/api/chat/participants', {
-    conversationId,
+    chatConversationId: conversationId,
+    participantTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
     agentHumanId,
-    role: 'Agent',
   } satisfies CreateChatParticipantRequestDto)
 
   cachedParticipantByConv.set(conversationId, created.id)
@@ -670,13 +677,12 @@ export async function sendAgentMessage(
 
     const newDto: ChatMessageResponseDto = {
       id: `msg-mock-${Date.now()}`,
-      conversationId,
-      senderTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
+      chatConversationId: conversationId,
+      senderTypesId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
       senderName,
       messageTypeId: MESSAGE_TYPE_GUIDS.TEXT,
       content: cleanContent,
       createdAt: new Date().toISOString(),
-      isRead: true,
     }
 
     const currentThread = mockThreadStore.get(conversationId) || []
@@ -690,9 +696,9 @@ export async function sendAgentMessage(
   const participantId = await resolveChatParticipantId(conversationId, agentHumanId)
 
   const createdDto = await apiClient.post<ChatMessageResponseDto>('/api/chat/messages', {
-    conversationId,
-    participantId,
-    senderTypeId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
+    chatConversationId: conversationId,
+    chatParticipantId: participantId,
+    senderTypesId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
     messageTypeId: MESSAGE_TYPE_GUIDS.TEXT,
     content: cleanContent,
   } satisfies CreateChatMessageRequestDto)
@@ -718,21 +724,22 @@ export async function resolveConversation(
     const user = getStoredUser()
     return {
       id: `res-${Date.now()}`,
-      escalationId,
-      resolvedById: user?.id || 'usr-recep-1',
-      notes: notes?.trim() || null,
+      chatEscalationId: escalationId,
+      resolvedBy: user?.id || 'usr-recep-1',
+      resolutionNote: notes?.trim() || null,
       resolvedAt: new Date().toISOString(),
     }
   }
 
   const user = getStoredUser()
+  // Ticket FE-7: el backend real no tiene un campo de estado en este POST —
+  // resolver es crear la fila de resolución, no mandar un statusId.
   return apiClient.post<EscalationResolutionResponseDto>(
     '/api/chat/escalation-resolutions',
     {
-      escalationId,
-      resolvedById: user?.id,
-      notes: notes?.trim() || null,
-      statusId: ESCALATION_STATUS_GUIDS.RESOLVED,
+      chatEscalationId: escalationId,
+      resolvedBy: user?.id,
+      resolutionNote: notes?.trim() || null,
     } satisfies CreateEscalationResolutionRequestDto,
   )
 }
