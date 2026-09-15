@@ -185,6 +185,31 @@ export function buildChatMessageItem(
 // Transformación y Cruce de Conversaciones + Escalamientos
 // =========================================================================
 
+// Ticket FE-6: criterio de orden de la bandeja confirmado como Opción A —
+// prioridad primero (Urgente > Alta > Media > Baja/Normal), y dentro de la
+// misma prioridad, el que lleva más tiempo esperando. Es el comportamiento
+// típico de una cola de soporte: lo urgente y lo más viejo suben primero,
+// sin importar cuándo llegó. Se usa tanto en la carga inicial (REST, vía
+// buildEscalatedDirectory) como al insertar una fila nueva por SignalR
+// (useRecepEscalaciones.ts) para que el orden no cambie según la fuente.
+export function sortEscalatedConversationItems(
+  items: EscalatedConversationListItem[],
+): EscalatedConversationListItem[] {
+  const priorityWeight: Record<EscalationPriority, number> = {
+    Urgente: 4,
+    Alta: 3,
+    Media: 2,
+    Normal: 1,
+    Baja: 0,
+  }
+
+  return [...items].sort((a, b) => {
+    const weightDiff = priorityWeight[b.priority] - priorityWeight[a.priority]
+    if (weightDiff !== 0) return weightDiff
+    return b.waitingMinutes - a.waitingMinutes
+  })
+}
+
 export function buildEscalatedDirectory(
   conversations: ChatConversationResponseDto[],
   escalations: ChatEscalationResponseDto[],
@@ -245,32 +270,20 @@ export function buildEscalatedDirectory(
     }
   })
 
-  // Ordenar por prioridad primero (Urgente > Alta > Media > Baja) o por tiempo de espera más largo
-  items.sort((a, b) => {
-    const priorityWeight: Record<EscalationPriority, number> = {
-      Urgente: 4,
-      Alta: 3,
-      Media: 2,
-      Normal: 1,
-      Baja: 0,
-    }
-    const weightDiff = priorityWeight[b.priority] - priorityWeight[a.priority]
-    if (weightDiff !== 0) return weightDiff
-    return b.waitingMinutes - a.waitingMinutes
-  })
+  const sortedItems = sortEscalatedConversationItems(items)
 
-  const pendingCount = items.filter((i) => i.status === 'Pendiente').length
-  const inProgressCount = items.filter((i) => i.status === 'En atención').length
-  const urgentCount = items.filter((i) => i.priority === 'Urgente' || i.priority === 'Alta').length
+  const pendingCount = sortedItems.filter((i) => i.status === 'Pendiente').length
+  const inProgressCount = sortedItems.filter((i) => i.status === 'En atención').length
+  const urgentCount = sortedItems.filter((i) => i.priority === 'Urgente' || i.priority === 'Alta').length
 
   return {
-    items,
-    totalCount: items.length,
+    items: sortedItems,
+    totalCount: sortedItems.length,
     pendingCount,
     inProgressCount,
     urgentCount,
-    pageStart: items.length > 0 ? 1 : 0,
-    pageEnd: items.length,
+    pageStart: sortedItems.length > 0 ? 1 : 0,
+    pageEnd: sortedItems.length,
   }
 }
 

@@ -10,6 +10,7 @@ import {
   resolvePriority,
   resolveStatus,
   formatWaitingTime,
+  sortEscalatedConversationItems,
 } from '../services/index.ts'
 import {
   useChatEscalationsRealtime,
@@ -20,22 +21,26 @@ import {
 
 const ITEMS_PER_PAGE = 8
 
+// Ticket FE-6: se reordena con el mismo criterio de buildEscalatedDirectory
+// (prioridad, luego tiempo de espera) para que insertar una fila nueva por
+// SignalR no rompa el orden que ya ve la Recepcionista en la carga inicial.
 function recomputeDirectory(
   items: EscalatedConversationListItem[],
 ): EscalacionesDirectoryPayload {
-  const pendingCount = items.filter((i) => i.status === 'Pendiente').length
-  const urgentCount = items.filter(
+  const sortedItems = sortEscalatedConversationItems(items)
+  const pendingCount = sortedItems.filter((i) => i.status === 'Pendiente').length
+  const urgentCount = sortedItems.filter(
     (i) => i.priority === 'Urgente' || i.priority === 'Alta',
   ).length
-  const inProgressCount = items.filter((i) => i.status === 'En atención').length
+  const inProgressCount = sortedItems.filter((i) => i.status === 'En atención').length
   return {
-    items,
-    totalCount: items.length,
+    items: sortedItems,
+    totalCount: sortedItems.length,
     pendingCount,
     urgentCount,
     inProgressCount,
-    pageStart: items.length > 0 ? 1 : 0,
-    pageEnd: items.length,
+    pageStart: sortedItems.length > 0 ? 1 : 0,
+    pageEnd: sortedItems.length,
   }
 }
 
