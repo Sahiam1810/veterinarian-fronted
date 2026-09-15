@@ -39,6 +39,8 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleEditAppointment,
     handleMarkNoAsistio,
     handleCheckIn,
+    handleRegisterPayment,
+    isCitaPaid,
   } = useRecepAgenda(true)
 
   useEffect(() => {
@@ -73,7 +75,6 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         selectedOwner={selectedOwner}
         selectedOwnerName={selectedOwner?.name ?? null}
         selectedPetLabel={
-
           selectedPet ? `${selectedPet.name} (${selectedPet.breed})` : null
         }
         selectedServiceLabel={selectedService?.label ?? null}
@@ -84,6 +85,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         isDayLoading={isDayLoading}
         dayPanelTitle={dayPanelTitle}
         dayPanelDate={dayPanelDate}
+        isCitaPaid={isCitaPaid}
         onOwnerQueryChange={handleOwnerQueryChange}
         onSelectOwnerSuggestion={handleSelectOwnerSuggestion}
         onPetChange={(petId) => updateForm('petId', petId)}
@@ -102,6 +104,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onEditAppointment={handleEditAppointment}
         onMarkNoAsistio={handleMarkNoAsistio}
         onCheckIn={handleCheckIn}
+        onRegistrarPago={handleRegisterPayment}
       />
     </div>
   )

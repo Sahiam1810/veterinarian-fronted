@@ -72,7 +72,6 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'historiaClinica', label: 'Historia Clínica', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
-  { id: 'inicio', label: 'Inicio', supportsCreate: false, supportsEdit: false, supportsDelete: false },
 ]
 
 const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
@@ -115,7 +114,6 @@ function normalizeModuleName(name: string): ModuleId | null {
   if (norm.includes('cita') || norm.includes('agenda')) return 'agenda'
   if (norm.includes('historial') || norm.includes('historia')) return 'historiaClinica'
   if (norm.includes('reporte')) return 'reportes'
-  if (norm.includes('inicio')) return 'inicio'
   return null
 }
 

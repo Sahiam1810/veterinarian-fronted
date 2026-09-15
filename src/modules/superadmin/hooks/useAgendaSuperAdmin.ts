@@ -26,6 +26,25 @@ import { resolveAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../utils/res
 import { isAppointmentDateInThePast, PAST_APPOINTMENT_MESSAGE } from '../utils/appointmentDateGuard'
 import { ApiError } from '@/services'
 
+const PAID_APPOINTMENTS_KEY = 'huellitas_paid_appointments'
+
+function readPaidAppointments(): string[] {
+  try {
+    const raw = localStorage.getItem(PAID_APPOINTMENTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function writePaidAppointments(ids: string[]): void {
+  try {
+    localStorage.setItem(PAID_APPOINTMENTS_KEY, JSON.stringify(ids))
+  } catch (e) {
+    console.error('Error saving paid appointments', e)
+  }
+}
+
 function findStatusId(
   statuses: { id: string; name: string }[],
   ...keywords: string[]
@@ -57,6 +76,7 @@ export function useAgendaSuperAdmin() {
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [editingCita, setEditingCita] = useState<CitaSuperAdmin | null>(null)
+  const [paidAppointmentIds, setPaidAppointmentIds] = useState<string[]>(readPaidAppointments)
 
   const showToast = useCallback((message: string) => {
     setActiveNotification(message)
@@ -383,10 +403,35 @@ export function useAgendaSuperAdmin() {
     }
   }
 
-  // Backend no tiene EN_ESPERA: "Iniciar atención" = marcar ATENDIDA
+  const isCitaPaid = useCallback(
+    (citaId: string): boolean => {
+      return paidAppointmentIds.includes(citaId)
+    },
+    [paidAppointmentIds],
+  )
+
+  const handleRegisterPayment = useCallback(
+    (citaId: string) => {
+      setPaidAppointmentIds((prev) => {
+        if (prev.includes(citaId)) return prev
+        const updated = [...prev, citaId]
+        writePaidAppointments(updated)
+        return updated
+      })
+      showToast('Pago registrado correctamente.')
+    },
+    [showToast],
+  )
+
+  // Backend no tiene EN_ESPERA: "Iniciar atención" = marcar ATENDIDA (requiere pago registrado)
   const handleStartAttention = async (id: string) => {
     const target = citas.find((c) => c.id === id)
     if (!target) return
+
+    if (!isCitaPaid(id)) {
+      showToast('Debes registrar el pago antes de marcar la cita como atendida.')
+      return
+    }
 
     const attendedId = findStatusId(statusCatalog, 'atendida')
     if (!attendedId) {
@@ -477,6 +522,8 @@ export function useAgendaSuperAdmin() {
     handleCancelCita,
     handleStartAttention,
     handleMarkNoAsistio,
+    handleRegisterPayment,
+    isCitaPaid,
     reload: loadData,
   }
 }

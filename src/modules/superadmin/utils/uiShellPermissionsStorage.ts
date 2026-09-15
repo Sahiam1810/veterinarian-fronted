@@ -1,7 +1,7 @@
 import type { ModuleId, ModulePermission } from '../types'
 
 // Módulos solo de la UI del panel admin (no existen como filas en MODULES de Oracle)
-export const UI_SHELL_MODULE_IDS: ModuleId[] = ['inicio', 'reportes']
+export const UI_SHELL_MODULE_IDS: ModuleId[] = ['reportes']
 
 const STORAGE_KEY = 'huellitas_ui_shell_permissions'
 

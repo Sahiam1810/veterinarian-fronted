@@ -86,6 +86,48 @@ function calculateEventPosition(
   return { topPx, heightPx }
 }
 
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+]
+
+function formatWeekRangeHeader(startKey?: string, endKey?: string): string {
+  if (!startKey || !endKey) return ''
+  const [sY, sM, sD] = startKey.split('-').map(Number)
+  const [eY, eM, eD] = endKey.split('-').map(Number)
+
+  if (!sY || !sM || !sD || !eY || !eM || !eD) return `${startKey} — ${endKey}`
+
+  const startMonth = MONTH_NAMES[sM - 1]
+  const endMonth = MONTH_NAMES[eM - 1]
+
+  if (sY === eY) {
+    if (sM === eM) {
+      return `${sD} – ${eD} de ${startMonth}, ${sY}`
+    }
+    return `${sD} de ${startMonth} – ${eD} de ${endMonth}, ${sY}`
+  }
+  return `${sD} de ${startMonth}, ${sY} – ${eD} de ${endMonth}, ${eY}`
+}
+
+function formatSingleDayHeader(day?: { label: string; dateKey: string; num: number }): string {
+  if (!day || !day.dateKey) return ''
+  const [y, m, d] = day.dateKey.split('-').map(Number)
+  if (!y || !m || !d) return day.dateKey
+  const monthName = MONTH_NAMES[m - 1]
+  const fullDays: Record<string, string> = {
+    Lun: 'Lunes',
+    Mar: 'Martes',
+    Mié: 'Miércoles',
+    Jue: 'Jueves',
+    Vie: 'Viernes',
+    Sáb: 'Sábado',
+    Dom: 'Domingo',
+  }
+  const dayName = fullDays[day.label] || day.label
+  return `${dayName}, ${d} de ${monthName}, ${y}`
+}
+
 export function AgendaSuperAdmin({
   onNavigate,
   onProfileClick: externalOnProfileClick,
@@ -143,6 +185,8 @@ export function AgendaSuperAdmin({
     handleCancelCita,
     handleStartAttention,
     handleMarkNoAsistio,
+    handleRegisterPayment,
+    isCitaPaid,
   } = useAgendaSuperAdmin()
 
   const { hourStart, hourEnd, hourRows } = useMemo(() => {
@@ -292,53 +336,68 @@ export function AgendaSuperAdmin({
           </div>
 
           {/* Rango de Fechas / Navegación Interactiva */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl py-2.5 px-4 shadow-[0_2px_12px_rgba(35,78,70,0.03)] flex items-center justify-between gap-3">
+          <div className="relative z-10 bg-white border border-border-tan rounded-2xl py-2.5 px-4 sm:px-5 shadow-[0_2px_12px_rgba(35,78,70,0.03)] flex items-center justify-between gap-3">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={goToPrevious}
-                className="p-1.5 text-sage hover:text-brand hover:bg-bone/60 rounded-lg transition cursor-pointer"
+                className="p-2 text-sage hover:text-brand hover:bg-bone rounded-xl border border-transparent hover:border-border-tan/70 transition-all duration-150 cursor-pointer active:scale-95 shadow-2xs hover:shadow-xs"
+                title="Semana anterior"
                 aria-label="Anterior"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <button
                 type="button"
                 onClick={goToToday}
-                className="px-2.5 py-1 text-xs font-bold text-brand hover:bg-bone rounded-lg border border-border-tan transition cursor-pointer"
+                className="px-3 py-1.5 text-xs font-bold text-brand hover:text-white bg-white hover:bg-brand rounded-xl border border-border-tan/80 transition-all duration-150 cursor-pointer active:scale-95 shadow-2xs hover:shadow-xs"
+                title="Ir al día de hoy"
               >
                 Hoy
               </button>
               <button
                 type="button"
                 onClick={goToNext}
-                className="p-1.5 text-sage hover:text-brand hover:bg-bone/60 rounded-lg transition cursor-pointer"
+                className="p-2 text-sage hover:text-brand hover:bg-bone rounded-xl border border-transparent hover:border-border-tan/70 transition-all duration-150 cursor-pointer active:scale-95 shadow-2xs hover:shadow-xs"
+                title="Semana siguiente"
                 aria-label="Siguiente"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
 
-            <h3 className="text-sm sm:text-base font-bold text-brand text-center">
-              {viewMode === 'semana'
-                ? `${DIAS_SEMANA[0]?.dateKey || ''} — ${DIAS_SEMANA[6]?.dateKey || ''}`
-                : `${DIAS_SEMANA[activeDayIndex]?.dateKey || ''} (${DIAS_SEMANA[activeDayIndex]?.label || ''})`}
-            </h3>
+            <div className="flex flex-col items-center justify-center text-center">
+              <h3 className="text-sm sm:text-base font-extrabold text-brand tracking-tight">
+                {viewMode === 'semana'
+                  ? formatWeekRangeHeader(DIAS_SEMANA[0]?.dateKey, DIAS_SEMANA[6]?.dateKey)
+                  : formatSingleDayHeader(DIAS_SEMANA[activeDayIndex])}
+              </h3>
+            </div>
 
-            <div className="text-xs text-sage font-medium hidden sm:block">
-              {filteredCitas.length} {filteredCitas.length === 1 ? 'cita en agenda' : 'citas en agenda'}
+            <div className="text-xs text-sage font-semibold hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-bone/70 border border-border-tan/60">
+              <span className="w-2 h-2 rounded-full bg-brand" />
+              <span>
+                {filteredCitas.length} {filteredCitas.length === 1 ? 'cita en agenda' : 'citas en agenda'}
+              </span>
             </div>
           </div>
 
           {/* Grilla de Calendario */}
-          <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col min-h-[480px]">
+          <div
+            key={
+              viewMode === 'semana'
+                ? `week_${DIAS_SEMANA[0]?.dateKey}_${DIAS_SEMANA[6]?.dateKey}`
+                : `day_${DIAS_SEMANA[activeDayIndex]?.dateKey}_${activeDayIndex}`
+            }
+            className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col min-h-[480px] animate-week-switch"
+          >
             {/* Cabecera de Columnas */}
             <div
-              className="shrink-0 grid border-b border-border-tan bg-bone/40"
+              className="shrink-0 grid border-b border-border-tan bg-bone/50"
               style={{
                 gridTemplateColumns:
                   viewMode === 'semana'
@@ -346,29 +405,59 @@ export function AgendaSuperAdmin({
                     : `4.5rem minmax(0, 1fr)`,
               }}
             >
-              <div className="py-2.5 px-4 font-bold text-[10px] sm:text-xs text-sage border-r border-border-tan/70 flex items-center justify-center">
+              <div className="py-2.5 px-3 font-bold text-[10px] sm:text-xs text-sage border-r border-border-tan/70 flex items-center justify-center tracking-wider">
                 HORA
               </div>
               {viewMode === 'semana' ? (
                 DIAS_SEMANA.map((day) => (
                   <div
                     key={day.dateKey}
-                    className="py-2 flex flex-col items-center justify-center border-r border-border-tan/50 last:border-r-0"
+                    className={`py-2 px-1 flex flex-col items-center justify-center border-r border-border-tan/50 last:border-r-0 transition-colors ${
+                      day.isToday
+                        ? 'bg-[#E8F3EE]/90 shadow-[inset_0_3px_0_0_var(--color-brand)]'
+                        : 'hover:bg-bone/70'
+                    }`}
                   >
-                    <span className="text-[10px] sm:text-[11px] font-bold text-sage uppercase tracking-wider">
+                    <span
+                      className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ${
+                        day.isToday ? 'text-brand font-extrabold' : 'text-sage'
+                      }`}
+                    >
                       {day.label}
                     </span>
-                    <span className={`text-xs sm:text-sm font-extrabold ${day.isToday ? 'text-brand font-black' : 'text-charcoal'}`}>
+                    <span
+                      className={`inline-flex items-center justify-center text-xs sm:text-sm mt-0.5 transition-transform ${
+                        day.isToday
+                          ? 'w-6 h-6 rounded-full bg-brand text-white font-black shadow-xs scale-105'
+                          : 'text-charcoal font-extrabold'
+                      }`}
+                    >
                       {day.num}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="py-2 flex flex-col items-center justify-center">
-                  <span className="text-[10px] sm:text-[11px] font-bold text-sage uppercase tracking-wider">
+                <div
+                  className={`py-2 flex flex-col items-center justify-center ${
+                    DIAS_SEMANA[activeDayIndex]?.isToday
+                      ? 'bg-[#E8F3EE]/90 shadow-[inset_0_3px_0_0_var(--color-brand)]'
+                      : ''
+                  }`}
+                >
+                  <span
+                    className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wider ${
+                      DIAS_SEMANA[activeDayIndex]?.isToday ? 'text-brand font-extrabold' : 'text-sage'
+                    }`}
+                  >
                     {DIAS_SEMANA[activeDayIndex]?.label || ''}
                   </span>
-                  <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                  <span
+                    className={`inline-flex items-center justify-center text-xs sm:text-sm mt-0.5 ${
+                      DIAS_SEMANA[activeDayIndex]?.isToday
+                        ? 'w-6 h-6 rounded-full bg-brand text-white font-black shadow-xs'
+                        : 'text-charcoal font-extrabold'
+                    }`}
+                  >
                     {DIAS_SEMANA[activeDayIndex]?.num || ''}
                   </span>
                 </div>
@@ -406,7 +495,11 @@ export function AgendaSuperAdmin({
                   return (
                     <div
                       key={day.dateKey}
-                      className="relative border-r border-border-tan/40 last:border-r-0 min-h-0 flex flex-col"
+                      className={`relative border-r border-border-tan/40 last:border-r-0 min-h-0 flex flex-col transition-colors duration-150 ${
+                        day.isToday
+                          ? 'bg-[#F4F9F6]/85 hover:bg-[#EEF7F3]'
+                          : 'bg-transparent hover:bg-bone/25'
+                      }`}
                       style={{ height: `${hourRows.length * HOUR_ROW_HEIGHT}px` }}
                     >
                       {hourRows.map((hour) => (
@@ -474,7 +567,11 @@ export function AgendaSuperAdmin({
               ) : (
                 // Single day column
                 <div
-                  className="relative min-h-0 flex flex-col"
+                  className={`relative min-h-0 flex flex-col transition-colors duration-150 ${
+                    DIAS_SEMANA[activeDayIndex]?.isToday
+                      ? 'bg-[#F4F9F6]/85 hover:bg-[#EEF7F3]'
+                      : 'bg-transparent hover:bg-bone/25'
+                  }`}
                   style={{ height: `${hourRows.length * HOUR_ROW_HEIGHT}px` }}
                 >
                   {hourRows.map((hour) => (
@@ -559,6 +656,7 @@ export function AgendaSuperAdmin({
       <CitaDetalleModal
         cita={selectedCita}
         isOpen={isDetalleModalOpen}
+        isPaid={selectedCita ? isCitaPaid(selectedCita.id) : false}
         onClose={() => setIsDetalleModalOpen(false)}
         onCancel={(citaId) => {
           void handleCancelCita(citaId)
@@ -568,6 +666,9 @@ export function AgendaSuperAdmin({
           setEditingCita(cita)
           setIsDrawerOpen(true)
           setIsDetalleModalOpen(false)
+        }}
+        onRegistrarPago={(citaId) => {
+          handleRegisterPayment(citaId)
         }}
         onMarcarAtendida={(citaId) => {
           void handleStartAttention(citaId)

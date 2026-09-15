@@ -17,11 +17,13 @@ interface RecepDayCalendarPanelProps {
   dateValue: string
   appointments: RecepAgendaDayAppointment[]
   isLoading?: boolean
+  isCitaPaid?: (appointmentId: string) => boolean
   onClose: () => void
   onChangeDate: (dateValue: string) => void
   onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
   onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
   onCheckIn: (appointment: RecepAgendaDayAppointment) => void
+  onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
 }
 
 const HOUR_START = 8
@@ -72,11 +74,13 @@ export function RecepDayCalendarPanel({
   dateValue,
   appointments,
   isLoading = false,
+  isCitaPaid,
   onClose,
   onChangeDate,
   onEditAppointment,
   onMarkNoAsistio,
   onCheckIn,
+  onRegistrarPago,
 }: RecepDayCalendarPanelProps) {
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -306,10 +310,12 @@ export function RecepDayCalendarPanel({
             ) : (
               <AppointmentDetail
                 appointment={selected}
+                isPaid={isCitaPaid ? isCitaPaid(selected.id) : false}
                 onClear={() => setSelectedId(null)}
                 onEdit={() => onEditAppointment(selected)}
                 onMarkNoAsistio={() => onMarkNoAsistio(selected)}
                 onCheckIn={() => onCheckIn(selected)}
+                onRegistrarPago={() => onRegistrarPago?.(selected)}
               />
             )}
           </aside>
@@ -321,16 +327,20 @@ export function RecepDayCalendarPanel({
 
 function AppointmentDetail({
   appointment,
+  isPaid = false,
   onClear,
   onEdit,
   onMarkNoAsistio,
   onCheckIn,
+  onRegistrarPago,
 }: {
   appointment: RecepAgendaDayAppointment
+  isPaid?: boolean
   onClear: () => void
   onEdit: () => void
   onMarkNoAsistio: () => void
   onCheckIn: () => void
+  onRegistrarPago?: () => void
 }) {
   const canEdit = isRecepAppointmentEditable(appointment.status)
   const canNoShow = canMarkRecepNoAsistio(appointment.status)
@@ -392,13 +402,41 @@ function AppointmentDetail({
       {canEdit ? (
         <div className="mt-auto flex flex-col gap-2">
           {canArrive && (
-            <button
-              type="button"
-              onClick={onCheckIn}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-ochre text-charcoal px-4 py-2.5 text-sm font-bold hover:bg-ochre/90 transition cursor-pointer"
-            >
-              <span>Marcar llegada</span>
-            </button>
+            <>
+              {!isPaid ? (
+                <button
+                  type="button"
+                  onClick={onRegistrarPago}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-ochre/40 bg-[#FBF1E6] text-ochre px-4 py-2.5 text-sm font-bold hover:bg-ochre/15 transition cursor-pointer shadow-2xs active:translate-y-0.5"
+                  title="Registrar el pago de la cita para habilitar la llegada"
+                >
+                  <span>Registrar Pago</span>
+                </button>
+              ) : (
+                <div className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-mint-soft text-brand text-xs font-bold border border-brand/20 shadow-2xs">
+                  <span className="text-xs">✓</span>
+                  <span>Pago Registrado</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={!isPaid}
+                onClick={onCheckIn}
+                title={
+                  !isPaid
+                    ? 'Debes registrar el pago antes de marcar la llegada'
+                    : 'Marcar llegada del paciente'
+                }
+                className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+                  isPaid
+                    ? 'bg-ochre text-charcoal hover:bg-ochre/90 cursor-pointer shadow-xs active:translate-y-0.5'
+                    : 'bg-ochre/40 text-charcoal/50 cursor-not-allowed shadow-none'
+                }`}
+              >
+                <span>Marcar llegada</span>
+              </button>
+            </>
           )}
           <button
             type="button"

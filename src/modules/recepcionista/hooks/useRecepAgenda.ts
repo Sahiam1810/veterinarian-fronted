@@ -55,6 +55,25 @@ function formatSummaryDate(dateValue: string, timeDisplay: string | null): strin
   return timeDisplay ? `${formatted}, ${timeDisplay}` : formatted
 }
 
+const PAID_APPOINTMENTS_KEY = 'huellitas_paid_appointments'
+
+function readPaidAppointments(): string[] {
+  try {
+    const raw = localStorage.getItem(PAID_APPOINTMENTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function writePaidAppointments(ids: string[]): void {
+  try {
+    localStorage.setItem(PAID_APPOINTMENTS_KEY, JSON.stringify(ids))
+  } catch (e) {
+    console.error('Error saving paid appointments', e)
+  }
+}
+
 function formatDayTitle(dateValue: string): string {
   if (!dateValue) return 'Hoy'
   const [year, month, day] = dateValue.split('-').map(Number)
@@ -79,6 +98,7 @@ export function useRecepAgenda(enabled: boolean) {
   const [dayPanelDate, setDayPanelDate] = useState('')
   const [timeSlots, setTimeSlots] = useState<RecepAgendaTimeSlot[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+  const [paidAppointmentIds, setPaidAppointmentIds] = useState<string[]>(readPaidAppointments)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -398,9 +418,34 @@ export function useRecepAgenda(enabled: boolean) {
     }
   }
 
+  const isCitaPaid = useCallback(
+    (appointmentId: string): boolean => {
+      return paidAppointmentIds.includes(appointmentId)
+    },
+    [paidAppointmentIds],
+  )
+
+  const handleRegisterPayment = useCallback(
+    (appointmentId: string) => {
+      setPaidAppointmentIds((prev) => {
+        if (prev.includes(appointmentId)) return prev
+        const updated = [...prev, appointmentId]
+        writePaidAppointments(updated)
+        return updated
+      })
+      showNotice('Pago registrado correctamente.')
+    },
+    [showNotice],
+  )
+
   const handleCheckIn = async (appointment: RecepAgendaDayAppointment) => {
     if (!canCheckIn(appointment.status)) {
       showNotice('Solo se puede marcar la llegada en citas agendadas.')
+      return
+    }
+
+    if (!isCitaPaid(appointment.id)) {
+      showNotice('Debes registrar el pago antes de marcar la llegada.')
       return
     }
 
@@ -449,6 +494,8 @@ export function useRecepAgenda(enabled: boolean) {
     handleEditAppointment,
     handleMarkNoAsistio,
     handleCheckIn,
+    handleRegisterPayment,
+    isCitaPaid,
     reloadAppointments: () => loadDayAppointments(dayPanelDate || todayIsoDate()),
   }
 }

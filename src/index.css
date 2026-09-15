@@ -89,6 +89,22 @@ body {
   transform-origin: center top;
 }
 
+/* Transición suave al cambiar de semana / fecha en agenda */
+@keyframes week-switch {
+  0% {
+    opacity: 0.72;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-week-switch {
+  animation: week-switch 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Animación Pop Up para notificaciones flotantes superiores */
 @keyframes toastPopUpTop {
   0% {

@@ -47,12 +47,14 @@ interface RecepAgendaViewProps {
   onNotesChange: (value: string) => void
   onConfirm: () => void
   onCancel: () => void
+  isCitaPaid?: (appointmentId: string) => boolean
   onOpenDayPanel: () => void
   onCloseDayPanel: () => void
   onChangeDayPanelDate: (dateValue: string) => void
   onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
   onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
   onCheckIn: (appointment: RecepAgendaDayAppointment) => void
+  onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
 }
 
 // Fecha local (no UTC) para el min del input date — evita el desfase de día en zonas UTC negativas.
@@ -88,6 +90,7 @@ export function RecepAgendaView({
   isDayLoading = false,
   dayPanelTitle,
   dayPanelDate,
+  isCitaPaid,
   onOwnerQueryChange,
   onSelectOwnerSuggestion,
   onPetChange,
@@ -104,6 +107,7 @@ export function RecepAgendaView({
   onEditAppointment,
   onMarkNoAsistio,
   onCheckIn,
+  onRegistrarPago,
 }: RecepAgendaViewProps) {
   const showOwnerSuggestions =
     form.ownerQuery.trim().length > 0 &&
@@ -382,11 +386,13 @@ export function RecepAgendaView({
         dateValue={dayPanelDate}
         appointments={dayAppointments}
         isLoading={isDayLoading}
+        isCitaPaid={isCitaPaid}
         onClose={onCloseDayPanel}
         onChangeDate={onChangeDayPanelDate}
         onEditAppointment={onEditAppointment}
         onMarkNoAsistio={onMarkNoAsistio}
         onCheckIn={onCheckIn}
+        onRegistrarPago={onRegistrarPago}
       />
     </>
   )

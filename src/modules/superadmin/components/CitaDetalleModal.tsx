@@ -5,11 +5,13 @@ import { getCitaDetalleFooterActions } from '../utils/citaDetalleActions'
 export interface CitaDetalleModalProps {
   cita: CitaSuperAdmin | null
   isOpen: boolean
+  isPaid?: boolean
   onClose: () => void
   onCancel: (citaId: string) => void
   onReprogramar: (cita: CitaSuperAdmin) => void
   onMarcarAtendida: (citaId: string) => void
   onMarcarNoAsistio: (citaId: string) => void
+  onRegistrarPago?: (citaId: string) => void
 }
 
 function statusBadgeLabel(status: CitaSuperAdmin['status']): string {
@@ -31,11 +33,13 @@ function statusBadgeClass(status: CitaSuperAdmin['status']): string {
 export function CitaDetalleModal({
   cita,
   isOpen,
+  isPaid = false,
   onClose,
   onCancel,
   onReprogramar,
   onMarcarAtendida,
   onMarcarNoAsistio,
+  onRegistrarPago,
 }: CitaDetalleModalProps) {
   if (!isOpen || !cita) return null
 
@@ -180,13 +184,40 @@ export function CitaDetalleModal({
             )}
 
             {actions.showMarcarAtendida && (
-              <button
-                type="button"
-                onClick={() => onMarcarAtendida(cita.id)}
-                className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-xs"
-              >
-                Marcar Atendida
-              </button>
+              <>
+                {!isPaid ? (
+                  <button
+                    type="button"
+                    onClick={() => onRegistrarPago?.(cita.id)}
+                    className="border border-ochre/40 bg-[#FBF1E6] hover:bg-ochre/15 text-ochre text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
+                    title="Registrar el pago de la cita para habilitar la atención"
+                  >
+                    <span>Registrar Pago</span>
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-mint-soft text-brand text-xs font-bold border border-brand/20 shadow-2xs">
+                    <span className="text-xs">✓</span> Pago Registrado
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!isPaid}
+                  onClick={() => isPaid && onMarcarAtendida(cita.id)}
+                  title={
+                    !isPaid
+                      ? 'Debes registrar el pago antes de marcar la cita como atendida'
+                      : 'Marcar cita como atendida'
+                  }
+                  className={`${
+                    isPaid
+                      ? 'bg-brand hover:bg-brand-hover text-white cursor-pointer shadow-xs active:translate-y-0.5'
+                      : 'bg-brand/35 text-white/70 cursor-not-allowed shadow-none'
+                  } text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition`}
+                >
+                  Marcar Atendida
+                </button>
+              </>
             )}
 
             {!actions.showReprogramar && (
