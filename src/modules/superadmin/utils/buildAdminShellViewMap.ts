@@ -71,7 +71,6 @@ export function buildViewMap(
     accountId: options.accountId,
     email: options.email,
   })
-  if (ui.inicio) views.inicio = !!ui.inicio.view
   if (ui.reportes) views.reportes = !!ui.reportes.view
 
   return views

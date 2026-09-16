@@ -42,7 +42,6 @@ function getUserInitials(name: string): string {
     .toUpperCase()
 }
 
-
 // Flecha izquierda para paginar la lista de cuentas (carrusel manual).
 function ChevronLeftIcon({ className = 'w-4 h-4', ...props }: SVGProps<SVGSVGElement>) {
   return (

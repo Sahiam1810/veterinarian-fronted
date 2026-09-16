@@ -46,15 +46,8 @@ export const RECEP_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
 
 // Mapa módulo → menú del auxiliar
 export const AUX_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
-  Usuarios: 'aux.usuarios',
   Mascotas: 'aux.mascotas',
-  Clientes: 'aux.duenos',
-  'Especies y Razas': 'aux.especiesRazas',
-  Servicios: 'aux.servicios',
-  Veterinarios: 'aux.profesionales',
   Citas: 'aux.agenda',
-  'Historiales Clínicos': 'aux.historiaClinica',
-  Reportes: 'aux.reportes',
 }
 
 export const AUX_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [

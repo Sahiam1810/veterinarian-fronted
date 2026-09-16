@@ -3,7 +3,6 @@ import {
   type SidebarNavItem,
   HomeIcon,
   UsersIcon,
-  OwnersIcon,
   PawIcon,
   StethoscopeIcon,
   MedicalHistoryIcon,
@@ -41,12 +40,6 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     moduleId: 'mascotas',
     label: 'Mascotas',
     icon: <PawIcon className="w-4.5 h-4.5 shrink-0" />,
-  },
-  {
-    id: 'duenos',
-    moduleId: 'duenos',
-    label: 'Dueños',
-    icon: <OwnersIcon className="w-5 h-5 shrink-0" />,
   },
   {
     id: 'especies-razas',
@@ -107,8 +100,8 @@ export function SuperAdminSidebar({
       activeRoute={activeRoute}
       onNavigate={onNavigate}
       navItems={visibleNavItems}
-      sectionTitle="Navegación"
-      panelTitle="Panel de gestión"
+      sectionTitle="Navegación SuperAdmin"
+      panelTitle="Panel de Control"
       onLogout={onLogout}
     />
   )
