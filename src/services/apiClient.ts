@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config/env.ts'
 import {
   clearStoredUser,
   getAccessToken,
@@ -30,8 +31,6 @@ export interface RequestOptions extends Omit<RequestInit, 'body'> {
   params?: Record<string, string | number | boolean | undefined | null>
   body?: unknown
 }
-
-const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'https://api.huellitas.chatcampuslands.com'
 
 export function getApiUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined | null>): string {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`

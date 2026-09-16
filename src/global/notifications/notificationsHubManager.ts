@@ -16,12 +16,9 @@ import {
   type ChatMessageReceivedPayload,
   type ChatEscalationResolvedPayload,
 } from './realtimeChatTypes.ts'
+import { IS_DEV, NOTIFICATIONS_HUB_URL } from '../../config/env.ts'
 
-const API_BASE_URL =
-  (import.meta.env?.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
-  'https://api.huellitas.chatcampuslands.com'
-
-export const NOTIFICATIONS_HUB_URL = `${API_BASE_URL}/hubs/notifications`
+export { NOTIFICATIONS_HUB_URL }
 
 // Eventos de SignalR
 export const SIGNALR_EVENTS = {
@@ -63,7 +60,7 @@ class NotificationsHubManager {
       // build de producción (import.meta.env.DEV === false) no debe quedar una
       // forma de fabricar eventos ChatEscalationCreated/ChatMessageReceived/
       // ChatEscalationResolved falsos desde la consola del navegador.
-      if (import.meta.env?.DEV) {
+      if (IS_DEV) {
         const win = window as unknown as {
           __simulateRealtimeChatEvent?: (eventName: string, payload: unknown) => boolean
           __simulateRealtimeNotification?: (payload: unknown) => boolean

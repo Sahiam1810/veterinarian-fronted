@@ -1789,7 +1789,7 @@ export function UserSuperAdmin({
                       : 'text-text-muted hover:text-brand'
                   }`}
                 >
-                  Por usuario
+                  Usuarios
                 </button>
 
                 <button
@@ -1801,7 +1801,7 @@ export function UserSuperAdmin({
                       : 'text-text-muted hover:text-brand'
                   }`}
                 >
-                  Por rol
+                  Permisos por rol
                 </button>
               </div>
               )}
@@ -1850,7 +1850,7 @@ export function UserSuperAdmin({
               />
             ) : (
               <ByRoleModeView
-                roles={roles.filter((r) => !r.isSystem)}
+                roles={roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))}
                 users={users}
                 permissionTarget={permissionTarget}
                 selectedRole={selectedRole}
@@ -1944,7 +1944,7 @@ export function UserSuperAdmin({
         isOpen={isRoleModalOpen}
         onClose={closeRoleModal}
         onSave={createRole}
-        roles={roles}
+        roles={roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))}
       />
     </div>
   )

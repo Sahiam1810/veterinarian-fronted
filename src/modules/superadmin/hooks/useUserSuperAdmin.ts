@@ -51,6 +51,7 @@ import {
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
+import { API_BASE_URL } from '@/config'
 import { ApiError } from '@/services'
 import {
   clearUserUiShellOverrides,
@@ -236,7 +237,7 @@ export function useUserSuperAdmin() {
             ? 'Sesión expirada. Cierra sesión e inicia de nuevo.'
             : first instanceof Error
               ? first.message
-              : 'No se pudo contactar al API (¿está disponible en https://api.huellitas.chatcampuslands.com?).'
+              : `No se pudo contactar al API (¿está disponible en ${API_BASE_URL}?).`
         setLoadError(msg)
         showToast(msg, 'warning')
       } else if (concerning.length > 0) {
@@ -390,11 +391,39 @@ export function useUserSuperAdmin() {
       setUsers(mappedUsers)
 
       // No resetear el objetivo de permisos en cada recarga (evita que se "remarquen" solos)
-      const firstAssignable = mappedRoles.find((r) => !r.isSystem) || mappedRoles[0]
-      setSelectedRoleId((prev) => prev || firstAssignable?.id || '')
-      setActiveRoleSimulated((prev) => prev || firstAssignable?.id || '')
+      const firstAssignable =
+        mappedRoles.find((r) => !r.isSystem && !isClienteRoleName(r.name)) ||
+        mappedRoles.find((r) => !r.isSystem) ||
+        mappedRoles[0]
+      setSelectedRoleId((prev) => {
+        if (prev) {
+          const current = mappedRoles.find((r) => r.id === prev)
+          if (current && !isClienteRoleName(current.name) && !current.isSystem) {
+            return prev
+          }
+        }
+        return firstAssignable?.id || ''
+      })
+      setActiveRoleSimulated((prev) => {
+        if (prev) {
+          const current = mappedRoles.find((r) => r.id === prev)
+          if (current && !isClienteRoleName(current.name) && !current.isSystem) {
+            return prev
+          }
+        }
+        return firstAssignable?.id || ''
+      })
       setPermissionTarget((prev) => {
-        if (prev.id) return prev
+        if (prev.id) {
+          if (prev.type === 'role') {
+            const current = mappedRoles.find((r) => r.id === prev.id)
+            if (current && !isClienteRoleName(current.name) && !current.isSystem) {
+              return prev
+            }
+          } else {
+            return prev
+          }
+        }
         if (firstAssignable) return { type: 'role', id: firstAssignable.id }
         return prev
       })
@@ -422,7 +451,8 @@ export function useUserSuperAdmin() {
 
   // Selected role object
   const selectedRole = useMemo(() => {
-    return roles.find((r) => r.id === selectedRoleId) || roles[0] || {
+    const validRoles = roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))
+    return validRoles.find((r) => r.id === selectedRoleId) || validRoles[0] || roles[0] || {
       id: '',
       name: 'Sin Rol',
       description: '',
@@ -517,7 +547,9 @@ export function useUserSuperAdmin() {
     (mode: 'usuarios' | 'roles') => {
       setActiveTab(mode)
       if (mode === 'roles') {
-        const assignable = roles.find((r) => !r.isSystem && r.id === selectedRoleId) || roles.find((r) => !r.isSystem)
+        const assignable =
+          roles.find((r) => !r.isSystem && !isClienteRoleName(r.name) && r.id === selectedRoleId) ||
+          roles.find((r) => !r.isSystem && !isClienteRoleName(r.name))
         const roleId = assignable?.id
         if (roleId) {
           setSelectedRoleId(roleId)
