@@ -30,7 +30,6 @@ import {
   EyeOffIcon,
   UserAvatarIcon,
   StethoscopeIcon,
-  PawIcon,
 } from '@/global/components'
 
 function getUserInitials(name: string): string {
@@ -43,9 +42,6 @@ function getUserInitials(name: string): string {
     .toUpperCase()
 }
 
-function hasCustomPermissions(user: SystemUser): boolean {
-  return !!user.customPermissions && Object.keys(user.customPermissions).length > 0
-}
 
 // Flecha izquierda para paginar la lista de cuentas (carrusel manual).
 function ChevronLeftIcon({ className = 'w-4 h-4', ...props }: SVGProps<SVGSVGElement>) {
@@ -1653,8 +1649,6 @@ export function UserSuperAdmin({
     activeTargetRole,
     activePermissions,
     isClientePermissionTarget,
-    isUserTargetCustomized,
-    resetUserPermissions,
     activeTab,
     setAccessMode,
     filters,

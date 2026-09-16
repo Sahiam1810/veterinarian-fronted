@@ -19,6 +19,7 @@ export {
 export {
   AUX_NAV_CATALOG,
   AUX_DEFAULT_PERMISSIONS,
+  AUX_NAV_PERMISSION_KEYS,
 } from './roles/auxiliar'
 
 export {
