@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SearchIcon, ReloadIcon } from '@/global/components'
 import type { EscalationStatusFilter } from '../types'
+import { IS_DEV } from '@/config'
 import { notificationsHubManager } from '@/global/notifications'
 import { USE_MOCK_ESCALATIONS } from '../services/recepEscalacionesService.ts'
 
@@ -35,7 +36,7 @@ export function RecepEscalacionesToolbar({
   const [isSimMenuOpen, setIsSimMenuOpen] = useState(false)
 
   // Simulación de eventos SignalR para desarrollo y pruebas
-  const showDevSim = import.meta.env.DEV || USE_MOCK_ESCALATIONS
+  const showDevSim = IS_DEV || USE_MOCK_ESCALATIONS
 
   const handleSimulateNewEscalation = () => {
     const id = Date.now().toString()

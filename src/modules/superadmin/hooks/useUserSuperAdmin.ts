@@ -51,6 +51,7 @@ import {
   type ApiRolePermissionResponse,
   type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
+import { API_BASE_URL } from '@/config'
 import { ApiError } from '@/services'
 import {
   clearUserUiShellOverrides,
@@ -242,7 +243,7 @@ export function useUserSuperAdmin() {
             ? 'Sesión expirada. Cierra sesión e inicia de nuevo.'
             : first instanceof Error
               ? first.message
-              : 'No se pudo contactar al API (¿está disponible en https://api.huellitas.chatcampuslands.com?).'
+              : `No se pudo contactar al API (¿está disponible en ${API_BASE_URL}?).`
         setLoadError(msg)
         showToast(msg, 'warning')
       } else if (concerning.length > 0) {

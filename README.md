@@ -170,13 +170,12 @@ pnpm test:nav           # Pruebas de resolución de permisos de navegación
 
 ## 7. Configuración de Entorno
 
-Crear un archivo `.env` en la raíz de `veterinarian-fronted` si se requiere sobreescribir la URL de la API:
+La URL del backend vive **solo** en `.env` (ese archivo no se sube a git). Vite, el build y `pnpm test` la leen de ahí. `.env.example` es solo una plantilla para copiar, no se usa en runtime.
 
 ```env
-VITE_API_URL=https://api.huellitas.chatcampuslands.com
-# Local: VITE_API_URL=http://localhost:5233
+VITE_API_URL=http://localhost:5233
 ```
 
 ### Docker / producción
 
-El Dockerfile inyecta `VITE_API_URL` en build (por defecto `https://api.huellitas.chatcampuslands.com`). El stack de producción se define en `../veterinarian-backend/deploy/docker-compose.prod.yml` (frontend en `127.0.0.1:5181`). Guía: `../veterinarian-backend/deploy/DEPLOY.md`. Vite en desarrollo sigue en el puerto **5174**. El navegador usa el dominio público de la API, no `http://backend:8080`.
+El Dockerfile exige `VITE_API_URL` como build-arg (sin valor por defecto en el código). El stack de producción se define en `../veterinarian-backend/deploy/docker-compose.prod.yml` (frontend en `127.0.0.1:5181`). Guía: `../veterinarian-backend/deploy/DEPLOY.md`. Vite en desarrollo sigue en el puerto **5174**. El navegador usa el dominio público de la API, no `http://backend:8080`.
