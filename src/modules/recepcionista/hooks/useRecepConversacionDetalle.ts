@@ -5,14 +5,16 @@ import {
   fetchConversationThread,
   sendAgentMessage,
   resolveConversation,
-  resolveSenderRole,
-  resolveSenderLabel,
 } from '../services/index.ts'
 import {
   useChatEscalationsRealtime,
   type ChatMessageReceivedPayload,
   type ChatEscalationResolvedPayload,
 } from '../../../global/notifications/index.ts'
+import {
+  applyRealtimeMessageToThread,
+  applySendHttpResponseToThread,
+} from './recepConversacionDetalleReducers.ts'
 
 interface UseRecepConversacionDetalleOptions {
   conversationId: string | null
@@ -86,36 +88,7 @@ export function useRecepConversacionDetalle({
     (payload: ChatMessageReceivedPayload) => {
       if (!conversationId || payload.conversationId !== conversationId) return
 
-      setMessages((prev) => {
-        // Evitar duplicados si el mensaje ya está en el hilo
-        if (prev.some((m) => m.id === payload.messageId)) return prev
-
-        const role = resolveSenderRole(payload.senderType, payload.senderType)
-        const label = resolveSenderLabel(role, payload.senderName)
-        const date = new Date(payload.sentAt)
-        const timeLabel = !isNaN(date.getTime())
-          ? date.toLocaleTimeString('es-CO', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            })
-          : 'Ahora'
-
-        const incomingItem: ChatMessageItem = {
-          id: payload.messageId,
-          conversationId: payload.conversationId,
-          senderTypeId: payload.senderType,
-          senderRole: role,
-          senderLabel: label,
-          senderName: payload.senderName,
-          content: payload.content,
-          createdAt: payload.sentAt,
-          timeLabel,
-          status: 'sent',
-        }
-
-        return [...prev, incomingItem]
-      })
+      setMessages((prev) => applyRealtimeMessageToThread(prev, payload))
     },
     [conversationId],
   )
@@ -175,7 +148,7 @@ export function useRecepConversacionDetalle({
         const realMessage = await sendAgentMessage(conversationId, content)
         if (isMountedRef.current) {
           setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? realMessage : m)),
+            applySendHttpResponseToThread(prev, tempId, realMessage),
           )
         }
       } catch (err) {
