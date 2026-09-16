@@ -30,7 +30,6 @@ import {
   EyeOffIcon,
   UserAvatarIcon,
   StethoscopeIcon,
-  PawIcon,
 } from '@/global/components'
 
 function getUserInitials(name: string): string {
@@ -41,10 +40,6 @@ function getUserInitials(name: string): string {
     .map((part) => part[0])
     .join('')
     .toUpperCase()
-}
-
-function hasCustomPermissions(user: SystemUser): boolean {
-  return !!user.customPermissions && Object.keys(user.customPermissions).length > 0
 }
 
 // Flecha izquierda para paginar la lista de cuentas (carrusel manual).
@@ -1653,8 +1648,6 @@ export function UserSuperAdmin({
     activeTargetRole,
     activePermissions,
     isClientePermissionTarget,
-    isUserTargetCustomized,
-    resetUserPermissions,
     activeTab,
     setAccessMode,
     filters,
@@ -1795,7 +1788,7 @@ export function UserSuperAdmin({
                       : 'text-text-muted hover:text-brand'
                   }`}
                 >
-                  Por usuario
+                  Usuarios
                 </button>
 
                 <button
@@ -1807,7 +1800,7 @@ export function UserSuperAdmin({
                       : 'text-text-muted hover:text-brand'
                   }`}
                 >
-                  Por rol
+                  Permisos por rol
                 </button>
               </div>
               )}
@@ -1856,7 +1849,7 @@ export function UserSuperAdmin({
               />
             ) : (
               <ByRoleModeView
-                roles={roles.filter((r) => !r.isSystem)}
+                roles={roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))}
                 users={users}
                 permissionTarget={permissionTarget}
                 selectedRole={selectedRole}
@@ -1950,7 +1943,7 @@ export function UserSuperAdmin({
         isOpen={isRoleModalOpen}
         onClose={closeRoleModal}
         onSave={createRole}
-        roles={roles}
+        roles={roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))}
       />
     </div>
   )
