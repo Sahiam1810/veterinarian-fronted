@@ -30,9 +30,29 @@ import { fetchAuxNavPermissions } from '@/modules/auxiliar/services'
 import { PageToast } from '@/global/components'
 
 const AUX_GATED_ROUTES: Record<string, NavPermissionKey> = {
+  usuarios: 'aux.usuarios',
   agenda: 'aux.agenda',
   mascotas: 'aux.mascotas',
+  duenos: 'aux.duenos',
+  'especies-razas': 'aux.especiesRazas',
+  servicios: 'aux.servicios',
+  diagnosticos: 'aux.historiaClinica',
+  profesionales: 'aux.profesionales',
+  reportes: 'aux.reportes',
 }
+
+// Las vistas especializadas de auxiliar cubren su operación base. Al conceder
+// cualquier módulo adicional, se usa el shell administrativo ya existente:
+// este aplica el mismo canView de la API y ofrece las pantallas CRUD reales.
+const AUX_EXTENDED_PERMISSION_KEYS: NavPermissionKey[] = [
+  'aux.usuarios',
+  'aux.duenos',
+  'aux.especiesRazas',
+  'aux.servicios',
+  'aux.historiaClinica',
+  'aux.profesionales',
+  'aux.reportes',
+]
 
 const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   inicio: 'inicio',
@@ -412,6 +432,14 @@ function AuxApp({
     setTimeout(() => {
       setActiveNotification((curr) => (curr === message ? null : curr))
     }, 3500)
+  }
+
+  const hasExtendedModule = AUX_EXTENDED_PERMISSION_KEYS.some((permissionKey) =>
+    grantedPermissions?.includes(permissionKey),
+  )
+
+  if (hasExtendedModule) {
+    return <SuperAdminApp user={user} onLogout={onLogout} />
   }
 
   return (

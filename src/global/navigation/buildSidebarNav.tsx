@@ -8,6 +8,7 @@ import {
   PlusIcon,
   SettingsIcon,
   OwnersIcon,
+  UsersIcon,
   ChatIcon,
 } from '../components/Icons.tsx'
 import type { NavCatalogItem, NavIconKey } from './types.ts'
@@ -32,6 +33,8 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
       return <SettingsIcon className={className} />
     case 'owners':
       return <OwnersIcon className={className} />
+    case 'users':
+      return <UsersIcon className={className} />
     case 'chat':
       return <ChatIcon className={className} />
     default:

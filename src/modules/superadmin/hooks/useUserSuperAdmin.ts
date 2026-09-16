@@ -141,12 +141,6 @@ export function isVeterinarioRoleName(name: string): boolean {
 }
 
 // Rol Administrador (panel completo por defecto, editable por SuperAdmin)
-function isClinicAdminRoleName(name: string): boolean {
-  const n = name.trim().toLowerCase()
-  if (isPlatformSuperAdminRoleName(n)) return false
-  return n.includes('administrador') || n === 'admin' || n.startsWith('admin ')
-}
-
 function formatDate(isoString: string): string {
   if (!isoString) return 'Reciente'
   const d = new Date(isoString)
@@ -299,12 +293,11 @@ export function useUserSuperAdmin() {
       // Mapear Roles
       const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
         const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
-        const isClinicAdmin = isClinicAdminRoleName(r.name)
         const isCliente = isClienteRoleName(r.name)
         // Admin de clínica parte con todas las vistas del panel (como SuperAdmin UI)
         // Cliente: sin panel web (ADR) — ignorar residuales de ROLE_PERMISSIONS
         const perms: Record<ModuleId, ModulePermission> =
-          isPlatformSuper || isClinicAdmin
+          isPlatformSuper
             ? { ...DEFAULT_PERMISSIONS_ALL }
             : { ...DEFAULT_PERMISSIONS_EMPTY }
 
