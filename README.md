@@ -27,22 +27,28 @@ src/
 ├── App.tsx                     # Enrutador dinámico por roles y permisos
 ├── main.tsx                    # Punto de entrada de la aplicación React
 ├── index.css                   # Tokens de diseño Tailwind CSS y directivas globales
-├── config/                     # Configuración de variables de entorno y constantes
+├── assets/                     # Imágenes de marca (logos, wordmarks, fondos)
+├── config/                     # Lectura de variables de entorno (env.ts) y constantes
 ├── services/
 │   └── apiClient.ts            # Cliente HTTP fetch con interceptor JWT y rotación de tokens
 ├── global/                     # Recursos transversales compartidos
 │   ├── components/             # BrandLogo, PageToast, Icons, Modales genéricos
 │   ├── navigation/             # Definiciones de permisos y resolución de menús
+│   ├── notifications/          # Conexión SignalR, notificaciones y escalaciones en tiempo real
 │   ├── styles/                 # Estilos y animaciones reutilizables
-│   └── types/                  # Tipos globales de la aplicación
+│   └── utils/                  # Utilidades transversales
 └── modules/                    # Módulos encapsulados por dominio y rol
     ├── auth/                   # Autenticación, sesión, JWT y consulta de permisos
     ├── superadmin/             # Panel maestro / Administrador (Usuarios, Catálogos, Reportes)
     ├── veterinario/            # Flujo clínico (Agenda médica, Pacientes, Historia Clínica)
-    ├── recepcionista/          # Flujo de recepción (Agenda diaria, Citas, Dueños, Mascotas)
-    ├── auxiliar/               # Flujo operativo (Triaje, Signos vitales, Cola de atención)
-    └── cliente/                # Componentes y modelos base de clientes/tutores
+    ├── recepcionista/          # Flujo de recepción (Agenda diaria, Citas, Dueños, Mascotas, Asesor)
+    └── auxiliar/               # Flujo operativo (Triaje, Signos vitales, Cola de atención)
 ```
+
+> `src/modules/cliente/` existe en el repositorio pero **no se usa**: ningún componente lo
+> importa desde `App.tsx` ni `main.tsx`, y por diseño (ver §3) un usuario con rol `Cliente`
+> nunca llega a renderizar nada del panel — se cierra su sesión de inmediato. No forma parte
+> del sistema en ejecución.
 
 Cada módulo dentro de `src/modules/` sigue una estructura cohesiva e independiente:
 ```
@@ -81,6 +87,7 @@ El componente raíz `App.tsx` evalúa el estado del usuario autenticado devuelto
   - `myPermissionsService.ts`: Consulta a `GET /api/auth/permissions` para obtener los permisos vigentes del usuario autenticado.
 - **Hooks:** `useAuth` para proveer el usuario actual, métodos `login`, `logout` y escucha de eventos de expiración/refresco de token.
 - **Seguridad:** Identificación de SuperAdmin canónico (`99999999-9999-9999-9999-999999999999`), resolución de identidades de rol y sanitización de almacenamiento.
+- **Sesión compartida entre pestañas:** la sesión vive en `localStorage` (compartido por origen) y un listener del evento `storage` sincroniza el usuario autenticado entre todas las pestañas abiertas del mismo navegador — iniciar sesión con otra cuenta en una pestaña actualiza el resto sin recargar.
 
 ### 4.2 Módulo SuperAdministrador / Administrador (`src/modules/superadmin`)
 - **Vistas y Páginas:**
@@ -90,9 +97,12 @@ El componente raíz `App.tsx` evalúa el estado del usuario autenticado devuelto
   - `ProfesionalesSuperAdmin`: Gestión de veterinarios, especialidades, disponibilidad y ausencias.
   - `ServiciosSuperAdmin`: Catálogo de servicios médicos, tarifas y categorías.
   - `EspeciesRazasSuperAdmin`: Gestión de taxonomía de especies y razas.
-  - `AgendaSuperAdmin`: Calendario maestro global de citas de la clínica.
+  - `DiagnosticosSuperAdmin`: Catálogo de diagnósticos clínicos usado en la historia clínica.
+  - `AgendaSuperAdmin`: Calendario maestro global de citas de la clínica; incluye registrar el
+    pago de una cita (requisito previo para poder marcar su llegada).
   - `ReportesSuperAdmin`: Visualización de estadísticas operativas y financieras.
-  - `PerfilSuperAdmin`: Gestión de datos del perfil y cambio de contraseña.
+  - `PerfilSuperAdmin`: Gestión de datos del perfil, foto de perfil (`ChangePhotoDrawer`) y
+    cambio de contraseña.
 - **Hooks Clave:** `useAdminShellAccess`, `useUserSuperAdmin`, `useMascotasSuperAdmin`, `useNotificationsSuperAdmin`.
 
 ### 4.3 Módulo Veterinario (`src/modules/veterinario`)
@@ -105,10 +115,15 @@ El componente raíz `App.tsx` evalúa el estado del usuario autenticado devuelto
 
 ### 4.4 Módulo Recepcionista (`src/modules/recepcionista`)
 - **Vistas y Componentes:**
-  - `PuntoInicio`: Punto de entrada con control de pestañas: Inicio, Agenda del Día, Dueños, Mascotas y Perfil.
-  - `RecepAgendaDelDia`: Monitoreo y cambio rápido de estados de cita (*Confirmada*, *En Espera*, *Cancelada*, *Finalizada*).
+  - `PuntoInicio`: Punto de entrada con control de pestañas: Inicio, Agenda del Día, Dueños, Mascotas, Asesor y Perfil.
+  - `RecepAgendaDelDia`: Monitoreo y cambio rápido de estados de cita (*Confirmada*, *En Espera*, *Cancelada*, *Finalizada*); registrar el pago de una cita es requisito previo para poder marcar su llegada.
   - `RecepDuenosView` & `RecepDuenosTable`: Búsqueda, registro y edición de propietarios.
   - `RecepMascotasView`: Inspección y registro de pacientes.
+  - `EscalacionesPage` / `RecepEscalacionesView` / `RecepEscalacionesTable`: Bandeja de conversaciones
+    de Telegram escalada a un asesor humano (ver «Escalamiento a un asesor humano» en el README del
+    backend). Se actualiza en tiempo real por SignalR — ver 4.6.
+  - `RecepConversacionDetalleModal` & `RecepResolverEscalacionModal`: Hilo de mensajes con el cliente
+    y cierre/resolución del escalamiento.
 
 ### 4.5 Módulo Auxiliar Veterinario (`src/modules/auxiliar`)
 - **Vistas y Drawers:**
@@ -116,6 +131,12 @@ El componente raíz `App.tsx` evalúa el estado del usuario autenticado devuelto
   - `PreparacionAux`: Registro de triaje clínico pre-consulta (temperatura, peso, frecuencia cardíaca y respiratoria).
   - `PrepararCitaDrawer`: Formulario lateral para captura rápida de signos vitales.
   - `AgendaAux` & `MascotasAux`: Consulta de pacientes agendados y fichas médicas.
+
+### 4.6 Notificaciones en Tiempo Real (`src/global/notifications`)
+Conexión SignalR al hub `/hubs/notifications` del backend, compartida entre módulos:
+- `notificationsHubManager.ts`: gestiona la conexión, reconexión y el token de acceso (`ensureSignalRAccessToken.ts`).
+- `useNotificationsRealtime`: notificaciones generales (usado por SuperAdmin, campana de notificaciones).
+- `useChatEscalationsRealtime`: eventos de mensajes nuevos y resolución de escalamientos, consumido por la bandeja de Asesor de Recepcionista (4.4).
 
 ---
 
@@ -161,9 +182,12 @@ pnpm lint
 pnpm test
 
 # Ejecutar pruebas por módulo específico
-pnpm test:auth        # Pruebas de autenticación, sesión y roles
+pnpm test:auth          # Pruebas de autenticación, sesión y roles
 pnpm test:superadmin    # Pruebas del shell y utilidades de administración
 pnpm test:nav           # Pruebas de resolución de permisos de navegación
+pnpm test:recep         # Pruebas del módulo Recepcionista (agenda, escalaciones)
+pnpm test:vet           # Pruebas del módulo Veterinario
+pnpm test:notifications # Pruebas de notificaciones y escalaciones en tiempo real
 ```
 
 ---
