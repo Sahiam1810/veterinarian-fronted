@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchMyModulePermissions, type MyPermissionsMap } from '@/modules/auth'
+import { useCallback, useMemo } from 'react'
+import { useCurrentPermissions } from '@/modules/auth'
 import type { ModuleId } from '../types'
 import { superAdminNavItems } from '../components/SuperAdminSidebar'
-import { buildViewMap } from '../utils/buildAdminShellViewMap'
+import { buildActionMap, buildViewMap } from '../utils/buildAdminShellViewMap'
 
-export { buildViewMap } from '../utils/buildAdminShellViewMap'
+export { buildViewMap, buildActionMap } from '../utils/buildAdminShellViewMap'
 
 // Primera ruta del menú que el usuario puede ver
 export function resolveFirstAllowedAdminRoute(
@@ -14,7 +14,7 @@ export function resolveFirstAllowedAdminRoute(
   return first?.id ?? 'perfil'
 }
 
-// Permisos de menú del panel para el admin autenticado
+// Permisos de menú y acciones del panel para el usuario autenticado
 export function useAdminShellAccess(options: {
   personId: string
   accountId?: string
@@ -23,25 +23,23 @@ export function useAdminShellAccess(options: {
   isPlatformSuperAdmin?: boolean
 }) {
   const { personId, accountId, email, roleId, isPlatformSuperAdmin } = options
-  const [apiPermissions, setApiPermissions] = useState<MyPermissionsMap | null>(null)
 
-  useEffect(() => {
-    if (isPlatformSuperAdmin) {
-      setApiPermissions(null)
-      return
-    }
-    let cancelled = false
-    void fetchMyModulePermissions()
-      .then((perms) => {
-        if (!cancelled) setApiPermissions(perms)
-      })
-      .catch(() => {
-        if (!cancelled) setApiPermissions({})
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isPlatformSuperAdmin, personId])
+  const { permissions: apiPermissions, isLoading, refresh } = useCurrentPermissions({
+    skip: !!isPlatformSuperAdmin,
+    reloadKey: personId,
+  })
+
+  const actionMap = useMemo(
+    () =>
+      buildActionMap(apiPermissions, {
+        personId,
+        accountId,
+        email,
+        roleId,
+        isPlatformSuperAdmin,
+      }),
+    [apiPermissions, personId, accountId, email, roleId, isPlatformSuperAdmin],
+  )
 
   const viewMap = useMemo(
     () =>
@@ -56,8 +54,23 @@ export function useAdminShellAccess(options: {
   )
 
   const canViewModule = useCallback(
-    (moduleId: ModuleId) => viewMap[moduleId] !== false,
-    [viewMap],
+    (moduleId: ModuleId) => actionMap[moduleId]?.view === true,
+    [actionMap],
+  )
+
+  const canCreateModule = useCallback(
+    (moduleId: ModuleId) => actionMap[moduleId]?.create === true,
+    [actionMap],
+  )
+
+  const canEditModule = useCallback(
+    (moduleId: ModuleId) => actionMap[moduleId]?.edit === true,
+    [actionMap],
+  )
+
+  const canDeleteModule = useCallback(
+    (moduleId: ModuleId) => actionMap[moduleId]?.delete === true,
+    [actionMap],
   )
 
   const firstAllowedRoute = useMemo(
@@ -65,5 +78,15 @@ export function useAdminShellAccess(options: {
     [canViewModule],
   )
 
-  return { canViewModule, viewMap, firstAllowedRoute }
+  return {
+    canViewModule,
+    canCreateModule,
+    canEditModule,
+    canDeleteModule,
+    viewMap,
+    actionMap,
+    firstAllowedRoute,
+    isLoadingPermissions: isLoading,
+    refreshPermissions: refresh,
+  }
 }

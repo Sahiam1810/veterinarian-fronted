@@ -57,6 +57,11 @@ export async function updateNotification(id: string, data: ApiUpdateNotification
   return apiClient.put<void>(`/api/Notifications/${id}`, data)
 }
 
+// Marca como leída sin exigir Notificaciones.Edit (endpoint de dueño)
+export async function markNotificationAsRead(id: string): Promise<void> {
+  return apiClient.patch<void>(`/api/Notifications/${id}/read`)
+}
+
 export async function deleteNotification(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/Notifications/${id}`)
 }

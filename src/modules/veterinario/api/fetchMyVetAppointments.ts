@@ -12,7 +12,7 @@ interface ApiPaginatedAppointments {
 }
 
 // Citas del veterinario autenticado (Citas.View). No usa GET /api/appointments
-// porque esa ruta pide Plataforma.View y responde 403 al rol Veterinario.
+// porque esa ruta pedía Plataforma.View (ahora Citas.View); Vet usa /me con Citas.View.
 export async function fetchMyVetAppointments(): Promise<ApiAppointment[]> {
   const pageSize = 100
   const all: ApiAppointment[] = []

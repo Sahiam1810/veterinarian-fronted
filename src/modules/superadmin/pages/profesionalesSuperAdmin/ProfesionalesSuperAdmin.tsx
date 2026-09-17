@@ -65,6 +65,10 @@ export interface ProfesionalesSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Permisos de acción desde el shell (legacy: true si no llegan)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -105,6 +109,9 @@ export function ProfesionalesSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule,
+  canEditModule,
+  canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -112,6 +119,11 @@ export function ProfesionalesSuperAdmin({
   onMarkAllNotificationsRead,
   onReloadNotifications,
 }: ProfesionalesSuperAdminProps = {}) {
+  // Permisos CRUD del módulo profesionales (incluye bloques de horario)
+  const canCreate = canCreateModule ? canCreateModule('profesionales') : true
+  const canEdit = canEditModule ? canEditModule('profesionales') : true
+  const canDelete = canDeleteModule ? canDeleteModule('profesionales') : true
+
   // Estado de navegación y sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const isSidebarOpen =
@@ -242,6 +254,20 @@ export function ProfesionalesSuperAdmin({
                 Administra el equipo médico, sus horarios y agenda nuevas citas.
               </p>
             </div>
+
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProfesional(null)
+                  setIsProfModalOpen(true)
+                }}
+                className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer active:translate-y-0.5 shrink-0 self-start sm:self-auto"
+              >
+                <PlusIcon className="w-4 h-4 text-white" />
+                <span>Agregar Profesional</span>
+              </button>
+            )}
           </div>
 
           {/* Contenedor Unificado: Filtros + Tabla de Profesionales */}
@@ -394,25 +420,29 @@ export function ProfesionalesSuperAdmin({
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingProfesional(prof)
-                                  setIsProfModalOpen(true)
-                                }}
-                                className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
-                                aria-label={`Editar ${prof.name}`}
-                              >
-                                <EditIcon className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setPendingDeleteProfesional(prof)}
-                                className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
-                                aria-label={`Eliminar ${prof.name}`}
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </button>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingProfesional(prof)
+                                    setIsProfModalOpen(true)
+                                  }}
+                                  className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
+                                  aria-label={`Editar ${prof.name}`}
+                                >
+                                  <EditIcon className="w-4 h-4" />
+                                </button>
+                              )}
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPendingDeleteProfesional(prof)}
+                                  className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer shadow-2xs inline-flex items-center justify-center"
+                                  aria-label={`Eliminar ${prof.name}`}
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -494,14 +524,16 @@ export function ProfesionalesSuperAdmin({
                     <span>Agendar Cita</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveChanges}
-                    className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-xs active:translate-y-0.5"
-                  >
-                    <SaveIcon className="w-4 h-4 text-white" />
-                    <span>Guardar Cambios</span>
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={handleSaveChanges}
+                      className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-xs active:translate-y-0.5"
+                    >
+                      <SaveIcon className="w-4 h-4 text-white" />
+                      <span>Guardar Cambios</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -539,26 +571,30 @@ export function ProfesionalesSuperAdmin({
                                   </span>
 
                                   <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedDiaForBlock(dia)
-                                        setEditingBlock(block)
-                                        setIsBlockModalOpen(true)
-                                      }}
-                                      className="text-sage hover:text-brand p-0.5 cursor-pointer"
-                                      aria-label="Editar bloque"
-                                    >
-                                      <EditIcon className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteBloque(block.id)}
-                                      className="text-sage hover:text-danger p-0.5 cursor-pointer"
-                                      aria-label="Eliminar bloque"
-                                    >
-                                      <TrashIcon className="w-3 h-3" />
-                                    </button>
+                                    {canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedDiaForBlock(dia)
+                                          setEditingBlock(block)
+                                          setIsBlockModalOpen(true)
+                                        }}
+                                        className="text-sage hover:text-brand p-0.5 cursor-pointer"
+                                        aria-label="Editar bloque"
+                                      >
+                                        <EditIcon className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                    {canDelete && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteBloque(block.id)}
+                                        className="text-sage hover:text-danger p-0.5 cursor-pointer"
+                                        aria-label="Eliminar bloque"
+                                      >
+                                        <TrashIcon className="w-3 h-3" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
 
@@ -573,18 +609,20 @@ export function ProfesionalesSuperAdmin({
                       </div>
 
                       {/* Botón Agregar Bloque al final de cada día */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedDiaForBlock(dia)
-                          setEditingBlock(null)
-                          setIsBlockModalOpen(true)
-                        }}
-                        className="w-full mt-3 py-1.5 rounded-xl border border-dashed border-border-tan hover:border-brand/40 text-[11px] font-bold text-sage hover:text-brand hover:bg-mint-soft/30 transition cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <PlusIcon className="w-3 h-3" />
-                        <span>Agregar Bloque</span>
-                      </button>
+                      {canCreate && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDiaForBlock(dia)
+                            setEditingBlock(null)
+                            setIsBlockModalOpen(true)
+                          }}
+                          className="w-full mt-3 py-1.5 rounded-xl border border-dashed border-border-tan hover:border-brand/40 text-[11px] font-bold text-sage hover:text-brand hover:bg-mint-soft/30 transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <PlusIcon className="w-3 h-3" />
+                          <span>Agregar Bloque</span>
+                        </button>
+                      )}
                     </div>
                   )
                 })}

@@ -33,6 +33,10 @@ export interface EspeciesRazasSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Permisos de acción desde el shell (legacy: true si no llegan)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -52,6 +56,9 @@ export function EspeciesRazasSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule,
+  canEditModule,
+  canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -59,6 +66,11 @@ export function EspeciesRazasSuperAdmin({
   onMarkAllNotificationsRead,
   onReloadNotifications,
 }: EspeciesRazasSuperAdminProps = {}) {
+  // Permisos CRUD del módulo especiesRazas
+  const canCreate = canCreateModule ? canCreateModule('especiesRazas') : true
+  const canEdit = canEditModule ? canEditModule('especiesRazas') : true
+  const canDelete = canDeleteModule ? canDeleteModule('especiesRazas') : true
+
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const isSidebarOpen =
     externalIsSidebarOpen !== undefined ? externalIsSidebarOpen : internalIsSidebarOpen
@@ -168,29 +180,33 @@ export function EspeciesRazasSuperAdmin({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingEspecie(null)
-                  setEspecieDrawerOpen(true)
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal text-xs font-bold hover:bg-bone transition cursor-pointer"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Nueva especie
-              </button>
-              <button
-                type="button"
-                disabled={!selectedSpecies}
-                onClick={() => {
-                  setEditingRaza(null)
-                  setRazaDrawerOpen(true)
-                }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-terracotta text-white text-xs font-bold hover:bg-[#b55e43] transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Nueva raza
-              </button>
+              {canCreate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingEspecie(null)
+                    setEspecieDrawerOpen(true)
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-charcoal text-xs font-bold hover:bg-bone transition cursor-pointer"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Nueva especie
+                </button>
+              )}
+              {canCreate && (
+                <button
+                  type="button"
+                  disabled={!selectedSpecies}
+                  onClick={() => {
+                    setEditingRaza(null)
+                    setRazaDrawerOpen(true)
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-terracotta text-white text-xs font-bold hover:bg-[#b55e43] transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Nueva raza
+                </button>
+              )}
             </div>
           </div>
 
@@ -247,44 +263,48 @@ export function EspeciesRazasSuperAdmin({
                           </span>
                         </span>
                         <span className="flex items-center gap-1 shrink-0">
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingEspecie(esp)
-                              setEspecieDrawerOpen(true)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
+                          {canEdit && (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
                                 e.stopPropagation()
                                 setEditingEspecie(esp)
                                 setEspecieDrawerOpen(true)
-                              }
-                            }}
-                            className="p-1.5 text-sage hover:text-brand rounded-lg hover:bg-white"
-                            aria-label={`Editar ${esp.name}`}
-                          >
-                            <EditIcon className="w-3.5 h-3.5" />
-                          </span>
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setPendingDeleteEspecie(esp)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.stopPropagation()
+                                  setEditingEspecie(esp)
+                                  setEspecieDrawerOpen(true)
+                                }
+                              }}
+                              className="p-1.5 text-sage hover:text-brand rounded-lg hover:bg-white"
+                              aria-label={`Editar ${esp.name}`}
+                            >
+                              <EditIcon className="w-3.5 h-3.5" />
+                            </span>
+                          )}
+                          {canDelete && (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
                                 e.stopPropagation()
                                 setPendingDeleteEspecie(esp)
-                              }
-                            }}
-                            className="p-1.5 text-sage hover:text-danger rounded-lg hover:bg-white"
-                            aria-label={`Eliminar ${esp.name}`}
-                          >
-                            <TrashIcon className="w-3.5 h-3.5" />
-                          </span>
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.stopPropagation()
+                                  setPendingDeleteEspecie(esp)
+                                }
+                              }}
+                              className="p-1.5 text-sage hover:text-danger rounded-lg hover:bg-white"
+                              aria-label={`Eliminar ${esp.name}`}
+                            >
+                              <TrashIcon className="w-3.5 h-3.5" />
+                            </span>
+                          )}
                         </span>
                       </button>
                     </li>
@@ -340,25 +360,29 @@ export function EspeciesRazasSuperAdmin({
                         </td>
                         <td className="py-3.5 px-6 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingRaza(raza)
-                                setRazaDrawerOpen(true)
-                              }}
-                              className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
-                              aria-label={`Editar ${raza.name}`}
-                            >
-                              <EditIcon className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPendingDeleteRaza(raza)}
-                              className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
-                              aria-label={`Eliminar ${raza.name}`}
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingRaza(raza)
+                                  setRazaDrawerOpen(true)
+                                }}
+                                className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
+                                aria-label={`Editar ${raza.name}`}
+                              >
+                                <EditIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => setPendingDeleteRaza(raza)}
+                                className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
+                                aria-label={`Eliminar ${raza.name}`}
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

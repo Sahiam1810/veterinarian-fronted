@@ -2,7 +2,7 @@ import type { MyPermissionsMap } from '../../auth/services/myPermissionsService.
 import type { ModuleId } from '../types'
 import { resolveUiShellOverrides } from './uiShellPermissionsStorage.ts'
 
-// Módulos Oracle → ids del menú del panel admin
+// Módulos Oracle → ids del menú del panel admin (mapa canónico FE ↔ BE)
 export const API_MODULE_TO_SHELL: Record<string, ModuleId> = {
   Usuarios: 'usuarios',
   Mascotas: 'mascotas',
@@ -15,7 +15,114 @@ export const API_MODULE_TO_SHELL: Record<string, ModuleId> = {
   Reportes: 'reportes',
 }
 
-// Mapa de visibilidad del shell admin (menú + route guard).
+// Acción CRUD sobre un módulo del shell
+export type ModuleAction = 'view' | 'create' | 'edit' | 'delete'
+
+const ALL_TRUE_ACTIONS: Record<ModuleAction, boolean> = {
+  view: true,
+  create: true,
+  edit: true,
+  delete: true,
+}
+
+const ALL_FALSE_ACTIONS: Record<ModuleAction, boolean> = {
+  view: false,
+  create: false,
+  edit: false,
+  delete: false,
+}
+
+// Acciones por ModuleId del shell (permission-first)
+export type ShellActionMap = Record<ModuleId, Record<ModuleAction, boolean>>
+
+function emptyActionMap(inicioView: boolean): ShellActionMap {
+  return {
+    inicio: { ...ALL_FALSE_ACTIONS, view: inicioView },
+    usuarios: { ...ALL_FALSE_ACTIONS },
+    duenos: { ...ALL_FALSE_ACTIONS },
+    mascotas: { ...ALL_FALSE_ACTIONS },
+    especiesRazas: { ...ALL_FALSE_ACTIONS },
+    servicios: { ...ALL_FALSE_ACTIONS },
+    profesionales: { ...ALL_FALSE_ACTIONS },
+    disponibilidad: { ...ALL_FALSE_ACTIONS },
+    agenda: { ...ALL_FALSE_ACTIONS },
+    historiaClinica: { ...ALL_FALSE_ACTIONS },
+    reportes: { ...ALL_FALSE_ACTIONS },
+  }
+}
+
+function platformFullActionMap(): ShellActionMap {
+  const ids: ModuleId[] = [
+    'inicio',
+    'usuarios',
+    'duenos',
+    'mascotas',
+    'especiesRazas',
+    'servicios',
+    'profesionales',
+    'disponibilidad',
+    'agenda',
+    'historiaClinica',
+    'reportes',
+  ]
+  const map = {} as ShellActionMap
+  for (const id of ids) {
+    map[id] = { ...ALL_TRUE_ACTIONS }
+  }
+  return map
+}
+
+// Construye mapa completo View/Create/Edit/Delete por módulo del shell
+export function buildActionMap(
+  apiPermissions: MyPermissionsMap | null,
+  options: {
+    personId: string
+    accountId?: string
+    email?: string
+    roleId?: string
+    isPlatformSuperAdmin?: boolean
+  },
+): ShellActionMap {
+  if (options.isPlatformSuperAdmin) {
+    return platformFullActionMap()
+  }
+
+  // Fail-closed: sin API aún o vacía, solo Inicio visible
+  const actions = emptyActionMap(true)
+
+  if (apiPermissions) {
+    for (const [apiName, perm] of Object.entries(apiPermissions)) {
+      const shellId = API_MODULE_TO_SHELL[apiName]
+      if (!shellId) continue
+      actions[shellId] = {
+        view: !!perm.canView,
+        create: !!perm.canCreate,
+        edit: !!perm.canEdit,
+        delete: !!perm.canDelete,
+      }
+    }
+  }
+
+  // Excepciones UI locales (Reportes sin fila Oracle completa)
+  const ui = resolveUiShellOverrides({
+    roleId: options.roleId,
+    personId: options.personId,
+    accountId: options.accountId,
+    email: options.email,
+  })
+  if (ui.reportes) {
+    actions.reportes = {
+      view: !!ui.reportes.view,
+      create: !!ui.reportes.create,
+      edit: !!ui.reportes.edit,
+      delete: !!ui.reportes.delete,
+    }
+  }
+
+  return actions
+}
+
+// Mapa de visibilidad del shell admin (menú + route guard)
 export function buildViewMap(
   apiPermissions: MyPermissionsMap | null,
   options: {
@@ -26,52 +133,10 @@ export function buildViewMap(
     isPlatformSuperAdmin?: boolean
   },
 ): Record<ModuleId, boolean> {
-  if (options.isPlatformSuperAdmin) {
-    return {
-      inicio: true,
-      usuarios: true,
-      duenos: true,
-      mascotas: true,
-      especiesRazas: true,
-      servicios: true,
-      profesionales: true,
-      disponibilidad: true,
-      agenda: true,
-      historiaClinica: true,
-      reportes: true,
-    }
+  const actions = buildActionMap(apiPermissions, options)
+  const views = {} as Record<ModuleId, boolean>
+  for (const [id, perms] of Object.entries(actions) as [ModuleId, Record<ModuleAction, boolean>][]) {
+    views[id] = perms.view
   }
-
-  // Por defecto: Inicio visible; el resto (incluido Reportes) sale de la API (false si no hay fila)
-  const views: Record<ModuleId, boolean> = {
-    inicio: true,
-    usuarios: false,
-    duenos: false,
-    mascotas: false,
-    especiesRazas: false,
-    servicios: false,
-    profesionales: false,
-    disponibilidad: false,
-    agenda: false,
-    historiaClinica: false,
-    reportes: false,
-  }
-
-  if (apiPermissions) {
-    for (const [apiName, perm] of Object.entries(apiPermissions)) {
-      const shellId = API_MODULE_TO_SHELL[apiName]
-      if (shellId) views[shellId] = !!perm.canView
-    }
-  }
-
-  // Excepciones UI: rol base, luego usuario (personId/accountId/email)
-  const ui = resolveUiShellOverrides({
-    roleId: options.roleId,
-    personId: options.personId,
-    accountId: options.accountId,
-    email: options.email,
-  })
-  if (ui.reportes) views.reportes = !!ui.reportes.view
-
   return views
 }

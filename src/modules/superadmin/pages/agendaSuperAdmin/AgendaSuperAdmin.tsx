@@ -28,6 +28,10 @@ export interface AgendaSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Permisos de acción desde el shell (legacy: true si no llegan)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -139,6 +143,9 @@ export function AgendaSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule: _canCreateModule,
+  canEditModule,
+  canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -146,6 +153,10 @@ export function AgendaSuperAdmin({
   onMarkAllNotificationsRead,
   onReloadNotifications,
 }: AgendaSuperAdminProps = {}) {
+  // Permisos CRUD del módulo agenda (esta vista no tiene botón crear cita global)
+  const canEdit = canEditModule ? canEditModule('agenda') : true
+  const canDelete = canDeleteModule ? canDeleteModule('agenda') : true
+
   // Navigation & Sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const isSidebarOpen =
@@ -659,22 +670,29 @@ export function AgendaSuperAdmin({
         isPaid={selectedCita ? isCitaPaid(selectedCita.id) : false}
         onClose={() => setIsDetalleModalOpen(false)}
         onCancel={(citaId) => {
+          // Cancelar requiere permiso de borrado
+          if (!canDelete) return
           void handleCancelCita(citaId)
           setIsDetalleModalOpen(false)
         }}
         onReprogramar={(cita) => {
+          // Reprogramar / editar cita
+          if (!canEdit) return
           setEditingCita(cita)
           setIsDrawerOpen(true)
           setIsDetalleModalOpen(false)
         }}
         onRegistrarPago={(citaId) => {
+          if (!canEdit) return
           handleRegisterPayment(citaId)
         }}
         onMarcarAtendida={(citaId) => {
+          if (!canEdit) return
           void handleStartAttention(citaId)
           setIsDetalleModalOpen(false)
         }}
         onMarcarNoAsistio={(citaId) => {
+          if (!canEdit) return
           void handleMarkNoAsistio(citaId).then((ok) => {
             if (ok) setIsDetalleModalOpen(false)
           })
@@ -682,20 +700,22 @@ export function AgendaSuperAdmin({
       />
 
       {/* Drawer para Reprogramar / Editar Cita */}
-      <CitaDrawer
-        isOpen={isDrawerOpen}
-        editingCita={editingCita}
-        profesionalesOpciones={profesionalesOpciones}
-        serviciosOpciones={serviciosOpciones}
-        mascotasOpciones={mascotasOpciones}
-        existingCitas={filteredCitas}
-        defaultProfessionalId={selectedProfessionalId !== 'all' ? selectedProfessionalId : undefined}
-        onClose={() => {
-          setIsDrawerOpen(false)
-          setEditingCita(null)
-        }}
-        onSave={handleSaveCita}
-      />
+      {canEdit && (
+        <CitaDrawer
+          isOpen={isDrawerOpen}
+          editingCita={editingCita}
+          profesionalesOpciones={profesionalesOpciones}
+          serviciosOpciones={serviciosOpciones}
+          mascotasOpciones={mascotasOpciones}
+          existingCitas={filteredCitas}
+          defaultProfessionalId={selectedProfessionalId !== 'all' ? selectedProfessionalId : undefined}
+          onClose={() => {
+            setIsDrawerOpen(false)
+            setEditingCita(null)
+          }}
+          onSave={handleSaveCita}
+        />
+      )}
     </div>
   )
 }

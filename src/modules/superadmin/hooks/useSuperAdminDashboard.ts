@@ -37,6 +37,18 @@ const EMPTY_STATS: DashboardStats = {
   }),
 }
 
+// Catálogos opcionales: Auxiliar con Citas/Mascotas.View no siempre tiene Veterinarios.
+async function settleList<T>(promise: Promise<T[]>): Promise<T[]> {
+  try {
+    return await promise
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
+      return []
+    }
+    throw err
+  }
+}
+
 export function useSuperAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS)
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -60,10 +72,10 @@ export function useSuperAdminDashboard() {
     try {
       const [apiAppointments, veterinarians, pets, clientsPets, species] = await Promise.all([
         fetchAppointments(),
-        fetchVeterinarians(),
-        fetchPets(),
-        fetchClientsPets(),
-        fetchSpecies(),
+        settleList(fetchVeterinarians()),
+        settleList(fetchPets()),
+        settleList(fetchClientsPets()),
+        settleList(fetchSpecies()),
       ])
 
       const speciesById = new Map(species.map((s) => [s.id, s.name]))
@@ -88,14 +100,23 @@ export function useSuperAdminDashboard() {
         })
       })
 
+      // Sin Veterinarios.View: contar profesionales distintos desde las citas del día
+      const activeProfessionals =
+        veterinarians.length > 0
+          ? veterinarians.length
+          : new Set(todayAppointments.map((a) => a.veterinarianId.toLowerCase())).size
+
       setAppointments(mapped)
-      setStats(buildDashboardStats(todayAppointments, veterinarians.length))
+      setStats(buildDashboardStats(todayAppointments, activeProfessionals))
     } catch (err) {
       const raw = err instanceof ApiError ? err.message : 'No se pudo cargar el dashboard.'
+      // 403 de citas sí es un problema real para el resumen; no lo silenciamos.
       const message =
         raw === 'Unexpected error'
           ? 'Error del servidor al cargar el resumen. Si persiste, reinicia el API.'
-          : raw
+          : raw === 'Forbidden' || raw === 'No tienes permisos para realizar esta acción.'
+            ? 'No tienes permiso para ver el resumen de citas.'
+            : raw
       showToast(message)
       setAppointments([])
       setStats(EMPTY_STATS)

@@ -103,6 +103,14 @@ const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
   reportes: { view: false, create: false, edit: false, delete: false },
 }
 
+// Rol vacío seguro cuando /api/Roles responde 403 o la lista aún no cargó
+const EMPTY_ROLE: RoleDefinition = {
+  id: '',
+  name: 'Sin rol',
+  description: 'Sin descripción',
+  permissions: DEFAULT_PERMISSIONS_EMPTY,
+}
+
 function normalizeModuleName(name: string): ModuleId | null {
   const norm = name.trim().toLowerCase()
   if (norm.includes('usuario')) return 'usuarios'
@@ -158,7 +166,10 @@ function formatDate(isoString: string): string {
   })
 }
 
-export function useUserSuperAdmin() {
+export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) {
+  // Solo SuperAdmin de plataforma carga matriz de permisos (Modules / ROLE_PERMISSIONS / USER_PERMISSIONS)
+  const canManagePermissions = options?.canManagePermissions ?? true
+
   const [users, setUsers] = useState<SystemUser[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [roles, setRoles] = useState<RoleDefinition[]>([])
@@ -208,13 +219,19 @@ export function useUserSuperAdmin() {
     setIsLoading(true)
     setLoadError(null)
     try {
+      // Sin canManagePermissions no pedimos Modules / ROLE_PERMISSIONS / USER_PERMISSIONS
+      // (403 ruidosos en consola para Auxiliar/Admin sin Plataforma).
       const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes, specialtiesRes, vetsRes] =
         await Promise.allSettled([
           fetchUsers(),
           fetchRoles(),
-          fetchModules(),
-          fetchAllRolePermissions(),
-          fetchAllUserPermissions(),
+          canManagePermissions ? fetchModules() : Promise.resolve([] as ApiModuleResponse[]),
+          canManagePermissions
+            ? fetchAllRolePermissions()
+            : Promise.resolve([] as ApiRolePermissionResponse[]),
+          canManagePermissions
+            ? fetchAllUserPermissions()
+            : Promise.resolve([] as ApiUserPermissionResponse[]),
           fetchUserAccounts(),
           fetchSpecialties(),
           fetchVeterinarians(),
@@ -223,14 +240,12 @@ export function useUserSuperAdmin() {
       const isExpectedForbidden = (r: PromiseSettledResult<unknown>): boolean =>
         r.status === 'rejected' && r.reason instanceof ApiError && r.reason.status === 403
 
-      // Roles / permisos de rol / permisos de usuario son exclusivos de
-      // SuperAdmin: un 403 ahí (p. ej. para Administrador, que sí puede ver
-      // Usuarios pero no permisos) es el límite de permisos funcionando como
-      // se diseñó, no un error real — no debe mostrarse como advertencia.
-      const concerning = [modulesRes, accountsRes]
+      // 403 esperados fuera de SuperAdmin / Roles / Plataforma / Veterinarios:
+      // no deben mostrarse como error de carga de la pantalla Usuarios.
+      const concerning = [accountsRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
         .concat(
-          [rolesRes, rolePermsRes, userPermsRes].filter(
+          [rolesRes, modulesRes, rolePermsRes, userPermsRes, vetsRes, specialtiesRes].filter(
             (r): r is PromiseRejectedResult => r.status === 'rejected' && !isExpectedForbidden(r),
           ),
         )
@@ -241,9 +256,13 @@ export function useUserSuperAdmin() {
         const msg =
           status === 401
             ? 'Sesión expirada. Cierra sesión e inicia de nuevo.'
-            : first instanceof Error
-              ? first.message
-              : `No se pudo contactar al API (¿está disponible en ${API_BASE_URL}?).`
+            : status === 403
+              ? 'No tienes permiso para ver usuarios.'
+              : first instanceof Error
+                ? first.message === 'Forbidden'
+                  ? 'No tienes permiso para ver usuarios.'
+                  : first.message
+                : `No se pudo contactar al API (¿está disponible en ${API_BASE_URL}?).`
         setLoadError(msg)
         showToast(msg, 'warning')
       } else if (concerning.length > 0) {
@@ -252,12 +271,13 @@ export function useUserSuperAdmin() {
         if (status === 401) {
           showToast('Sesión expirada. Cierra sesión e inicia de nuevo.', 'warning')
         } else {
-          const msg = first instanceof Error ? first.message : 'No se pudieron cargar usuarios y roles.'
+          const raw = first instanceof Error ? first.message : 'No se pudieron cargar usuarios y roles.'
+          const msg = raw === 'Forbidden' ? 'No tienes permisos para parte de esta pantalla.' : raw
           showToast(msg, 'warning')
         }
       }
 
-      const fetchedRoles: ApiRoleResponse[] = rolesRes.status === 'fulfilled' ? rolesRes.value : []
+      let fetchedRoles: ApiRoleResponse[] = rolesRes.status === 'fulfilled' ? rolesRes.value : []
       const fetchedModules: ApiModuleResponse[] = modulesRes.status === 'fulfilled' ? modulesRes.value : []
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
       const fetchedUserPerms: ApiUserPermissionResponse[] = userPermsRes.status === 'fulfilled' ? userPermsRes.value : []
@@ -297,7 +317,7 @@ export function useUserSuperAdmin() {
       })
 
       // Mapear Roles
-      const mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
+      let mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
         const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
         const isClinicAdmin = isClinicAdminRoleName(r.name)
         const isCliente = isClienteRoleName(r.name)
@@ -340,6 +360,25 @@ export function useUserSuperAdmin() {
           permissions: perms,
         }
       })
+
+      // Si /api/Roles falló (403) pero hay usuarios, crear stubs para no romper la ficha
+      if (mappedRoles.length === 0 && fetchedUsers.length > 0) {
+        const seen = new Set<string>()
+        mappedRoles = fetchedUsers
+          .filter((u) => {
+            const key = u.roleId.toLowerCase()
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          })
+          .map((u) => ({
+            id: u.roleId,
+            name: 'Usuario',
+            description: 'Descripción no disponible (sin permiso de Roles).',
+            isSystem: false,
+            permissions: { ...DEFAULT_PERMISSIONS_EMPTY },
+          }))
+      }
 
       // Mapear Usuarios
       const rolesMap = new Map<string, string>()
@@ -440,7 +479,7 @@ export function useUserSuperAdmin() {
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [canManagePermissions, showToast])
 
   useEffect(() => {
     void loadData()
@@ -459,12 +498,7 @@ export function useUserSuperAdmin() {
   // Selected role object
   const selectedRole = useMemo(() => {
     const validRoles = roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))
-    return validRoles.find((r) => r.id === selectedRoleId) || validRoles[0] || roles[0] || {
-      id: '',
-      name: 'Sin Rol',
-      description: '',
-      permissions: DEFAULT_PERMISSIONS_EMPTY,
-    }
+    return validRoles.find((r) => r.id === selectedRoleId) || validRoles[0] || roles[0] || EMPTY_ROLE
   }, [roles, selectedRoleId])
 
   // Selected target user (if permissionTarget.type === 'user')
@@ -473,12 +507,20 @@ export function useUserSuperAdmin() {
     return users.find((u) => u.id === permissionTarget.id) || null
   }, [users, permissionTarget])
 
-  // Base role of the selected target
-  const activeTargetRole = useMemo(() => {
+  // Base role of the selected target (nunca undefined: evita crash en UserInfoCard)
+  const activeTargetRole = useMemo((): RoleDefinition => {
     if (permissionTarget.type === 'user' && selectedTargetUser) {
-      return roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
+      return (
+        roles.find((r) => r.id === selectedTargetUser.roleId) ||
+        roles[0] || {
+          ...EMPTY_ROLE,
+          id: selectedTargetUser.roleId,
+          name: selectedTargetUser.roleName || 'Usuario',
+          description: 'Descripción no disponible (sin permiso de Roles).',
+        }
+      )
     }
-    return roles.find((r) => r.id === permissionTarget.id) || roles[0]
+    return roles.find((r) => r.id === permissionTarget.id) || roles[0] || EMPTY_ROLE
   }, [permissionTarget, selectedTargetUser, roles])
 
   // Active permissions for the Permissions Matrix (merging role + custom user overrides if any)
@@ -767,7 +809,10 @@ export function useUserSuperAdmin() {
             })
           }
         }
-        showToast(`Permisos personalizados para "${selectedTargetUser.name}" guardados correctamente`)
+        showToast(
+          `Permisos de "${selectedTargetUser.name}" guardados. Aplican al renovar sesión (cerrar sesión y volver a entrar).`,
+          'warning',
+        )
       } else {
         const currentRole = roles.find((r) => r.id === permissionTarget.id)
         if (currentRole?.isSystem || (currentRole && isPlatformSuperAdminRoleName(currentRole.name))) {
@@ -835,7 +880,10 @@ export function useUserSuperAdmin() {
             }
           }
         }
-        showToast(`Permisos para el rol "${selectedRole.name}" guardados correctamente`)
+        showToast(
+          `Permisos del rol "${selectedRole.name}" guardados. Aplican cuando el usuario renueve sesión (cerrar sesión y volver a entrar).`,
+          'warning',
+        )
       }
       await loadData()
     } catch (err) {

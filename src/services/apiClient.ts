@@ -199,6 +199,14 @@ export async function parseErrorMessage(response: Response): Promise<{ message: 
       message = code
     }
 
+    // ProblemDetails en inglés (Forbidden/Unauthorized) → mensaje usable en UI
+    if (response.status === 403 && (!message || /^forbidden$/i.test(message))) {
+      return { message: 'No tienes permisos para realizar esta acción.', violations, code }
+    }
+    if (response.status === 401 && (!message || /^unauthorized$/i.test(message))) {
+      return { message: 'No autorizado o sesión expirada.', violations, code }
+    }
+
     return {
       message: message || `Error en la solicitud (${response.status})`,
       violations,

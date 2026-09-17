@@ -20,6 +20,10 @@ export interface DashboardSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Props del shell (aceptadas aunque esta vista no las use aún)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -39,6 +43,9 @@ export function DashboardSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule: _canCreateModule,
+  canEditModule: _canEditModule,
+  canDeleteModule: _canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,

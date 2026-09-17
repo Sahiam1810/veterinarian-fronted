@@ -1,5 +1,6 @@
 export { LoginPage } from './pages'
-export { useAuth, useLogin } from './hooks'
+export { useAuth, useLogin, useCurrentPermissions } from './hooks'
+export type { PermissionsLoadStatus } from './hooks'
 export {
   loginRequest,
   getStoredUser,

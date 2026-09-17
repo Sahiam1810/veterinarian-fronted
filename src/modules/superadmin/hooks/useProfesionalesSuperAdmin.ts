@@ -136,11 +136,16 @@ export function useProfesionalesSuperAdmin() {
 
       if (results[0].status === 'rejected') {
         const reason = results[0].reason
-        const message =
-          reason instanceof ApiError
-            ? reason.message
-            : 'No se pudieron cargar los veterinarios.'
-        showToast(message)
+        // 403: sin Veterinarios.View — no es error de pantalla si el usuario no tiene ese permiso
+        if (!(reason instanceof ApiError && (reason.status === 403 || reason.status === 401))) {
+          const message =
+            reason instanceof ApiError
+              ? reason.message === 'Forbidden'
+                ? 'No tienes permiso para ver profesionales.'
+                : reason.message
+              : 'No se pudieron cargar los veterinarios.'
+          showToast(message)
+        }
       }
 
       setSpecialties(specialtyList.map((s) => ({ id: s.id, name: s.name })))

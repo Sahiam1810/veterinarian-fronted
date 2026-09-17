@@ -56,6 +56,9 @@ export interface MascotasSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -479,6 +482,9 @@ export function MascotasSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule,
+  canEditModule,
+  canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -492,6 +498,15 @@ export function MascotasSuperAdmin({
   const [pendingDeleteMascota, setPendingDeleteMascota] = useState<SuperAdminMascota | null>(null)
   const [pendingDeleteDueno, setPendingDeleteDueno] = useState<SuperAdminDueno | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Acciones efectivas por módulo (fail-open solo si no llega el helper = SuperAdmin legacy)
+  const canCreateMascota = canCreateModule ? canCreateModule('mascotas') : true
+  const canEditMascota = canEditModule ? canEditModule('mascotas') : true
+  const canDeleteMascota = canDeleteModule ? canDeleteModule('mascotas') : true
+  const canViewDuenos = canViewModule ? canViewModule('duenos') : true
+  const canCreateDueno = canCreateModule ? canCreateModule('duenos') : true
+  const canEditDueno = canEditModule ? canEditModule('duenos') : true
+  const canDeleteDueno = canDeleteModule ? canDeleteModule('duenos') : true
 
 
   const {
@@ -537,6 +552,13 @@ export function MascotasSuperAdmin({
     activeNotification,
     showToast,
   } = useMascotasSuperAdmin()
+
+  // Si no tiene Clientes.View, no puede quedarse en la pestaña Dueños
+  useEffect(() => {
+    if (!canViewDuenos && activeTab === 'duenos') {
+      setActiveTab('mascotas')
+    }
+  }, [canViewDuenos, activeTab, setActiveTab])
 
   const isSidebarOpen =
     externalIsSidebarOpen !== undefined ? externalIsSidebarOpen : internalIsSidebarOpen
@@ -626,17 +648,19 @@ export function MascotasSuperAdmin({
                 Mascotas
               </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('duenos')}
-                className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
-                  activeTab === 'duenos'
-                    ? 'text-brand font-bold after:content-[\'\'] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
-                    : 'text-sage hover:text-brand'
-                }`}
-              >
-                Dueños
-              </button>
+              {canViewDuenos && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('duenos')}
+                  className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
+                    activeTab === 'duenos'
+                      ? 'text-brand font-bold after:content-[\'\'] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
+                      : 'text-sage hover:text-brand'
+                  }`}
+                >
+                  Dueños
+                </button>
+              )}
             </div>
           </div>
 
@@ -712,14 +736,16 @@ export function MascotasSuperAdmin({
                 </div>
 
                 {/* Botón + Registrar mascota */}
-                <button
-                  type="button"
-                  onClick={openCreateMascota}
-                  className="bg-terracotta hover:bg-[#A34E35] text-white inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer shrink-0 active:translate-y-0.5"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  <span>Registrar mascota</span>
-                </button>
+                {canCreateMascota && (
+                  <button
+                    type="button"
+                    onClick={openCreateMascota}
+                    className="bg-terracotta hover:bg-[#A34E35] text-white inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer shrink-0 active:translate-y-0.5"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    <span>Registrar mascota</span>
+                  </button>
+                )}
               </div>
 
               {/* Tabla de Mascotas */}
@@ -856,26 +882,30 @@ export function MascotasSuperAdmin({
                                   <EyeIcon className="w-3.5 h-3.5" />
                                   <span className="hidden xl:inline">Ver</span>
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => openEditMascota(m)}
-                                  className={actionBtnClass}
-                                  title="Editar mascota (PUT /api/Pets)"
-                                  aria-label={`Editar ${m.name}`}
-                                >
-                                  <EditIcon className="w-3.5 h-3.5" />
-                                  <span className="hidden xl:inline">Editar</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setPendingDeleteMascota(m)}
-                                  className={actionDangerBtnClass}
-                                  title="Eliminar mascota (DELETE /api/Pets)"
-                                  aria-label={`Eliminar ${m.name}`}
-                                >
-                                  <TrashIcon className="w-3.5 h-3.5" />
-                                  <span className="hidden xl:inline">Eliminar</span>
-                                </button>
+                                {canEditMascota && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditMascota(m)}
+                                    className={actionBtnClass}
+                                    title="Editar mascota (PUT /api/Pets)"
+                                    aria-label={`Editar ${m.name}`}
+                                  >
+                                    <EditIcon className="w-3.5 h-3.5" />
+                                    <span className="hidden xl:inline">Editar</span>
+                                  </button>
+                                )}
+                                {canDeleteMascota && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingDeleteMascota(m)}
+                                    className={actionDangerBtnClass}
+                                    title="Eliminar mascota (DELETE /api/Pets)"
+                                    aria-label={`Eliminar ${m.name}`}
+                                  >
+                                    <TrashIcon className="w-3.5 h-3.5" />
+                                    <span className="hidden xl:inline">Eliminar</span>
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -936,7 +966,7 @@ export function MascotasSuperAdmin({
           {/* ================================================================= */}
           {/* TAB 2: DUEÑOS                                                     */}
           {/* ================================================================= */}
-          {activeTab === 'duenos' && (
+          {activeTab === 'duenos' && canViewDuenos && (
             <DuenosTablePanel
               duenos={paginatedDuenos}
               duenoFilters={duenoFilters}
@@ -951,6 +981,9 @@ export function MascotasSuperAdmin({
               onToggleStatus={toggleDuenoStatus}
               onDelete={(d) => setPendingDeleteDueno(d)}
               onCreate={openCreateDueno}
+              canCreate={canCreateDueno}
+              canEdit={canEditDueno}
+              canDelete={canDeleteDueno}
             />
           )}
         </main>

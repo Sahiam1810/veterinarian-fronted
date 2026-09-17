@@ -730,7 +730,7 @@ function RoleDrawer({
             >
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name} ({r.description})
+                  {r.name} ({r.description || 'Sin descripción'})
                 </option>
               ))}
             </select>
@@ -1002,7 +1002,8 @@ function PermissionMatrixPanel({
    ============================================================================ */
 interface UserInfoPanelProps {
   user: SystemUser
-  role: RoleDefinition
+  // Puede faltar si /api/Roles respondió 403 (p. ej. Auxiliar solo con Usuarios.View)
+  role?: RoleDefinition | null
   specialties: { id: string; name: string }[]
   vetProfile?: { specialtyId: string; licenseNumber: string } | null
   onOpenEditModal: (user: SystemUser) => void
@@ -1205,7 +1206,7 @@ function UserInfoPanel({
             <div className="flex flex-col py-2 border-b border-border-tan/30 gap-1.5">
               <span className="text-sage font-medium">Descripción del Rol:</span>
               <p className="text-charcoal text-xs sm:text-sm leading-relaxed bg-bone/50 p-3 rounded-xl border border-border-tan/50">
-                {role.description || 'Rol de acceso estándar en el sistema.'}
+                {role?.description || 'Rol de acceso estándar en el sistema.'}
               </p>
             </div>
 
@@ -1549,7 +1550,7 @@ function ByRoleModeView({
                         {role.name}
                       </h3>
                       <p className="text-[11px] text-sage mt-0.5 truncate leading-none">
-                        {role.description}
+                        {role.description || 'Sin descripción'}
                       </p>
                       <p className="text-[10px] text-sage/80 mt-1">
                         {roleUsersCount} usuario{roleUsersCount === 1 ? '' : 's'}
@@ -1600,6 +1601,10 @@ export interface UserSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Props de acción del shell (no confundir con permisos de la matriz de usuarios)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   // Solo el SuperAdmin persistido puede editar la matriz y las excepciones.
   canManagePermissions?: boolean
   notifications?: NotificacionSuperAdmin[]
@@ -1624,6 +1629,9 @@ export function UserSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule: shellCanViewModule,
+  canCreateModule: _shellCanCreateModule,
+  canEditModule: _shellCanEditModule,
+  canDeleteModule: _shellCanDeleteModule,
   canManagePermissions = true,
   notifications,
   isLoadingNotifications,
@@ -1676,7 +1684,7 @@ export function UserSuperAdmin({
     isRoleModalOpen,
     openCreateRoleModal,
     closeRoleModal,
-  } = useUserSuperAdmin()
+  } = useUserSuperAdmin({ canManagePermissions })
 
   const requestDeleteUser = (userId: string) => {
     const user = filteredUsers.find((u) => u.id === userId) || users.find((u) => u.id === userId)

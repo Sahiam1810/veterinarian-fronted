@@ -31,6 +31,10 @@ export interface ServiciosSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Permisos de acción desde el shell (legacy: true si no llegan)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -50,6 +54,9 @@ export function ServiciosSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule,
+  canEditModule,
+  canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -57,6 +64,11 @@ export function ServiciosSuperAdmin({
   onMarkAllNotificationsRead,
   onReloadNotifications,
 }: ServiciosSuperAdminProps = {}) {
+  // Permisos CRUD del módulo servicios
+  const canCreate = canCreateModule ? canCreateModule('servicios') : true
+  const canEdit = canEditModule ? canEditModule('servicios') : true
+  const canDelete = canDeleteModule ? canDeleteModule('servicios') : true
+
   // Navigation & Sidebar state
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const isSidebarOpen =
@@ -175,17 +187,19 @@ export function ServiciosSuperAdmin({
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setEditingServicio(null)
-                setIsDrawerOpen(true)
-              }}
-              className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer active:translate-y-0.5 shrink-0 self-start sm:self-auto"
-            >
-              <PlusIcon className="w-4 h-4 text-white" />
-              <span>Nuevo servicio</span>
-            </button>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingServicio(null)
+                  setIsDrawerOpen(true)
+                }}
+                className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer active:translate-y-0.5 shrink-0 self-start sm:self-auto"
+              >
+                <PlusIcon className="w-4 h-4 text-white" />
+                <span>Nuevo servicio</span>
+              </button>
+            )}
           </div>
 
           {/* Contenedor Unificado: Filtros + Tabla */}
@@ -297,35 +311,39 @@ export function ServiciosSuperAdmin({
                         {/* Acciones */}
                         <td className="py-3.5 px-6 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingServicio(srv)
-                                setIsDrawerOpen(true)
-                              }}
-                              className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
-                              aria-label={`Editar ${srv.name}`}
-                            >
-                              <EditIcon className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => requestDeleteServicio(srv)}
-                              disabled={srv.status !== 'Inactivo'}
-                              title={
-                                srv.status !== 'Inactivo'
-                                  ? 'Desactiva el servicio antes de eliminarlo'
-                                  : `Eliminar ${srv.name}`
-                              }
-                              className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-sage disabled:hover:bg-transparent disabled:hover:border-transparent"
-                              aria-label={
-                                srv.status !== 'Inactivo'
-                                  ? `Desactiva ${srv.name} antes de eliminarlo`
-                                  : `Eliminar ${srv.name}`
-                              }
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingServicio(srv)
+                                  setIsDrawerOpen(true)
+                                }}
+                                className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
+                                aria-label={`Editar ${srv.name}`}
+                              >
+                                <EditIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => requestDeleteServicio(srv)}
+                                disabled={srv.status !== 'Inactivo'}
+                                title={
+                                  srv.status !== 'Inactivo'
+                                    ? 'Desactiva el servicio antes de eliminarlo'
+                                    : `Eliminar ${srv.name}`
+                                }
+                                className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-sage disabled:hover:bg-transparent disabled:hover:border-transparent"
+                                aria-label={
+                                  srv.status !== 'Inactivo'
+                                    ? `Desactiva ${srv.name} antes de eliminarlo`
+                                    : `Eliminar ${srv.name}`
+                                }
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

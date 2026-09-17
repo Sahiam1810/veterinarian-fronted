@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { ApiNotificationResponse } from '../services/superAdminNotificationsService'
-import { fetchNotificationsByUser, updateNotification } from '../services'
+import { fetchNotificationsByUser, markNotificationAsRead } from '../services'
 import { mapNotificationToNotificacion, NOTIFICATION_READ_STATUS } from '../utils/superAdminApiMappers'
 import { ApiError } from '@/services'
 import {
@@ -28,6 +28,12 @@ export function useNotificationsSuperAdmin(userId: string | undefined) {
       )
       setRecords(sorted)
     } catch (err) {
+      // 403/401: sin bandeja propia o sesión inválida — campana vacía, sin toast ruidoso
+      if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
+        setRecords([])
+        setError(null)
+        return
+      }
       const message = err instanceof ApiError ? err.message : 'No se pudieron cargar las notificaciones.'
       setError(message)
     } finally {
@@ -73,14 +79,7 @@ export function useNotificationsSuperAdmin(userId: string | undefined) {
       const record = records.find((r) => r.id === id)
       if (!record || record.status === NOTIFICATION_READ_STATUS) return
       try {
-        await updateNotification(id, {
-          userId: record.userId,
-          appointmentId: record.appointmentId,
-          message: record.message,
-          sentAt: record.sentAt,
-          status: NOTIFICATION_READ_STATUS,
-          type: record.type,
-        })
+        await markNotificationAsRead(id)
         setRecords((curr) => curr.map((r) => (r.id === id ? { ...r, status: NOTIFICATION_READ_STATUS } : r)))
       } catch {
         // Silencioso: marcar como leída es una acción secundaria, no bloquea la vista.
@@ -93,18 +92,7 @@ export function useNotificationsSuperAdmin(userId: string | undefined) {
     const unread = records.filter((r) => r.status !== NOTIFICATION_READ_STATUS)
     if (unread.length === 0) return
     try {
-      await Promise.all(
-        unread.map((record) =>
-          updateNotification(record.id, {
-            userId: record.userId,
-            appointmentId: record.appointmentId,
-            message: record.message,
-            sentAt: record.sentAt,
-            status: NOTIFICATION_READ_STATUS,
-            type: record.type,
-          })
-        )
-      )
+      await Promise.all(unread.map((record) => markNotificationAsRead(record.id)))
       setRecords((curr) => curr.map((r) => ({ ...r, status: NOTIFICATION_READ_STATUS })))
     } catch {
       // Silencioso: si falla, el usuario puede reintentar abriendo el panel de nuevo.

@@ -136,6 +136,19 @@ export function useAgendaSuperAdmin() {
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
+      // Catálogos opcionales: Auxiliar con Citas.View no siempre tiene Usuarios/Veterinarios.
+      // No deben tumbar la agenda si Appointments ya cargó.
+      const settleList = async <T,>(promise: Promise<T[]>): Promise<T[]> => {
+        try {
+          return await promise
+        } catch (err) {
+          if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
+            return []
+          }
+          throw err
+        }
+      }
+
       const [
         apiAppointments,
         veterinarians,
@@ -149,11 +162,11 @@ export function useAgendaSuperAdmin() {
         statuses,
       ] = await Promise.all([
         fetchAppointments(),
-        fetchVeterinarians(),
+        settleList(fetchVeterinarians()),
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
-        fetchUsers(),
+        settleList(fetchUsers()),
         fetchSpecies(),
         fetchRaces(),
         fetchServices(),
@@ -180,18 +193,34 @@ export function useAgendaSuperAdmin() {
           petName: pet?.name,
           petBreed: pet ? racesById.get(pet.raceId) : undefined,
           species: pet ? speciesById.get(pet.speciesId) : undefined,
-          ownerName: ownerUser?.fullName,
+          // Preferir fullName del cliente (Clientes.View) antes que /api/Users
+          ownerName: client?.fullName ?? ownerUser?.fullName,
           professionalName: vet?.userFullName ?? undefined,
         })
       })
 
       setCitas(mapped)
-      setProfesionalesOpciones(
-        veterinarians.map((v) => ({
-          id: v.id,
-          name: v.userFullName ?? 'Profesional',
-        })),
-      )
+
+      // Filtro de profesionales: catálogo si hay permiso; si no, IDs únicos de las citas
+      if (veterinarians.length > 0) {
+        setProfesionalesOpciones(
+          veterinarians.map((v) => ({
+            id: v.id,
+            name: v.userFullName ?? 'Profesional',
+          })),
+        )
+      } else {
+        const fromCitas = new Map<string, string>()
+        for (const apt of apiAppointments) {
+          if (!fromCitas.has(apt.veterinarianId)) {
+            fromCitas.set(apt.veterinarianId, 'Profesional')
+          }
+        }
+        setProfesionalesOpciones(
+          [...fromCitas.entries()].map(([id, name]) => ({ id, name })),
+        )
+      }
+
       setServiciosOpciones(services.map((s) => ({ id: s.id, name: s.name })))
       setMascotasOpciones(
         clientsPets.map((cp) => {
@@ -204,7 +233,7 @@ export function useAgendaSuperAdmin() {
             petName: pet?.name ?? 'Mascota',
             breed: pet ? racesById.get(pet.raceId) ?? '' : '',
             species: pet ? speciesById.get(pet.speciesId) ?? '' : '',
-            ownerName: owner?.fullName ?? 'Dueño',
+            ownerName: client?.fullName ?? owner?.fullName ?? 'Dueño',
             clientId: cp.clientId,
             ownerPhone: client?.phoneNumber ?? undefined,
           }
@@ -213,7 +242,14 @@ export function useAgendaSuperAdmin() {
 
       setSelectedCitaId((prev) => prev ?? mapped[0]?.id ?? null)
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'No se pudieron cargar las citas.'
+      const message =
+        err instanceof ApiError
+          ? err.status === 403
+            ? 'No tienes permisos para ver la agenda.'
+            : err.message === 'Forbidden'
+              ? 'No tienes permisos para ver la agenda.'
+              : err.message
+          : 'No se pudieron cargar las citas.'
       showToast(message)
     } finally {
       setIsLoading(false)

@@ -31,6 +31,10 @@ export interface DiagnosticosSuperAdminProps {
   userRole?: string
   onLogout?: () => void
   canViewModule?: (moduleId: ModuleId) => boolean
+  // Permisos de acción desde el shell (legacy: true si no llegan)
+  canCreateModule?: (moduleId: ModuleId) => boolean
+  canEditModule?: (moduleId: ModuleId) => boolean
+  canDeleteModule?: (moduleId: ModuleId) => boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -50,6 +54,9 @@ export function DiagnosticosSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
+  canCreateModule,
+  canEditModule,
+  canDeleteModule,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -57,6 +64,11 @@ export function DiagnosticosSuperAdmin({
   onMarkAllNotificationsRead,
   onReloadNotifications,
 }: DiagnosticosSuperAdminProps = {}) {
+  // Permisos CRUD vía historiaClinica (catálogo de diagnósticos)
+  const canCreate = canCreateModule ? canCreateModule('historiaClinica') : true
+  const canEdit = canEditModule ? canEditModule('historiaClinica') : true
+  const canDelete = canDeleteModule ? canDeleteModule('historiaClinica') : true
+
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
   const isSidebarOpen =
     externalIsSidebarOpen !== undefined ? externalIsSidebarOpen : internalIsSidebarOpen
@@ -161,17 +173,19 @@ export function DiagnosticosSuperAdmin({
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setEditingDiagnostico(null)
-                setIsDrawerOpen(true)
-              }}
-              className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer active:translate-y-0.5 shrink-0 self-start sm:self-auto"
-            >
-              <PlusIcon className="w-4 h-4 text-white" />
-              <span>Nuevo diagnóstico</span>
-            </button>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDiagnostico(null)
+                  setIsDrawerOpen(true)
+                }}
+                className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer active:translate-y-0.5 shrink-0 self-start sm:self-auto"
+              >
+                <PlusIcon className="w-4 h-4 text-white" />
+                <span>Nuevo diagnóstico</span>
+              </button>
+            )}
           </div>
 
           <div className="relative z-10 bg-white border border-border-tan rounded-2xl shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden animate-pop-in stagger-2 flex-1 flex flex-col">
@@ -267,35 +281,39 @@ export function DiagnosticosSuperAdmin({
                         </td>
                         <td className="py-3.5 px-6 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingDiagnostico(item)
-                                setIsDrawerOpen(true)
-                              }}
-                              className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
-                              aria-label={`Editar ${item.name}`}
-                            >
-                              <EditIcon className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => requestDeactivate(item)}
-                              disabled={item.status === 'Inactivo'}
-                              title={
-                                item.status === 'Inactivo'
-                                  ? 'Ya está inactivo'
-                                  : `Desactivar ${item.name}`
-                              }
-                              className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-sage disabled:hover:bg-transparent disabled:hover:border-transparent"
-                              aria-label={
-                                item.status === 'Inactivo'
-                                  ? `${item.name} ya está inactivo`
-                                  : `Desactivar ${item.name}`
-                              }
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingDiagnostico(item)
+                                  setIsDrawerOpen(true)
+                                }}
+                                className="p-1.5 text-sage hover:text-brand hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer"
+                                aria-label={`Editar ${item.name}`}
+                              >
+                                <EditIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => requestDeactivate(item)}
+                                disabled={item.status === 'Inactivo'}
+                                title={
+                                  item.status === 'Inactivo'
+                                    ? 'Ya está inactivo'
+                                    : `Desactivar ${item.name}`
+                                }
+                                className="p-1.5 text-sage hover:text-danger hover:bg-white rounded-lg border border-transparent hover:border-border-tan transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-sage disabled:hover:bg-transparent disabled:hover:border-transparent"
+                                aria-label={
+                                  item.status === 'Inactivo'
+                                    ? `${item.name} ya está inactivo`
+                                    : `Desactivar ${item.name}`
+                                }
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
