@@ -34,6 +34,10 @@ interface CitaAccionesModalProps {
   ) => Promise<void>
   onViewHistoriaClinica?: (petId: string) => void
   isUpdatingStatus?: boolean
+  canRegisterClinical?: boolean
+  canViewClinicalHistory?: boolean
+  canEditAppointmentStatus?: boolean
+  canCancelAppointment?: boolean
 }
 
 export function CitaAccionesModal({
@@ -44,6 +48,10 @@ export function CitaAccionesModal({
   onChangeStatus,
   onViewHistoriaClinica,
   isUpdatingStatus = false,
+  canRegisterClinical = false,
+  canViewClinicalHistory = false,
+  canEditAppointmentStatus = false,
+  canCancelAppointment = false,
 }: CitaAccionesModalProps) {
   const [cancellationComment, setCancellationComment] = useState('')
   const [showCancelPrompt, setShowCancelPrompt] = useState(false)
@@ -221,6 +229,7 @@ export function CitaAccionesModal({
 
             {/* Acción principal: Atender y Registrar Consulta */}
             <div className="space-y-2">
+              {canRegisterClinical && (
               <button
                 type="button"
                 onClick={() => onAttendAndRegister(appointment)}
@@ -230,8 +239,9 @@ export function CitaAccionesModal({
                 <PawIcon className="w-4 h-4" />
                 <span>Atender y Registrar Consulta</span>
               </button>
+              )}
 
-              {appointment.petId && onViewHistoriaClinica && (
+              {canViewClinicalHistory && appointment.petId && onViewHistoriaClinica && (
                 <button
                   type="button"
                   onClick={() => {
@@ -247,12 +257,15 @@ export function CitaAccionesModal({
             </div>
 
             {/* Sección de cambio de estado */}
-            <div className="pt-3 border-t border-border-tan/70 space-y-2">
+            <div className={`pt-3 border-t border-border-tan/70 space-y-2 ${
+              canEditAppointmentStatus || canCancelAppointment ? '' : 'hidden'
+            }`}>
               <p className="text-[11px] font-bold uppercase tracking-wide text-sage">
                 Cambiar Estado de la Cita:
               </p>
 
               <div className="grid grid-cols-3 gap-2">
+                {canEditAppointmentStatus && (
                 <button
                   type="button"
                   disabled={isUpdatingStatus || isTerminal}
@@ -265,7 +278,9 @@ export function CitaAccionesModal({
                 >
                   {isAtendida ? '✓ Atendida' : 'Atendida'}
                 </button>
+                )}
 
+                {canEditAppointmentStatus && (
                 <button
                   type="button"
                   disabled={isUpdatingStatus || isTerminal}
@@ -278,7 +293,9 @@ export function CitaAccionesModal({
                 >
                   {isNoAsistio ? '✓ No asistió' : 'No asistió'}
                 </button>
+                )}
 
+                {canCancelAppointment && (
                 <button
                   type="button"
                   disabled={isUpdatingStatus || isTerminal}
@@ -291,6 +308,7 @@ export function CitaAccionesModal({
                 >
                   {isCancelada ? '✓ Cancelada' : 'Cancelar'}
                 </button>
+                )}
               </div>
 
               {/* Prompt de cancelación con motivo opcional */}

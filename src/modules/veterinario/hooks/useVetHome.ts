@@ -1,6 +1,12 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
-import { isNavPermissionGranted, getAccessToken, getStoredUser } from '@/modules/auth'
+import {
+  fetchMyModulePermissions,
+  getAccessToken,
+  getStoredUser,
+  isNavPermissionGranted,
+  type MyPermissionsMap,
+} from '@/modules/auth'
 import type {
   HistoriaClinicaPayload,
   VetDayAppointment,
@@ -8,7 +14,7 @@ import type {
 } from '../types'
 import {
   fetchVetHomeBundle,
-  fetchVetNavPermissions,
+  resolveVetNavPermissionsFromModules,
   fetchStatusAppointments,
   updateAppointmentStatus,
   findStatusId,
@@ -24,19 +30,22 @@ import {
   isRealtimeNotificationUnread,
   type RealtimeNotificationPayload,
 } from '@/global/notifications'
+import { getVetModulePermission } from '../utils/vetModulePermissions'
 
-const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'duenos', 'perfil'])
+const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'duenos', 'reportes', 'perfil'])
 
 const GATED_ROUTES: Record<string, NavPermissionKey> = {
   mascotas: 'vet.mascotas',
   agenda: 'vet.agenda',
   duenos: 'vet.duenos',
+  reportes: 'vet.reportes',
 }
 
 export function useVetHome() {
   const [dashboard, setDashboard] = useState<VetHomeDashboard | null>(null)
   const [grantedPermissions, setGrantedPermissions] =
     useState<GrantedPermissions>(null)
+  const [modulePermissions, setModulePermissions] = useState<MyPermissionsMap>({})
   const [rawNotifications, setRawNotifications] = useState<ApiNotification[]>([])
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -64,14 +73,14 @@ export function useVetHome() {
     setIsLoading(true)
     setError(null)
     try {
-      const [home, permissions] = await Promise.all([
-        fetchVetHomeBundle(),
-        fetchVetNavPermissions(),
-      ])
+      const permissions = await fetchMyModulePermissions().catch(() => ({} as MyPermissionsMap))
+      const home = await fetchVetHomeBundle(permissions)
+      const navPermissions = resolveVetNavPermissionsFromModules(permissions)
       setDashboard(home.dashboard)
       setRawNotifications(home.notifications)
       setUnreadNotificationsCount(home.unreadNotificationsCount)
-      setGrantedPermissions(permissions)
+      setGrantedPermissions(navPermissions)
+      setModulePermissions(permissions)
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : 'No se pudo cargar el punto de inicio'
@@ -212,6 +221,16 @@ export function useVetHome() {
     statusKeyword: 'atendida' | 'cancelada' | 'no_asistio',
     comment?: string | null,
   ) => {
+    const appointmentPerm = getVetModulePermission(modulePermissions, 'Citas')
+    if (statusKeyword === 'cancelada' && !appointmentPerm.canDelete) {
+      showToast('No tienes permiso para cancelar citas.')
+      return
+    }
+    if (statusKeyword !== 'cancelada' && !appointmentPerm.canEdit) {
+      showToast('No tienes permiso para cambiar el estado de citas.')
+      return
+    }
+
     setIsUpdatingStatus(true)
     try {
       const statuses = await fetchStatusAppointments()
@@ -238,12 +257,24 @@ export function useVetHome() {
   }
 
   const handleAttendAndRegister = (appointment: CitaActionTarget) => {
+    const clinicalPerm = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
+    if (!clinicalPerm.canCreate) {
+      showToast('No tienes permiso para registrar atenciones clínicas.')
+      return
+    }
+
     setSelectedAppointment(appointment)
     setIsActionModalOpen(false)
     setIsRegistrarOpen(true)
   }
 
   const handleViewHistoria = async (petId: string) => {
+    const clinicalPerm = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
+    if (!clinicalPerm.canView) {
+      showToast('No tienes permiso para ver historias clínicas.')
+      return
+    }
+
     try {
       const data = await fetchHistoriaClinica(petId)
       if (!data) {
@@ -305,6 +336,7 @@ export function useVetHome() {
   return {
     dashboard,
     grantedPermissions,
+    modulePermissions,
     notifications,
     onMarkNotificationRead: handleMarkNotificationRead,
     unreadNotificationsCount,

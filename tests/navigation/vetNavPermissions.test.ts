@@ -115,6 +115,27 @@ test('fetchVetNavPermissions filters out vet.mascotas when Mascotas canView is f
   assert.equal(itemIds.includes('agenda'), true)
 })
 
+test('fetchVetNavPermissions shows vet.reportes only when Reportes canView is true', async () => {
+  globalThis.fetch = async () => {
+    return Response.json({
+      permissions: {
+        Mascotas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+        Citas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+        Reportes: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      },
+    })
+  }
+
+  const permissions = await fetchVetNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(permissions.includes('vet.reportes'), true)
+
+  const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
+  const itemIds = visibleItems.map((item) => item.id)
+  assert.equal(itemIds.includes('reportes'), true)
+})
+
 test('fetchVetNavPermissions falls back to VET_ALWAYS_VISIBLE_NAV on network/auth error', async () => {
   globalThis.fetch = async () => {
     return new Response('Internal Server Error', { status: 500 })

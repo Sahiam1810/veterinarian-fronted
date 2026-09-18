@@ -14,7 +14,9 @@ import { AgendaPage } from '../agenda'
 import { MascotasPage } from '../mascotas'
 import { DuenosPage } from '../duenos'
 import { PerfilPage } from '../perfil'
+import { ReportesPage } from '../reportes'
 import { useVetHome } from '../../hooks'
+import { getVetModulePermission } from '../../utils/vetModulePermissions'
 
 interface PuntoInicioProps {
   userName?: string
@@ -31,6 +33,7 @@ export function PuntoInicio({
   const {
     dashboard,
     grantedPermissions,
+    modulePermissions,
     notifications,
     onMarkNotificationRead,
     unreadNotificationsCount,
@@ -62,8 +65,11 @@ export function PuntoInicio({
   const isAgenda = activeRoute === 'agenda'
   const isMascotas = activeRoute === 'mascotas'
   const isDuenos = activeRoute === 'duenos'
+  const isReportes = activeRoute === 'reportes'
   const isPerfil = activeRoute === 'perfil'
   const fillHeight = isAgenda || isMascotas || isDuenos
+  const appointmentPermissions = getVetModulePermission(modulePermissions, 'Citas')
+  const clinicalPermissions = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
   // Perfil ya no fuerza alto completo: se alinea al contenido
 
   return (
@@ -140,12 +146,15 @@ export function PuntoInicio({
 
           {isDuenos && <DuenosPage onNotice={showToast} />}
 
+          {isReportes && <ReportesPage onNotice={showToast} />}
+
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
           {activeRoute !== 'inicio' &&
             activeRoute !== 'agenda' &&
             activeRoute !== 'mascotas' &&
             activeRoute !== 'duenos' &&
+            activeRoute !== 'reportes' &&
             activeRoute !== 'perfil' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">
@@ -167,6 +176,10 @@ export function PuntoInicio({
             void handleViewHistoria(petId)
           }}
           isUpdatingStatus={isUpdatingStatus}
+          canRegisterClinical={clinicalPermissions.canCreate}
+          canViewClinicalHistory={clinicalPermissions.canView}
+          canEditAppointmentStatus={appointmentPermissions.canEdit}
+          canCancelAppointment={appointmentPermissions.canDelete}
         />
       )}
 

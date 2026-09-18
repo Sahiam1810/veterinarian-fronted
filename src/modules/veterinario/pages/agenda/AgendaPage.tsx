@@ -6,6 +6,7 @@ import {
   HistoriaClinicaModal,
 } from '../../components'
 import { useVetAgenda } from '../../hooks'
+import { getVetModulePermission } from '../../utils/vetModulePermissions'
 
 interface AgendaPageProps {
   onNotice?: (message: string) => void
@@ -21,6 +22,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     isLoading,
     error,
     notice,
+    modulePermissions,
     selectedAppointment,
     isActionModalOpen,
     isRegistrarOpen,
@@ -62,6 +64,9 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
 
   if (!agenda) return null
 
+  const appointmentPermissions = getVetModulePermission(modulePermissions, 'Citas')
+  const clinicalPermissions = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
+
   return (
     <div className="h-full min-h-0 min-w-0 overflow-hidden relative">
       {isLoading ? (
@@ -99,6 +104,10 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
             void handleViewHistoria(petId)
           }}
           isUpdatingStatus={isUpdatingStatus}
+          canRegisterClinical={clinicalPermissions.canCreate}
+          canViewClinicalHistory={clinicalPermissions.canView}
+          canEditAppointmentStatus={appointmentPermissions.canEdit}
+          canCancelAppointment={appointmentPermissions.canDelete}
         />
       )}
 

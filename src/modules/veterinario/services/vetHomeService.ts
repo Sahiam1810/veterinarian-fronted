@@ -16,6 +16,7 @@ import {
   buildVetHomeDashboard,
   findVeterinarianForProfile,
 } from '../utils/buildVetHomeDashboard'
+import type { MyPermissionsMap } from '@/modules/auth'
 
 export interface VetHomeLoadResult {
   dashboard: VetHomeDashboard
@@ -59,7 +60,9 @@ export async function fetchVetHomeDashboard(): Promise<VetHomeDashboard> {
   return result.dashboard
 }
 
-export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
+export async function fetchVetHomeBundle(
+  permissions?: MyPermissionsMap,
+): Promise<VetHomeLoadResult> {
   const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
 
   // Solo "appointments" es indispensable para Inicio. Los demás son catálogos
@@ -67,7 +70,8 @@ export async function fetchVetHomeBundle(): Promise<VetHomeLoadResult> {
   // etiquetas: si el SuperAdmin le quita a este usuario el permiso de Ver de
   // Especies y Razas, Clientes o Profesionales, esas etiquetas quedan vacías
   // en vez de tumbar toda la pantalla de Inicio (antes usaba Promise.all).
-  const appointments = await fetchMyVetAppointments()
+  const canViewCitas = permissions ? Boolean(permissions.Citas?.canView) : true
+  const appointments = canViewCitas ? await fetchMyVetAppointments() : []
 
   const [
     veterinarians,

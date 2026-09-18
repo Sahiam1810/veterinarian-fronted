@@ -41,6 +41,15 @@ export const VET_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    id: 'reportes',
+    label: 'Reportes',
+    permissionKey: 'vet.reportes',
+    iconKey: 'reports',
+    kind: 'link',
+    order: 80,
+    placement: 'main',
+  },
+  {
     id: 'perfil',
     label: 'Perfil',
     permissionKey: 'vet.perfil',

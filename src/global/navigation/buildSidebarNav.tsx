@@ -34,6 +34,8 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
       return <OwnersIcon className={className} />
     case 'chat':
       return <ChatIcon className={className} />
+    case 'reports':
+      return <SettingsIcon className={className} />
     default:
       return null
   }

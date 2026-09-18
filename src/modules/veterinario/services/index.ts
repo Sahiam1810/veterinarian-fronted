@@ -4,7 +4,10 @@ export {
   markVetNotificationAsRead,
   mapVetNotification,
 } from './vetHomeService'
-export { fetchVetNavPermissions } from './vetNavPermissionsService'
+export {
+  fetchVetNavPermissions,
+  resolveVetNavPermissionsFromModules,
+} from './vetNavPermissionsService'
 export {
   fetchVetAgendaWeek,
   fetchStatusAppointments,

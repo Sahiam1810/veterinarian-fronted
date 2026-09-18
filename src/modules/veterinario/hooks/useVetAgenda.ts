@@ -15,6 +15,11 @@ import {
 } from '../services'
 import type { CitaActionTarget } from '../components'
 import { shiftAgendaAnchor, toDateKey } from '../utils/buildVetAgenda'
+import {
+  fetchMyModulePermissions,
+  type MyPermissionsMap,
+} from '@/modules/auth'
+import { getVetModulePermission } from '../utils/vetModulePermissions'
 
 const ALL_STATUS_FILTERS: AgendaStatusFilter[] = [
   'AGENDADA',
@@ -41,6 +46,7 @@ export function useVetAgenda(enabled: boolean) {
   const [historiaModalTarget, setHistoriaModalTarget] = useState<HistoriaClinicaPayload | null>(null)
   const [isHistoriaModalOpen, setIsHistoriaModalOpen] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [modulePermissions, setModulePermissions] = useState<MyPermissionsMap>({})
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -70,6 +76,13 @@ export function useVetAgenda(enabled: boolean) {
     if (!enabled) return
     void loadAgenda()
   }, [enabled, loadAgenda])
+
+  useEffect(() => {
+    if (!enabled) return
+    void fetchMyModulePermissions()
+      .then(setModulePermissions)
+      .catch(() => setModulePermissions({}))
+  }, [enabled])
 
   const visibleAgenda = useMemo(() => {
     if (!agenda) return null
@@ -152,6 +165,16 @@ export function useVetAgenda(enabled: boolean) {
     statusKeyword: 'atendida' | 'cancelada' | 'no_asistio',
     comment?: string | null,
   ) => {
+    const appointmentPerm = getVetModulePermission(modulePermissions, 'Citas')
+    if (statusKeyword === 'cancelada' && !appointmentPerm.canDelete) {
+      showNotice('No tienes permiso para cancelar citas.')
+      return
+    }
+    if (statusKeyword !== 'cancelada' && !appointmentPerm.canEdit) {
+      showNotice('No tienes permiso para cambiar el estado de citas.')
+      return
+    }
+
     setIsUpdatingStatus(true)
     try {
       const statuses = await fetchStatusAppointments()
@@ -188,6 +211,12 @@ export function useVetAgenda(enabled: boolean) {
   }
 
   const handleAttendAndRegister = (appointment: CitaActionTarget) => {
+    const clinicalPerm = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
+    if (!clinicalPerm.canCreate) {
+      showNotice('No tienes permiso para registrar atenciones clínicas.')
+      return
+    }
+
     setSelectedAppointment(appointment)
     setIsActionModalOpen(false)
     setIsRegistrarOpen(true)
@@ -198,6 +227,12 @@ export function useVetAgenda(enabled: boolean) {
   }
 
   const handleViewHistoria = async (petId: string) => {
+    const clinicalPerm = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
+    if (!clinicalPerm.canView) {
+      showNotice('No tienes permiso para ver historias clínicas.')
+      return
+    }
+
     try {
       const data = await fetchHistoriaClinica(petId)
       if (!data) {
@@ -248,6 +283,7 @@ export function useVetAgenda(enabled: boolean) {
     isLoading,
     error,
     notice,
+    modulePermissions,
     anchorKey: toDateKey(anchorDate),
     selectedAppointment,
     isActionModalOpen,
