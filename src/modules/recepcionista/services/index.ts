@@ -1,4 +1,5 @@
 export * from './recepHomeService.ts'
+export * from './recepNavPermissionsService.ts'
 export * from './recepProfileService.ts'
 export * from './recepMascotasService.ts'
 export * from './recepAgendaService.ts'

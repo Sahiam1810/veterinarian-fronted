@@ -9,6 +9,7 @@ import type { RecepQuickActionId } from '../types'
 
 interface RecepQuickActionsProps {
   onAction?: (actionId: RecepQuickActionId) => void
+  allowedActions?: RecepQuickActionId[]
 }
 
 const ACTIONS: {
@@ -37,10 +38,19 @@ const ACTIONS: {
   },
 ]
 
-export function RecepQuickActions({ onAction }: RecepQuickActionsProps) {
+export function RecepQuickActions({
+  onAction,
+  allowedActions,
+}: RecepQuickActionsProps) {
+  const visibleActions = allowedActions
+    ? ACTIONS.filter((action) => allowedActions.includes(action.id))
+    : ACTIONS
+
+  if (visibleActions.length === 0) return null
+
   return (
     <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-      {ACTIONS.map((action) => (
+      {visibleActions.map((action) => (
         <button
           key={action.id}
           type="button"

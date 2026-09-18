@@ -14,6 +14,8 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     isLoading,
     error,
     notice,
+    canCreate,
+    canEdit,
     timeSlots,
     isLoadingSlots,
     matchedOwners,
@@ -96,15 +98,15 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onDateChange={(value) => updateForm('dateValue', value)}
         onTimeSlotChange={(slotId) => updateForm('timeSlotId', slotId)}
         onNotesChange={(value) => updateForm('notes', value)}
-        onConfirm={handleConfirm}
+        onConfirm={canCreate ? handleConfirm : undefined}
         onCancel={handleCancel}
         onOpenDayPanel={handleOpenDayPanel}
         onCloseDayPanel={handleCloseDayPanel}
         onChangeDayPanelDate={handleChangeDayPanelDate}
-        onEditAppointment={handleEditAppointment}
-        onMarkNoAsistio={handleMarkNoAsistio}
-        onCheckIn={handleCheckIn}
-        onRegistrarPago={handleRegisterPayment}
+        onEditAppointment={canEdit ? handleEditAppointment : undefined}
+        onMarkNoAsistio={canEdit ? handleMarkNoAsistio : undefined}
+        onCheckIn={canEdit ? handleCheckIn : undefined}
+        onRegistrarPago={canEdit ? handleRegisterPayment : undefined}
       />
     </div>
   )

@@ -26,6 +26,8 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
     isLoading,
     error,
     notice,
+    canSendMessages,
+    canResolveEscalations,
     handleSelect,
     handleCloseDetail,
     reloadDirectory,
@@ -95,6 +97,8 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
         onCloseDetail={handleCloseDetail}
         onResolved={handleResolved}
         onNotice={onNotice}
+        canSendMessages={canSendMessages}
+        canResolveEscalations={canResolveEscalations}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
         onGoToPage={handleGoToPage}

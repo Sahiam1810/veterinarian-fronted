@@ -19,6 +19,8 @@ import {
 interface UseRecepConversacionDetalleOptions {
   conversationId: string | null
   escalationId: string | null
+  canSendMessages?: boolean
+  canResolveEscalations?: boolean
   onResolved?: (escalationId: string) => void
   onNotice?: (message: string) => void
 }
@@ -26,6 +28,8 @@ interface UseRecepConversacionDetalleOptions {
 export function useRecepConversacionDetalle({
   conversationId,
   escalationId,
+  canSendMessages = false,
+  canResolveEscalations = false,
   onResolved,
   onNotice,
 }: UseRecepConversacionDetalleOptions) {
@@ -118,6 +122,10 @@ export function useRecepConversacionDetalle({
     async (textToSend?: string) => {
       const content = (textToSend !== undefined ? textToSend : inputContent).trim()
       if (!content || !conversationId) return
+      if (!canSendMessages) {
+        onNotice?.('No tienes permiso para enviar mensajes.')
+        return
+      }
 
       const tempId = `temp-${Date.now()}`
       const now = new Date()
@@ -170,12 +178,16 @@ export function useRecepConversacionDetalle({
         }
       }
     },
-    [conversationId, inputContent, onNotice],
+    [canSendMessages, conversationId, inputContent, onNotice],
   )
 
   const handleResolve = useCallback(
     async (notes?: string) => {
       if (!escalationId) return
+      if (!canResolveEscalations) {
+        onNotice?.('No tienes permiso para resolver escalamientos.')
+        return
+      }
 
       setIsResolving(true)
       try {
@@ -199,7 +211,7 @@ export function useRecepConversacionDetalle({
         }
       }
     },
-    [escalationId, onNotice, onResolved],
+    [canResolveEscalations, escalationId, onNotice, onResolved],
   )
 
   return {

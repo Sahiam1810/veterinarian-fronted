@@ -39,14 +39,16 @@ export function RecepMascotasToolbar({
           <span>Filtros</span>
         </button>
 
-        <button
-          type="button"
-          onClick={onNewPet}
-          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-3.5 py-2.5 sm:py-3 text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-[0_2px_12px_rgba(35,78,70,0.12)]"
-        >
-          <PlusIcon className="w-4 h-4" />
-          <span>Nueva Mascota</span>
-        </button>
+        {onNewPet && (
+          <button
+            type="button"
+            onClick={onNewPet}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-3.5 py-2.5 sm:py-3 text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-[0_2px_12px_rgba(35,78,70,0.12)]"
+          >
+            <PlusIcon className="w-4 h-4" />
+            <span>Nueva Mascota</span>
+          </button>
+        )}
       </div>
     </div>
   )

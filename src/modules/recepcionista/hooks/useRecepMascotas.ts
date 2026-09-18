@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
+import { fetchMyModulePermissions, type MyPermissionsMap } from '@/modules/auth'
 import type {
   RecepMascotaDetail,
   RecepMascotaFormData,
@@ -13,11 +14,14 @@ import {
 } from '../services'
 import type { RecepMascotaCatalogOption, RecepMascotaOwnerOption } from '../components/RecepMascotaModal'
 import { mapRecepUiGenderToApi } from '../utils/recepPetMapping'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
 
 const ITEMS_PER_PAGE = 8
 
 export function useRecepMascotas(enabled: boolean) {
   const [directory, setDirectory] = useState<RecepMascotasDirectoryPayload | null>(null)
+  const [modulePermissions, setModulePermissions] =
+    useState<MyPermissionsMap | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +45,24 @@ export function useRecepMascotas(enabled: boolean) {
     }, 3000)
   }, [])
 
+  const permissionHelpers = useMemo(
+    () => createRecepPermissionHelpers(modulePermissions),
+    [modulePermissions],
+  )
+
+  const canCreate = permissionHelpers.canCreateModule('mascotas')
+  const canEdit = permissionHelpers.canEditModule('mascotas')
+  const canDelete = permissionHelpers.canDeleteModule('mascotas')
+
+  const loadPermissions = useCallback(async () => {
+    try {
+      const permissions = await fetchMyModulePermissions()
+      setModulePermissions(permissions)
+    } catch {
+      setModulePermissions({})
+    }
+  }, [])
+
   const loadDirectory = useCallback(async () => {
     setIsLoading(true)
     setError(null)
@@ -58,7 +80,8 @@ export function useRecepMascotas(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
     void loadDirectory()
-  }, [enabled, loadDirectory])
+    void loadPermissions()
+  }, [enabled, loadDirectory, loadPermissions])
 
   useEffect(() => {
     if (!enabled) setSelectedId(null)
@@ -116,12 +139,20 @@ export function useRecepMascotas(enabled: boolean) {
   }
 
   const openCreatePet = async () => {
+    if (!canCreate) {
+      showNotice('No tienes permiso para crear mascotas.')
+      return
+    }
     setEditingPet(null)
     setIsModalOpen(true)
     await loadFormCatalogs()
   }
 
   const openEditPet = async (petId: string) => {
+    if (!canEdit) {
+      showNotice('No tienes permiso para editar mascotas.')
+      return
+    }
     const raw = directory?.rawById[petId]
     if (!raw) {
       showNotice('No se encontró la mascota a editar.')
@@ -138,6 +169,15 @@ export function useRecepMascotas(enabled: boolean) {
   }
 
   const handleSavePet = async (data: RecepMascotaFormData) => {
+    if (editingPet && !canEdit) {
+      showNotice('No tienes permiso para editar mascotas.')
+      throw new Error('No tienes permiso para editar mascotas.')
+    }
+    if (!editingPet && !canCreate) {
+      showNotice('No tienes permiso para crear mascotas.')
+      throw new Error('No tienes permiso para crear mascotas.')
+    }
+
     setIsSubmitting(true)
     try {
       if (editingPet) {
@@ -199,6 +239,9 @@ export function useRecepMascotas(enabled: boolean) {
     editingPet,
     error,
     notice,
+    canCreate,
+    canEdit,
+    canDelete,
     reloadDirectory: loadDirectory,
     handleSelect,
     handleCloseDetail,

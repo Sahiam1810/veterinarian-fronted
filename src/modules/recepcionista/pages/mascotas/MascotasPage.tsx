@@ -26,6 +26,8 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
     editingPet,
     error,
     notice,
+    canCreate,
+    canEdit,
     handleSelect,
     handleCloseDetail,
     handleOpenFilters,
@@ -74,10 +76,10 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         totalCount={totalCount}
         onSearchChange={setSearch}
         onOpenFilters={handleOpenFilters}
-        onNewPet={handleNewPet}
+        onNewPet={canCreate ? handleNewPet : undefined}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
-        onEditMascota={openEditPet}
+        onEditMascota={canEdit ? openEditPet : undefined}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
       />

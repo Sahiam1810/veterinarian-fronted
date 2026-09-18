@@ -1,21 +1,21 @@
 import { apiClient } from '../../../services/apiClient.ts'
-import type { RecepDayAppointment, RecepHomeDashboard, RecepAppointmentStatus } from '../types'
-import {
-  fetchMyModulePermissions,
-  filterNavKeysByModuleView,
-  RECEP_ALWAYS_VISIBLE_NAV,
-  RECEP_MODULE_TO_NAV,
-} from '../../auth/services/myPermissionsService.ts'
-import { RECEP_DEFAULT_PERMISSIONS } from '../../../global/navigation/roles/recepcionista.ts'
+import type {
+  RecepAppointmentStatus,
+  RecepDayAppointment,
+  RecepHomeDashboard,
+} from '../types'
 import type { CurrentProfileResponse } from '@/modules/auth/types'
 import type { ApiAppointmentResponse } from '@/modules/superadmin/services/superAdminAppointmentsService'
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
 import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
 import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
-
 import type { ApiServiceResponse } from '@/modules/superadmin/services/superAdminVetServicesService'
 import type { ApiVeterinarianResponse } from '@/modules/superadmin/services/superAdminVeterinariansService'
-import type { ApiStatusAppointmentResponse, ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
+import type {
+  ApiRaceResponse,
+  ApiSpeciesResponse,
+  ApiStatusAppointmentResponse,
+} from '@/modules/superadmin/services/superAdminCatalogService'
 
 function formatTodayDateLabel(): string {
   const now = new Date()
@@ -47,10 +47,19 @@ function mapStatus(rawStatus?: string | null): RecepAppointmentStatus {
   if (normalized.includes('CONFIRM')) {
     return 'EN ESPERA'
   }
-  if (normalized.includes('CONSULT') || normalized.includes('CURSO') || normalized.includes('PROCES') || normalized.includes('PROGRESO')) {
+  if (
+    normalized.includes('CONSULT') ||
+    normalized.includes('CURSO') ||
+    normalized.includes('PROCES') ||
+    normalized.includes('PROGRESO')
+  ) {
     return 'EN CONSULTORIO'
   }
-  if (normalized.includes('ATEND') || normalized.includes('COMPLET') || normalized.includes('FINALIZ')) {
+  if (
+    normalized.includes('ATEND') ||
+    normalized.includes('COMPLET') ||
+    normalized.includes('FINALIZ')
+  ) {
     return 'ATENDIDO'
   }
   if (normalized.includes('CANCEL') || normalized.includes('ANUL')) {
@@ -59,7 +68,7 @@ function mapStatus(rawStatus?: string | null): RecepAppointmentStatus {
   return 'AGENDADO'
 }
 
-// Carga el resumen de recepción conectando perfil y métricas reales del día
+// Carga el resumen de recepcion conectando perfil y metricas reales del dia.
 export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
   const [
     profileRes,
@@ -100,53 +109,70 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
   const petsMap = new Map(pets.map((p) => [p.id.toLowerCase(), p]))
   const clientsMap = new Map(clients.map((c) => [c.id.toLowerCase(), c]))
   const servicesMap = new Map(services.map((s) => [s.id.toLowerCase(), s.name]))
-  const vetsMap = new Map(vets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']))
-  const statusesMap = new Map(statuses.map((st) => [st.id.toLowerCase(), st.name]))
+  const vetsMap = new Map(
+    vets.map((v) => [v.id.toLowerCase(), v.userFullName || 'Veterinario']),
+  )
+  const statusesMap = new Map(
+    statuses.map((st) => [st.id.toLowerCase(), st.name]),
+  )
   const speciesMap = new Map(species.map((s) => [s.id.toLowerCase(), s.name]))
   const racesMap = new Map(races.map((r) => [r.id.toLowerCase(), r.name]))
 
-  // Obtener fecha de hoy en formato YYYY-MM-DD
   const now = new Date()
-  const todayPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const todayPrefix = `${now.getFullYear()}-${String(
+    now.getMonth() + 1,
+  ).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
-  // Filtrar citas del día -- si no hay ninguna hoy, la vista debe quedar vacía,
-  // no rellenarse con citas de otras fechas presentadas como si fueran de hoy.
-  const todayAppointments = appointments.filter((apt) => apt.scheduledStart?.startsWith(todayPrefix))
+  const todayAppointments = appointments.filter((apt) =>
+    apt.scheduledStart?.startsWith(todayPrefix),
+  )
 
   let pendientes = 0
   let mascotasAtendidas = 0
   let canceladas = 0
 
-  const mappedAppointments: RecepDayAppointment[] = todayAppointments.map((apt) => {
-    const cp = cpMap.get(apt.clientPetId?.toLowerCase())
-    const pet = cp ? petsMap.get(cp.petId?.toLowerCase()) : undefined
-    const client = cp ? clientsMap.get(cp.clientId?.toLowerCase()) : undefined
+  const mappedAppointments: RecepDayAppointment[] = todayAppointments.map(
+    (apt) => {
+      const cp = cpMap.get(apt.clientPetId?.toLowerCase())
+      const pet = cp ? petsMap.get(cp.petId?.toLowerCase()) : undefined
+      const client = cp ? clientsMap.get(cp.clientId?.toLowerCase()) : undefined
 
-    const petName = pet?.name || 'Paciente'
-    const speciesName = pet ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Mascota' : 'Mascota'
-    const raceName = pet ? racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo' : 'Mestizo'
-    const ownerName = client?.fullName || 'Propietario'
-    const professionalName = vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Dr. Roberto Silva'
-    const service = apt.serviceName || servicesMap.get(apt.serviceId?.toLowerCase()) || 'Consulta General'
-    const statusName = apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
-    const status = mapStatus(statusName)
+      const petName = pet?.name || 'Paciente'
+      const speciesName = pet
+        ? speciesMap.get(pet.speciesId?.toLowerCase()) || 'Mascota'
+        : 'Mascota'
+      const raceName = pet
+        ? racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo'
+        : 'Mestizo'
+      const ownerName = client?.fullName || 'Propietario'
+      const professionalName =
+        vetsMap.get(apt.veterinarianId?.toLowerCase()) || 'Dr. Roberto Silva'
+      const service =
+        apt.serviceName ||
+        servicesMap.get(apt.serviceId?.toLowerCase()) ||
+        'Consulta General'
+      const statusName =
+        apt.statusName || statusesMap.get(apt.statusId?.toLowerCase())
+      const status = mapStatus(statusName)
 
-    if (status === 'AGENDADO' || status === 'EN ESPERA') pendientes++
-    else if (status === 'ATENDIDO' || status === 'EN CONSULTORIO') mascotasAtendidas++
-    else if (status === 'CANCELADO') canceladas++
+      if (status === 'AGENDADO' || status === 'EN ESPERA') pendientes++
+      else if (status === 'ATENDIDO' || status === 'EN CONSULTORIO') {
+        mascotasAtendidas++
+      } else if (status === 'CANCELADO') canceladas++
 
-    return {
-      id: apt.id,
-      time: formatTimeString(apt.scheduledStart),
-      petName,
-      petPhotoUrl: null,
-      speciesBreed: `${speciesName} / ${raceName}`,
-      ownerName,
-      professionalName,
-      service,
-      status,
-    }
-  })
+      return {
+        id: apt.id,
+        time: formatTimeString(apt.scheduledStart),
+        petName,
+        petPhotoUrl: null,
+        speciesBreed: `${speciesName} / ${raceName}`,
+        ownerName,
+        professionalName,
+        service,
+        status,
+      }
+    },
+  )
 
   return {
     profile: {
@@ -162,23 +188,5 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
     },
     appointments: mappedAppointments,
     totalAppointmentsToday: mappedAppointments.length,
-  }
-}
-
-// Permisos de menú del recepcionista desde GET /api/auth/permissions
-export async function fetchRecepNavPermissions() {
-  try {
-    const permissions = await fetchMyModulePermissions()
-    return filterNavKeysByModuleView(
-      RECEP_DEFAULT_PERMISSIONS,
-      permissions,
-      RECEP_MODULE_TO_NAV,
-      RECEP_ALWAYS_VISIBLE_NAV,
-    )
-  } catch (err) {
-    console.error('No se pudieron cargar permisos de navegación del recepcionista', err)
-    return RECEP_ALWAYS_VISIBLE_NAV.filter((key) =>
-      RECEP_DEFAULT_PERMISSIONS.includes(key),
-    )
   }
 }

@@ -3,6 +3,10 @@ import test, { afterEach, beforeEach } from 'node:test'
 
 import { fetchVetNavPermissions } from '../../src/modules/veterinario/services/vetNavPermissionsService.ts'
 import {
+  fetchRecepNavPermissions,
+  resolveRecepNavPermissionsFromModules,
+} from '../../src/modules/recepcionista/services/recepNavPermissionsService.ts'
+import {
   filterNavKeysByModuleView,
   isNavPermissionGranted,
   RECEP_ALWAYS_VISIBLE_NAV,
@@ -239,4 +243,128 @@ test('filterNavKeysByModuleView oculta Asesor si falta Chat o Escalamientos', ()
     RECEP_ALWAYS_VISIBLE_NAV,
   )
   assert.equal(withoutChat.includes('recep.conversaciones'), false)
+})
+
+test('resolveRecepNavPermissionsFromModules muestra modulos por canView', () => {
+  const permissions = resolveRecepNavPermissionsFromModules({
+    Clientes: {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    },
+    Mascotas: {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    },
+    Citas: {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    },
+    Chat: {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    },
+    Escalamientos: {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    },
+  })
+
+  assert.deepEqual(permissions, [
+    'recep.inicio',
+    'recep.duenos',
+    'recep.conversaciones',
+    'recep.mascotas',
+    'recep.agenda',
+    'recep.perfil',
+  ])
+})
+
+test('resolveRecepNavPermissionsFromModules ignora Create/Edit/Delete sin View', () => {
+  const permissions = resolveRecepNavPermissionsFromModules({
+    Clientes: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: true,
+    },
+    Mascotas: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: true,
+    },
+    Citas: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: true,
+    },
+    Chat: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: true,
+    },
+    Escalamientos: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: true,
+    },
+  })
+
+  assert.deepEqual(permissions, ['recep.inicio', 'recep.perfil'])
+})
+
+test('resolveRecepNavPermissionsFromModules oculta Asesor si falta Chat o Escalamientos View', () => {
+  const permissions = resolveRecepNavPermissionsFromModules({
+    Chat: {
+      canView: true,
+      canCreate: true,
+      canEdit: false,
+      canDelete: false,
+    },
+    Escalamientos: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: false,
+    },
+  })
+
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(permissions.includes('recep.conversaciones'), false)
+  assert.equal(permissions.includes('recep.inicio'), true)
+  assert.equal(permissions.includes('recep.perfil'), true)
+})
+
+test('fetchRecepNavPermissions falls back to Inicio and Perfil on network/auth error', async () => {
+  globalThis.fetch = async () => {
+    return new Response('Internal Server Error', { status: 500 })
+  }
+
+  const permissions = await fetchRecepNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.deepEqual(
+    permissions,
+    RECEP_ALWAYS_VISIBLE_NAV.filter((k) =>
+      RECEP_DEFAULT_PERMISSIONS.includes(k),
+    ),
+  )
+  assert.equal(permissions.includes('recep.agenda'), false)
+  assert.equal(permissions.includes('recep.mascotas'), false)
+  assert.equal(permissions.includes('recep.duenos'), false)
+  assert.equal(permissions.includes('recep.conversaciones'), false)
 })

@@ -28,6 +28,8 @@ interface RecepEscalacionesViewProps {
   onCloseDetail: () => void
   onResolved?: (escalationId: string) => void
   onNotice?: (message: string) => void
+  canSendMessages?: boolean
+  canResolveEscalations?: boolean
   onPrevPage?: () => void
   onNextPage?: () => void
   onGoToPage?: (page: number) => void
@@ -54,6 +56,8 @@ export function RecepEscalacionesView({
   onCloseDetail,
   onResolved,
   onNotice,
+  canSendMessages = false,
+  canResolveEscalations = false,
   onPrevPage,
   onNextPage,
   onGoToPage,
@@ -100,6 +104,8 @@ export function RecepEscalacionesView({
         onClose={onCloseDetail}
         onResolved={onResolved}
         onNotice={onNotice}
+        canSendMessages={canSendMessages}
+        canResolveEscalations={canResolveEscalations}
       />
     </>
   )

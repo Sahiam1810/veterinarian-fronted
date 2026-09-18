@@ -25,6 +25,8 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
     editingOwner,
     error,
     notice,
+    canCreate,
+    canEdit,
     handleSelect,
     handleCloseDetail,
     openCreateOwner,
@@ -74,8 +76,8 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
         totalCount={totalCount}
         onSearchChange={setSearch}
         onStatusFilterChange={setStatusFilter}
-        onNewOwner={openCreateOwner}
-        onEditOwner={openEditOwner}
+        onNewOwner={canCreate ? openCreateOwner : undefined}
+        onEditOwner={canEdit ? openEditOwner : undefined}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
         onPrevPage={handlePrevPage}

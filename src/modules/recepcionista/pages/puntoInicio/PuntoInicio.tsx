@@ -30,6 +30,7 @@ export function PuntoInicio({
   const {
     dashboard,
     grantedPermissions,
+    allowedQuickActions,
     unreadEscalationsCount,
     isLoading,
     error,
@@ -111,7 +112,10 @@ export function PuntoInicio({
                   </ViewPopup>
 
                   <ViewPopup delayMs={120}>
-                    <RecepQuickActions onAction={handleQuickAction} />
+                    <RecepQuickActions
+                      allowedActions={allowedQuickActions}
+                      onAction={handleQuickAction}
+                    />
                   </ViewPopup>
 
                   <ViewPopup delayMs={160}>

@@ -11,6 +11,8 @@ interface RecepConversacionDetalleModalProps {
   onClose: () => void
   onResolved?: (escalationId: string) => void
   onNotice?: (message: string) => void
+  canSendMessages?: boolean
+  canResolveEscalations?: boolean
 }
 
 export function RecepConversacionDetalleModal({
@@ -19,6 +21,8 @@ export function RecepConversacionDetalleModal({
   onClose,
   onResolved,
   onNotice,
+  canSendMessages = false,
+  canResolveEscalations = false,
 }: RecepConversacionDetalleModalProps) {
   const [isResolveModalOpen, setIsResolveModalOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -37,6 +41,8 @@ export function RecepConversacionDetalleModal({
   } = useRecepConversacionDetalle({
     conversationId: conversation?.conversationId ?? null,
     escalationId: conversation?.escalationId ?? null,
+    canSendMessages,
+    canResolveEscalations,
     onResolved: (escId) => {
       setIsResolveModalOpen(false)
       onResolved?.(escId)
@@ -57,7 +63,7 @@ export function RecepConversacionDetalleModal({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (inputContent.trim() && !isSending) {
+      if (inputContent.trim() && !isSending && canSendMessages) {
         void sendMessage()
       }
     }
@@ -65,7 +71,7 @@ export function RecepConversacionDetalleModal({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (inputContent.trim() && !isSending) {
+    if (inputContent.trim() && !isSending && canSendMessages) {
       void sendMessage()
     }
   }
@@ -131,17 +137,19 @@ export function RecepConversacionDetalleModal({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsResolveModalOpen(true)}
-                disabled={isResolving}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer shadow-xs disabled:opacity-50"
-                title="Marcar caso como resuelto"
-              >
-                <CheckIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Marcar como resuelta</span>
-                <span className="sm:hidden">Resolver</span>
-              </button>
+              {canResolveEscalations && (
+                <button
+                  type="button"
+                  onClick={() => setIsResolveModalOpen(true)}
+                  disabled={isResolving}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer shadow-xs disabled:opacity-50"
+                  title="Marcar caso como resuelto"
+                >
+                  <CheckIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Marcar como resuelta</span>
+                  <span className="sm:hidden">Resolver</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -206,6 +214,7 @@ export function RecepConversacionDetalleModal({
           </div>
 
           {/* INPUT FOOTER */}
+          {canSendMessages && (
           <footer className="shrink-0 p-3 sm:p-4 border-t border-border-tan bg-white">
             <form onSubmit={handleFormSubmit} className="flex items-end gap-2 sm:gap-3">
               <div className="flex-1 relative min-w-0">
@@ -239,12 +248,13 @@ export function RecepConversacionDetalleModal({
               </button>
             </form>
           </footer>
+          )}
         </div>
       </div>
 
       {/* MODAL DE RESOLUCIÓN */}
       <RecepResolverEscalacionModal
-        isOpen={isResolveModalOpen}
+        isOpen={isResolveModalOpen && canResolveEscalations}
         clientName={conversation.clientName}
         isResolving={isResolving}
         onClose={() => setIsResolveModalOpen(false)}

@@ -15,7 +15,7 @@ const FILTERS: { id: RecepDuenoStatusFilter; label: string }[] = [
   { id: 'inactivos', label: 'Inactivos' },
 ]
 
-// Filtros de estado + búsqueda + CTA nuevo dueño
+// Filtros de estado, busqueda y CTA de nuevo dueno.
 export function RecepDuenosToolbar({
   search,
   statusFilter,
@@ -46,14 +46,16 @@ export function RecepDuenosToolbar({
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={onNewOwner}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-3.5 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer shrink-0"
-        >
-          <PlusIcon className="w-4 h-4" />
-          <span>Nuevo Dueño</span>
-        </button>
+        {onNewOwner && (
+          <button
+            type="button"
+            onClick={onNewOwner}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-3.5 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer shrink-0"
+          >
+            <PlusIcon className="w-4 h-4" />
+            <span>Nuevo Dueño</span>
+          </button>
+        )}
       </div>
 
       <label className="relative w-full min-w-0">

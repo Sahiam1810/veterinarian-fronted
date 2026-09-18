@@ -20,9 +20,9 @@ interface RecepDayCalendarPanelProps {
   isCitaPaid?: (appointmentId: string) => boolean
   onClose: () => void
   onChangeDate: (dateValue: string) => void
-  onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
-  onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
-  onCheckIn: (appointment: RecepAgendaDayAppointment) => void
+  onEditAppointment?: (appointment: RecepAgendaDayAppointment) => void
+  onMarkNoAsistio?: (appointment: RecepAgendaDayAppointment) => void
+  onCheckIn?: (appointment: RecepAgendaDayAppointment) => void
   onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
 }
 
@@ -312,9 +312,17 @@ export function RecepDayCalendarPanel({
                 appointment={selected}
                 isPaid={isCitaPaid ? isCitaPaid(selected.id) : false}
                 onClear={() => setSelectedId(null)}
-                onEdit={() => onEditAppointment(selected)}
-                onMarkNoAsistio={() => onMarkNoAsistio(selected)}
-                onCheckIn={() => onCheckIn(selected)}
+                onEdit={
+                  onEditAppointment
+                    ? () => onEditAppointment(selected)
+                    : undefined
+                }
+                onMarkNoAsistio={
+                  onMarkNoAsistio
+                    ? () => onMarkNoAsistio(selected)
+                    : undefined
+                }
+                onCheckIn={onCheckIn ? () => onCheckIn(selected) : undefined}
                 onRegistrarPago={() => onRegistrarPago?.(selected)}
               />
             )}
@@ -337,9 +345,9 @@ function AppointmentDetail({
   appointment: RecepAgendaDayAppointment
   isPaid?: boolean
   onClear: () => void
-  onEdit: () => void
-  onMarkNoAsistio: () => void
-  onCheckIn: () => void
+  onEdit?: () => void
+  onMarkNoAsistio?: () => void
+  onCheckIn?: () => void
   onRegistrarPago?: () => void
 }) {
   const canEdit = isRecepAppointmentEditable(appointment.status)
@@ -399,11 +407,11 @@ function AppointmentDetail({
         </div>
       )}
 
-      {canEdit ? (
+      {canEdit && (onEdit || onMarkNoAsistio || onCheckIn || onRegistrarPago) ? (
         <div className="mt-auto flex flex-col gap-2">
-          {canArrive && (
+          {canArrive && onCheckIn && (
             <>
-              {!isPaid ? (
+              {!isPaid && onRegistrarPago ? (
                 <button
                   type="button"
                   onClick={onRegistrarPago}
@@ -412,12 +420,12 @@ function AppointmentDetail({
                 >
                   <span>Registrar Pago</span>
                 </button>
-              ) : (
+              ) : isPaid ? (
                 <div className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-mint-soft text-brand text-xs font-bold border border-brand/20 shadow-2xs">
                   <span className="text-xs">✓</span>
                   <span>Pago Registrado</span>
                 </div>
-              )}
+              ) : null}
 
               <button
                 type="button"
@@ -440,13 +448,14 @@ function AppointmentDetail({
           )}
           <button
             type="button"
+            hidden={!onEdit}
             onClick={onEdit}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
           >
             <EditIcon className="w-4 h-4" />
             <span>Editar cita</span>
           </button>
-          {canNoShow && (
+          {canNoShow && onMarkNoAsistio && (
             <button
               type="button"
               onClick={onMarkNoAsistio}

@@ -1,15 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GrantedPermissions, NavPermissionKey } from '@/global/navigation'
-import { isNavPermissionGranted } from '@/modules/auth'
+import {
+  fetchMyModulePermissions,
+  isNavPermissionGranted,
+  type MyPermissionsMap,
+} from '@/modules/auth'
 import type {
   RecepHomeDashboard,
   RecepQuickActionId,
 } from '../types'
 import {
   fetchRecepHomeDashboard,
-  fetchRecepNavPermissions,
   fetchEscalatedConversations,
+  resolveRecepNavPermissionsFromModules,
 } from '../services'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
 import {
   useChatEscalationsRealtime,
   type ChatEscalationCreatedPayload,
@@ -34,6 +39,8 @@ const GATED_ROUTES: Record<string, NavPermissionKey> = {
 
 export function useRecepHome(onLogout?: () => void) {
   const [dashboard, setDashboard] = useState<RecepHomeDashboard | null>(null)
+  const [modulePermissions, setModulePermissions] =
+    useState<MyPermissionsMap | null>(null)
   const [grantedPermissions, setGrantedPermissions] =
     useState<GrantedPermissions>(null)
   const [unreadEscalationsCount, setUnreadEscalationsCount] = useState<number>(0)
@@ -50,6 +57,25 @@ export function useRecepHome(onLogout?: () => void) {
     }, 3500)
   }, [])
 
+  const permissionHelpers = useMemo(
+    () => createRecepPermissionHelpers(modulePermissions),
+    [modulePermissions],
+  )
+
+  const allowedQuickActions = useMemo<RecepQuickActionId[]>(() => {
+    const actions: RecepQuickActionId[] = []
+    if (permissionHelpers.canCreateModule('agenda')) {
+      actions.push('agendar-cita')
+    }
+    if (permissionHelpers.canCreateModule('duenos')) {
+      actions.push('registrar-dueno')
+    }
+    if (permissionHelpers.canCreateModule('mascotas')) {
+      actions.push('registrar-mascota')
+    }
+    return actions
+  }, [permissionHelpers])
+
   useEffect(() => {
     let cancelled = false
 
@@ -59,12 +85,13 @@ export function useRecepHome(onLogout?: () => void) {
       try {
         const [data, permissions, escalations] = await Promise.all([
           fetchRecepHomeDashboard(),
-          fetchRecepNavPermissions(),
+          fetchMyModulePermissions().catch(() => ({} as MyPermissionsMap)),
           fetchEscalatedConversations().catch(() => null),
         ])
         if (!cancelled) {
           setDashboard(data)
-          setGrantedPermissions(permissions)
+          setModulePermissions(permissions)
+          setGrantedPermissions(resolveRecepNavPermissionsFromModules(permissions))
           if (escalations) {
             setUnreadEscalationsCount(escalations.pendingCount)
           }
@@ -135,14 +162,26 @@ export function useRecepHome(onLogout?: () => void) {
 
   const handleQuickAction = (actionId: RecepQuickActionId) => {
     if (actionId === 'agendar-cita') {
+      if (!permissionHelpers.canCreateModule('agenda')) {
+        showToast('No tienes permiso para crear citas')
+        return
+      }
       handleNavigate('agenda')
       return
     }
     if (actionId === 'registrar-mascota') {
+      if (!permissionHelpers.canCreateModule('mascotas')) {
+        showToast('No tienes permiso para crear mascotas')
+        return
+      }
       handleNavigate('mascotas')
       return
     }
     if (actionId === 'registrar-dueno') {
+      if (!permissionHelpers.canCreateModule('duenos')) {
+        showToast('No tienes permiso para crear dueños')
+        return
+      }
       handleNavigate('duenos')
       return
     }
@@ -162,6 +201,8 @@ export function useRecepHome(onLogout?: () => void) {
   return {
     dashboard,
     grantedPermissions,
+    modulePermissions,
+    allowedQuickActions,
     unreadEscalationsCount,
     isLoading,
     error,

@@ -45,15 +45,15 @@ interface RecepAgendaViewProps {
   onDateChange: (value: string) => void
   onTimeSlotChange: (slotId: string) => void
   onNotesChange: (value: string) => void
-  onConfirm: () => void
+  onConfirm?: () => void
   onCancel: () => void
   isCitaPaid?: (appointmentId: string) => boolean
   onOpenDayPanel: () => void
   onCloseDayPanel: () => void
   onChangeDayPanelDate: (dateValue: string) => void
-  onEditAppointment: (appointment: RecepAgendaDayAppointment) => void
-  onMarkNoAsistio: (appointment: RecepAgendaDayAppointment) => void
-  onCheckIn: (appointment: RecepAgendaDayAppointment) => void
+  onEditAppointment?: (appointment: RecepAgendaDayAppointment) => void
+  onMarkNoAsistio?: (appointment: RecepAgendaDayAppointment) => void
+  onCheckIn?: (appointment: RecepAgendaDayAppointment) => void
   onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
 }
 
@@ -362,13 +362,15 @@ export function RecepAgendaView({
           </div>
 
           <div className="shrink-0 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={onConfirm}
-              className="w-full rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
-            >
-              Confirmar y Agendar
-            </button>
+            {onConfirm && (
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="w-full rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
+              >
+                Confirmar y Agendar
+              </button>
+            )}
             <button
               type="button"
               onClick={onCancel}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
+import { fetchMyModulePermissions, type MyPermissionsMap } from '@/modules/auth'
 import type {
   RecepDuenoDetail,
   RecepDuenoFormData,
@@ -7,11 +8,14 @@ import type {
 } from '../types'
 import { fetchRecepDuenosDirectory, createRecepDueno, updateRecepDueno } from '../services'
 import { extractUserApiErrorMessage } from '../../superadmin/utils/translateUserApiError.ts'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
 
 const ITEMS_PER_PAGE = 8
 
 export function useRecepDuenos(enabled: boolean) {
   const [directory, setDirectory] = useState<RecepDuenosDirectoryPayload | null>(null)
+  const [modulePermissions, setModulePermissions] =
+    useState<MyPermissionsMap | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +36,24 @@ export function useRecepDuenos(enabled: boolean) {
     }, 3000)
   }, [])
 
+  const permissionHelpers = useMemo(
+    () => createRecepPermissionHelpers(modulePermissions),
+    [modulePermissions],
+  )
+
+  const canCreate = permissionHelpers.canCreateModule('duenos')
+  const canEdit = permissionHelpers.canEditModule('duenos')
+  const canDelete = permissionHelpers.canDeleteModule('duenos')
+
+  const loadPermissions = useCallback(async () => {
+    try {
+      const permissions = await fetchMyModulePermissions()
+      setModulePermissions(permissions)
+    } catch {
+      setModulePermissions({})
+    }
+  }, [])
+
   const loadDirectory = useCallback(async () => {
     setIsLoading(true)
     setError(null)
@@ -49,7 +71,8 @@ export function useRecepDuenos(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
     void loadDirectory()
-  }, [enabled, loadDirectory])
+    void loadPermissions()
+  }, [enabled, loadDirectory, loadPermissions])
 
   useEffect(() => {
     if (!enabled) setSelectedId(null)
@@ -100,11 +123,19 @@ export function useRecepDuenos(enabled: boolean) {
   const handleCloseDetail = () => setSelectedId(null)
 
   const openCreateOwner = () => {
+    if (!canCreate) {
+      showNotice('No tienes permiso para crear dueños.')
+      return
+    }
     setEditingOwner(null)
     setIsModalOpen(true)
   }
 
   const openEditOwner = (owner: RecepDuenoDetail) => {
+    if (!canEdit) {
+      showNotice('No tienes permiso para editar dueños.')
+      return
+    }
     setEditingOwner(owner)
     setIsModalOpen(true)
   }
@@ -115,6 +146,15 @@ export function useRecepDuenos(enabled: boolean) {
   }
 
   const handleSaveOwner = async (data: RecepDuenoFormData) => {
+    if (editingOwner && !canEdit) {
+      showNotice('No tienes permiso para editar dueños.')
+      throw new Error('No tienes permiso para editar dueños.')
+    }
+    if (!editingOwner && !canCreate) {
+      showNotice('No tienes permiso para crear dueños.')
+      throw new Error('No tienes permiso para crear dueños.')
+    }
+
     setIsSubmitting(true)
     try {
       if (editingOwner) {
@@ -164,6 +204,9 @@ export function useRecepDuenos(enabled: boolean) {
     editingOwner,
     error,
     notice,
+    canCreate,
+    canEdit,
+    canDelete,
     currentPage,
     totalPages,
     pageStart,

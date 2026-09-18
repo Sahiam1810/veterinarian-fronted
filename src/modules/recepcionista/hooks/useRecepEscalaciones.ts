@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { fetchMyModulePermissions, type MyPermissionsMap } from '@/modules/auth'
 import type {
   EscalacionesDirectoryPayload,
   EscalatedConversationListItem,
@@ -18,6 +19,7 @@ import {
   type ChatMessageReceivedPayload,
   type ChatEscalationResolvedPayload,
 } from '../../../global/notifications/index.ts'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions.ts'
 
 const ITEMS_PER_PAGE = 8
 
@@ -49,6 +51,8 @@ export function useRecepEscalaciones(
   autoRefreshIntervalMs: number = 30000,
 ) {
   const [directory, setDirectory] = useState<EscalacionesDirectoryPayload | null>(null)
+  const [modulePermissions, setModulePermissions] =
+    useState<MyPermissionsMap | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +70,23 @@ export function useRecepEscalaciones(
     setTimeout(() => {
       setNotice((current) => (current === message ? null : current))
     }, 3000)
+  }, [])
+
+  const permissionHelpers = useMemo(
+    () => createRecepPermissionHelpers(modulePermissions),
+    [modulePermissions],
+  )
+
+  const canSendMessages = permissionHelpers.canCreateModule('conversaciones')
+  const canResolveEscalations = permissionHelpers.canEditModule('conversaciones')
+
+  const loadPermissions = useCallback(async () => {
+    try {
+      const permissions = await fetchMyModulePermissions()
+      setModulePermissions(permissions)
+    } catch {
+      setModulePermissions({})
+    }
   }, [])
 
   const loadDirectory = useCallback(
@@ -110,7 +131,8 @@ export function useRecepEscalaciones(
   useEffect(() => {
     if (!enabled) return
     void loadDirectory(false)
-  }, [enabled, loadDirectory])
+    void loadPermissions()
+  }, [enabled, loadDirectory, loadPermissions])
 
   // Intervalo de auto-refresco en segundo plano (degradación segura / polling de respaldo)
   useEffect(() => {
@@ -336,6 +358,8 @@ export function useRecepEscalaciones(
     isRefreshing,
     error,
     notice,
+    canSendMessages,
+    canResolveEscalations,
     currentPage,
     totalPages,
     pageStart,

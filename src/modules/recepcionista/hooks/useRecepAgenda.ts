@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
+import { fetchMyModulePermissions, type MyPermissionsMap } from '@/modules/auth'
 import type {
   RecepAgendaCatalogPayload,
   RecepAgendaDayAppointment,
@@ -20,6 +21,7 @@ import {
   isAppointmentDateInThePast,
   PAST_APPOINTMENT_MESSAGE,
 } from '@/modules/superadmin/utils/appointmentDateGuard'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
 
 const EMPTY_FORM: RecepAgendaFormState = {
   ownerQuery: '',
@@ -87,6 +89,8 @@ function formatDayTitle(dateValue: string): string {
 
 export function useRecepAgenda(enabled: boolean) {
   const [catalog, setCatalog] = useState<RecepAgendaCatalogPayload | null>(null)
+  const [modulePermissions, setModulePermissions] =
+    useState<MyPermissionsMap | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -105,6 +109,24 @@ export function useRecepAgenda(enabled: boolean) {
     setTimeout(() => {
       setNotice((current) => (current === message ? null : current))
     }, 3200)
+  }, [])
+
+  const permissionHelpers = useMemo(
+    () => createRecepPermissionHelpers(modulePermissions),
+    [modulePermissions],
+  )
+
+  const canCreate = permissionHelpers.canCreateModule('agenda')
+  const canEdit = permissionHelpers.canEditModule('agenda')
+  const canDelete = permissionHelpers.canDeleteModule('agenda')
+
+  const loadPermissions = useCallback(async () => {
+    try {
+      const permissions = await fetchMyModulePermissions()
+      setModulePermissions(permissions)
+    } catch {
+      setModulePermissions({})
+    }
   }, [])
 
   const loadCatalog = useCallback(async () => {
@@ -130,7 +152,8 @@ export function useRecepAgenda(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
     void loadCatalog()
-  }, [enabled, loadCatalog])
+    void loadPermissions()
+  }, [enabled, loadCatalog, loadPermissions])
 
   const loadDayAppointments = useCallback(async (targetDate: string) => {
     if (!targetDate) return
@@ -282,6 +305,10 @@ export function useRecepAgenda(enabled: boolean) {
   }
 
   const handleConfirm = async () => {
+    if (!canCreate) {
+      showNotice('No tienes permiso para crear citas.')
+      return
+    }
     if (!form.ownerId) {
       showNotice('Por favor selecciona un dueño de la lista')
       return
@@ -361,6 +388,10 @@ export function useRecepAgenda(enabled: boolean) {
   }
 
   const handleEditAppointment = (appointment: RecepAgendaDayAppointment) => {
+    if (!canEdit) {
+      showNotice('No tienes permiso para editar citas.')
+      return
+    }
     if (!catalog) return
     if (appointment.status === 'ATENDIDO' || appointment.status === 'CANCELADO' || appointment.status === 'NO ASISTIÓ') {
       showNotice('Esta cita ya no se puede editar')
@@ -398,6 +429,10 @@ export function useRecepAgenda(enabled: boolean) {
   }
 
   const handleMarkNoAsistio = async (appointment: RecepAgendaDayAppointment) => {
+    if (!canEdit) {
+      showNotice('No tienes permiso para cambiar el estado de citas.')
+      return
+    }
     if (!canMarkRecepNoAsistio(appointment.status)) {
       showNotice('Solo se puede marcar No Asistió en citas agendadas.')
       return
@@ -427,6 +462,10 @@ export function useRecepAgenda(enabled: boolean) {
 
   const handleRegisterPayment = useCallback(
     (appointment: RecepAgendaDayAppointment) => {
+      if (!canEdit) {
+        showNotice('No tienes permiso para registrar pagos de citas.')
+        return
+      }
       const appointmentId = appointment.id
       setPaidAppointmentIds((prev) => {
         if (prev.includes(appointmentId)) return prev
@@ -436,10 +475,14 @@ export function useRecepAgenda(enabled: boolean) {
       })
       showNotice('Pago registrado correctamente.')
     },
-    [showNotice],
+    [canEdit, showNotice],
   )
 
   const handleCheckIn = async (appointment: RecepAgendaDayAppointment) => {
+    if (!canEdit) {
+      showNotice('No tienes permiso para cambiar el estado de citas.')
+      return
+    }
     if (!canCheckIn(appointment.status)) {
       showNotice('Solo se puede marcar la llegada en citas agendadas.')
       return
@@ -469,6 +512,9 @@ export function useRecepAgenda(enabled: boolean) {
     isSubmitting,
     error,
     notice,
+    canCreate,
+    canEdit,
+    canDelete,
     timeSlots,
     isLoadingSlots,
     matchedOwners,
