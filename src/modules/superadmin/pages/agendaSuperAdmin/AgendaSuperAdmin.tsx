@@ -143,7 +143,7 @@ export function AgendaSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule,
-  canCreateModule: _canCreateModule,
+  canCreateModule,
   canEditModule,
   canDeleteModule,
   notifications,
@@ -153,7 +153,8 @@ export function AgendaSuperAdmin({
   onMarkAllNotificationsRead,
   onReloadNotifications,
 }: AgendaSuperAdminProps = {}) {
-  // Permisos CRUD del módulo agenda (esta vista no tiene botón crear cita global)
+  // Permisos CRUD del módulo agenda.
+  const canCreate = canCreateModule ? canCreateModule('agenda') : true
   const canEdit = canEditModule ? canEditModule('agenda') : true
   const canDelete = canDeleteModule ? canDeleteModule('agenda') : true
 
@@ -245,6 +246,8 @@ export function AgendaSuperAdmin({
     window.print()
   }
 
+  const canUseDrawer = isDrawerOpen && (editingCita ? canEdit : canCreate)
+
   return (
     <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
       {/* 1. Top Header Fijo */}
@@ -323,6 +326,19 @@ export function AgendaSuperAdmin({
             </div>
 
             <div className="flex items-center gap-2.5 shrink-0">
+              {canCreate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingCita(null)
+                    setIsDrawerOpen(true)
+                  }}
+                  className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs active:translate-y-0.5"
+                >
+                  <span className="text-base leading-none">+</span>
+                  <span>Nueva cita</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handlePrint}
@@ -668,6 +684,8 @@ export function AgendaSuperAdmin({
         cita={selectedCita}
         isOpen={isDetalleModalOpen}
         isPaid={selectedCita ? isCitaPaid(selectedCita.id) : false}
+        canEdit={canEdit}
+        canDelete={canDelete}
         onClose={() => setIsDetalleModalOpen(false)}
         onCancel={(citaId) => {
           // Cancelar requiere permiso de borrado
@@ -700,7 +718,7 @@ export function AgendaSuperAdmin({
       />
 
       {/* Drawer para Reprogramar / Editar Cita */}
-      {canEdit && (
+      {canUseDrawer && (
         <CitaDrawer
           isOpen={isDrawerOpen}
           editingCita={editingCita}

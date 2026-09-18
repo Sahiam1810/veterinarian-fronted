@@ -6,6 +6,8 @@ export interface CitaDetalleModalProps {
   cita: CitaSuperAdmin | null
   isOpen: boolean
   isPaid?: boolean
+  canEdit?: boolean
+  canDelete?: boolean
   onClose: () => void
   onCancel: (citaId: string) => void
   onReprogramar: (cita: CitaSuperAdmin) => void
@@ -34,6 +36,8 @@ export function CitaDetalleModal({
   cita,
   isOpen,
   isPaid = false,
+  canEdit = true,
+  canDelete = true,
   onClose,
   onCancel,
   onReprogramar,
@@ -44,6 +48,15 @@ export function CitaDetalleModal({
   if (!isOpen || !cita) return null
 
   const actions = getCitaDetalleFooterActions(cita.status)
+  const showCancelar = actions.showCancelar && canDelete
+  const showReprogramar = actions.showReprogramar && canEdit
+  const showMarcarNoAsistio = actions.showMarcarNoAsistio && canEdit
+  const showMarcarAtendida = actions.showMarcarAtendida && canEdit
+  const showNoActionsMessage =
+    !showCancelar &&
+    !showReprogramar &&
+    !showMarcarNoAsistio &&
+    !showMarcarAtendida
 
   return (
     <div
@@ -153,7 +166,7 @@ export function CitaDetalleModal({
           </div>
 
           <footer className="shrink-0 flex flex-wrap items-center justify-end gap-3 px-4 sm:px-5 py-3.5 border-t border-border-tan/60 bg-white">
-            {actions.showCancelar && (
+            {showCancelar && (
               <button
                 type="button"
                 onClick={() => onCancel(cita.id)}
@@ -163,7 +176,7 @@ export function CitaDetalleModal({
               </button>
             )}
 
-            {actions.showReprogramar && (
+            {showReprogramar && (
               <button
                 type="button"
                 onClick={() => onReprogramar(cita)}
@@ -173,7 +186,7 @@ export function CitaDetalleModal({
               </button>
             )}
 
-            {actions.showMarcarNoAsistio && (
+            {showMarcarNoAsistio && (
               <button
                 type="button"
                 onClick={() => onMarcarNoAsistio(cita.id)}
@@ -183,7 +196,7 @@ export function CitaDetalleModal({
               </button>
             )}
 
-            {actions.showMarcarAtendida && (
+            {showMarcarAtendida && (
               <>
                 {!isPaid ? (
                   <button
@@ -220,9 +233,9 @@ export function CitaDetalleModal({
               </>
             )}
 
-            {!actions.showReprogramar && (
+            {showNoActionsMessage && (
               <p className="text-[11px] text-sage font-medium">
-                Esta cita ya está cerrada y no admite reprogramar, cancelar ni marcar no asistencia.
+                Esta cita no tiene acciones disponibles con tus permisos actuales.
               </p>
             )}
           </footer>

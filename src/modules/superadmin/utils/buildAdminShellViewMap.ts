@@ -1,6 +1,5 @@
 import type { MyPermissionsMap } from '../../auth/services/myPermissionsService.ts'
 import type { ModuleId } from '../types'
-import { resolveUiShellOverrides } from './uiShellPermissionsStorage.ts'
 
 // Módulos Oracle → ids del menú del panel admin (mapa canónico FE ↔ BE)
 export const API_MODULE_TO_SHELL: Record<string, ModuleId> = {
@@ -100,22 +99,6 @@ export function buildActionMap(
         edit: !!perm.canEdit,
         delete: !!perm.canDelete,
       }
-    }
-  }
-
-  // Excepciones UI locales (Reportes sin fila Oracle completa)
-  const ui = resolveUiShellOverrides({
-    roleId: options.roleId,
-    personId: options.personId,
-    accountId: options.accountId,
-    email: options.email,
-  })
-  if (ui.reportes) {
-    actions.reportes = {
-      view: !!ui.reportes.view,
-      create: !!ui.reportes.create,
-      edit: !!ui.reportes.edit,
-      delete: !!ui.reportes.delete,
     }
   }
 

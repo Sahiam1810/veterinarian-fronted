@@ -1,7 +1,9 @@
 import type { ModuleId, ModulePermission } from '../types'
 
-// Módulos solo de la UI del panel admin (no existen como filas en MODULES de Oracle)
-export const UI_SHELL_MODULE_IDS: ModuleId[] = ['reportes']
+// Módulos solo de la UI del panel admin (no existen como filas en MODULES de Oracle).
+// Reportes ya existe en backend y se maneja por /api/auth/permissions.
+export const UI_SHELL_MODULE_IDS: ModuleId[] = []
+const DEPRECATED_UI_SHELL_MODULE_IDS: ModuleId[] = ['reportes']
 
 const STORAGE_KEY = 'huellitas_ui_shell_permissions'
 
@@ -29,7 +31,7 @@ function scopeKey(scope: 'user' | 'role' | 'email', id: string): string {
   return `${scope}:${id.trim().toLowerCase()}`
 }
 
-// Lee excepciones de Inicio/Reportes para un usuario o rol
+// Lee excepciones locales de UI para un usuario o rol.
 export function getUiShellOverrides(
   scope: 'user' | 'role' | 'email',
   id: string,
@@ -69,7 +71,7 @@ export function resolveUiShellOverrides(options: {
   return merged
 }
 
-// Guarda excepciones de Inicio/Reportes (merge parcial)
+// Guarda excepciones locales de UI (merge parcial).
 export function setUiShellOverrides(
   scope: 'user' | 'role' | 'email',
   id: string,
@@ -113,6 +115,28 @@ export function clearUiShellOverrides(
 export function clearUserUiShellOverrides(user: { id: string; email?: string }): void {
   clearUiShellOverrides('user', user.id)
   if (user.email) clearUiShellOverrides('email', user.email)
+}
+
+export function clearDeprecatedUiShellOverrides(): void {
+  const store = readStore()
+  let changed = false
+
+  for (const [key, entry] of Object.entries(store)) {
+    for (const modId of DEPRECATED_UI_SHELL_MODULE_IDS) {
+      if (entry[modId]) {
+        delete entry[modId]
+        changed = true
+      }
+    }
+    if (Object.keys(entry).length === 0) {
+      delete store[key]
+      changed = true
+    }
+  }
+
+  if (changed) {
+    writeStore(store)
+  }
 }
 
 export function isUiShellModule(moduleId: ModuleId): boolean {

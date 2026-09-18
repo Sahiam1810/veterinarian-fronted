@@ -10,6 +10,7 @@ import {
   createAppointment,
   updateAppointment,
   updateAppointmentStatus,
+  cancelAppointment,
   fetchVeterinarians,
   fetchPets,
   fetchClientsPets,
@@ -422,7 +423,7 @@ export function useAgendaSuperAdmin() {
 
     try {
       if (target.status === 'AGENDADA') {
-        await updateAppointmentStatus(id, {
+        await cancelAppointment(id, {
           statusId: cancelId,
           comment: 'Cancelada desde agenda SuperAdmin',
         })

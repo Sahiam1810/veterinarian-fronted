@@ -74,7 +74,7 @@ test('isPlatformSuperAdmin → reportes true sin depender de apiPermissions', ()
   assert.equal(views.usuarios, true)
 })
 
-test('override UI de reportes gana sobre el valor de la API', () => {
+test('override UI de reportes no pisa el valor de la API', () => {
   installMemoryLocalStorage()
   setUiShellOverrides('user', baseOptions.personId, {
     reportes: { view: true, create: false, edit: false, delete: false },
@@ -86,7 +86,7 @@ test('override UI de reportes gana sobre el valor de la API', () => {
     },
     baseOptions,
   )
-  assert.equal(viewsForcedOn.reportes, true)
+  assert.equal(viewsForcedOn.reportes, false)
 
   setUiShellOverrides('user', baseOptions.personId, {
     reportes: { view: false, create: false, edit: false, delete: false },
@@ -97,7 +97,7 @@ test('override UI de reportes gana sobre el valor de la API', () => {
     },
     baseOptions,
   )
-  assert.equal(viewsForcedOff.reportes, false)
+  assert.equal(viewsForcedOff.reportes, true)
 
   clearUiShellOverrides('user', baseOptions.personId)
 })

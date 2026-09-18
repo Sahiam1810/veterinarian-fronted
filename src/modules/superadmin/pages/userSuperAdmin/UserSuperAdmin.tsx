@@ -1006,6 +1006,8 @@ interface UserInfoPanelProps {
   role?: RoleDefinition | null
   specialties: { id: string; name: string }[]
   vetProfile?: { specialtyId: string; licenseNumber: string } | null
+  canEditUser?: boolean
+  canDeleteUser?: boolean
   onOpenEditModal: (user: SystemUser) => void
   onToggleStatus: (userId: string) => void
   onDeleteUser: (userId: string) => void
@@ -1017,6 +1019,8 @@ function UserInfoPanel({
   role,
   specialties,
   vetProfile,
+  canEditUser = true,
+  canDeleteUser = true,
   onOpenEditModal,
   onToggleStatus,
   onDeleteUser,
@@ -1088,35 +1092,41 @@ function UserInfoPanel({
               </span>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => onOpenEditModal(user)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-tan bg-bone hover:bg-cream text-charcoal text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs active:scale-95"
-                >
-                  <EditIcon className="w-4 h-4" />
-                  <span>Editar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onToggleStatus(user.id)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-tan bg-bone hover:bg-cream text-charcoal text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs active:scale-95"
-                >
-                  <span>{user.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDeleteUser(user.id)}
-                  disabled={user.status !== 'Inactivo'}
-                  title={
-                    user.status !== 'Inactivo'
-                      ? 'Desactiva la cuenta para poder eliminarla'
-                      : 'Eliminar usuario'
-                  }
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-terracotta/20 bg-terracotta-soft text-terracotta text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                  <span>Eliminar</span>
-                </button>
+                {canEditUser && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onOpenEditModal(user)}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-tan bg-bone hover:bg-cream text-charcoal text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                    >
+                      <EditIcon className="w-4 h-4" />
+                      <span>Editar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onToggleStatus(user.id)}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-tan bg-bone hover:bg-cream text-charcoal text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs active:scale-95"
+                    >
+                      <span>{user.status === 'Activo' ? 'Desactivar' : 'Activar'}</span>
+                    </button>
+                  </>
+                )}
+                {canDeleteUser && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteUser(user.id)}
+                    disabled={user.status !== 'Inactivo'}
+                    title={
+                      user.status !== 'Inactivo'
+                        ? 'Desactiva la cuenta para poder eliminarla'
+                        : 'Eliminar usuario'
+                    }
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-terracotta/20 bg-terracotta-soft text-terracotta text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                    <span>Eliminar</span>
+                  </button>
+                )}
               </>
             )}
           </div>
@@ -1246,6 +1256,8 @@ interface ByUserModeViewProps {
   selectedUserId: string | null
   selectedTargetUser: SystemUser | null
   activeTargetRole: RoleDefinition
+  canEditUser?: boolean
+  canDeleteUser?: boolean
   onFilterChange: (filters: UserFilters) => void
   onSelectUser: (userId: string) => void
   onOpenEditModal: (user: SystemUser) => void
@@ -1262,6 +1274,8 @@ function ByUserModeView({
   selectedUserId,
   selectedTargetUser,
   activeTargetRole,
+  canEditUser = true,
+  canDeleteUser = true,
   onFilterChange,
   onSelectUser,
   onOpenEditModal,
@@ -1463,6 +1477,8 @@ function ByUserModeView({
               vetProfile={
                 vetProfileByUserId[selectedTargetUser.id.toLowerCase()] ?? null
               }
+              canEditUser={canEditUser}
+              canDeleteUser={canDeleteUser}
               onOpenEditModal={onOpenEditModal}
               onToggleStatus={onToggleStatus}
               onDeleteUser={onDeleteUser}
@@ -1629,9 +1645,9 @@ export function UserSuperAdmin({
   userRole = 'SuperAdministrador',
   onLogout,
   canViewModule: shellCanViewModule,
-  canCreateModule: _shellCanCreateModule,
-  canEditModule: _shellCanEditModule,
-  canDeleteModule: _shellCanDeleteModule,
+  canCreateModule: shellCanCreateModule,
+  canEditModule: shellCanEditModule,
+  canDeleteModule: shellCanDeleteModule,
   canManagePermissions = true,
   notifications,
   isLoadingNotifications,
@@ -1644,6 +1660,9 @@ export function UserSuperAdmin({
   // Confirmación in-app (window.confirm falla si la pestaña no está activa).
   const [pendingDeleteUser, setPendingDeleteUser] = useState<SystemUser | null>(null)
   const [isDeletingUser, setIsDeletingUser] = useState(false)
+  const canCreateUser = shellCanCreateModule ? shellCanCreateModule('usuarios') : true
+  const canEditUser = shellCanEditModule ? shellCanEditModule('usuarios') : true
+  const canDeleteUser = shellCanDeleteModule ? shellCanDeleteModule('usuarios') : true
 
   const {
     users,
@@ -1815,6 +1834,7 @@ export function UserSuperAdmin({
             </div>
 
             {(canManagePermissions ? activeTab === 'usuarios' : true) ? (
+              canCreateUser && (
               <button
                 type="button"
                 onClick={openCreateUserModal}
@@ -1823,6 +1843,7 @@ export function UserSuperAdmin({
                 <PlusIcon className="w-4 h-4" />
                 <span>Nuevo usuario</span>
               </button>
+              )
             ) : (
               <button
                 type="button"
@@ -1849,6 +1870,8 @@ export function UserSuperAdmin({
                 }
                 selectedTargetUser={selectedTargetUser}
                 activeTargetRole={activeTargetRole}
+                canEditUser={canEditUser}
+                canDeleteUser={canDeleteUser}
                 onFilterChange={setFilters}
                 onSelectUser={selectUserTarget}
                 onOpenEditModal={openEditUserModal}

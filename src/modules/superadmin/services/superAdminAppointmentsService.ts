@@ -76,6 +76,13 @@ export async function updateAppointmentStatus(
   return apiClient.patch<void>(`/api/Appointments/${appointmentId}/status`, data)
 }
 
+export async function cancelAppointment(
+  appointmentId: string,
+  data: ApiUpdateAppointmentStatusRequest,
+): Promise<void> {
+  return apiClient.patch<void>(`/api/Appointments/${appointmentId}/cancel`, data)
+}
+
 export async function deleteAppointment(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/Appointments/${id}`)
 }

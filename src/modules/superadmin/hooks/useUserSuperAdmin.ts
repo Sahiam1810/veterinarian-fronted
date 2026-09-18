@@ -54,12 +54,8 @@ import {
 import { API_BASE_URL } from '@/config'
 import { ApiError } from '@/services'
 import {
+  clearDeprecatedUiShellOverrides,
   clearUserUiShellOverrides,
-  getUiShellOverrides,
-  isUiShellModule,
-  setUiShellOverrides,
-  setUserUiShellOverrides,
-  UI_SHELL_MODULE_IDS,
 } from '../utils/uiShellPermissionsStorage'
 
 export const MODULES_INFO: ModuleInfo[] = [
@@ -69,7 +65,6 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'especiesRazas', label: 'Especies y Razas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'servicios', label: 'Servicios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'profesionales', label: 'Profesionales', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'disponibilidad', label: 'Disponibilidad', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'historiaClinica', label: 'Historia Clínica', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
@@ -216,6 +211,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
   // Cargar datos reales desde el backend
   const loadData = useCallback(async () => {
+    clearDeprecatedUiShellOverrides()
     setIsLoading(true)
     setLoadError(null)
     try {
@@ -343,13 +339,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
             }
           })
 
-          // Inicio/Reportes no están en Oracle: se guardan en local hasta tener módulos reales
-          const uiRoleOverrides = getUiShellOverrides('role', r.id)
-          for (const modId of UI_SHELL_MODULE_IDS) {
-            if (uiRoleOverrides[modId]) {
-              perms[modId] = uiRoleOverrides[modId]!
-            }
-          }
         }
 
         return {
@@ -406,16 +395,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
             }
           })
 
-          const uiUserOverrides = getUiShellOverrides('user', u.id)
-          const uiEmailOverrides = getUiShellOverrides('email', u.email)
-          for (const modId of UI_SHELL_MODULE_IDS) {
-            if (uiEmailOverrides[modId]) {
-              userCustomPerms[modId] = uiEmailOverrides[modId]
-            }
-            if (uiUserOverrides[modId]) {
-              userCustomPerms[modId] = uiUserOverrides[modId]
-            }
-          }
         }
 
         return {
@@ -770,21 +749,9 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         }
         const userCustom = selectedTargetUser.customPermissions || {}
 
-        // Persistir Inicio/Reportes en local (no hay MODULES Oracle para ellos)
-        const uiOverrides: Partial<Record<ModuleId, ModulePermission>> = {}
-        for (const modId of UI_SHELL_MODULE_IDS) {
-          if (userCustom[modId]) uiOverrides[modId] = userCustom[modId]
-        }
-        if (Object.keys(uiOverrides).length > 0) {
-          setUserUiShellOverrides(
-            { id: selectedTargetUser.id, email: selectedTargetUser.email },
-            uiOverrides,
-          )
-        }
-
         for (const mod of dbModules) {
           const norm = normalizeModuleName(mod.name)
-          if (!norm || isUiShellModule(norm) || !userCustom[norm]) continue
+          if (!norm || !userCustom[norm]) continue
 
           const perm = userCustom[norm]!
           const existing = rawUserPermissions.find(
@@ -810,7 +777,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           }
         }
         showToast(
-          `Permisos de "${selectedTargetUser.name}" guardados. Aplican al renovar sesión (cerrar sesión y volver a entrar).`,
+          `Permisos de "${selectedTargetUser.name}" guardados. Los cambios aplican cuando el usuario cierre sesión y vuelva a ingresar.`,
           'warning',
         )
       } else {
@@ -824,19 +791,9 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           return
         }
         if (currentRole) {
-          const uiOverrides: Partial<Record<ModuleId, ModulePermission>> = {}
-          for (const modId of UI_SHELL_MODULE_IDS) {
-            if (currentRole.permissions[modId]) {
-              uiOverrides[modId] = currentRole.permissions[modId]
-            }
-          }
-          if (Object.keys(uiOverrides).length > 0) {
-            setUiShellOverrides('role', currentRole.id, uiOverrides)
-          }
-
           for (const mod of dbModules) {
             const norm = normalizeModuleName(mod.name)
-            if (!norm || isUiShellModule(norm) || !currentRole.permissions[norm]) continue
+            if (!norm || !currentRole.permissions[norm]) continue
 
             const perm = currentRole.permissions[norm]
             const existing = rawRolePermissions.find(
@@ -881,7 +838,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           }
         }
         showToast(
-          `Permisos del rol "${selectedRole.name}" guardados. Aplican cuando el usuario renueve sesión (cerrar sesión y volver a entrar).`,
+          `Permisos del rol "${selectedRole.name}" guardados. Los cambios aplican cuando el usuario cierre sesión y vuelva a ingresar.`,
           'warning',
         )
       }
