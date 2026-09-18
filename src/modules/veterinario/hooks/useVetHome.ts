@@ -30,7 +30,7 @@ import {
   isRealtimeNotificationUnread,
   type RealtimeNotificationPayload,
 } from '@/global/notifications'
-import { getVetModulePermission } from '../utils/vetModulePermissions'
+import { createVetPermissionHelpers } from '../utils/vetModulePermissions'
 
 const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'duenos', 'reportes', 'perfil'])
 
@@ -61,6 +61,10 @@ export function useVetHome() {
   const [historiaModalTarget, setHistoriaModalTarget] = useState<HistoriaClinicaPayload | null>(null)
   const [isHistoriaModalOpen, setIsHistoriaModalOpen] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const permissionHelpers = useMemo(
+    () => createVetPermissionHelpers(modulePermissions),
+    [modulePermissions],
+  )
 
   const showToast = useCallback((message: string) => {
     setActiveNotification(message)
@@ -221,12 +225,11 @@ export function useVetHome() {
     statusKeyword: 'atendida' | 'cancelada' | 'no_asistio',
     comment?: string | null,
   ) => {
-    const appointmentPerm = getVetModulePermission(modulePermissions, 'Citas')
-    if (statusKeyword === 'cancelada' && !appointmentPerm.canDelete) {
+    if (statusKeyword === 'cancelada' && !permissionHelpers.canDeleteModule('agenda')) {
       showToast('No tienes permiso para cancelar citas.')
       return
     }
-    if (statusKeyword !== 'cancelada' && !appointmentPerm.canEdit) {
+    if (statusKeyword !== 'cancelada' && !permissionHelpers.canEditModule('agenda')) {
       showToast('No tienes permiso para cambiar el estado de citas.')
       return
     }
@@ -257,8 +260,7 @@ export function useVetHome() {
   }
 
   const handleAttendAndRegister = (appointment: CitaActionTarget) => {
-    const clinicalPerm = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
-    if (!clinicalPerm.canCreate) {
+    if (!permissionHelpers.canCreateModule('historiaClinica')) {
       showToast('No tienes permiso para registrar atenciones clínicas.')
       return
     }
@@ -269,8 +271,7 @@ export function useVetHome() {
   }
 
   const handleViewHistoria = async (petId: string) => {
-    const clinicalPerm = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
-    if (!clinicalPerm.canView) {
+    if (!permissionHelpers.canViewModule('historiaClinica')) {
       showToast('No tienes permiso para ver historias clínicas.')
       return
     }
@@ -337,6 +338,7 @@ export function useVetHome() {
     dashboard,
     grantedPermissions,
     modulePermissions,
+    ...permissionHelpers,
     notifications,
     onMarkNotificationRead: handleMarkNotificationRead,
     unreadNotificationsCount,

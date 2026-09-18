@@ -108,11 +108,8 @@ export function buildVetHomeDashboard(input: {
   const speciesById = new Map(input.species.map((item) => [item.id.toLowerCase(), item.name]))
   const racesById = new Map(input.races.map((item) => [item.id.toLowerCase(), item.name]))
 
-  const vetId = input.veterinarian?.id?.toLowerCase()
-
   const todayAppointments = input.appointments
     .filter((apt) => isScheduledToday(apt.scheduledStart, now))
-    .filter((apt) => (vetId ? apt.veterinarianId.toLowerCase() === vetId : false))
     .sort(
       (a, b) =>
         new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime(),

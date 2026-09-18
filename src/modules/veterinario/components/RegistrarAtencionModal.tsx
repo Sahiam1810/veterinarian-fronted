@@ -10,6 +10,11 @@ import {
 import type { ApiDiagnostic } from '../services'
 import { CloseIcon, MedicalFolderIcon } from './MascotasIcons'
 import { ViewPopup } from './ViewPopup'
+import { AppointmentStatusBadge } from './AppointmentStatusBadge'
+import {
+  isTerminalAppointmentStatus,
+  mapAppointmentStatus,
+} from '../utils/mapAppointmentStatus'
 import {
   pickDefaultDiagnosticId,
   getMissingDiagnosticError,
@@ -31,6 +36,7 @@ interface RegistrarAtencionModalProps {
   appointmentId: string
   serviceName?: string
   scheduledStart?: string
+  statusName?: string | null
   availableAppointments?: AvailableAppointmentOption[]
   onClose: () => void
   onSuccess: (result: { recordId: string; petId: string; appointmentId: string }) => void
@@ -45,6 +51,7 @@ export function RegistrarAtencionModal({
   appointmentId: initialAppointmentId,
   serviceName,
   scheduledStart,
+  statusName,
   availableAppointments = [],
   onClose,
   onSuccess,
@@ -101,6 +108,14 @@ export function RegistrarAtencionModal({
     )
   }, [diagnostics, diagnosticSearch])
 
+  const selectedAppointment = useMemo(
+    () => availableAppointments.find((apt) => apt.id === selectedAppointmentId),
+    [availableAppointments, selectedAppointmentId],
+  )
+  const selectedStatusName = selectedAppointment?.statusName ?? statusName ?? null
+  const selectedStatus = mapAppointmentStatus(selectedStatusName)
+  const isSelectedAppointmentClosed = isTerminalAppointmentStatus(selectedStatus)
+
   if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,6 +129,11 @@ export function RegistrarAtencionModal({
 
     if (!clientPetId) {
       setFormError('No se encontró el vínculo de la mascota con el cliente.')
+      return
+    }
+
+    if (isSelectedAppointmentClosed) {
+      setFormError('Esta cita ya está cerrada y no permite registrar una nueva historia clínica.')
       return
     }
 
@@ -264,6 +284,7 @@ export function RegistrarAtencionModal({
                   <span className="font-semibold text-sage uppercase tracking-wide text-[10px]">
                     Cita en curso:
                   </span>
+                  <AppointmentStatusBadge status={selectedStatus} />
                   <span className="font-bold text-brand">
                     {serviceName || 'Consulta'}
                     {scheduledStart ? ` · ${new Date(scheduledStart).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}` : ''}
@@ -381,7 +402,7 @@ export function RegistrarAtencionModal({
 
               <button
                 type="submit"
-                disabled={isSubmitting || !selectedDiagnosticId || !selectedAppointmentId}
+                disabled={isSubmitting || !selectedDiagnosticId || !selectedAppointmentId || isSelectedAppointmentClosed}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (

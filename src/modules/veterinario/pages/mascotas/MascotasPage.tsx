@@ -105,9 +105,13 @@ export function MascotasPage({ onNotice }: MascotasPageProps) {
         onDeletePet={handleOpenDelete}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}
-        onViewClinicalHistory={() => {
-          void handleViewClinicalHistory()
-        }}
+        onViewClinicalHistory={
+          permissions.canViewHistoriaClinica
+            ? () => {
+                void handleViewClinicalHistory()
+              }
+            : undefined
+        }
         onCloseHistoria={handleCloseHistoria}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}

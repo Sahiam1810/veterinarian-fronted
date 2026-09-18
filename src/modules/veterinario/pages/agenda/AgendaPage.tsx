@@ -6,7 +6,6 @@ import {
   HistoriaClinicaModal,
 } from '../../components'
 import { useVetAgenda } from '../../hooks'
-import { getVetModulePermission } from '../../utils/vetModulePermissions'
 
 interface AgendaPageProps {
   onNotice?: (message: string) => void
@@ -22,7 +21,10 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     isLoading,
     error,
     notice,
-    modulePermissions,
+    canViewModule,
+    canCreateModule,
+    canEditModule,
+    canDeleteModule,
     selectedAppointment,
     isActionModalOpen,
     isRegistrarOpen,
@@ -64,9 +66,6 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
 
   if (!agenda) return null
 
-  const appointmentPermissions = getVetModulePermission(modulePermissions, 'Citas')
-  const clinicalPermissions = getVetModulePermission(modulePermissions, 'Historiales Clínicos')
-
   return (
     <div className="h-full min-h-0 min-w-0 overflow-hidden relative">
       {isLoading ? (
@@ -104,10 +103,10 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
             void handleViewHistoria(petId)
           }}
           isUpdatingStatus={isUpdatingStatus}
-          canRegisterClinical={clinicalPermissions.canCreate}
-          canViewClinicalHistory={clinicalPermissions.canView}
-          canEditAppointmentStatus={appointmentPermissions.canEdit}
-          canCancelAppointment={appointmentPermissions.canDelete}
+          canRegisterClinical={canCreateModule('historiaClinica')}
+          canViewClinicalHistory={canViewModule('historiaClinica')}
+          canEditAppointmentStatus={canEditModule('agenda')}
+          canCancelAppointment={canDeleteModule('agenda')}
         />
       )}
 
@@ -120,6 +119,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
           clientPetId={selectedAppointment.clientPetId || ''}
           appointmentId={selectedAppointment.id}
           serviceName={selectedAppointment.service}
+          statusName={selectedAppointment.rawStatusName || selectedAppointment.status}
           scheduledStart={
             selectedAppointment.dateKey && selectedAppointment.startTime
               ? `${selectedAppointment.dateKey}T${selectedAppointment.startTime}:00`

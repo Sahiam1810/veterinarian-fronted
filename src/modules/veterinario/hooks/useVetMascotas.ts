@@ -13,6 +13,7 @@ import {
   deleteVetClientPet,
 } from '../services'
 import { fetchMyModulePermissions } from '@/modules/auth'
+import { createVetPermissionHelpers } from '../utils/vetModulePermissions'
 import { mapGenderToSexo, mapSexoToGender } from '@/modules/superadmin/utils/superAdminApiMappers'
 import type {
   ApiClient,
@@ -35,6 +36,7 @@ export function useVetMascotas(enabled: boolean) {
     canCreate: false,
     canEdit: false,
     canDelete: false,
+    canViewHistoriaClinica: false,
   })
 
   const [isLoading, setIsLoading] = useState(false)
@@ -80,14 +82,13 @@ export function useVetMascotas(enabled: boolean) {
       setRacesList(bundle.races)
       setClientsList(bundle.clients)
 
-      const mascotPerm = (myPerms as Record<string, { canCreate?: boolean; canEdit?: boolean; canDelete?: boolean }>)?.['Mascotas']
-      if (mascotPerm) {
-        setPermissions({
-          canCreate: Boolean(mascotPerm.canCreate),
-          canEdit: Boolean(mascotPerm.canEdit),
-          canDelete: Boolean(mascotPerm.canDelete),
-        })
-      }
+      const permissionHelpers = createVetPermissionHelpers(myPerms)
+      setPermissions({
+        canCreate: permissionHelpers.canCreateModule('mascotas'),
+        canEdit: permissionHelpers.canEditModule('mascotas'),
+        canDelete: permissionHelpers.canDeleteModule('mascotas'),
+        canViewHistoriaClinica: permissionHelpers.canViewModule('historiaClinica'),
+      })
       setPage(1)
     } catch (err) {
       const msg =
@@ -157,6 +158,10 @@ export function useVetMascotas(enabled: boolean) {
     const petId = targetPetId || selectedId
     const detail = targetPetId && directory ? directory.detailsById[targetPetId] : selectedDetail
     if (!petId) return
+    if (!permissions.canViewHistoriaClinica) {
+      showNotice('No tienes permiso para ver la historia clínica.')
+      return
+    }
 
     setIsHistoriaLoading(true)
     try {
@@ -181,6 +186,10 @@ export function useVetMascotas(enabled: boolean) {
 
   // Handlers CRUD Mascotas
   const handleOpenCreate = () => {
+    if (!permissions.canCreate) {
+      showNotice('No tienes permiso para crear mascotas.')
+      return
+    }
     setIsCreateOpen(true)
   }
 
@@ -189,6 +198,10 @@ export function useVetMascotas(enabled: boolean) {
   }
 
   const handleCreatePet = async (data: VetMascotaFormData) => {
+    if (!permissions.canCreate) {
+      showNotice('No tienes permiso para crear mascotas.')
+      return
+    }
     // S49: el backend solo acepta género "M"/"F" (PetGender), no "Macho"/"Hembra".
     await createVetPet({ ...data, gender: mapSexoToGender(data.gender === 'Hembra' ? 'Hembra' : 'Macho') })
     showNotice(`¡Mascota ${data.name} registrada con éxito!`)
@@ -196,6 +209,10 @@ export function useVetMascotas(enabled: boolean) {
   }
 
   const handleOpenEdit = (petId?: string) => {
+    if (!permissions.canEdit) {
+      showNotice('No tienes permiso para editar mascotas.')
+      return
+    }
     const targetId = petId || selectedId
     if (!targetId) {
       showNotice('Selecciona una mascota para editar.')
@@ -231,6 +248,10 @@ export function useVetMascotas(enabled: boolean) {
 
   const handleUpdatePet = async (data: VetMascotaFormData) => {
     if (!editingPetId) return
+    if (!permissions.canEdit) {
+      showNotice('No tienes permiso para editar mascotas.')
+      return
+    }
     // S49: el backend solo acepta género "M"/"F" (PetGender), no "Macho"/"Hembra".
     await updateVetPet(editingPetId, { ...data, gender: mapSexoToGender(data.gender === 'Hembra' ? 'Hembra' : 'Macho') })
     showNotice(`¡Mascota ${data.name} actualizada con éxito!`)
@@ -238,6 +259,10 @@ export function useVetMascotas(enabled: boolean) {
   }
 
   const handleOpenDelete = (petId?: string) => {
+    if (!permissions.canDelete) {
+      showNotice('No tienes permiso para eliminar mascotas.')
+      return
+    }
     const targetId = petId || selectedId
     if (!targetId) {
       showNotice('Selecciona una mascota para eliminar.')
@@ -261,6 +286,10 @@ export function useVetMascotas(enabled: boolean) {
 
   const handleDeletePet = async () => {
     if (!deletingPetId) return
+    if (!permissions.canDelete) {
+      showNotice('No tienes permiso para eliminar mascotas.')
+      return
+    }
     // La FK CLIENTS_PETS.PET_ID -> PETS.ID es Restrict: si la mascota tiene
     // dueño(s) vinculado(s) hay que quitar esos vínculos antes, o el DELETE
     // de la mascota devuelve 409 (mismo orden que useMascotasSuperAdmin.deleteMascota).

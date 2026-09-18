@@ -1,7 +1,11 @@
-// Cliente HTTP autenticado para el módulo veterinario.
 import { API_BASE_URL } from '../../../config/env.ts'
 import { getAccessToken } from '@/modules/auth'
-import { fetchWithSession } from '@/services/apiClient'
+import {
+  ApiError,
+  fetchWithSession,
+  parseErrorMessage,
+  sanitizeEncoding,
+} from '@/services/apiClient'
 
 export function getVetApiBaseUrl(): string {
   return API_BASE_URL
@@ -27,17 +31,15 @@ export async function vetApiFetch<T>(path: string, init: RequestInit = {}): Prom
     throw new Error(`No se pudo conectar con el backend en ${API_BASE_URL}.`)
   }
 
-  if (response.status === 401) {
-    throw new Error('Sesión expirada o sin permiso. Vuelve a iniciar sesión.')
-  }
-
   if (!response.ok) {
-    throw new Error(`Error del API (${response.status}) en ${path}.`)
+    const { message, violations, code } = await parseErrorMessage(response)
+    throw new ApiError(message, response.status, undefined, violations, code)
   }
 
   if (response.status === 204) {
     return undefined as T
   }
 
-  return (await response.json()) as T
+  return sanitizeEncoding(await response.json()) as T
 }
+

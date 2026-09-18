@@ -1,4 +1,5 @@
 import { vetApiFetch } from '../api/vetHttp'
+import { ApiError } from '@/services/apiClient'
 import type { ApiClientPet, ApiMedicalRecord, ApiVaccination } from '../api/apiTypes'
 import type { HistoriaClinicaPayload, MascotaDetail } from '../types'
 import { buildHistoriaClinica } from '../utils/buildHistoriaClinica'
@@ -41,13 +42,19 @@ export async function createMedicalRecord(
   appointmentId: string,
   data: ApiCreateMedicalRecordRequest,
 ): Promise<ApiCreateMedicalRecordResponse> {
-  return vetApiFetch<ApiCreateMedicalRecordResponse>(
-    `/api/appointments/${appointmentId}/medical-record`,
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    },
-  ).catch(async () => {
+  try {
+    return await vetApiFetch<ApiCreateMedicalRecordResponse>(
+      `/api/appointments/${appointmentId}/medical-record`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    )
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 404) {
+      throw err
+    }
+
     return vetApiFetch<ApiCreateMedicalRecordResponse>(
       `/api/Appointments/${appointmentId}/medical-record`,
       {
@@ -55,7 +62,7 @@ export async function createMedicalRecord(
         body: JSON.stringify(data),
       },
     )
-  })
+  }
 }
 
 // Obtiene historia clínica real (medical records + vacunas + diagnósticos) de una mascota.

@@ -5,7 +5,9 @@ import {
   MascotaFichaModal,
   useMascotasSuperAdmin,
 } from '@/modules/superadmin'
+import type { DuenoFormData, SuperAdminDueno } from '@/modules/superadmin'
 import { fetchMyModulePermissions } from '@/modules/auth'
+import { createVetPermissionHelpers } from '../../utils/vetModulePermissions'
 
 interface DuenosPageProps {
   onNotice?: (message: string) => void
@@ -52,11 +54,11 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
   useEffect(() => {
     fetchMyModulePermissions()
       .then((perms) => {
-        const clientes = perms['Clientes']
+        const permissionHelpers = createVetPermissionHelpers(perms)
         setPermissions({
-          canCreate: Boolean(clientes?.canCreate),
-          canEdit: Boolean(clientes?.canEdit),
-          canDelete: Boolean(clientes?.canDelete),
+          canCreate: permissionHelpers.canCreateModule('duenos'),
+          canEdit: permissionHelpers.canEditModule('duenos'),
+          canDelete: permissionHelpers.canDeleteModule('duenos'),
         })
       })
       .catch(() => {
@@ -71,6 +73,11 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
 
   const confirmDelete = async () => {
     if (!pendingDeleteId) return
+    if (!permissions.canDelete) {
+      onNotice?.('No tienes permiso para eliminar dueños.')
+      setPendingDeleteId(null)
+      return
+    }
     setIsDeleting(true)
     try {
       await deleteDueno(pendingDeleteId)
@@ -78,6 +85,56 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleCreate = () => {
+    if (!permissions.canCreate) {
+      onNotice?.('No tienes permiso para crear dueños.')
+      return
+    }
+    openCreateDueno()
+  }
+
+  const handleEdit = (dueno: SuperAdminDueno) => {
+    if (!permissions.canEdit) {
+      onNotice?.('No tienes permiso para editar dueños.')
+      return
+    }
+    openEditDueno(dueno)
+  }
+
+  const handleToggleStatus = (id: string) => {
+    if (!permissions.canEdit) {
+      onNotice?.('No tienes permiso para editar dueños.')
+      return
+    }
+    toggleDuenoStatus(id)
+  }
+
+  const handleDeleteRequest = (dueno: SuperAdminDueno) => {
+    if (!permissions.canDelete) {
+      onNotice?.('No tienes permiso para eliminar dueños.')
+      return
+    }
+    setPendingDeleteId(dueno.id)
+    setPendingDeleteName(dueno.name)
+  }
+
+  const handleSave = (data: DuenoFormData) => {
+    if (editingDueno) {
+      if (!permissions.canEdit) {
+        onNotice?.('No tienes permiso para editar dueños.')
+        return
+      }
+      updateDueno(editingDueno.id, data)
+      return
+    }
+
+    if (!permissions.canCreate) {
+      onNotice?.('No tienes permiso para crear dueños.')
+      return
+    }
+    createDueno(data)
   }
 
   if (isLoading) {
@@ -104,13 +161,10 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
         totalDuenos={totalDuenos}
         itemsPerPage={itemsPerPage}
         onView={(d) => setDetailItem({ type: 'dueno', data: d })}
-        onEdit={openEditDueno}
-        onToggleStatus={toggleDuenoStatus}
-        onDelete={(d) => {
-          setPendingDeleteId(d.id)
-          setPendingDeleteName(d.name)
-        }}
-        onCreate={openCreateDueno}
+        onEdit={handleEdit}
+        onToggleStatus={handleToggleStatus}
+        onDelete={handleDeleteRequest}
+        onCreate={handleCreate}
         canCreate={permissions.canCreate}
         canEdit={permissions.canEdit}
         canDelete={permissions.canDelete}
@@ -119,13 +173,7 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
       <DuenoDrawer
         isOpen={isDuenoModalOpen}
         onClose={() => setIsDuenoModalOpen(false)}
-        onSave={(data) => {
-          if (editingDueno) {
-            updateDueno(editingDueno.id, data)
-          } else {
-            createDueno(data)
-          }
-        }}
+        onSave={handleSave}
         editingDueno={editingDueno}
       />
 

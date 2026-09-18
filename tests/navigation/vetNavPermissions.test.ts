@@ -48,7 +48,9 @@ test('fetchVetNavPermissions returns all nav keys when all modules have canView 
     return Response.json({
       permissions: {
         Mascotas: { canView: true, canCreate: true, canEdit: true, canDelete: false },
+        Clientes: { canView: true, canCreate: true, canEdit: true, canDelete: false },
         Citas: { canView: true, canCreate: false, canEdit: true, canDelete: false },
+        Reportes: { canView: true, canCreate: false, canEdit: false, canDelete: false },
       },
     })
   }
@@ -56,9 +58,18 @@ test('fetchVetNavPermissions returns all nav keys when all modules have canView 
   const permissions = await fetchVetNavPermissions()
   assert.ok(permissions)
   if (!permissions) return
-  assert.deepEqual(permissions, ['vet.inicio', 'vet.agenda', 'vet.mascotas', 'vet.perfil'])
+  assert.deepEqual(permissions, [
+    'vet.inicio',
+    'vet.agenda',
+    'vet.mascotas',
+    'vet.duenos',
+    'vet.reportes',
+    'vet.perfil',
+  ])
   assert.equal(isNavPermissionGranted(permissions, 'vet.agenda'), true)
   assert.equal(isNavPermissionGranted(permissions, 'vet.mascotas'), true)
+  assert.equal(isNavPermissionGranted(permissions, 'vet.duenos'), true)
+  assert.equal(isNavPermissionGranted(permissions, 'vet.reportes'), true)
 })
 
 test('fetchVetNavPermissions filters out vet.agenda when Citas canView is false', async () => {
@@ -134,6 +145,43 @@ test('fetchVetNavPermissions shows vet.reportes only when Reportes canView is tr
   const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
   const itemIds = visibleItems.map((item) => item.id)
   assert.equal(itemIds.includes('reportes'), true)
+})
+
+test('fetchVetNavPermissions hides vet.reportes when Reportes canView is false', async () => {
+  globalThis.fetch = async () => {
+    return Response.json({
+      permissions: {
+        Mascotas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+        Citas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+        Reportes: { canView: false, canCreate: false, canEdit: false, canDelete: false },
+      },
+    })
+  }
+
+  const permissions = await fetchVetNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(permissions.includes('vet.reportes'), false)
+
+  const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
+  const itemIds = visibleItems.map((item) => item.id)
+  assert.equal(itemIds.includes('reportes'), false)
+})
+
+test('filterNavKeysByModuleView leaves only Inicio and Perfil when Vet has no View permissions', () => {
+  const filtered = filterNavKeysByModuleView(
+    VET_DEFAULT_PERMISSIONS,
+    {
+      Mascotas: { canView: false, canCreate: true, canEdit: true, canDelete: true },
+      Clientes: { canView: false, canCreate: true, canEdit: true, canDelete: true },
+      Citas: { canView: false, canCreate: true, canEdit: true, canDelete: true },
+      Reportes: { canView: false, canCreate: false, canEdit: false, canDelete: false },
+    },
+    VET_MODULE_TO_NAV,
+    VET_ALWAYS_VISIBLE_NAV,
+  )
+
+  assert.deepEqual(filtered, ['vet.inicio', 'vet.perfil'])
 })
 
 test('fetchVetNavPermissions falls back to VET_ALWAYS_VISIBLE_NAV on network/auth error', async () => {

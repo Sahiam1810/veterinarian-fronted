@@ -7,6 +7,7 @@ interface VetAgendaDelDiaProps {
   appointments: VetDayAppointment[]
   totalAppointmentsToday: number
   onViewFullAgenda?: () => void
+  canViewFullAgenda?: boolean
 }
 
 // Agenda del día: cards en móvil, tabla desde md.
@@ -14,6 +15,7 @@ export function VetAgendaDelDia({
   appointments,
   totalAppointmentsToday,
   onViewFullAgenda,
+  canViewFullAgenda = true,
 }: VetAgendaDelDiaProps) {
   return (
     <section className="bg-white rounded-2xl sm:rounded-3xl border border-border-tan shadow-[0_2px_16px_rgba(35,78,70,0.04)] overflow-hidden min-w-0">
@@ -26,6 +28,7 @@ export function VetAgendaDelDia({
             Agenda del Día
           </h2>
         </div>
+        {canViewFullAgenda && (
         <button
           type="button"
           onClick={onViewFullAgenda}
@@ -35,6 +38,7 @@ export function VetAgendaDelDia({
           <span className="sm:hidden">Ver agenda</span>
           <span className="transition-transform group-hover:translate-x-0.5">→</span>
         </button>
+        )}
       </div>
 
       {/* Móvil: lista de tarjetas */}

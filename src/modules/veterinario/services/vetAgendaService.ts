@@ -17,7 +17,27 @@ export interface FetchVetAgendaParams {
   anchorDate: Date
 }
 
-// Carga la agenda del veterinario autenticado (citas + disponibilidad).
+async function fetchVetAvailabilities(
+  veterinarian: ApiVeterinarian | undefined,
+): Promise<ApiAvailability[]> {
+  if (!veterinarian) return []
+
+  return vetApiFetch<ApiAvailability[]>(
+    `/api/availabilities/by-veterinarian/${veterinarian.id}`,
+  ).catch(async () => {
+    try {
+      const all = await vetApiFetch<ApiAvailability[]>('/api/availabilities')
+      return all.filter(
+        (item) => item.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
+      )
+    } catch {
+      return [] as ApiAvailability[]
+    }
+  })
+}
+
+// Carga la agenda del veterinario autenticado. Las citas vienen filtradas por
+// backend en /api/appointments/me; Veterinarios solo se usa para disponibilidad.
 export async function fetchVetAgendaWeek(
   params: FetchVetAgendaParams = {
     viewMode: 'semana',
@@ -25,59 +45,24 @@ export async function fetchVetAgendaWeek(
   },
 ): Promise<AgendaWeekPayload> {
   const profile = await vetApiFetch<ApiCurrentProfile>('/api/auth/me')
-  // Si el SuperAdmin le quita a este usuario el permiso de Ver de
-  // Profesionales, no debe tumbar la Agenda entera: se degrada a la rama de
-  // "sin veterinario encontrado" de abajo (agenda vacía) en vez de un 403.
   const veterinarians = await vetApiFetch<ApiVeterinarian[]>('/api/veterinarians').catch(
     () => [] as ApiVeterinarian[],
   )
   const veterinarian = findVeterinarianForProfile(veterinarians, profile)
 
-  if (!veterinarian) {
-    return buildVetAgendaPayload({
-      viewMode: params.viewMode,
-      anchorDate: params.anchorDate,
-      appointments: [],
-      availabilities: [],
-      pets: [],
-      clientPets: [],
-      species: [],
-    })
-  }
-
   const [appointments, availabilitiesRaw, pets, clientPets, species] = await Promise.all([
     fetchMyVetAppointments(),
-    vetApiFetch<ApiAvailability[]>(
-      `/api/availabilities/by-veterinarian/${veterinarian.id}`,
-    ).catch(async () => {
-      // Fallback si la ruta específica falla: filtrar en cliente.
-      try {
-        const all = await vetApiFetch<ApiAvailability[]>('/api/availabilities')
-        return all.filter(
-          (item) => item.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
-        )
-      } catch {
-        return [] as ApiAvailability[]
-      }
-    }),
-    // Catálogos de apoyo (especie/raza en las tarjetas de evento): no deben
-    // tumbar la Agenda si el permiso de Ver correspondiente no está.
+    fetchVetAvailabilities(veterinarian),
     vetApiFetch<ApiPet[]>('/api/pets').catch(() => [] as ApiPet[]),
     vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => [] as ApiClientPet[]),
     vetApiFetch<ApiNamedCatalog[]>('/api/species').catch(() => [] as ApiNamedCatalog[]),
   ])
 
-  const availabilities = availabilitiesRaw
-
-  const mine = appointments.filter(
-    (apt) => apt.veterinarianId.toLowerCase() === veterinarian.id.toLowerCase(),
-  )
-
   return buildVetAgendaPayload({
     viewMode: params.viewMode,
     anchorDate: params.anchorDate,
-    appointments: mine,
-    availabilities,
+    appointments,
+    availabilities: availabilitiesRaw,
     pets,
     clientPets,
     species,
@@ -96,14 +81,12 @@ export interface ApiUpdateAppointmentStatusRequest {
   comment?: string | null
 }
 
-// Catálogo de estados de citas del backend
 export async function fetchStatusAppointments(): Promise<ApiStatusAppointment[]> {
   return vetApiFetch<ApiStatusAppointment[]>('/api/statusappointments').catch(async () => {
     return vetApiFetch<ApiStatusAppointment[]>('/api/StatusAppointments').catch(() => [])
   })
 }
 
-// Transición de estado canónica de cita (AGENDADA → ATENDIDA | CANCELADA | NO_ASISTIO)
 export async function updateAppointmentStatus(
   appointmentId: string,
   data: ApiUpdateAppointmentStatusRequest,
@@ -119,7 +102,6 @@ export async function updateAppointmentStatus(
   })
 }
 
-// Resuelve el ID del estado en el catálogo ignorando mayúsculas, espacios y acentos
 export function findStatusId(
   statuses: { id: string; name: string }[],
   ...keywords: string[]
@@ -144,4 +126,3 @@ export function findStatusId(
 
   return match?.id
 }
-
