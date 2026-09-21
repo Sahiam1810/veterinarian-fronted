@@ -1,4 +1,4 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 
 // Respuesta de cliente según contrato API v2 (sin userId ni registrationDate)
 export interface ApiClientResponse {

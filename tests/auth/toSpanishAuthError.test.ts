@@ -18,6 +18,11 @@ test('translateApiError traduce Clients.EmailAlreadyInUse a mensaje de cliente',
   assert.equal(message, 'Ya existe un cliente con este correo electrónico.')
 })
 
+test('translateApiError traduce Client.EmailAlreadyInUse (alias singular)', () => {
+  const message = translateApiError('Client.EmailAlreadyInUse', 409, 'Conflict')
+  assert.equal(message, 'Ya existe un cliente con este correo electrónico.')
+})
+
 test('translateApiError traduce el code real de cédula duplicada en RegisterOwner', () => {
   const message = translateApiError('Authentication.IdentificationNumberAlreadyExists', 409, 'Conflict')
   assert.equal(message, 'Ya existe un cliente con este número de identificación o cédula.')
@@ -25,6 +30,11 @@ test('translateApiError traduce el code real de cédula duplicada en RegisterOwn
 
 test('translateApiError traduce Clients.IdentificationAlreadyInUse', () => {
   const message = translateApiError('Clients.IdentificationAlreadyInUse', 409, 'Conflict')
+  assert.equal(message, 'Ya existe un cliente con este número de identificación o cédula.')
+})
+
+test('translateApiError traduce Client.IdentificationAlreadyInUse (alias singular)', () => {
+  const message = translateApiError('Client.IdentificationAlreadyInUse', 409, 'Conflict')
   assert.equal(message, 'Ya existe un cliente con este número de identificación o cédula.')
 })
 

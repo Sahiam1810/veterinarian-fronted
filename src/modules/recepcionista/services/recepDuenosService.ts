@@ -1,16 +1,16 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 import type { RecepDuenoFormData, RecepDuenosDirectoryPayload } from '../types'
-import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
+import type { ApiClientResponse } from '../../superadmin/services/superAdminClientsService.ts'
 import {
   lookupOwner,
   createClient,
   updateClient,
   fetchClientById,
-} from '@/modules/superadmin/services/superAdminClientsService'
-import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
-import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
-import type { ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
-import { buildRecepDuenosDirectory } from '../utils/recepDuenosMapping'
+} from '../../superadmin/services/superAdminClientsService.ts'
+import type { ApiClientPetResponse } from '../../superadmin/services/superAdminClientsPetsService.ts'
+import type { ApiPetResponse } from '../../superadmin/services/superAdminPetsService.ts'
+import type { ApiSpeciesResponse, ApiRaceResponse } from '../../superadmin/services/superAdminCatalogService.ts'
+import { buildRecepDuenosDirectory } from '../utils/recepDuenosMapping.ts'
 
 export { lookupOwner, createClient, updateClient }
 
