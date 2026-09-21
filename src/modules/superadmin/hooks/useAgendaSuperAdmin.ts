@@ -15,7 +15,6 @@ import {
   fetchPets,
   fetchClientsPets,
   fetchClients,
-  fetchUsers,
   fetchSpecies,
   fetchRaces,
   fetchServices,
@@ -156,7 +155,6 @@ export function useAgendaSuperAdmin() {
         pets,
         clientsPets,
         clients,
-        users,
         species,
         races,
         services,
@@ -167,14 +165,12 @@ export function useAgendaSuperAdmin() {
         fetchPets(),
         fetchClientsPets(),
         fetchClients(),
-        settleList(fetchUsers()),
         fetchSpecies(),
         fetchRaces(),
         fetchServices(),
         fetchStatusAppointments(),
       ])
 
-      const usersById = new Map(users.map((u) => [u.id, u]))
       const clientsById = new Map(clients.map((c) => [c.id, c]))
       const petsById = new Map(pets.map((p) => [p.id, p]))
       const speciesById = new Map(species.map((s) => [s.id, s.name]))
@@ -187,15 +183,13 @@ export function useAgendaSuperAdmin() {
         const clientPet = clientsPets.find((cp) => cp.id === apt.clientPetId)
         const pet = clientPet ? petsById.get(clientPet.petId) : undefined
         const client = clientPet ? clientsById.get(clientPet.clientId) : undefined
-        const ownerUser = client ? usersById.get(client.userId) : undefined
         const vet = vetsById.get(apt.veterinarianId)
 
         return mapAppointmentToCita(apt, {
           petName: pet?.name,
           petBreed: pet ? racesById.get(pet.raceId) : undefined,
           species: pet ? speciesById.get(pet.speciesId) : undefined,
-          // Preferir fullName del cliente (Clientes.View) antes que /api/Users
-          ownerName: client?.fullName ?? ownerUser?.fullName,
+          ownerName: client?.fullName,
           professionalName: vet?.userFullName ?? undefined,
         })
       })
@@ -227,14 +221,13 @@ export function useAgendaSuperAdmin() {
         clientsPets.map((cp) => {
           const pet = petsById.get(cp.petId)
           const client = clientsById.get(cp.clientId)
-          const owner = client ? usersById.get(client.userId) : undefined
           return {
             clientPetId: cp.id,
             petId: cp.petId,
             petName: pet?.name ?? 'Mascota',
             breed: pet ? racesById.get(pet.raceId) ?? '' : '',
             species: pet ? speciesById.get(pet.speciesId) ?? '' : '',
-            ownerName: client?.fullName ?? owner?.fullName ?? 'Dueño',
+            ownerName: client?.fullName ?? 'Dueño',
             clientId: cp.clientId,
             ownerPhone: client?.phoneNumber ?? undefined,
           }

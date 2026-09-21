@@ -18,14 +18,8 @@ import {
   createClientPet,
   deleteClientPet,
   createClient,
-  createOwnerWithoutLogin,
   updateClient,
   deleteClient,
-  fetchUsers,
-  updateUser,
-  activateUser,
-  deactivateUser,
-  fetchRoles,
   fetchSpecies,
   fetchRaces,
 } from '../services'
@@ -86,19 +80,14 @@ export function useMascotasSuperAdmin() {
     setIsLoading(true)
     setLoadError(null)
     try {
-      // S48: allSettled en vez de all — un rol sin permiso sobre "Usuarios",
-      // "Plataforma" o "Roles" (ej. veterinario con acceso solo a "Clientes")
-      // no debe tumbar la página entera; esas listas quedan vacías y las
-      // columnas que dependen de ellas se degradan (no rompen).
-      const [clientsResult, usersResult, petsResult, clientsPetsResult, speciesResult, racesResult, rolesResult] =
+      // allSettled: un fallo en plataforma/catálogo no tumba la página entera
+      const [clientsResult, petsResult, clientsPetsResult, speciesResult, racesResult] =
         await Promise.allSettled([
           fetchClients(),
-          fetchUsers(),
           fetchPets(),
           fetchClientsPets(),
           fetchSpecies(),
           fetchRaces(),
-          fetchRoles(),
         ])
 
       if (clientsResult.status === 'rejected') {
@@ -106,53 +95,13 @@ export function useMascotasSuperAdmin() {
       }
 
       const clients = clientsResult.value
-      const users = usersResult.status === 'fulfilled' ? usersResult.value : []
       const pets = petsResult.status === 'fulfilled' ? petsResult.value : []
       const clientsPets = clientsPetsResult.status === 'fulfilled' ? clientsPetsResult.value : []
       const species = speciesResult.status === 'fulfilled' ? speciesResult.value : []
       const races = racesResult.status === 'fulfilled' ? racesResult.value : []
-      const roles = rolesResult.status === 'fulfilled' ? rolesResult.value : []
-
-      // Auto-sincronizar usuarios creados con rol Cliente que aún no tengan registro en Clients
-      const clientRoles = roles.filter((r) => {
-        const n = r.name.toLowerCase()
-        return n.includes('client') || n.includes('cliente') || n.includes('dueño') || n.includes('dueno')
-      })
-      const clientRoleIds = new Set(clientRoles.map((r) => r.id.toLowerCase()))
-      const existingClientUserIds = new Set(clients.map((c) => c.userId.toLowerCase()))
-      const unlinkedClientUsers = users.filter(
-        (u) => u.roleId && clientRoleIds.has(u.roleId.toLowerCase()) && !existingClientUserIds.has(u.id.toLowerCase()),
-      )
-
-      if (unlinkedClientUsers.length > 0) {
-        for (const u of unlinkedClientUsers) {
-          try {
-            // El backend exige phoneNumber (7-20 dígitos) en /api/Clients; sin este
-            // placeholder la creación fallaba con 500 y el usuario quedaba sin
-            // vincular en silencio (nunca aparecía como dueño disponible).
-            const createdClient = await createClient({
-              userId: u.id,
-              identificationNumber: 'DOC-PENDIENTE',
-              phoneNumber: '0000000000',
-            })
-            clients.push({
-              id: createdClient.id,
-              userId: u.id,
-              identificationNumber: 'DOC-PENDIENTE',
-              phoneNumber: '0000000000',
-              address: '',
-              registrationDate: new Date().toISOString(),
-              createdAt: new Date().toISOString(),
-            })
-          } catch (err) {
-            console.error('Error auto-sincronizando perfil de cliente:', err)
-          }
-        }
-      }
 
       // Normaliza GUIDs: Oracle/JSON a veces cambia mayúsculas y rompe el Map
       const normId = (id: string) => id.toLowerCase()
-      const usersById = new Map(users.map((u) => [normId(u.id), u]))
       const speciesById = new Map(species.map((s) => [normId(s.id), s.name]))
       const racesById = new Map(races.map((r) => [normId(r.id), r.name]))
       const petsById = new Map(pets.map((p) => [normId(p.id), p]))
@@ -160,7 +109,6 @@ export function useMascotasSuperAdmin() {
       setRaceOptions(races.map((r) => ({ id: r.id, name: r.name, speciesId: r.speciesId })))
 
       const duenosMapped = clients.map((client) => {
-        const user = usersById.get(normId(client.userId))
         const petLinks = clientsPets.filter((cp) => normId(cp.clientId) === normId(client.id))
         const summary = petLinks
           .map((link) => {
@@ -170,7 +118,7 @@ export function useMascotasSuperAdmin() {
             return `${pet.name} (${mapPetToMascota({ pet, speciesName }).species})`
           })
           .filter((s): s is string => Boolean(s))
-        return mapClientToDueno(client, user, summary)
+        return mapClientToDueno(client, summary)
       })
 
       const duenosById = new Map(duenosMapped.map((d) => [normId(d.id), d]))
@@ -379,11 +327,11 @@ export function useMascotasSuperAdmin() {
 
   const createDueno = async (data: DuenoFormData) => {
     try {
-      await createOwnerWithoutLogin({
-        name: data.name.trim(),
+      await createClient({
+        fullName: data.name.trim(),
+        email: data.email.trim(),
         identificationNumber: data.documentId.trim(),
         phoneNumber: data.phone.trim(),
-        email: data.email.trim(),
         address: data.address?.trim() || null,
       })
 
@@ -403,27 +351,14 @@ export function useMascotasSuperAdmin() {
         return
       }
 
-      const roles = await fetchRoles()
-      const clientRole = roles.find((r) => {
-        const n = r.name.toLowerCase()
-        return n.includes('client') || n.includes('cliente')
-      })
-
       await updateClient(id, {
-        userId: client.userId,
+        fullName: data.name.trim(),
+        email: data.email.trim(),
         identificationNumber: data.documentId.trim(),
         phoneNumber: data.phone.trim(),
         address: data.address.trim() || null,
-        registrationDate: client.registrationDate,
+        isActive: client.isActive,
       })
-
-      if (clientRole) {
-        await updateUser(client.userId, {
-          fullName: data.name.trim(),
-          email: data.email.trim(),
-          roleId: clientRole.id,
-        })
-      }
 
       setIsDuenoModalOpen(false)
       setEditingDueno(null)
@@ -456,11 +391,14 @@ export function useMascotasSuperAdmin() {
         return
       }
 
-      if (item.status === 'Activo') {
-        await deactivateUser(client.userId)
-      } else {
-        await activateUser(client.userId)
-      }
+      await updateClient(id, {
+        fullName: client.fullName,
+        email: client.email,
+        identificationNumber: client.identificationNumber,
+        phoneNumber: client.phoneNumber?.trim() || '',
+        address: client.address ?? null,
+        isActive: !client.isActive,
+      })
 
       showToast(`Dueño "${item.name}" ${item.status === 'Activo' ? 'desactivado' : 'activado'} con éxito`)
       await loadData()
