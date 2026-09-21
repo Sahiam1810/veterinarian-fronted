@@ -40,11 +40,9 @@ afterEach(() => {
 function makeClient(overrides: Partial<ApiClientResponse> = {}): ApiClientResponse {
   return {
     id: 'client-1',
-    userId: 'user-1',
     identificationNumber: '1234567890',
     phoneNumber: '3001234567',
     address: null,
-    registrationDate: '2026-01-01T00:00:00Z',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: null,
     fullName: 'Ana Pérez',
@@ -58,7 +56,7 @@ function makeClient(overrides: Partial<ApiClientResponse> = {}): ApiClientRespon
 test('buildRecepMascotaFormDuenos arma el nombre desde client.fullName', () => {
   const duenos = buildRecepMascotaFormDuenos([
     makeClient({ id: 'c1', fullName: 'Carlos Mendoza' }),
-    makeClient({ id: 'c2', fullName: null }),
+    makeClient({ id: 'c2', fullName: '' }),
   ])
 
   assert.equal(duenos[0]?.fullName, 'Carlos Mendoza')

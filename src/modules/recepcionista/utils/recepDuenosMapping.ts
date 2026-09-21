@@ -99,10 +99,9 @@ export function buildRecepDuenosDirectory(
 
     detailsById[client.id] = {
       ...listItem,
-      userId: client.userId,
       address: client.address || 'Dirección no registrada',
       city: 'Clínica Huellitas',
-      registrationDateLabel: formatDateLabel(client.registrationDate || client.createdAt),
+      registrationDateLabel: formatDateLabel(client.createdAt),
       pets: clientPetSummaries,
     }
   })
