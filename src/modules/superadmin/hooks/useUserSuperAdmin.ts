@@ -22,7 +22,6 @@ import {
   deactivateUser as apiDeactivateUser,
   type ApiUserResponse,
 } from '../services/superAdminUserService'
-import { createOwnerWithoutLogin } from '../services/superAdminClientsService'
 import {
   fetchSpecialties,
   createVeterinarian,
@@ -129,12 +128,6 @@ export function isPlatformSuperAdminRoleName(name: string): boolean {
 
 export function isProtectedSuperAdminUser(user: Pick<SystemUser, 'roleName'>): boolean {
   return isPlatformSuperAdminRoleName(user.roleName)
-}
-
-// Cliente: sin panel web ni contraseña; sesión = teléfono (Telegram)
-export function isClienteRoleName(name: string): boolean {
-  const n = name.trim().toLowerCase()
-  return n === 'cliente' || n === 'client' || n.includes('cliente')
 }
 
 // Veterinario: requiere especialidad y tarjeta profesional (CMP)
@@ -316,30 +309,25 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       let mappedRoles: RoleDefinition[] = fetchedRoles.map((r) => {
         const isPlatformSuper = isPlatformSuperAdminRoleName(r.name)
         const isClinicAdmin = isClinicAdminRoleName(r.name)
-        const isCliente = isClienteRoleName(r.name)
         // Admin de clínica parte con todas las vistas del panel (como SuperAdmin UI)
-        // Cliente: sin panel web (ADR) — ignorar residuales de ROLE_PERMISSIONS
         const perms: Record<ModuleId, ModulePermission> =
           isPlatformSuper || isClinicAdmin
             ? { ...DEFAULT_PERMISSIONS_ALL }
             : { ...DEFAULT_PERMISSIONS_EMPTY }
 
-        if (!isCliente) {
-          // Aplicar permisos desde la tabla ROLE_PERMISSIONS
-          const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
-          rolePerms.forEach((rp) => {
-            const modId = moduleMap.get(rp.moduleId.toLowerCase())
-            if (modId) {
-              perms[modId] = {
-                view: rp.canView,
-                create: rp.canCreate,
-                edit: rp.canEdit,
-                delete: rp.canDelete,
-              }
+        // Aplicar permisos desde la tabla ROLE_PERMISSIONS
+        const rolePerms = fetchedRolePerms.filter((rp) => rp.roleId.toLowerCase() === r.id.toLowerCase())
+        rolePerms.forEach((rp) => {
+          const modId = moduleMap.get(rp.moduleId.toLowerCase())
+          if (modId) {
+            perms[modId] = {
+              view: rp.canView,
+              create: rp.canCreate,
+              edit: rp.canEdit,
+              delete: rp.canDelete,
             }
-          })
-
-        }
+          }
+        })
 
         return {
           id: r.id,
@@ -379,23 +367,20 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         const firstName = parts[0] || ''
         const lastName = parts.slice(1).join(' ') || ''
 
-        // Permisos personalizados de usuario (Cliente: sin excepciones de panel)
+        // Permisos personalizados de usuario
         const userCustomPerms: Partial<Record<ModuleId, ModulePermission>> = {}
-        if (!isClienteRoleName(roleName)) {
-          const userPerms = fetchedUserPerms.filter((up) => up.userId.toLowerCase() === u.id.toLowerCase())
-          userPerms.forEach((up) => {
-            const modId = moduleMap.get(up.moduleId.toLowerCase())
-            if (modId) {
-              userCustomPerms[modId] = {
-                view: up.canView,
-                create: up.canCreate,
-                edit: up.canEdit,
-                delete: up.canDelete,
-              }
+        const userPerms = fetchedUserPerms.filter((up) => up.userId.toLowerCase() === u.id.toLowerCase())
+        userPerms.forEach((up) => {
+          const modId = moduleMap.get(up.moduleId.toLowerCase())
+          if (modId) {
+            userCustomPerms[modId] = {
+              view: up.canView,
+              create: up.canCreate,
+              edit: up.canEdit,
+              delete: up.canDelete,
             }
-          })
-
-        }
+          }
+        })
 
         return {
           id: u.id,
@@ -417,13 +402,12 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
       // No resetear el objetivo de permisos en cada recarga (evita que se "remarquen" solos)
       const firstAssignable =
-        mappedRoles.find((r) => !r.isSystem && !isClienteRoleName(r.name)) ||
         mappedRoles.find((r) => !r.isSystem) ||
         mappedRoles[0]
       setSelectedRoleId((prev) => {
         if (prev) {
           const current = mappedRoles.find((r) => r.id === prev)
-          if (current && !isClienteRoleName(current.name) && !current.isSystem) {
+          if (current && !current.isSystem) {
             return prev
           }
         }
@@ -432,7 +416,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       setActiveRoleSimulated((prev) => {
         if (prev) {
           const current = mappedRoles.find((r) => r.id === prev)
-          if (current && !isClienteRoleName(current.name) && !current.isSystem) {
+          if (current && !current.isSystem) {
             return prev
           }
         }
@@ -442,7 +426,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         if (prev.id) {
           if (prev.type === 'role') {
             const current = mappedRoles.find((r) => r.id === prev.id)
-            if (current && !isClienteRoleName(current.name) && !current.isSystem) {
+            if (current && !current.isSystem) {
               return prev
             }
           } else {
@@ -476,7 +460,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
   // Selected role object
   const selectedRole = useMemo(() => {
-    const validRoles = roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))
+    const validRoles = roles.filter((r) => !r.isSystem)
     return validRoles.find((r) => r.id === selectedRoleId) || validRoles[0] || roles[0] || EMPTY_ROLE
   }, [roles, selectedRoleId])
 
@@ -505,9 +489,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
   // Active permissions for the Permissions Matrix (merging role + custom user overrides if any)
   const activePermissions = useMemo((): Record<ModuleId, ModulePermission> => {
     if (permissionTarget.type === 'user' && selectedTargetUser) {
-      if (isClienteRoleName(selectedTargetUser.roleName)) {
-        return { ...DEFAULT_PERMISSIONS_EMPTY }
-      }
       const baseRole = roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
       const userCustom = selectedTargetUser.customPermissions || {}
       const combined: Record<ModuleId, ModulePermission> = { ...(baseRole?.permissions || DEFAULT_PERMISSIONS_EMPTY) }
@@ -522,19 +503,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     }
 
     const currentRole = roles.find((r) => r.id === permissionTarget.id) || roles[0]
-    if (currentRole && isClienteRoleName(currentRole.name)) {
-      return { ...DEFAULT_PERMISSIONS_EMPTY }
-    }
     return currentRole?.permissions || DEFAULT_PERMISSIONS_EMPTY
-  }, [permissionTarget, selectedTargetUser, roles])
-
-  // Cliente no usa panel web: matriz solo informativa
-  const isClientePermissionTarget = useMemo(() => {
-    if (permissionTarget.type === 'user' && selectedTargetUser) {
-      return isClienteRoleName(selectedTargetUser.roleName)
-    }
-    const role = roles.find((r) => r.id === permissionTarget.id)
-    return role ? isClienteRoleName(role.name) : false
   }, [permissionTarget, selectedTargetUser, roles])
 
   // Whether the selected target is a user with customized overrides
@@ -576,8 +545,8 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       setActiveTab(mode)
       if (mode === 'roles') {
         const assignable =
-          roles.find((r) => !r.isSystem && !isClienteRoleName(r.name) && r.id === selectedRoleId) ||
-          roles.find((r) => !r.isSystem && !isClienteRoleName(r.name))
+          roles.find((r) => !r.isSystem && r.id === selectedRoleId) ||
+          roles.find((r) => !r.isSystem)
         const roleId = assignable?.id
         if (roleId) {
           setSelectedRoleId(roleId)
@@ -649,10 +618,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
         return
       }
-      if (isClienteRoleName(selectedTargetUser.roleName)) {
-        showToast('El cliente no usa el panel web; no se asignan permisos de sesión.', 'warning')
-        return
-      }
       // S47: las excepciones por usuario ahora pueden tanto agregar como
       // revocar permisos heredados del rol base; no hay early-return aquí.
       const currentCombined = activePermissions[moduleId] || {
@@ -688,12 +653,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           }
         })
       )
-      return
-    }
-
-    const targetRole = roles.find((r) => r.id === permissionTarget.id)
-    if (targetRole && isClienteRoleName(targetRole.name)) {
-      showToast('El rol Cliente no tiene acceso al panel; no se configuran permisos web.', 'warning')
       return
     }
 
@@ -743,10 +702,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
           return
         }
-        if (isClienteRoleName(selectedTargetUser.roleName)) {
-          showToast('El cliente no usa el panel web; no hay excepciones que guardar.', 'warning')
-          return
-        }
         const userCustom = selectedTargetUser.customPermissions || {}
 
         for (const mod of dbModules) {
@@ -784,10 +739,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         const currentRole = roles.find((r) => r.id === permissionTarget.id)
         if (currentRole?.isSystem || (currentRole && isPlatformSuperAdminRoleName(currentRole.name))) {
           showToast('El rol SuperAdmin no se puede modificar.', 'warning')
-          return
-        }
-        if (currentRole && isClienteRoleName(currentRole.name)) {
-          showToast('El rol Cliente no tiene acceso al panel; no se guardan permisos web.', 'warning')
           return
         }
         if (currentRole) {
@@ -933,45 +884,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       }
 
       const fullName = `${data.firstName} ${data.lastName}`.trim()
-
-      // Cliente: alta vía register-owner (teléfono = sesión; correo = OTP si cambia de número)
-      if (isClienteRoleName(roleName)) {
-        const phone = data.phoneNumber?.trim() || ''
-        const phoneDigits = phone.replace(/\D/g, '')
-        if (phoneDigits.length < 7) {
-          return {
-            ok: false,
-            error: 'El teléfono del cliente es obligatorio (mínimo 7 dígitos). Es su sesión en Telegram.',
-          }
-        }
-
-        const email = data.email.trim()
-        if (!email || !email.includes('@')) {
-          return {
-            ok: false,
-            error: 'El correo del cliente es obligatorio para enviar el código de verificación al chatbot.',
-          }
-        }
-
-        const result = await createOwnerWithoutLogin({
-          name: fullName,
-          phoneNumber: phone,
-          identificationNumber: `TEL${phoneDigits}`.slice(0, 20),
-          email,
-          roleId: data.roleId,
-        })
-
-        if (data.status === 'Inactivo') {
-          await syncUserActiveStatus(result.userId, 'Inactivo')
-        }
-
-        await loadData()
-        setActiveTab('usuarios')
-        setPendingSelectUserId(result.userId)
-        setPermissionTarget({ type: 'user', id: result.userId })
-
-        return { ok: true, email, mode: 'create' }
-      }
 
       // Veterinario: validar especialidad/CMP antes de crear, y mandarlos en el
       // mismo POST /api/Users — el backend crea el perfil en esa misma transacción
@@ -1200,7 +1112,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     selectedTargetUser,
     activeTargetRole,
     activePermissions,
-    isClientePermissionTarget,
     isUserTargetCustomized,
     resetUserPermissions,
     activeRoleSimulated,

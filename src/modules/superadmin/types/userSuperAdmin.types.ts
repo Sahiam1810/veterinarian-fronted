@@ -66,8 +66,6 @@ export interface UserFormData {
   lastName: string
   email: string
   password?: string
-  // Teléfono: sesión del Cliente vía Telegram (sin login web)
-  phoneNumber?: string
   roleId: string
   status: UserStatus
   // Obligatorios cuando el rol es Veterinario

@@ -5,7 +5,7 @@ import {
   DashboardBackgroundDecoration,
   PageToast,
 } from '../../components'
-import { useUserSuperAdmin, isProtectedSuperAdminUser, isClienteRoleName, isVeterinarioRoleName } from '../../hooks'
+import { useUserSuperAdmin, isProtectedSuperAdminUser, isVeterinarioRoleName } from '../../hooks'
 import { DEFAULT_VET_SCHEDULE_NOTICE } from '../../utils/defaultVeterinarianSchedule'
 import type {
   SystemUser,
@@ -112,7 +112,6 @@ function UserDrawer({
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [roleId, setRoleId] = useState('')
   const [status, setStatus] = useState<UserStatus>('Activo')
@@ -121,9 +120,6 @@ function UserDrawer({
   const [formError, setFormError] = useState<string | null>(null)
   const assignableRoles = useMemo(() => roles.filter((r) => !r.isSystem), [roles])
   const selectedRoleName = assignableRoles.find((r) => r.id === roleId)?.name || ''
-  // Cliente no usa panel web: sesión = teléfono (Telegram)
-  const isClienteForm = isClienteRoleName(selectedRoleName)
-  const isClienteCreate = isClienteForm && !editingUser
   const isVeterinarioForm = isVeterinarioRoleName(selectedRoleName)
 
   useEffect(() => {
@@ -136,7 +132,6 @@ function UserDrawer({
         setLastName(editingUser.lastName || parts.slice(1).join(' ') || '')
         setEmail(editingUser.email || '')
         setPassword(editingUser.password || '')
-        setPhoneNumber('')
         setRoleId(editingUser.roleId || assignableRoles[0]?.id || '')
         setStatus(editingUser.status || 'Activo')
         setSpecialtyId(editingVetProfile?.specialtyId || specialties[0]?.id || '')
@@ -146,7 +141,6 @@ function UserDrawer({
         setLastName('')
         setEmail('')
         setPassword('')
-        setPhoneNumber('')
         setRoleId(assignableRoles[0]?.id || '')
         setStatus('Activo')
         setSpecialtyId(specialties[0]?.id || '')
@@ -164,14 +158,6 @@ function UserDrawer({
       return () => clearTimeout(timer)
     }
   }, [editingUser, editingVetProfile, isOpen, roles, specialties])
-
-  // Al pasar a Cliente, limpia contraseña (el API la rechaza en ese rol)
-  useEffect(() => {
-    if (isClienteForm) {
-      setPassword('')
-      setShowPassword(false)
-    }
-  }, [isClienteForm])
 
   // Al elegir Veterinario sin especialidad, toma la primera del catálogo
   useEffect(() => {
@@ -211,28 +197,13 @@ function UserDrawer({
       return
     }
 
-    if (isClienteForm) {
-      if (isClienteCreate) {
-        const digits = phoneNumber.replace(/\D/g, '')
-        if (digits.length < 7) {
-          setFormError('El teléfono es obligatorio (mínimo 7 dígitos). Es la sesión del cliente en Telegram.')
-          return
-        }
-      }
-      // Correo obligatorio: sirve para OTP si inicia sesión desde otro teléfono
-      if (!email.trim() || !email.includes('@')) {
-        setFormError('El correo del cliente es obligatorio. Se usa para enviar el código de verificación al chatbot.')
-        return
-      }
-    } else {
-      if (!email.trim() || !email.includes('@')) {
-        setFormError('Por favor ingresa un correo electrónico válido.')
-        return
-      }
-      if (!editingUser && !password.trim()) {
-        setFormError('Por favor asigna una contraseña inicial para el usuario.')
-        return
-      }
+    if (!email.trim() || !email.includes('@')) {
+      setFormError('Por favor ingresa un correo electrónico válido.')
+      return
+    }
+    if (!editingUser && !password.trim()) {
+      setFormError('Por favor asigna una contraseña inicial para el usuario.')
+      return
     }
 
     if (isVeterinarioForm) {
@@ -253,8 +224,7 @@ function UserDrawer({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      password: isClienteForm ? undefined : password.trim() || undefined,
-      phoneNumber: isClienteForm ? phoneNumber.trim() : undefined,
+      password: password.trim() || undefined,
       roleId,
       status,
       specialtyId: isVeterinarioForm ? specialtyId : undefined,
@@ -293,7 +263,7 @@ function UserDrawer({
             id="drawer-user-title"
             className="text-xl sm:text-2xl font-bold text-brand tracking-tight"
           >
-            {editingUser ? 'Editar Usuario' : isClienteCreate ? 'Nuevo Cliente' : 'Nuevo Usuario'}
+            {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
           </h2>
           <button
             type="button"
@@ -314,14 +284,6 @@ function UserDrawer({
           {formError && (
             <div className="p-3.5 rounded-xl bg-terracotta-soft text-danger text-xs font-semibold border border-danger/20">
               {formError}
-            </div>
-          )}
-
-          {isClienteForm && (
-            <div className="p-3.5 rounded-xl bg-mint-soft/80 text-brand text-xs font-semibold border border-brand/20 leading-snug">
-              {editingUser
-                ? 'Cliente sin panel web ni contraseña. Teléfono = sesión en Telegram; el correo recibe el código si inicia desde otro número.'
-                : 'Sin panel web ni contraseña. El teléfono es la sesión en Telegram; el correo es obligatorio para enviar un código al chatbot si inicia desde otro número.'}
             </div>
           )}
 
@@ -418,110 +380,53 @@ function UserDrawer({
             </>
           )}
 
-          {isClienteCreate ? (
-            <>
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  Teléfono (sesión Telegram) <span className="text-terracotta">*</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="Ej: 3001234567"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                />
-                <p className="text-[11px] text-sage mt-1">
-                  Identifica la sesión del cliente en el chatbot (sin acceso al frontend).
-                </p>
-              </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+              Correo electrónico <span className="text-terracotta">*</span>
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="usuario@vetclinic.com"
+              className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+            />
+          </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  Correo electrónico <span className="text-terracotta">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="cliente@correo.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                />
-                <p className="text-[11px] text-sage mt-1">
-                  Si inicia sesión desde otro teléfono, se envía un código a este correo para ingresarlo en el chatbot.
-                </p>
-              </div>
-            </>
-          ) : isClienteForm ? (
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                Correo electrónico <span className="text-terracotta">*</span>
-              </label>
+          <div>
+            <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
+              {editingUser ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}{' '}
+              {!editingUser && <span className="text-terracotta">*</span>}
+            </label>
+            <div className="relative">
               <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="cliente@correo.com"
-                className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
+                type={showPassword ? 'text' : 'password'}
+                required={!editingUser}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
               />
-              <p className="text-[11px] text-sage mt-1">
-                Canal del código de verificación cuando el cliente usa otro número en Telegram.
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-sage hover:text-charcoal p-1 cursor-pointer"
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="w-4 h-4" />
+                ) : (
+                  <EyeIcon className="w-4 h-4" />
+                )}
+              </button>
             </div>
-          ) : (
-            <>
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  Correo electrónico <span className="text-terracotta">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="usuario@vetclinic.com"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
-                  {editingUser ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}{' '}
-                  {!editingUser && <span className="text-terracotta">*</span>}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required={!editingUser}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition shadow-2xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-sage hover:text-charcoal p-1 cursor-pointer"
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="w-4 h-4" />
-                    ) : (
-                      <EyeIcon className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                <p className="text-[11px] text-sage mt-1">
-                  {editingUser
-                    ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
-                    : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
-                </p>
-              </div>
-            </>
-          )}
+            <p className="text-[11px] text-sage mt-1">
+              {editingUser
+                ? 'Deja este campo vacío si deseas conservar la contraseña actual.'
+                : 'Asigna la contraseña de acceso (se vincularán la cuenta y credenciales de login automáticamente).'}
+            </p>
+          </div>
 
           <div>
             <label className="block text-xs sm:text-sm font-bold text-charcoal mb-2">
@@ -558,9 +463,7 @@ function UserDrawer({
               ? 'Guardando...'
               : editingUser
                 ? 'Guardar cambios'
-                : isClienteCreate
-                  ? 'Registrar cliente'
-                  : 'Guardar usuario'}
+                : 'Guardar usuario'}
           </button>
         </div>
       </div>
@@ -773,7 +676,6 @@ interface PermissionMatrixPanelProps {
   activeTargetRole: RoleDefinition
   activePermissions: Record<ModuleId, ModulePermission>
   isUserTargetCustomized: boolean
-  isClientePermissionTarget?: boolean
   modulesInfo: ModuleInfo[]
   usersCountForRole?: number
   onTogglePermission: (
@@ -791,7 +693,6 @@ function PermissionMatrixPanel({
   activeTargetRole,
   activePermissions,
   isUserTargetCustomized,
-  isClientePermissionTarget = false,
   modulesInfo,
   usersCountForRole = 0,
   onTogglePermission,
@@ -800,9 +701,8 @@ function PermissionMatrixPanel({
 }: PermissionMatrixPanelProps) {
   const isTargetUser = permissionTarget.type === 'user' && selectedTargetUser !== null
   const isProtectedTarget =
-    (isTargetUser && selectedTargetUser !== null && isProtectedSuperAdminUser(selectedTargetUser)) ||
-    isClientePermissionTarget
-  const matrixLocked = isProtectedTarget || isClientePermissionTarget
+    isTargetUser && selectedTargetUser !== null && isProtectedSuperAdminUser(selectedTargetUser)
+  const matrixLocked = isProtectedTarget
 
   return (
     <div
@@ -829,11 +729,9 @@ function PermissionMatrixPanel({
             )}
           </div>
           <p className="text-[11px] text-sage mt-0.5 line-clamp-2">
-            {isClientePermissionTarget
-              ? 'Cliente sin panel web: no tiene permisos de sesión. Solo usa Telegram o el chatbot.'
-              : isTargetUser
-                ? `Los cambios aquí solo afectan a ${selectedTargetUser.name}. Hereda de ${activeTargetRole.name} salvo excepciones.`
-                : `Estos permisos aplican a ${usersCountForRole} usuario${usersCountForRole === 1 ? '' : 's'} con el rol "${selectedRole.name}".`}
+            {isTargetUser
+              ? `Los cambios aquí solo afectan a ${selectedTargetUser.name}. Hereda de ${activeTargetRole.name} salvo excepciones.`
+              : `Estos permisos aplican a ${usersCountForRole} usuario${usersCountForRole === 1 ? '' : 's'} con el rol "${selectedRole.name}".`}
           </p>
         </div>
 
@@ -975,13 +873,11 @@ function PermissionMatrixPanel({
 
       <div className="shrink-0 pt-2 mt-2 border-t border-border-tan/60 flex items-center justify-between gap-3">
         <span className="text-[11px] text-sage truncate">
-          {isClientePermissionTarget
-            ? 'Sin permisos de sesión para el panel web.'
-            : isProtectedTarget
-              ? 'Los permisos de SuperAdmin son fijos y no se pueden cambiar.'
-              : isTargetUser
-                ? `Excepciones para ${selectedTargetUser.name}`
-                : `Permisos por defecto del rol ${selectedRole.name}`}
+          {isProtectedTarget
+            ? 'Los permisos de SuperAdmin son fijos y no se pueden cambiar.'
+            : isTargetUser
+              ? `Excepciones para ${selectedTargetUser.name}`
+              : `Permisos por defecto del rol ${selectedRole.name}`}
         </span>
         {!matrixLocked && (
           <button
@@ -1506,7 +1402,6 @@ interface ByRoleModeViewProps {
   permissionTarget: PermissionTarget
   selectedRole: RoleDefinition
   activePermissions: Record<ModuleId, ModulePermission>
-  isClientePermissionTarget?: boolean
   modulesInfo: ModuleInfo[]
   onSelectRole: (roleId: string) => void
   onTogglePermission: (
@@ -1522,7 +1417,6 @@ function ByRoleModeView({
   permissionTarget,
   selectedRole,
   activePermissions,
-  isClientePermissionTarget = false,
   modulesInfo,
   onSelectRole,
   onTogglePermission,
@@ -1593,7 +1487,6 @@ function ByRoleModeView({
           activeTargetRole={selectedRole}
           activePermissions={activePermissions}
           isUserTargetCustomized={false}
-          isClientePermissionTarget={isClientePermissionTarget}
           modulesInfo={modulesInfo}
           usersCountForRole={usersCountForRole}
           onTogglePermission={onTogglePermission}
@@ -1674,7 +1567,6 @@ export function UserSuperAdmin({
     selectedTargetUser,
     activeTargetRole,
     activePermissions,
-    isClientePermissionTarget,
     activeTab,
     setAccessMode,
     filters,
@@ -1880,12 +1772,11 @@ export function UserSuperAdmin({
               />
             ) : (
               <ByRoleModeView
-                roles={roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))}
+                roles={roles.filter((r) => !r.isSystem)}
                 users={users}
                 permissionTarget={permissionTarget}
                 selectedRole={selectedRole}
                 activePermissions={activePermissions}
-                isClientePermissionTarget={isClientePermissionTarget}
                 modulesInfo={modulesInfo}
                 onSelectRole={selectRoleTarget}
                 onTogglePermission={togglePermission}
@@ -1974,7 +1865,7 @@ export function UserSuperAdmin({
         isOpen={isRoleModalOpen}
         onClose={closeRoleModal}
         onSave={createRole}
-        roles={roles.filter((r) => !r.isSystem && !isClienteRoleName(r.name))}
+        roles={roles.filter((r) => !r.isSystem)}
       />
     </div>
   )
