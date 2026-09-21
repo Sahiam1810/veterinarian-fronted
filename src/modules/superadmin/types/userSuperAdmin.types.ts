@@ -37,7 +37,7 @@ export interface RoleDefinition {
 
 export type UserStatus = 'Activo' | 'Inactivo'
 
-export type PermissionTargetType = 'role' | 'user'
+export type PermissionTargetType = 'role'
 
 export interface PermissionTarget {
   type: PermissionTargetType
@@ -58,7 +58,6 @@ export interface SystemUser {
   avatarUrl?: string
   // Cuenta de login en USER_ACCOUNTS; vacía en dueños sin panel.
   accountId?: string
-  customPermissions?: Partial<Record<ModuleId, ModulePermission>>
 }
 
 export interface UserFormData {
@@ -82,5 +81,3 @@ export interface UserFilters {
 export type UserSaveResult =
   | { ok: true; email: string; mode: 'create' | 'edit' }
   | { ok: false; error: string }
-
-
