@@ -29,6 +29,8 @@ export function translateApiError(
   }
 
   if (
+    cleanCode === 'Clients.IdentificationAlreadyInUse' ||
+    cleanCode === 'Client.IdentificationAlreadyInUse' ||
     cleanCode === 'Client.IdentificationAlreadyExists' ||
     cleanCode === 'IdentificationAlreadyExists' ||
     cleanCode === 'IdentificationConflict' ||
@@ -36,6 +38,13 @@ export function translateApiError(
     cleanCode === 'Authentication.IdentificationNumberAlreadyExists'
   ) {
     return 'Ya existe un cliente con este número de identificación o cédula.'
+  }
+
+  if (
+    cleanCode === 'Clients.EmailAlreadyInUse' ||
+    cleanCode === 'Client.EmailAlreadyInUse'
+  ) {
+    return 'Ya existe un cliente con este correo electrónico.'
   }
 
   if (
