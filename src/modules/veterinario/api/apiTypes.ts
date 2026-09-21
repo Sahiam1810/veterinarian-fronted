@@ -51,18 +51,14 @@ export interface ApiPet {
 
 export interface ApiClient {
   id: string
-  userId: string
   identificationNumber: string
   address?: string | null
-  registrationDate: string
   createdAt: string
   updatedAt?: string | null
-  // Resueltos desde la navegación User en el backend (S49): evitan tener
-  // que cruzar contra /api/Users, que el veterinario no siempre puede leer.
-  fullName?: string | null
-  email?: string | null
-  isActive?: boolean | null
-  phoneNumber?: string | null
+  fullName: string
+  email: string
+  isActive: boolean
+  phoneNumber: string
 }
 
 export interface ApiClientPet {

@@ -38,22 +38,22 @@ const mockPets: ApiPet[] = [
 const mockClients: ApiClient[] = [
   {
     id: 'c-1',
-    userId: 'u-1',
     fullName: 'María Fernández',
     identificationNumber: '1088899900',
+    email: 'maria@test.com',
+    isActive: true,
     phoneNumber: '+57 300 123 4567',
     address: 'Blvd. Sueños Rotos',
-    registrationDate: '2026-01-01',
     createdAt: '2026-01-01',
   },
   {
     id: 'c-2',
-    userId: 'u-2',
-    fullName: null,
+    fullName: '',
     identificationNumber: '1032456789',
-    phoneNumber: null,
+    email: 'c2@test.com',
+    isActive: true,
+    phoneNumber: '',
     address: 'Calle 10 # 5-20',
-    registrationDate: '2026-01-01',
     createdAt: '2026-01-01',
   },
 ]

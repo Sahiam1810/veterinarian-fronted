@@ -126,12 +126,12 @@ export interface ApiCreateClientPetRequest {
 
 export interface ApiClientResponse {
   id: string
-  userId: string
   identificationNumber: string
-  fullName?: string | null
-  phoneNumber?: string | null
+  fullName: string
+  email: string
+  isActive: boolean
+  phoneNumber: string
   address?: string | null
-  registrationDate: string
   createdAt: string
   updatedAt?: string | null
 }

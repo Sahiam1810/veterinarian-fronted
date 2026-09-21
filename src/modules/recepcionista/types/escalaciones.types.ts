@@ -131,8 +131,8 @@ export interface ChatMessageResponseDto {
   content: string
   metadata?: string | null
   createdAt: string
-  // El backend real no resuelve estos tres campos (necesitaría un join hasta
-  // ChatUserProfile/AgentHuman/AiModel) — quedan opcionales solo para que el
+  // El backend real no resuelve estos campos (necesitaría un join hasta
+  // Client/AgentHuman) — quedan opcionales solo para que el
   // modo mock pueda mostrar un nombre; resolveSenderLabel ya funciona bien
   // sin ellos (cae al rol genérico: "Cliente"/"Asesor (Tú)"/"Asistente IA").
   senderName?: string | null
@@ -161,15 +161,15 @@ export interface ChatParticipantResponseDto {
   id: string
   chatConversationId: string
   participantTypeId: string
-  chatUserProfileId?: string | null
+  clientId?: string | null
   agentHumanId?: string | null
-  aiModelId?: string | null
 }
 
 export interface CreateChatParticipantRequestDto {
   chatConversationId: string
   participantTypeId: string
-  agentHumanId: string
+  clientId?: string | null
+  agentHumanId?: string | null
 }
 
 export interface CreateEscalationResolutionRequestDto {
