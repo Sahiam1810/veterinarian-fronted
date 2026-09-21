@@ -1,17 +1,21 @@
 import { apiClient } from '@/services'
 import type { RecepDuenoFormData, RecepDuenosDirectoryPayload } from '../types'
-import type { ApiClientResponse, ApiCreateClientRequest, ApiUpdateClientRequest } from '@/modules/superadmin/services/superAdminClientsService'
-import { lookupOwner, createOwnerWithoutLogin, updateClient, updateClientOwnerProfile } from '@/modules/superadmin/services/superAdminClientsService'
+import type { ApiClientResponse } from '@/modules/superadmin/services/superAdminClientsService'
+import {
+  lookupOwner,
+  createClient,
+  updateClient,
+  fetchClientById,
+} from '@/modules/superadmin/services/superAdminClientsService'
 import type { ApiClientPetResponse } from '@/modules/superadmin/services/superAdminClientsPetsService'
 import type { ApiPetResponse } from '@/modules/superadmin/services/superAdminPetsService'
 import type { ApiSpeciesResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
 import { buildRecepDuenosDirectory } from '../utils/recepDuenosMapping'
 
-export { lookupOwner, createOwnerWithoutLogin, updateClient }
+export { lookupOwner, createClient, updateClient }
 
 // Obtiene el directorio de dueños consolidando clientes y mascotas desde el backend.
-// FullName, Email y estado se leen directo del DTO de /api/Clients — el backend
-// los expone desde la navegación User sin requerir GET /api/Users.
+// FullName, Email y estado se leen directo del DTO de /api/Clients.
 export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryPayload> {
   const [clientsRes, cpRes, petsRes, speciesRes, racesRes] = await Promise.allSettled([
     apiClient.get<ApiClientResponse[]>('/api/Clients'),
@@ -30,57 +34,39 @@ export async function fetchRecepDuenosDirectory(): Promise<RecepDuenosDirectoryP
   return buildRecepDuenosDirectory(clients, clientPets, pets, species, races)
 }
 
-// Crear un nuevo dueño usando createOwnerWithoutLogin
+// Alta de dueño vía POST /api/Clients (contrato v2)
 export async function createRecepDueno(
   data: RecepDuenoFormData,
-): Promise<{ userId: string; clientId: string }> {
+): Promise<{ clientId: string }> {
   const email = data.email?.trim() || ''
   if (!email || !email.includes('@')) {
     throw new Error('El correo del cliente es obligatorio.')
   }
-  return createOwnerWithoutLogin({
-    name: data.fullName.trim(),
+
+  const client = await createClient({
+    fullName: data.fullName.trim(),
+    email,
     identificationNumber: data.documentId.trim(),
     phoneNumber: data.phone.trim(),
-    email,
     address: data.address?.trim() || null,
   })
+
+  return { clientId: client.id }
 }
 
-// Actualizar un dueño existente (PUT /api/Clients/{id} + PUT /api/Clients/{id}/owner-profile).
-// S51: el nombre/correo ya no pasa por PUT /api/Users (requiere permiso
-// "Usuarios: Editar" y antes resolvía el rol vía GET /api/Roles) — Recepcionista
-// no tiene ninguno de los dos permisos, así que ese paso fallaba en silencio
-// (.catch(() => [])) y el cambio de nombre nunca se guardaba, aunque se
-// mostrara el mensaje de éxito. El endpoint dedicado solo exige "Clientes: Editar".
+// Actualiza dueño con un solo PUT /api/Clients/{id}; conserva isActive actual
 export async function updateRecepDueno(
   clientId: string,
-  userId: string | undefined,
   data: RecepDuenoFormData,
 ): Promise<void> {
-  const resolvedUserId = userId || ''
+  const current = await fetchClientById(clientId)
 
   await updateClient(clientId, {
-    userId: resolvedUserId,
+    fullName: data.fullName.trim(),
+    email: data.email?.trim() || '',
     identificationNumber: data.documentId.trim(),
     phoneNumber: data.phone.trim(),
     address: data.address?.trim() || null,
-  })
-
-  await updateClientOwnerProfile(clientId, {
-    fullName: data.fullName.trim(),
-    email: data.email?.trim() || '',
+    isActive: current.isActive,
   })
 }
-
-// Crear un nuevo cliente en el sistema
-export async function createRecepClient(data: ApiCreateClientRequest): Promise<{ id: string }> {
-  return apiClient.post<{ id: string }>('/api/Clients', data)
-}
-
-// Actualizar información del cliente
-export async function updateRecepClient(id: string, data: ApiUpdateClientRequest): Promise<void> {
-  return apiClient.put<void>(`/api/Clients/${id}`, data)
-}
-
-

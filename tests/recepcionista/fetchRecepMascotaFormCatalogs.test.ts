@@ -49,11 +49,9 @@ test('fetchRecepMascotaFormCatalogs usa client.fullName y no llama /api/Users', 
       return Response.json([
         {
           id: 'client-1',
-          userId: 'user-1',
           identificationNumber: '111',
           phoneNumber: '300',
           address: null,
-          registrationDate: '2026-01-01T00:00:00Z',
           createdAt: '2026-01-01T00:00:00Z',
           updatedAt: null,
           fullName: 'María López',

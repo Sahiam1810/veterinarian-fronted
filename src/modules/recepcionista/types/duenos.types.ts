@@ -23,7 +23,6 @@ export interface RecepDuenoListItem {
 }
 
 export interface RecepDuenoDetail extends RecepDuenoListItem {
-  userId?: string
   address?: string
   city?: string
   registrationDateLabel?: string

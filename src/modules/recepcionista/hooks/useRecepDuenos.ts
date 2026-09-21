@@ -158,7 +158,7 @@ export function useRecepDuenos(enabled: boolean) {
     setIsSubmitting(true)
     try {
       if (editingOwner) {
-        await updateRecepDueno(editingOwner.id, editingOwner.userId, data)
+        await updateRecepDueno(editingOwner.id, data)
         showNotice(`Dueño "${data.fullName}" actualizado con éxito`)
       } else {
         const result = await createRecepDueno(data)
