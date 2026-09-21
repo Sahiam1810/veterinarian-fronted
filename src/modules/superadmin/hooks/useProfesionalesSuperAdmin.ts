@@ -217,7 +217,6 @@ export function useProfesionalesSuperAdmin() {
         .map((cp) => {
           const pet = petsById.get(normId(cp.petId))
           const client = clientsById.get(normId(cp.clientId))
-          const user = client ? usersById.get(normId(client.userId)) : undefined
           const speciesName = pet ? speciesById.get(normId(pet.speciesId)) ?? 'Canino' : 'Canino'
           const raceName = pet ? racesById.get(normId(pet.raceId)) ?? 'Sin raza' : 'Sin raza'
 
@@ -227,7 +226,7 @@ export function useProfesionalesSuperAdmin() {
             petName: pet?.name ?? 'Mascota',
             breed: raceName,
             species: speciesName,
-            ownerName: user?.fullName ?? 'Dueño',
+            ownerName: client?.fullName ?? 'Dueño',
             clientId: cp.clientId,
             ownerPhone: client?.phoneNumber ?? undefined,
           }
@@ -249,7 +248,6 @@ export function useProfesionalesSuperAdmin() {
         const clientPet = clientsPets.find((cp) => normId(cp.id) === normId(apt.clientPetId))
         const pet = clientPet ? petsById.get(normId(clientPet.petId)) : undefined
         const client = clientPet ? clientsById.get(normId(clientPet.clientId)) : undefined
-        const ownerUser = client ? usersById.get(normId(client.userId)) : undefined
         const vet = vetsById.get(normId(apt.veterinarianId))
         const vetUser = vet ? usersById.get(normId(vet.userId)) : undefined
 
@@ -257,7 +255,7 @@ export function useProfesionalesSuperAdmin() {
           petName: pet?.name,
           petBreed: pet ? racesById.get(normId(pet.raceId)) : undefined,
           species: pet ? speciesById.get(normId(pet.speciesId)) : undefined,
-          ownerName: ownerUser?.fullName,
+          ownerName: client?.fullName,
           professionalName: vet?.userFullName ?? vetUser?.fullName,
         })
       })
