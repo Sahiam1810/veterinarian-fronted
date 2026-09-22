@@ -75,8 +75,7 @@ function platformFullActionMap(): ShellActionMap {
 export function buildActionMap(
   apiPermissions: MyPermissionsMap | null,
   options: {
-    personId: string
-    accountId?: string
+    id?: string
     email?: string
     roleId?: string
     isPlatformSuperAdmin?: boolean
@@ -109,8 +108,7 @@ export function buildActionMap(
 export function buildViewMap(
   apiPermissions: MyPermissionsMap | null,
   options: {
-    personId: string
-    accountId?: string
+    id?: string
     email?: string
     roleId?: string
     isPlatformSuperAdmin?: boolean

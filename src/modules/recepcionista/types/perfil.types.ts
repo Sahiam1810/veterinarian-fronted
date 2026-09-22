@@ -1,11 +1,9 @@
 // Perfil del recepcionista (datos reales de /api/auth/me)
 
 export interface RecepProfilePayload {
-  personId: string
-  userAccountId: string
+  id: string
   displayName: string
   fullName: string
-  userName: string
   email: string
   role: string
   jobTitle: string

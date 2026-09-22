@@ -54,7 +54,7 @@ export function PerfilSummaryCard({
       </h2>
       <p className="text-xs text-sage font-medium mt-0.5">{profile.jobTitle}</p>
       <p className="text-[11px] text-sage/90 font-medium mt-1 truncate max-w-full px-1">
-        @{profile.userName}
+        {profile.email}
       </p>
 
       <span

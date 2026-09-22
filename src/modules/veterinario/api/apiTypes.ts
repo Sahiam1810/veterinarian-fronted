@@ -1,14 +1,11 @@
 // Contratos de respuesta del backend usados por el módulo veterinario.
 
 export interface ApiCurrentProfile {
-  personId: string
-  userAccountId: string
+  id: string
   fullName: string
   initials: string
-  userName: string
   email: string
   role: string
-  accountStatus: string
   photoUrl?: string | null
 }
 

@@ -206,18 +206,15 @@ export async function loginRequest(credentials: LoginCredentials): Promise<AuthU
 
   const roleId = readRoleIdClaim(tokens.accessToken)
   const resolvedIdentity = resolvePersistedRoleIdentity(roleId, mappedRole as UserRole)
-  // personId = Users.Id (coincide con lista de SuperAdmin / UserPermissions)
-  const personId = profile.personId || profile.userAccountId
 
   const authUser: AuthUser = {
-    id: personId,
+    id: profile.id,
     name: profile.fullName,
     email: profile.email,
     role: resolvedIdentity.role,
     roleName: profile.role,
     roleId,
-    personId: profile.personId,
-    userAccountId: profile.userAccountId,
+    avatarUrl: profile.photoUrl ?? undefined,
     isPlatformSuperAdmin: resolvedIdentity.isPlatformSuperAdmin,
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,

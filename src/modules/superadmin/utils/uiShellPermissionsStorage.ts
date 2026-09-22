@@ -46,10 +46,9 @@ export function getUiShellOverrides(
   return out
 }
 
-// Une excepciones por personId, accountId y email (el último que tenga dato gana)
+// Une excepciones por id y email (el último que tenga dato gana)
 export function resolveUiShellOverrides(options: {
-  personId?: string
-  accountId?: string
+  id?: string
   email?: string
   roleId?: string
 }): Partial<Record<ModuleId, ModulePermission>> {
@@ -58,11 +57,8 @@ export function resolveUiShellOverrides(options: {
   if (options.roleId) {
     Object.assign(merged, getUiShellOverrides('role', options.roleId))
   }
-  if (options.personId) {
-    Object.assign(merged, getUiShellOverrides('user', options.personId))
-  }
-  if (options.accountId) {
-    Object.assign(merged, getUiShellOverrides('user', options.accountId))
+  if (options.id) {
+    Object.assign(merged, getUiShellOverrides('user', options.id))
   }
   if (options.email) {
     Object.assign(merged, getUiShellOverrides('email', options.email))
@@ -90,7 +86,7 @@ export function setUiShellOverrides(
   writeStore(store)
 }
 
-// Guarda para personId y email (así el login las encuentra aunque cambie el id de sesión)
+// Guarda para id y email (así el login las encuentra aunque cambie el id de sesión)
 export function setUserUiShellOverrides(
   user: { id: string; email?: string },
   overrides: Partial<Record<ModuleId, ModulePermission>>,

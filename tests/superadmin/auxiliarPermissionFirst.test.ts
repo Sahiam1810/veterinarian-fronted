@@ -6,7 +6,7 @@ import type { MyPermissionsMap } from '../../src/modules/auth/services/myPermiss
 import type { ModuleId } from '../../src/modules/superadmin/types/index.ts'
 
 const auxiliarOptions = {
-  personId: 'aux-person-1',
+  id: 'aux-person-1',
   email: 'auxiliar@huellitas.test',
   roleId: 'aux-role-1',
 }

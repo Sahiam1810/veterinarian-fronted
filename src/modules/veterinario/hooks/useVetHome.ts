@@ -100,7 +100,7 @@ export function useVetHome() {
 
   // Tiempo real: prepend a rawNotifications; si el hub falla, sigue el bundle REST.
   const handleRealtimeNotification = useCallback((incoming: RealtimeNotificationPayload) => {
-    const sessionUserId = getStoredUser()?.personId
+    const sessionUserId = getStoredUser()?.id
     if (
       sessionUserId &&
       incoming.userId.toLowerCase() !== sessionUserId.toLowerCase()
