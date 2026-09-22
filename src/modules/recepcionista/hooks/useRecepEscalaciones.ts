@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { fetchMyModulePermissions, type MyPermissionsMap } from '@/modules/auth'
 import type {
+  ConversationsListMode,
   EscalacionesDirectoryPayload,
   EscalatedConversationListItem,
   EscalationStatusFilter,
 } from '../types/index.ts'
 import {
+  fetchAllConversations,
   fetchEscalatedConversations,
   resolveChannel,
   resolvePriority,
@@ -58,12 +60,16 @@ export function useRecepEscalaciones(
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<EscalationStatusFilter>('todos')
+  // Escaladas = cola de asesor (como antes); Todas = inbox completo del chat
+  const [listMode, setListMode] = useState<ConversationsListMode>('escaladas')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date())
 
   const isMountedRef = useRef(true)
+  const listModeRef = useRef(listMode)
+  listModeRef.current = listMode
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -98,7 +104,11 @@ export function useRecepEscalaciones(
       }
       setError(null)
       try {
-        const data = await fetchEscalatedConversations()
+        const mode = listModeRef.current
+        const data =
+          mode === 'todas'
+            ? await fetchAllConversations()
+            : await fetchEscalatedConversations()
         if (isMountedRef.current) {
           setDirectory(data)
           setLastRefreshedAt(new Date())
@@ -108,7 +118,7 @@ export function useRecepEscalaciones(
           const msg =
             err instanceof Error
               ? err.message
-              : 'No se pudo cargar la bandeja de conversaciones escaladas'
+              : 'No se pudo cargar la bandeja de conversaciones'
           setError(msg)
         }
       } finally {
@@ -132,7 +142,7 @@ export function useRecepEscalaciones(
     if (!enabled) return
     void loadDirectory(false)
     void loadPermissions()
-  }, [enabled, loadDirectory, loadPermissions])
+  }, [enabled, loadDirectory, loadPermissions, listMode])
 
   // Intervalo de auto-refresco en segundo plano (degradación segura / polling de respaldo)
   useEffect(() => {
@@ -143,11 +153,18 @@ export function useRecepEscalaciones(
     }, autoRefreshIntervalMs)
 
     return () => clearInterval(timer)
-  }, [enabled, autoRefreshIntervalMs, loadDirectory])
+  }, [enabled, autoRefreshIntervalMs, loadDirectory, listMode])
 
   useEffect(() => {
     if (!enabled) setSelectedId(null)
   }, [enabled])
+
+  const handleListModeChange = useCallback((mode: ConversationsListMode) => {
+    setListMode(mode)
+    setSelectedId(null)
+    setStatusFilter('todos')
+    setCurrentPage(1)
+  }, [])
 
   // =========================================================================
   // Handlers en tiempo real (SignalR)
@@ -156,6 +173,13 @@ export function useRecepEscalaciones(
   // 1. ChatEscalationCreated: agregar conversación al inicio de la lista
   const handleRealtimeEscalationCreated = useCallback(
     (payload: ChatEscalationCreatedPayload) => {
+      // En "Todas" un refetch evita desincronizar badges sin lógica duplicada
+      if (listModeRef.current === 'todas') {
+        void loadDirectory(true)
+        showNotice(`Nueva conversación: ${payload.clientName || 'Cliente'}`)
+        return
+      }
+
       setDirectory((curr) => {
         const currentItems = curr?.items ?? []
         // Evitar duplicados
@@ -202,6 +226,7 @@ export function useRecepEscalaciones(
           statusId: payload.status ?? null,
           createdAt: payload.createdAt,
           reason: payload.reason ?? null,
+          inboxBadge: 'esperando_asesor',
         }
 
         const nextItems = [newItem, ...currentItems]
@@ -210,7 +235,7 @@ export function useRecepEscalaciones(
 
       showNotice(`Nueva conversación: ${payload.clientName || 'Cliente'}`)
     },
-    [showNotice],
+    [loadDirectory, showNotice],
   )
 
   // 2. ChatMessageReceived: actualizar último mensaje en la fila
@@ -249,9 +274,15 @@ export function useRecepEscalaciones(
     [],
   )
 
-  // 3. ChatEscalationResolved: remover conversación de la lista
+  // 3. ChatEscalationResolved: remover de cola Escaladas; en Todas solo refrescar
   const handleRealtimeEscalationResolved = useCallback(
     (payload: ChatEscalationResolvedPayload) => {
+      if (listModeRef.current === 'todas') {
+        void loadDirectory(true)
+        showNotice('Conversación resuelta')
+        return
+      }
+
       setDirectory((curr) => {
         if (!curr) return curr
 
@@ -267,7 +298,7 @@ export function useRecepEscalaciones(
       setSelectedId((prev) => (prev === payload.escalationId ? null : prev))
       showNotice('Conversación resuelta')
     },
-    [showNotice],
+    [loadDirectory, showNotice],
   )
 
   // Conexión reactiva a SignalR
@@ -281,18 +312,21 @@ export function useRecepEscalaciones(
   // Reiniciar a la página 1 cuando cambia el filtro o la búsqueda
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, statusFilter])
+  }, [search, statusFilter, listMode])
 
   const filteredItems = useMemo(() => {
     if (!directory) return []
     const query = search.trim().toLowerCase()
 
     return directory.items.filter((item) => {
+      // En "Todas", los filtros de estado solo aplican a filas con escalamiento
       const matchesStatus =
         statusFilter === 'todos' ||
-        (statusFilter === 'pendientes' && item.status === 'Pendiente') ||
-        (statusFilter === 'en_atencion' && item.status === 'En atención') ||
-        (statusFilter === 'urgentes' && (item.priority === 'Urgente' || item.priority === 'Alta'))
+        (Boolean(item.escalationId) &&
+          ((statusFilter === 'pendientes' && item.status === 'Pendiente') ||
+            (statusFilter === 'en_atencion' && item.status === 'En atención') ||
+            (statusFilter === 'urgentes' &&
+              (item.priority === 'Urgente' || item.priority === 'Alta'))))
 
       const matchesQuery =
         !query ||
@@ -354,6 +388,8 @@ export function useRecepEscalaciones(
     setSearch,
     statusFilter,
     setStatusFilter,
+    listMode,
+    setListMode: handleListModeChange,
     isLoading,
     isRefreshing,
     error,

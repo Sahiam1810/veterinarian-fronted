@@ -56,6 +56,8 @@ export type {
   EscalationStatus,
   EscalationChannel,
   EscalationStatusFilter,
+  ConversationsListMode,
+  ConversationInboxBadge,
   MessageSenderRole,
   MessageDeliveryStatus,
   ChatMessageItem,

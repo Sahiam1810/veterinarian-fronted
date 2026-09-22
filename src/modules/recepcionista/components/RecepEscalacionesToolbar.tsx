@@ -1,6 +1,6 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { SearchIcon, ReloadIcon } from '@/global/components'
-import type { EscalationStatusFilter } from '../types'
+import type { ConversationsListMode, EscalationStatusFilter } from '../types'
 import { IS_DEV } from '@/config'
 import { notificationsHubManager } from '@/global/notifications'
 import { USE_MOCK_ESCALATIONS } from '../services/recepEscalacionesService.ts'
@@ -8,16 +8,23 @@ import { USE_MOCK_ESCALATIONS } from '../services/recepEscalacionesService.ts'
 interface RecepEscalacionesToolbarProps {
   search: string
   statusFilter: EscalationStatusFilter
+  listMode: ConversationsListMode
   isRefreshing?: boolean
   totalPending?: number
   totalUrgent?: number
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: EscalationStatusFilter) => void
+  onListModeChange: (value: ConversationsListMode) => void
   onRefresh?: () => void
 }
 
+const LIST_MODES: { id: ConversationsListMode; label: string; hint: string }[] = [
+  { id: 'escaladas', label: 'Escaladas', hint: 'Cola de quien espera asesor' },
+  { id: 'todas', label: 'Todas', hint: 'Todas las conversaciones del chat' },
+]
+
 const FILTERS: { id: EscalationStatusFilter; label: string }[] = [
-  { id: 'todos', label: 'Todas' },
+  { id: 'todos', label: 'Cualquiera' },
   { id: 'pendientes', label: 'Esperando Asesor' },
   { id: 'urgentes', label: 'Urgentes / Alta' },
   { id: 'en_atencion', label: 'En Atención' },
@@ -26,16 +33,16 @@ const FILTERS: { id: EscalationStatusFilter; label: string }[] = [
 export function RecepEscalacionesToolbar({
   search,
   statusFilter,
+  listMode,
   isRefreshing = false,
   totalPending,
   totalUrgent,
   onSearchChange,
   onStatusFilterChange,
+  onListModeChange,
   onRefresh,
 }: RecepEscalacionesToolbarProps) {
   const [isSimMenuOpen, setIsSimMenuOpen] = useState(false)
-
-  // Simulación de eventos SignalR para desarrollo y pruebas
   const showDevSim = IS_DEV || USE_MOCK_ESCALATIONS
 
   const handleSimulateNewEscalation = () => {
@@ -57,7 +64,6 @@ export function RecepEscalacionesToolbar({
   }
 
   const handleSimulateIncomingMessage = () => {
-    // Envía un mensaje simulado para la primera conversación o mock
     notificationsHubManager.simulateMessageReceived({
       messageId: `sim-msg-${Date.now()}`,
       conversationId: 'c-10000000-0000-0000-0000-000000000001',
@@ -71,7 +77,6 @@ export function RecepEscalacionesToolbar({
   }
 
   const handleSimulateResolution = () => {
-    // Resuelve la conversación mock 1
     notificationsHubManager.simulateEscalationResolved({
       escalationId: 'e-10000000-0000-0000-0000-000000000001',
       conversationId: 'c-10000000-0000-0000-0000-000000000001',
@@ -84,6 +89,33 @@ export function RecepEscalacionesToolbar({
 
   return (
     <div className="w-full min-w-0 flex flex-col gap-2.5 sm:gap-3">
+      <div
+        className="inline-flex self-start rounded-xl border border-border-tan bg-white p-1 gap-1 shadow-[0_2px_10px_rgba(35,78,70,0.03)]"
+        role="tablist"
+        aria-label="Vista de conversaciones"
+      >
+        {LIST_MODES.map((mode) => {
+          const active = listMode === mode.id
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              title={mode.hint}
+              onClick={() => onListModeChange(mode.id)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer ${
+                active
+                  ? 'bg-brand text-white shadow-xs'
+                  : 'text-sage hover:text-brand hover:bg-sage-soft/60'
+              }`}
+            >
+              {mode.label}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 min-w-0">
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {FILTERS.map((filter) => {
@@ -134,7 +166,7 @@ export function RecepEscalacionesToolbar({
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 px-3 py-2 text-xs font-bold transition cursor-pointer"
                 title="Simular eventos SignalR en tiempo real (desarrollo/QA)"
               >
-                <span>⚡ Simular</span>
+                <span>Simular</span>
               </button>
 
               {isSimMenuOpen && (
@@ -147,7 +179,7 @@ export function RecepEscalacionesToolbar({
                   />
                   <div className="absolute right-0 top-full mt-1.5 z-40 w-64 bg-white rounded-xl shadow-lg border border-border-tan p-1.5 flex flex-col gap-1 text-xs">
                     <p className="px-2.5 py-1 text-[10px] font-bold text-sage uppercase tracking-wider">
-                      Simulación SignalR §16
+                      Simulación SignalR
                     </p>
                     <button
                       type="button"
@@ -185,7 +217,7 @@ export function RecepEscalacionesToolbar({
               onClick={onRefresh}
               disabled={isRefreshing}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-border-tan text-brand hover:bg-sage-soft hover:border-brand/30 px-3.5 py-2 text-xs sm:text-sm font-bold transition cursor-pointer shrink-0 disabled:opacity-50"
-              title="Actualizar bandeja de escalamiento"
+              title="Actualizar bandeja"
             >
               <ReloadIcon
                 className={`w-4 h-4 text-brand ${isRefreshing ? 'animate-spin' : ''}`}
@@ -197,13 +229,17 @@ export function RecepEscalacionesToolbar({
       </div>
 
       <label className="relative w-full min-w-0">
-        <span className="sr-only">Buscar en conversaciones escaladas</span>
+        <span className="sr-only">Buscar conversaciones</span>
         <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-sage pointer-events-none" />
         <input
           type="search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Buscar por cliente, teléfono, motivo o último mensaje..."
+          placeholder={
+            listMode === 'todas'
+              ? 'Buscar por cliente, teléfono o último mensaje...'
+              : 'Buscar por cliente, teléfono, motivo o último mensaje...'
+          }
           className="w-full rounded-xl border border-border-tan bg-white pl-10 pr-3 py-2.5 text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition shadow-[0_2px_12px_rgba(35,78,70,0.03)]"
         />
       </label>

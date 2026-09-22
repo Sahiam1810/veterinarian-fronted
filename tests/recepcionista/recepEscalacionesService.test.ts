@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildEscalatedDirectory,
+  buildAllConversationsDirectory,
   formatWaitingTime,
   resolveChannel,
   resolvePriority,
@@ -271,6 +272,61 @@ test('resolveNavCatalog incluye conversaciones cuando tiene permisos asignados',
   const visible = resolveNavCatalog(RECEP_NAV_CATALOG, defaultPerms, defaultPerms)
   const hasChat = visible.some((i) => i.id === 'conversaciones')
   assert.equal(hasChat, true)
+})
+
+test('buildAllConversationsDirectory lista todas las conversaciones y solo decora con escalaciones', () => {
+  const now = new Date('2026-09-14T12:00:00.000Z')
+
+  const conversations: ChatConversationResponseDto[] = [
+    {
+      id: 'conv-bot',
+      clientName: 'Solo Bot',
+      channel: 'telegram',
+      createdAt: '2026-09-14T11:50:00.000Z',
+      lastMessageAt: '2026-09-14T11:55:00.000Z',
+      lastMessage: '¿Horario del sábado?',
+    },
+    {
+      id: 'conv-esc',
+      clientName: 'Con Asesor',
+      channel: 'web',
+      createdAt: '2026-09-14T10:00:00.000Z',
+      lastMessageAt: '2026-09-14T11:00:00.000Z',
+      lastMessage: 'Necesito un humano',
+    },
+  ]
+
+  const escalations: ChatEscalationResponseDto[] = [
+    {
+      id: 'esc-esc',
+      chatConversationId: 'conv-esc',
+      reason: 'Pide asesor',
+      priorityId: ESCALATION_PRIORITY_GUIDS.HIGH,
+      escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
+      createdAt: '2026-09-14T11:00:00.000Z',
+      resolvedAt: null,
+    },
+  ]
+
+  const payload = buildAllConversationsDirectory(conversations, escalations, now)
+
+  assert.equal(payload.totalCount, 2)
+  assert.equal(payload.items.length, 2)
+
+  const botRow = payload.items.find((i) => i.conversationId === 'conv-bot')
+  const escRow = payload.items.find((i) => i.conversationId === 'conv-esc')
+
+  assert.ok(botRow)
+  assert.equal(botRow?.escalationId, null)
+  assert.equal(botRow?.inboxBadge ?? null, null)
+
+  assert.ok(escRow)
+  assert.equal(escRow?.escalationId, 'esc-esc')
+  assert.equal(escRow?.inboxBadge, 'esperando_asesor')
+  assert.equal(escRow?.priority, 'Alta')
+
+  // Más reciente primero (lastMessageAt)
+  assert.equal(payload.items[0]?.conversationId, 'conv-bot')
 })
 
 test('fetchEscalatedConversations en modo mock devuelve datos completos de prueba', async () => {
