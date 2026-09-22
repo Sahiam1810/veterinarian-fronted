@@ -32,13 +32,26 @@ import {
 } from '@/global/notifications'
 import { createVetPermissionHelpers } from '../utils/vetModulePermissions'
 
-const IMPLEMENTED_ROUTES = new Set(['inicio', 'agenda', 'mascotas', 'duenos', 'reportes', 'perfil'])
+const IMPLEMENTED_ROUTES = new Set([
+  'inicio',
+  'agenda',
+  'mascotas',
+  'duenos',
+  'reportes',
+  'especiesRazas',
+  'servicios',
+  'profesionales',
+  'perfil',
+])
 
 const GATED_ROUTES: Record<string, NavPermissionKey> = {
   mascotas: 'vet.mascotas',
   agenda: 'vet.agenda',
   duenos: 'vet.duenos',
   reportes: 'vet.reportes',
+  especiesRazas: 'vet.especiesRazas',
+  servicios: 'vet.servicios',
+  profesionales: 'vet.profesionales',
 }
 
 export function useVetHome() {
