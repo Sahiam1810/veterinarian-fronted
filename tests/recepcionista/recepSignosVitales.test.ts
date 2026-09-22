@@ -78,7 +78,7 @@ test('updateAppointmentVitals envía PATCH /api/Appointments/{id}/vitals con pay
 
     return Response.json({
       id: 'cita-123',
-      weightKg: 14.5,
+      weight: 14.5,
       temperature: 38.6,
       heartRate: 110,
       respiratoryRate: 24,
@@ -86,7 +86,7 @@ test('updateAppointmentVitals envía PATCH /api/Appointments/{id}/vitals con pay
   }
 
   await updateAppointmentVitals('cita-123', {
-    weightKg: 14.5,
+    weight: 14.5,
     temperature: 38.6,
     heartRate: 110,
     respiratoryRate: 24,
@@ -96,7 +96,7 @@ test('updateAppointmentVitals envía PATCH /api/Appointments/{id}/vitals con pay
   assert.equal(calls[0].method, 'PATCH')
   assert.match(calls[0].url, /\/api\/Appointments\/cita-123\/vitals$/)
   assert.deepEqual(calls[0].body, {
-    weightKg: 14.5,
+    weight: 14.5,
     temperature: 38.6,
     heartRate: 110,
     respiratoryRate: 24,
@@ -117,7 +117,7 @@ test('fetchRecepDayAppointments mapea los signos vitales si existen en la respue
           scheduledEnd: '2026-09-22T10:30:00',
           statusName: 'AGENDADO',
           notes: 'Control anual',
-          weightKg: 28.2,
+          weight: 28.2,
           temperature: 38.9,
           heartRate: 95,
           respiratoryRate: 20,
@@ -156,4 +156,18 @@ test('fetchRecepDayAppointments mapea los signos vitales si existen en la respue
   assert.equal(appointments[0].temperature, 38.9)
   assert.equal(appointments[0].heartRate, 95)
   assert.equal(appointments[0].respiratoryRate, 20)
+})
+
+test('validación de roles autorizados para tomar signos vitales (auxiliar/superadmin vs recepcionista)', () => {
+  const isRoleAuthorized = (role?: string) => {
+    const r = role?.toLowerCase()
+    return r === 'auxiliar' || r === 'superadmin' || r === 'admin'
+  }
+
+  assert.equal(isRoleAuthorized('auxiliar'), true)
+  assert.equal(isRoleAuthorized('superadmin'), true)
+  assert.equal(isRoleAuthorized('admin'), true)
+  assert.equal(isRoleAuthorized('recepcionista'), false)
+  assert.equal(isRoleAuthorized('veterinario'), false)
+  assert.equal(isRoleAuthorized(undefined), false)
 })

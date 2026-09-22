@@ -6,6 +6,7 @@ import {
   SearchIcon,
   StethoscopeIcon,
 } from '@/global/components'
+import { getStoredUser } from '@/modules/auth'
 import type { RecepAgendaDayAppointment } from '../types'
 import { canMarkRecepNoAsistio, canCheckIn, isRecepAppointmentEditable, canTakeRecepVitals } from '../types'
 import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
@@ -19,6 +20,7 @@ interface RecepDayCalendarPanelProps {
   appointments: RecepAgendaDayAppointment[]
   isLoading?: boolean
   isCitaPaid?: (appointmentId: string) => boolean
+  canTakeVitals?: boolean
   onClose: () => void
   onChangeDate: (dateValue: string) => void
   onEditAppointment?: (appointment: RecepAgendaDayAppointment) => void
@@ -77,6 +79,7 @@ export function RecepDayCalendarPanel({
   appointments,
   isLoading = false,
   isCitaPaid,
+  canTakeVitals,
   onClose,
   onChangeDate,
   onEditAppointment,
@@ -88,6 +91,11 @@ export function RecepDayCalendarPanel({
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [vitalsTarget, setVitalsTarget] = useState<RecepAgendaDayAppointment | null>(null)
+
+  const userRole = getStoredUser()?.role?.toLowerCase()
+  const canTakeVitalsRole =
+    canTakeVitals ??
+    (userRole === 'auxiliar' || userRole === 'superadmin' || userRole === 'admin')
 
   const hours = useMemo(
     () => Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i),
@@ -315,8 +323,11 @@ export function RecepDayCalendarPanel({
               <AppointmentDetail
                 appointment={selected}
                 isPaid={isCitaPaid ? isCitaPaid(selected.id) : false}
+                canTakeVitalsRole={canTakeVitalsRole}
                 onClear={() => setSelectedId(null)}
-                onTakeVitals={() => setVitalsTarget(selected)}
+                onTakeVitals={
+                  canTakeVitalsRole ? () => setVitalsTarget(selected) : undefined
+                }
                 onEdit={
                   onEditAppointment
                     ? () => onEditAppointment(selected)
@@ -360,6 +371,7 @@ export function RecepDayCalendarPanel({
 function AppointmentDetail({
   appointment,
   isPaid = false,
+  canTakeVitalsRole = false,
   onClear,
   onTakeVitals,
   onEdit,
@@ -369,6 +381,7 @@ function AppointmentDetail({
 }: {
   appointment: RecepAgendaDayAppointment
   isPaid?: boolean
+  canTakeVitalsRole?: boolean
   onClear: () => void
   onTakeVitals?: () => void
   onEdit?: () => void
@@ -379,7 +392,7 @@ function AppointmentDetail({
   const canEdit = isRecepAppointmentEditable(appointment.status)
   const canNoShow = canMarkRecepNoAsistio(appointment.status)
   const canArrive = canCheckIn(appointment.status)
-  const canTakeVitals = canTakeRecepVitals(appointment.status)
+  const canTakeVitals = canTakeVitalsRole && canTakeRecepVitals(appointment.status)
   const hasVitals =
     appointment.weightKg != null ||
     appointment.temperature != null ||

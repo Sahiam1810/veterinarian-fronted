@@ -19,7 +19,7 @@ test('buildVetHomeDashboard mapea los 4 signos vitales tomados en recepción si 
     scheduledStart: '2026-09-22T10:30:00',
     scheduledEnd: '2026-09-22T11:00:00',
     createdAt: '2026-09-20T08:00:00Z',
-    weightKg: 12.4,
+    weight: 12.4,
     temperature: 38.8,
     heartRate: 105,
     respiratoryRate: 22,
@@ -27,14 +27,11 @@ test('buildVetHomeDashboard mapea los 4 signos vitales tomados en recepción si 
 
   const dashboard = buildVetHomeDashboard({
     profile: {
-      personId: 'vet-1',
-      userAccountId: 'vet-1',
+      id: 'vet-1',
       fullName: 'Dr. House',
       initials: 'DH',
-      userName: 'drhouse',
       email: 'drhouse@vet.com',
       role: 'VETERINARIO',
-      accountStatus: 'ACTIVE',
     },
     veterinarian: {
       id: 'vet-1',
@@ -104,7 +101,7 @@ test('buildVetAgendaPayload mapea los 4 signos vitales en los eventos de la agen
     scheduledStart: '2026-09-22T14:00:00',
     scheduledEnd: '2026-09-22T14:30:00',
     createdAt: '2026-09-20T08:00:00Z',
-    weightKg: 4.8,
+    weight: 4.8,
     temperature: 39.1,
     heartRate: 130,
     respiratoryRate: 28,

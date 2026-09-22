@@ -154,7 +154,7 @@ export function useAuxAgenda() {
           professional,
           service,
           notes: apt.notes || undefined,
-          weightKg: apt.weightKg ?? null,
+          weightKg: apt.weight ?? null,
           temperature: apt.temperature ?? null,
           heartRate: apt.heartRate ?? null,
           respiratoryRate: apt.respiratoryRate ?? null,

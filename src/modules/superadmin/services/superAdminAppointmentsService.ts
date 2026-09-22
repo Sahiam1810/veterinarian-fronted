@@ -14,7 +14,7 @@ export interface ApiAppointmentResponse {
   notes?: string | null
   requesterPhoneNumber?: string | null
   consultingRoom?: string | null
-  weightKg?: number | null
+  weight?: number | null
   temperature?: number | null
   heartRate?: number | null
   respiratoryRate?: number | null
@@ -22,7 +22,7 @@ export interface ApiAppointmentResponse {
 }
 
 export interface ApiAppointmentVitalsRequest {
-  weightKg?: number | null
+  weight?: number | null
   temperature?: number | null
   heartRate?: number | null
   respiratoryRate?: number | null

@@ -243,7 +243,7 @@ function mapAppointmentEvents(
         petId: link?.petId,
         rawStatusName: apt.statusName || undefined,
         veterinarianId: apt.veterinarianId,
-        weightKg: apt.weightKg ?? null,
+        weightKg: apt.weight ?? null,
         temperature: apt.temperature ?? null,
         heartRate: apt.heartRate ?? null,
         respiratoryRate: apt.respiratoryRate ?? null,

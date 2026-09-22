@@ -52,7 +52,7 @@ export interface ApiAppointmentResponse {
   scheduledStart: string
   scheduledEnd: string
   notes?: string | null
-  weightKg?: number | null
+  weight?: number | null
   temperature?: number | null
   heartRate?: number | null
   respiratoryRate?: number | null
@@ -60,7 +60,7 @@ export interface ApiAppointmentResponse {
 }
 
 export interface ApiAppointmentVitalsRequest {
-  weightKg?: number | null
+  weight?: number | null
   temperature?: number | null
   heartRate?: number | null
   respiratoryRate?: number | null

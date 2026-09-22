@@ -84,7 +84,7 @@ export function TomarSignosVitalesModal({
     }
 
     const payload: ApiAppointmentVitalsRequest = {
-      weightKg: weightNum,
+      weight: weightNum,
       temperature: tempNum,
       heartRate: hrNum,
       respiratoryRate: rrNum,

@@ -405,7 +405,7 @@ export function mapAppointmentToCita(
     service: apt.serviceName ?? undefined,
     consultorio,
     notes: cleanNotes || undefined,
-    weightKg: apt.weightKg ?? null,
+    weightKg: apt.weight ?? null,
     temperature: apt.temperature ?? null,
     heartRate: apt.heartRate ?? null,
     respiratoryRate: apt.respiratoryRate ?? null,

@@ -170,7 +170,7 @@ export async function fetchRecepHomeDashboard(): Promise<RecepHomeDashboard> {
         professionalName,
         service,
         status,
-        weightKg: apt.weightKg ?? null,
+        weightKg: apt.weight ?? null,
         temperature: apt.temperature ?? null,
         heartRate: apt.heartRate ?? null,
         respiratoryRate: apt.respiratoryRate ?? null,
