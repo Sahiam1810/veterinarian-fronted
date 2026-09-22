@@ -43,18 +43,12 @@ import {
   fetchAllRolePermissions,
   createRolePermission as apiCreateRolePermission,
   updateRolePermission as apiUpdateRolePermission,
-  fetchAllUserPermissions,
-  createUserPermission as apiCreateUserPermission,
-  updateUserPermission as apiUpdateUserPermission,
-  deleteUserPermission as apiDeleteUserPermission,
   type ApiRolePermissionResponse,
-  type ApiUserPermissionResponse,
 } from '../services/superAdminPermissionsService'
 import { API_BASE_URL } from '@/config'
 import { ApiError } from '@/services'
 import {
   clearDeprecatedUiShellOverrides,
-  clearUserUiShellOverrides,
 } from '../utils/uiShellPermissionsStorage'
 
 export const MODULES_INFO: ModuleInfo[] = [
@@ -155,7 +149,7 @@ function formatDate(isoString: string): string {
 }
 
 export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) {
-  // Solo SuperAdmin de plataforma carga matriz de permisos (Modules / ROLE_PERMISSIONS / USER_PERMISSIONS)
+  // Solo SuperAdmin de plataforma carga matriz de permisos (Modules / ROLE_PERMISSIONS)
   const canManagePermissions = options?.canManagePermissions ?? true
 
   const [users, setUsers] = useState<SystemUser[]>([])
@@ -168,7 +162,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
   >({})
   const [dbModules, setDbModules] = useState<ApiModuleResponse[]>([])
   const [rawRolePermissions, setRawRolePermissions] = useState<ApiRolePermissionResponse[]>([])
-  const [rawUserPermissions, setRawUserPermissions] = useState<ApiUserPermissionResponse[]>([])
 
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [permissionTarget, setPermissionTarget] = useState<PermissionTarget>({
@@ -176,6 +169,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     id: '',
   })
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [activeRoleSimulated, setActiveRoleSimulated] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'usuarios' | 'roles'>('usuarios')
   const [pendingSelectUserId, setPendingSelectUserId] = useState<string | null>(null)
@@ -208,9 +202,9 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     setIsLoading(true)
     setLoadError(null)
     try {
-      // Sin canManagePermissions no pedimos Modules / ROLE_PERMISSIONS / USER_PERMISSIONS
+      // Sin canManagePermissions no pedimos Modules / ROLE_PERMISSIONS
       // (403 ruidosos en consola para Auxiliar/Admin sin Plataforma).
-      const [usersRes, rolesRes, modulesRes, rolePermsRes, userPermsRes, accountsRes, specialtiesRes, vetsRes] =
+      const [usersRes, rolesRes, modulesRes, rolePermsRes, accountsRes, specialtiesRes, vetsRes] =
         await Promise.allSettled([
           fetchUsers(),
           fetchRoles(),
@@ -218,9 +212,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           canManagePermissions
             ? fetchAllRolePermissions()
             : Promise.resolve([] as ApiRolePermissionResponse[]),
-          canManagePermissions
-            ? fetchAllUserPermissions()
-            : Promise.resolve([] as ApiUserPermissionResponse[]),
           fetchUserAccounts(),
           fetchSpecialties(),
           fetchVeterinarians(),
@@ -234,7 +225,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       const concerning = [accountsRes]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
         .concat(
-          [rolesRes, modulesRes, rolePermsRes, userPermsRes, vetsRes, specialtiesRes].filter(
+          [rolesRes, modulesRes, rolePermsRes, vetsRes, specialtiesRes].filter(
             (r): r is PromiseRejectedResult => r.status === 'rejected' && !isExpectedForbidden(r),
           ),
         )
@@ -269,7 +260,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       let fetchedRoles: ApiRoleResponse[] = rolesRes.status === 'fulfilled' ? rolesRes.value : []
       const fetchedModules: ApiModuleResponse[] = modulesRes.status === 'fulfilled' ? modulesRes.value : []
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
-      const fetchedUserPerms: ApiUserPermissionResponse[] = userPermsRes.status === 'fulfilled' ? userPermsRes.value : []
       const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
       const fetchedAccounts =
         accountsRes.status === 'fulfilled' ? accountsRes.value : []
@@ -294,7 +284,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
       setDbModules(fetchedModules)
       setRawRolePermissions(fetchedRolePerms)
-      setRawUserPermissions(fetchedUserPerms)
 
       // Módulo ID a ModuleId
       const moduleMap = new Map<string, ModuleId>()
@@ -367,21 +356,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         const firstName = parts[0] || ''
         const lastName = parts.slice(1).join(' ') || ''
 
-        // Permisos personalizados de usuario
-        const userCustomPerms: Partial<Record<ModuleId, ModulePermission>> = {}
-        const userPerms = fetchedUserPerms.filter((up) => up.userId.toLowerCase() === u.id.toLowerCase())
-        userPerms.forEach((up) => {
-          const modId = moduleMap.get(up.moduleId.toLowerCase())
-          if (modId) {
-            userCustomPerms[modId] = {
-              view: up.canView,
-              create: up.canCreate,
-              edit: up.canEdit,
-              delete: up.canDelete,
-            }
-          }
-        })
-
         return {
           id: u.id,
           name: u.fullName,
@@ -393,7 +367,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           status: (u.isActive ? 'Activo' : 'Inactivo') as UserStatus,
           registrationDate: formatDate(u.createdAt),
           accountId: accountsByUserId.get(u.id.toLowerCase()),
-          customPermissions: Object.keys(userCustomPerms).length > 0 ? userCustomPerms : undefined,
         }
       })
 
@@ -424,12 +397,8 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       })
       setPermissionTarget((prev) => {
         if (prev.id) {
-          if (prev.type === 'role') {
-            const current = mappedRoles.find((r) => r.id === prev.id)
-            if (current && !current.isSystem) {
-              return prev
-            }
-          } else {
+          const current = mappedRoles.find((r) => r.id === prev.id)
+          if (current && !current.isSystem) {
             return prev
           }
         }
@@ -455,7 +424,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
   }
 
   const selectUserTarget = (userId: string) => {
-    setPermissionTarget({ type: 'user', id: userId })
+    setSelectedUserId(userId)
   }
 
   // Selected role object
@@ -464,15 +433,14 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     return validRoles.find((r) => r.id === selectedRoleId) || validRoles[0] || roles[0] || EMPTY_ROLE
   }, [roles, selectedRoleId])
 
-  // Selected target user (if permissionTarget.type === 'user')
+  // Selected target user
   const selectedTargetUser = useMemo(() => {
-    if (permissionTarget.type !== 'user') return null
-    return users.find((u) => u.id === permissionTarget.id) || null
-  }, [users, permissionTarget])
+    return users.find((u) => u.id === selectedUserId) || users[0] || null
+  }, [users, selectedUserId])
 
   // Base role of the selected target (nunca undefined: evita crash en UserInfoCard)
   const activeTargetRole = useMemo((): RoleDefinition => {
-    if (permissionTarget.type === 'user' && selectedTargetUser) {
+    if (selectedTargetUser) {
       return (
         roles.find((r) => r.id === selectedTargetUser.roleId) ||
         roles[0] || {
@@ -484,33 +452,13 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       )
     }
     return roles.find((r) => r.id === permissionTarget.id) || roles[0] || EMPTY_ROLE
-  }, [permissionTarget, selectedTargetUser, roles])
+  }, [permissionTarget.id, selectedTargetUser, roles])
 
-  // Active permissions for the Permissions Matrix (merging role + custom user overrides if any)
+  // Active permissions for the Permissions Matrix (role permissions)
   const activePermissions = useMemo((): Record<ModuleId, ModulePermission> => {
-    if (permissionTarget.type === 'user' && selectedTargetUser) {
-      const baseRole = roles.find((r) => r.id === selectedTargetUser.roleId) || roles[0]
-      const userCustom = selectedTargetUser.customPermissions || {}
-      const combined: Record<ModuleId, ModulePermission> = { ...(baseRole?.permissions || DEFAULT_PERMISSIONS_EMPTY) }
-
-      MODULES_INFO.forEach((mod) => {
-        if (userCustom[mod.id]) {
-          combined[mod.id] = { ...combined[mod.id], ...userCustom[mod.id] }
-        }
-      })
-
-      return combined
-    }
-
     const currentRole = roles.find((r) => r.id === permissionTarget.id) || roles[0]
     return currentRole?.permissions || DEFAULT_PERMISSIONS_EMPTY
-  }, [permissionTarget, selectedTargetUser, roles])
-
-  // Whether the selected target is a user with customized overrides
-  const isUserTargetCustomized = useMemo(() => {
-    if (permissionTarget.type !== 'user' || !selectedTargetUser) return false
-    return !!selectedTargetUser.customPermissions && Object.keys(selectedTargetUser.customPermissions).length > 0
-  }, [permissionTarget, selectedTargetUser])
+  }, [permissionTarget, roles])
 
   // Current active simulated role
   const currentSimulatedRole = useMemo(() => {
@@ -539,7 +487,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     })
   }, [users, filters])
 
-  // Al cambiar de modo, ajusta el objetivo de permisos
+  // Al cambiar de modo, ajusta el objetivo de permisos o usuario activo
   const setAccessMode = useCallback(
     (mode: 'usuarios' | 'roles') => {
       setActiveTab(mode)
@@ -557,35 +505,35 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
       const firstUser = filteredUsers[0] || users[0]
       if (firstUser) {
-        setPermissionTarget({ type: 'user', id: firstUser.id })
+        setSelectedUserId(firstUser.id)
       }
     },
     [filteredUsers, roles, selectedRoleId, users]
   )
 
-  // Selecciona automáticamente el primer usuario en modo "Por usuario"
+  // Selecciona automáticamente el primer usuario en modo "usuarios"
   useEffect(() => {
     if (activeTab !== 'usuarios') return
 
     if (pendingSelectUserId) {
       const pendingUser = users.find((u) => u.id === pendingSelectUserId)
       if (pendingUser) {
-        setPermissionTarget({ type: 'user', id: pendingUser.id })
+        setSelectedUserId(pendingUser.id)
         setPendingSelectUserId(null)
         return
       }
     }
 
-    if (permissionTarget.type === 'user') {
-      const stillVisible = filteredUsers.some((u) => u.id === permissionTarget.id)
+    if (selectedUserId) {
+      const stillVisible = filteredUsers.some((u) => u.id === selectedUserId)
       if (stillVisible) return
     }
 
     const firstUser = filteredUsers[0]
     if (firstUser) {
-      setPermissionTarget({ type: 'user', id: firstUser.id })
+      setSelectedUserId(firstUser.id)
     }
-  }, [activeTab, filteredUsers, pendingSelectUserId, permissionTarget, users])
+  }, [activeTab, filteredUsers, pendingSelectUserId, selectedUserId, users])
 
   // Permission Checker Methods
   const canView = (moduleId: ModuleId): boolean => {
@@ -608,55 +556,11 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     return !!currentSimulatedRole.permissions[moduleId]?.delete
   }
 
-  // Toggle single permission for selected target (role or user)
+  // Toggle single permission for selected role
   const togglePermission = (
     moduleId: ModuleId,
     permissionKey: keyof ModulePermission
   ) => {
-    if (permissionTarget.type === 'user' && selectedTargetUser) {
-      if (isProtectedSuperAdminUser(selectedTargetUser)) {
-        showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
-        return
-      }
-      // S47: las excepciones por usuario ahora pueden tanto agregar como
-      // revocar permisos heredados del rol base; no hay early-return aquí.
-      const currentCombined = activePermissions[moduleId] || {
-        view: false,
-        create: false,
-        edit: false,
-        delete: false,
-      }
-
-      const updatedModPerm = {
-        ...currentCombined,
-        [permissionKey]: !currentCombined[permissionKey],
-      }
-
-      if (permissionKey === 'view' && !updatedModPerm.view) {
-        updatedModPerm.create = false
-        updatedModPerm.edit = false
-        updatedModPerm.delete = false
-      }
-      if (permissionKey !== 'view' && updatedModPerm[permissionKey]) {
-        updatedModPerm.view = true
-      }
-
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => {
-          if (u.id !== selectedTargetUser.id) return u
-          return {
-            ...u,
-            customPermissions: {
-              ...(u.customPermissions || {}),
-              [moduleId]: updatedModPerm,
-            },
-          }
-        })
-      )
-      return
-    }
-
-    // Toggle for role
     setRoles((prevRoles) =>
       prevRoles.map((role) => {
         if (role.id !== permissionTarget.id) return role
@@ -697,32 +601,43 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
   // Save changes in Permissions Matrix to backend
   const saveRolePermissions = async () => {
     try {
-      if (permissionTarget.type === 'user' && selectedTargetUser) {
-        if (isProtectedSuperAdminUser(selectedTargetUser)) {
-          showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
-          return
-        }
-        const userCustom = selectedTargetUser.customPermissions || {}
-
+      const currentRole = roles.find((r) => r.id === permissionTarget.id)
+      if (currentRole?.isSystem || (currentRole && isPlatformSuperAdminRoleName(currentRole.name))) {
+        showToast('El rol SuperAdmin no se puede modificar.', 'warning')
+        return
+      }
+      if (currentRole) {
         for (const mod of dbModules) {
           const norm = normalizeModuleName(mod.name)
-          if (!norm || !userCustom[norm]) continue
+          if (!norm || !currentRole.permissions[norm]) continue
 
-          const perm = userCustom[norm]!
-          const existing = rawUserPermissions.find(
-            (p) => p.userId.toLowerCase() === selectedTargetUser.id.toLowerCase() && p.moduleId.toLowerCase() === mod.id.toLowerCase()
+          const perm = currentRole.permissions[norm]
+          const existing = rawRolePermissions.find(
+            (p) => p.roleId.toLowerCase() === currentRole.id.toLowerCase() && p.moduleId.toLowerCase() === mod.id.toLowerCase()
           )
 
+          const existingPerm = existing
+            ? { view: existing.canView, create: existing.canCreate, edit: existing.canEdit, delete: existing.canDelete }
+            : { view: false, create: false, edit: false, delete: false }
+
+          const hasChanged =
+            perm.view !== existingPerm.view ||
+            perm.create !== existingPerm.create ||
+            perm.edit !== existingPerm.edit ||
+            perm.delete !== existingPerm.delete
+
+          if (!hasChanged) continue
+
           if (existing) {
-            await apiUpdateUserPermission(existing.id, {
+            await apiUpdateRolePermission(existing.id, {
               canView: perm.view,
               canCreate: perm.create,
               canEdit: perm.edit,
               canDelete: perm.delete,
             })
           } else {
-            await apiCreateUserPermission({
-              userId: selectedTargetUser.id,
+            await apiCreateRolePermission({
+              roleId: currentRole.id,
               moduleId: mod.id,
               canView: perm.view,
               canCreate: perm.create,
@@ -731,138 +646,15 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
             })
           }
         }
-        showToast(
-          `Permisos de "${selectedTargetUser.name}" guardados. Los cambios aplican cuando el usuario cierre sesión y vuelva a ingresar.`,
-          'warning',
-        )
-      } else {
-        const currentRole = roles.find((r) => r.id === permissionTarget.id)
-        if (currentRole?.isSystem || (currentRole && isPlatformSuperAdminRoleName(currentRole.name))) {
-          showToast('El rol SuperAdmin no se puede modificar.', 'warning')
-          return
-        }
-        if (currentRole) {
-          for (const mod of dbModules) {
-            const norm = normalizeModuleName(mod.name)
-            if (!norm || !currentRole.permissions[norm]) continue
-
-            const perm = currentRole.permissions[norm]
-            const existing = rawRolePermissions.find(
-              (p) => p.roleId.toLowerCase() === currentRole.id.toLowerCase() && p.moduleId.toLowerCase() === mod.id.toLowerCase()
-            )
-
-            // S50: currentRole.permissions[norm] siempre existe (objeto con
-            // los 4 flags, aunque todos sean false), así que el continue de
-            // arriba nunca filtraba nada — esto reenviaba los 11 módulos en
-            // cada guardado, aunque solo se hubiera tocado uno. Comparar
-            // contra lo último cargado de la base evita pisar módulos que no
-            // cambiaron con un valor obsoleto que quedó en el estado local.
-            const existingPerm = existing
-              ? { view: existing.canView, create: existing.canCreate, edit: existing.canEdit, delete: existing.canDelete }
-              : { view: false, create: false, edit: false, delete: false }
-
-            const hasChanged =
-              perm.view !== existingPerm.view ||
-              perm.create !== existingPerm.create ||
-              perm.edit !== existingPerm.edit ||
-              perm.delete !== existingPerm.delete
-
-            if (!hasChanged) continue
-
-            if (existing) {
-              await apiUpdateRolePermission(existing.id, {
-                canView: perm.view,
-                canCreate: perm.create,
-                canEdit: perm.edit,
-                canDelete: perm.delete,
-              })
-            } else {
-              await apiCreateRolePermission({
-                roleId: currentRole.id,
-                moduleId: mod.id,
-                canView: perm.view,
-                canCreate: perm.create,
-                canEdit: perm.edit,
-                canDelete: perm.delete,
-              })
-            }
-          }
-        }
-        showToast(
-          `Permisos del rol "${selectedRole.name}" guardados. Los cambios aplican cuando el usuario cierre sesión y vuelva a ingresar.`,
-          'warning',
-        )
       }
+      showToast(
+        `Permisos del rol "${selectedRole.name}" guardados. Los cambios aplican cuando el usuario cierre sesión y vuelva a ingresar.`,
+        'warning',
+      )
       await loadData()
     } catch (err) {
       console.error('Error al guardar permisos', err)
       showToast('Error al persistir permisos en el servidor.')
-    }
-  }
-
-  // Reset user custom permissions back to default role
-  const resetUserPermissions = async (userId?: unknown) => {
-    const cleanId =
-      typeof userId === 'string' && userId
-        ? userId
-        : selectedTargetUser?.id
-    if (!cleanId) return
-
-    const protectedUser = users.find(
-      (u) => u.id.toLowerCase() === cleanId.toLowerCase()
-    )
-    if (protectedUser && isProtectedSuperAdminUser(protectedUser)) {
-      showToast('La cuenta SuperAdmin no admite cambios de permisos.', 'warning')
-      return
-    }
-
-    try {
-      // 1. Eliminar todas las excepciones del usuario en la base de datos (Oracle)
-      const userPermsToDelete = rawUserPermissions.filter(
-        (p) => p.userId && p.userId.toLowerCase() === cleanId.toLowerCase()
-      )
-      if (userPermsToDelete.length > 0) {
-        await Promise.allSettled(
-          userPermsToDelete.map((p) => apiDeleteUserPermission(p.id))
-        )
-      }
-
-      // 2. Limpiar overrides locales de UI Shell
-      clearUserUiShellOverrides({
-        id: cleanId,
-        email: users.find(
-          (u) => u.id.toLowerCase() === cleanId.toLowerCase()
-        )?.email,
-      })
-
-      // 3. Limpiar customPermissions en el estado local de inmediato
-      setUsers((prevUsers) =>
-        prevUsers.map((u) => {
-          if (u.id.toLowerCase() !== cleanId.toLowerCase()) return u
-          const { customPermissions: _, ...rest } = u
-          return rest
-        })
-      )
-      setRawUserPermissions((prev) =>
-        prev.filter(
-          (p) => p.userId && p.userId.toLowerCase() !== cleanId.toLowerCase()
-        )
-      )
-
-      // 4. Recargar datos limpios desde el backend
-      await loadData()
-
-      const targetUser = users.find(
-        (u) => u.id.toLowerCase() === cleanId.toLowerCase()
-      )
-      if (targetUser) {
-        showToast(
-          `Permisos de "${targetUser.name}" restablecidos a los del rol "${targetUser.roleName}"`
-        )
-      }
-    } catch (err) {
-      console.error('Error al restablecer permisos de usuario', err)
-      showToast('Error al restablecer permisos en el servidor.', 'warning')
     }
   }
 
@@ -885,9 +677,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
       const fullName = `${data.firstName} ${data.lastName}`.trim()
 
-      // Veterinario: validar especialidad/CMP antes de crear, y mandarlos en el
-      // mismo POST /api/Users — el backend crea el perfil en esa misma transacción
-      // (evita el perfil duplicado/placeholder que se creaba al llamar createVeterinarian aparte).
       let vetSpecialtyId: string | undefined
       let vetLicenseNumber: string | undefined
       if (isVeterinarioRoleName(roleName)) {
@@ -911,7 +700,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       const result = await apiCreateFullUser({
         fullName,
         email,
-        // Sin fallback literal: vacío lo rechaza createFullUser / UI (UserSuperAdmin).
         password: data.password ?? '',
         roleId: data.roleId,
         specialtyId: vetSpecialtyId,
@@ -924,7 +712,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       }
 
       // S35: horario por defecto solo al crear el profesional, una sola vez.
-      // El perfil de veterinario ya lo creó /api/Users; se busca su id para agendar el horario.
       if (isVeterinarioRoleName(roleName)) {
         const vets = await fetchVeterinarians()
         const created = vets.find((v) => v.userId.toLowerCase() === result.userId.toLowerCase())
@@ -936,7 +723,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       await loadData()
       setActiveTab('usuarios')
       setPendingSelectUserId(result.userId)
-      setPermissionTarget({ type: 'user', id: result.userId })
+      setSelectedUserId(result.userId)
 
       return { ok: true, email, mode: 'create' }
     } catch (err) {
@@ -1112,8 +899,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     selectedTargetUser,
     activeTargetRole,
     activePermissions,
-    isUserTargetCustomized,
-    resetUserPermissions,
     activeRoleSimulated,
     setActiveRoleSimulated,
     currentSimulatedRole,

@@ -5,7 +5,7 @@ import {
   DashboardBackgroundDecoration,
   PageToast,
 } from '../../components'
-import { useUserSuperAdmin, isProtectedSuperAdminUser, isVeterinarioRoleName } from '../../hooks'
+import { useUserSuperAdmin, isProtectedSuperAdminUser, isVeterinarioRoleName, isPlatformSuperAdminRoleName } from '../../hooks'
 import { DEFAULT_VET_SCHEDULE_NOTICE } from '../../utils/defaultVeterinarianSchedule'
 import type {
   SystemUser,
@@ -672,10 +672,7 @@ function RoleDrawer({
 interface PermissionMatrixPanelProps {
   permissionTarget: PermissionTarget
   selectedRole: RoleDefinition
-  selectedTargetUser: SystemUser | null
-  activeTargetRole: RoleDefinition
   activePermissions: Record<ModuleId, ModulePermission>
-  isUserTargetCustomized: boolean
   modulesInfo: ModuleInfo[]
   usersCountForRole?: number
   onTogglePermission: (
@@ -683,25 +680,19 @@ interface PermissionMatrixPanelProps {
     permissionKey: keyof ModulePermission
   ) => void
   onSavePermissions: () => void
-  onResetUserPermissions: () => void
 }
 
 function PermissionMatrixPanel({
   permissionTarget,
   selectedRole,
-  selectedTargetUser,
-  activeTargetRole,
   activePermissions,
-  isUserTargetCustomized,
   modulesInfo,
   usersCountForRole = 0,
   onTogglePermission,
   onSavePermissions,
-  onResetUserPermissions,
 }: PermissionMatrixPanelProps) {
-  const isTargetUser = permissionTarget.type === 'user' && selectedTargetUser !== null
   const isProtectedTarget =
-    isTargetUser && selectedTargetUser !== null && isProtectedSuperAdminUser(selectedTargetUser)
+    selectedRole.isSystem || isPlatformSuperAdminRoleName(selectedRole.name)
   const matrixLocked = isProtectedTarget
 
   return (
@@ -713,38 +704,13 @@ function PermissionMatrixPanel({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base sm:text-lg font-bold text-brand tracking-tight truncate">
-              {isTargetUser
-                ? `Permisos de: ${selectedTargetUser.name}`
-                : `Permisos del rol: ${selectedRole.name}`}
+              Permisos del rol: {selectedRole.name}
             </h2>
-            {isTargetUser && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cream text-brand border border-border-tan">
-                Rol base: {selectedTargetUser.roleName}
-              </span>
-            )}
-            {isTargetUser && isUserTargetCustomized && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-terracotta-soft text-terracotta border border-terracotta/20">
-                Con excepciones
-              </span>
-            )}
           </div>
           <p className="text-[11px] text-sage mt-0.5 line-clamp-2">
-            {isTargetUser
-              ? `Los cambios aquí solo afectan a ${selectedTargetUser.name}. Hereda de ${activeTargetRole.name} salvo excepciones.`
-              : `Estos permisos aplican a ${usersCountForRole} usuario${usersCountForRole === 1 ? '' : 's'} con el rol "${selectedRole.name}".`}
+            Estos permisos aplican a {usersCountForRole} usuario{usersCountForRole === 1 ? '' : 's'} con el rol "{selectedRole.name}".
           </p>
         </div>
-
-        {isTargetUser && isUserTargetCustomized && !matrixLocked && (
-          <button
-            type="button"
-            onClick={() => onResetUserPermissions()}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border-tan bg-bone hover:bg-cream text-charcoal text-[11px] font-semibold transition cursor-pointer shrink-0 shadow-2xs"
-            title="Restablecer a los permisos predeterminados del rol"
-          >
-            <span>Restablecer a rol base</span>
-          </button>
-        )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
@@ -767,18 +733,6 @@ function PermissionMatrixPanel({
                 delete: false,
               }
 
-              const rolePerms = activeTargetRole?.permissions[mod.id] || {
-                view: false,
-                create: false,
-                edit: false,
-                delete: false,
-              }
-
-              const isInheritedView = isTargetUser && Boolean(rolePerms.view)
-              const isInheritedCreate = isTargetUser && Boolean(rolePerms.create)
-              const isInheritedEdit = isTargetUser && Boolean(rolePerms.edit)
-              const isInheritedDelete = isTargetUser && Boolean(rolePerms.delete)
-
               return (
                 <tr key={mod.id} className="hover:bg-bone/40 transition-colors">
                   <td className="py-1.5 px-2 font-semibold text-charcoal truncate">
@@ -790,14 +744,7 @@ function PermissionMatrixPanel({
                       checked={perms.view}
                       disabled={matrixLocked}
                       onChange={() => onTogglePermission(mod.id, 'view')}
-                      title={
-                        isInheritedView
-                          ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
-                          : undefined
-                      }
-                      className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
-                        isInheritedView ? 'opacity-70' : 'disabled:opacity-50'
-                      }`}
+                      className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Permiso Ver para ${mod.label}`}
                     />
                   </td>
@@ -808,14 +755,7 @@ function PermissionMatrixPanel({
                         checked={perms.create}
                         disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'create')}
-                        title={
-                          isInheritedCreate
-                            ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
-                            : undefined
-                        }
-                        className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
-                          isInheritedCreate ? 'opacity-70' : 'disabled:opacity-50'
-                        }`}
+                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Crear para ${mod.label}`}
                       />
                     ) : (
@@ -829,14 +769,7 @@ function PermissionMatrixPanel({
                         checked={perms.edit}
                         disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'edit')}
-                        title={
-                          isInheritedEdit
-                            ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
-                            : undefined
-                        }
-                        className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
-                          isInheritedEdit ? 'opacity-70' : 'disabled:opacity-50'
-                        }`}
+                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Editar para ${mod.label}`}
                       />
                     ) : (
@@ -850,14 +783,7 @@ function PermissionMatrixPanel({
                         checked={perms.delete}
                         disabled={matrixLocked}
                         onChange={() => onTogglePermission(mod.id, 'delete')}
-                        title={
-                          isInheritedDelete
-                            ? 'El rol base ya incluye este permiso. Desmárcalo para crear una excepción que se lo quite solo a este usuario.'
-                            : undefined
-                        }
-                        className={`w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed ${
-                          isInheritedDelete ? 'opacity-70' : 'disabled:opacity-50'
-                        }`}
+                        className="w-4 h-4 rounded border border-brand/40 text-brand accent-brand cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         aria-label={`Permiso Eliminar para ${mod.label}`}
                       />
                     ) : (
@@ -875,9 +801,7 @@ function PermissionMatrixPanel({
         <span className="text-[11px] text-sage truncate">
           {isProtectedTarget
             ? 'Los permisos de SuperAdmin son fijos y no se pueden cambiar.'
-            : isTargetUser
-              ? `Excepciones para ${selectedTargetUser.name}`
-              : `Permisos por defecto del rol ${selectedRole.name}`}
+            : `Permisos por defecto del rol ${selectedRole.name}`}
         </span>
         {!matrixLocked && (
           <button
@@ -885,7 +809,7 @@ function PermissionMatrixPanel({
             onClick={onSavePermissions}
             className="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-bold transition shadow-xs cursor-pointer active:translate-y-0.5 shrink-0"
           >
-            {isTargetUser ? 'Guardar excepciones' : 'Guardar permisos del rol'}
+            Guardar permisos del rol
           </button>
         )}
       </div>
@@ -1483,15 +1407,11 @@ function ByRoleModeView({
         <PermissionMatrixPanel
           permissionTarget={permissionTarget}
           selectedRole={selectedRole}
-          selectedTargetUser={null}
-          activeTargetRole={selectedRole}
           activePermissions={activePermissions}
-          isUserTargetCustomized={false}
           modulesInfo={modulesInfo}
           usersCountForRole={usersCountForRole}
           onTogglePermission={onTogglePermission}
           onSavePermissions={onSavePermissions}
-          onResetUserPermissions={() => undefined}
         />
       </div>
     </div>
@@ -1757,9 +1677,7 @@ export function UserSuperAdmin({
                 specialties={specialties}
                 vetProfileByUserId={vetProfileByUserId}
                 filters={filters}
-                selectedUserId={
-                  permissionTarget.type === 'user' ? permissionTarget.id : null
-                }
+                selectedUserId={selectedTargetUser?.id ?? null}
                 selectedTargetUser={selectedTargetUser}
                 activeTargetRole={activeTargetRole}
                 canEditUser={canEditUser}
