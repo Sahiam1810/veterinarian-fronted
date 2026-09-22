@@ -195,6 +195,8 @@ export function PuntoInicio({
           serviceName={selectedAppointment.service}
           statusName={selectedAppointment.rawStatusName || selectedAppointment.status}
           scheduledStart={selectedAppointment.startTime}
+          initialWeight={selectedAppointment.weightKg}
+          initialTemperature={selectedAppointment.temperature}
           onClose={handleCloseRegistrar}
           onSuccess={(result) => {
             void handleRegistrationSuccess(result)

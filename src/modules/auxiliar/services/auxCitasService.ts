@@ -29,7 +29,15 @@ export async function updateAppointment(id: string, data: ApiUpdateAppointmentRe
   return apiClient.put<void>(`/api/Appointments/${id}`, data)
 }
 
-// 5. Eliminar cita
+// 5. Actualizar signos vitales de la cita
+export async function updateAppointmentVitals(
+  appointmentId: string,
+  data: import('../types').ApiAppointmentVitalsRequest,
+): Promise<void> {
+  return apiClient.patch<void>(`/api/Appointments/${appointmentId}/vitals`, data)
+}
+
+// 6. Eliminar cita
 export async function deleteAppointment(id: string): Promise<void> {
   return apiClient.delete<void>(`/api/Appointments/${id}`)
 }

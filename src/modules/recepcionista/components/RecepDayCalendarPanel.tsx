@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   CalendarIcon,
   EditIcon,
@@ -6,10 +6,13 @@ import {
   SearchIcon,
   StethoscopeIcon,
 } from '@/global/components'
+import { fetchMyModulePermissions } from '@/modules/auth'
 import type { RecepAgendaDayAppointment } from '../types'
-import { canMarkRecepNoAsistio, canCheckIn, isRecepAppointmentEditable } from '../types'
+import { canMarkRecepNoAsistio, canCheckIn, isRecepAppointmentEditable, canTakeRecepVitals } from '../types'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
 import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
 import { CloseIcon } from './RecepMascotasIcons'
+import { TomarSignosVitalesModal } from './TomarSignosVitalesModal'
 
 interface RecepDayCalendarPanelProps {
   isOpen: boolean
@@ -18,12 +21,14 @@ interface RecepDayCalendarPanelProps {
   appointments: RecepAgendaDayAppointment[]
   isLoading?: boolean
   isCitaPaid?: (appointmentId: string) => boolean
+  canTakeVitals?: boolean
   onClose: () => void
   onChangeDate: (dateValue: string) => void
   onEditAppointment?: (appointment: RecepAgendaDayAppointment) => void
   onMarkNoAsistio?: (appointment: RecepAgendaDayAppointment) => void
   onCheckIn?: (appointment: RecepAgendaDayAppointment) => void
   onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
+  onVitalsUpdated?: () => void
 }
 
 const HOUR_START = 8
@@ -75,15 +80,40 @@ export function RecepDayCalendarPanel({
   appointments,
   isLoading = false,
   isCitaPaid,
+  canTakeVitals,
   onClose,
   onChangeDate,
   onEditAppointment,
   onMarkNoAsistio,
   onCheckIn,
   onRegistrarPago,
+  onVitalsUpdated,
 }: RecepDayCalendarPanelProps) {
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [vitalsTarget, setVitalsTarget] = useState<RecepAgendaDayAppointment | null>(null)
+  const [canEditSignosVitales, setCanEditSignosVitales] = useState(false)
+
+  useEffect(() => {
+    if (canTakeVitals !== undefined) return
+    let cancelled = false
+    fetchMyModulePermissions()
+      .then((permissions) => {
+        if (cancelled) return
+        setCanEditSignosVitales(createRecepPermissionHelpers(permissions).canEditModule('signosVitales'))
+      })
+      .catch(() => {
+        if (!cancelled) setCanEditSignosVitales(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [canTakeVitals])
+
+  // Permiso real "Signos Vitales" (módulo propio en el backend, separado de
+  // "Citas") -- no un rol hardcodeado, así que si SuperAdmin se lo otorga a
+  // Recepcionista desde el panel, el botón aparece solo sin tocar código.
+  const canTakeVitalsRole = canTakeVitals ?? canEditSignosVitales
 
   const hours = useMemo(
     () => Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i),
@@ -311,7 +341,11 @@ export function RecepDayCalendarPanel({
               <AppointmentDetail
                 appointment={selected}
                 isPaid={isCitaPaid ? isCitaPaid(selected.id) : false}
+                canTakeVitalsRole={canTakeVitalsRole}
                 onClear={() => setSelectedId(null)}
+                onTakeVitals={
+                  canTakeVitalsRole ? () => setVitalsTarget(selected) : undefined
+                }
                 onEdit={
                   onEditAppointment
                     ? () => onEditAppointment(selected)
@@ -329,6 +363,25 @@ export function RecepDayCalendarPanel({
           </aside>
         </div>
       </div>
+
+      {vitalsTarget && (
+        <TomarSignosVitalesModal
+          isOpen={Boolean(vitalsTarget)}
+          appointmentId={vitalsTarget.id}
+          petName={vitalsTarget.petName}
+          initialVitals={{
+            weightKg: vitalsTarget.weightKg,
+            temperature: vitalsTarget.temperature,
+            heartRate: vitalsTarget.heartRate,
+            respiratoryRate: vitalsTarget.respiratoryRate,
+          }}
+          onClose={() => setVitalsTarget(null)}
+          onSuccess={(_updated) => {
+            onVitalsUpdated?.()
+            setVitalsTarget(null)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -336,7 +389,9 @@ export function RecepDayCalendarPanel({
 function AppointmentDetail({
   appointment,
   isPaid = false,
+  canTakeVitalsRole = false,
   onClear,
+  onTakeVitals,
   onEdit,
   onMarkNoAsistio,
   onCheckIn,
@@ -344,7 +399,9 @@ function AppointmentDetail({
 }: {
   appointment: RecepAgendaDayAppointment
   isPaid?: boolean
+  canTakeVitalsRole?: boolean
   onClear: () => void
+  onTakeVitals?: () => void
   onEdit?: () => void
   onMarkNoAsistio?: () => void
   onCheckIn?: () => void
@@ -353,6 +410,12 @@ function AppointmentDetail({
   const canEdit = isRecepAppointmentEditable(appointment.status)
   const canNoShow = canMarkRecepNoAsistio(appointment.status)
   const canArrive = canCheckIn(appointment.status)
+  const canTakeVitals = canTakeVitalsRole && canTakeRecepVitals(appointment.status)
+  const hasVitals =
+    appointment.weightKg != null ||
+    appointment.temperature != null ||
+    appointment.heartRate != null ||
+    appointment.respiratoryRate != null
 
   return (
     <div className="p-4 flex flex-col gap-3 min-h-0">
@@ -398,6 +461,44 @@ function AppointmentDetail({
         />
       </div>
 
+      {/* Signos Vitales si ya fueron tomados */}
+      {hasVitals && (
+        <div className="rounded-xl border border-border-tan bg-white p-3 space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-sage flex items-center justify-between">
+            <span>🩺 Signos Vitales (Recepción)</span>
+            <span className="text-[9px] bg-mint-soft text-brand px-1.5 py-0.5 rounded-md font-bold">
+              Registrados
+            </span>
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-bone/50 p-2 rounded-lg border border-border-tan/60">
+              <span className="text-[10px] text-sage block font-bold">Peso:</span>
+              <span className="font-extrabold text-charcoal">
+                {appointment.weightKg != null ? `${appointment.weightKg} kg` : '—'}
+              </span>
+            </div>
+            <div className="bg-bone/50 p-2 rounded-lg border border-border-tan/60">
+              <span className="text-[10px] text-sage block font-bold">Temp:</span>
+              <span className="font-extrabold text-charcoal">
+                {appointment.temperature != null ? `${appointment.temperature} °C` : '—'}
+              </span>
+            </div>
+            <div className="bg-bone/50 p-2 rounded-lg border border-border-tan/60">
+              <span className="text-[10px] text-sage block font-bold">FC:</span>
+              <span className="font-extrabold text-charcoal">
+                {appointment.heartRate != null ? `${appointment.heartRate} lpm` : '—'}
+              </span>
+            </div>
+            <div className="bg-bone/50 p-2 rounded-lg border border-border-tan/60">
+              <span className="text-[10px] text-sage block font-bold">FR:</span>
+              <span className="font-extrabold text-charcoal">
+                {appointment.respiratoryRate != null ? `${appointment.respiratoryRate} rpm` : '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {appointment.notes && (
         <div className="rounded-xl bg-cream/80 border border-border-tan px-3 py-2.5">
           <p className="text-[10px] font-bold uppercase tracking-wide text-sage">Notas</p>
@@ -405,6 +506,18 @@ function AppointmentDetail({
             {appointment.notes}
           </p>
         </div>
+      )}
+
+      {/* Botón Tomar Signos Vitales disponible para recepcionista / auxiliar en citas activas */}
+      {canTakeVitals && onTakeVitals && (
+        <button
+          type="button"
+          onClick={onTakeVitals}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-brand/30 bg-mint-soft text-brand px-4 py-2.5 text-xs sm:text-sm font-bold hover:bg-brand hover:text-white transition cursor-pointer shadow-2xs active:translate-y-0.5"
+        >
+          <StethoscopeIcon className="w-4 h-4" />
+          <span>{hasVitals ? 'Actualizar Signos Vitales' : 'Tomar Signos Vitales'}</span>
+        </button>
       )}
 
       {canEdit && (onEdit || onMarkNoAsistio || onCheckIn || onRegistrarPago) ? (

@@ -178,6 +178,10 @@ export function useVetHome() {
       ownerName: appointment.ownerName,
       ownerPhone: appointment.ownerPhone,
       rawStatusName: appointment.rawStatusName,
+      weightKg: appointment.weightKg,
+      temperature: appointment.temperature,
+      heartRate: appointment.heartRate,
+      respiratoryRate: appointment.respiratoryRate,
     }
 
     setSelectedAppointment(target)
@@ -197,6 +201,10 @@ export function useVetHome() {
       ownerName: appointment.ownerName,
       ownerPhone: appointment.ownerPhone,
       rawStatusName: appointment.rawStatusName,
+      weightKg: appointment.weightKg,
+      temperature: appointment.temperature,
+      heartRate: appointment.heartRate,
+      respiratoryRate: appointment.respiratoryRate,
     }
 
     setSelectedAppointment(target)

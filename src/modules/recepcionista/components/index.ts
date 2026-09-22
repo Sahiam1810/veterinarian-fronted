@@ -26,6 +26,7 @@ export { RecepEscalacionesView } from './RecepEscalacionesView'
 export { RecepChatMessageBubble } from './RecepChatMessageBubble'
 export { RecepResolverEscalacionModal } from './RecepResolverEscalacionModal'
 export { RecepConversacionDetalleModal } from './RecepConversacionDetalleModal'
+export { TomarSignosVitalesModal } from './TomarSignosVitalesModal'
 
 
 

@@ -239,9 +239,15 @@ export async function fetchRecepDayAppointments(
       service,
       notes: apt.notes || undefined,
       status,
+      weightKg: apt.weight ?? null,
+      temperature: apt.temperature ?? null,
+      heartRate: apt.heartRate ?? null,
+      respiratoryRate: apt.respiratoryRate ?? null,
     }
   })
 }
+
+export { updateAppointmentVitals, type ApiAppointmentVitalsRequest } from '../../superadmin/services/superAdminAppointmentsService.ts'
 
 // Crear una cita nueva en el backend
 export async function createRecepAppointment(

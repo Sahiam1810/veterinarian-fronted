@@ -28,6 +28,10 @@ export interface RecepDayAppointment {
   professionalName: string
   service: string
   status: RecepAppointmentStatus
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 export interface RecepHomeDashboard {

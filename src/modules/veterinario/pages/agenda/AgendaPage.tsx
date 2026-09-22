@@ -125,6 +125,8 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
               ? `${selectedAppointment.dateKey}T${selectedAppointment.startTime}:00`
               : undefined
           }
+          initialWeight={selectedAppointment.weightKg}
+          initialTemperature={selectedAppointment.temperature}
           onClose={handleCloseRegistrar}
           onSuccess={(result) => {
             void handleRegistrationSuccess(result)
