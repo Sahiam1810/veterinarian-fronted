@@ -43,6 +43,8 @@ export interface EspeciesRazasSuperAdminProps {
   onMarkNotificationRead?: (id: string) => void
   onMarkAllNotificationsRead?: () => void
   onReloadNotifications?: () => void
+  embedded?: boolean
+  onNotice?: (message: string) => void
 }
 
 export function EspeciesRazasSuperAdmin({
@@ -65,6 +67,8 @@ export function EspeciesRazasSuperAdmin({
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
   onReloadNotifications,
+  embedded = false,
+  onNotice,
 }: EspeciesRazasSuperAdminProps = {}) {
   // Permisos CRUD del módulo especiesRazas
   const canCreate = canCreateModule ? canCreateModule('especiesRazas') : true
@@ -123,6 +127,11 @@ export function EspeciesRazasSuperAdmin({
     }
   }
 
+  useEffect(() => {
+    if (!activeNotification || !onNotice) return
+    onNotice(activeNotification)
+  }, [activeNotification, onNotice])
+
   const confirmDeleteRaza = async () => {
     if (!pendingDeleteRaza) return
     setIsDeleting(true)
@@ -134,41 +143,13 @@ export function EspeciesRazasSuperAdmin({
     }
   }
 
-  return (
-    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
-      <SuperAdminHeader
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        userName={userName}
-        userRole={userRole}
-        notifications={notifications}
-        isLoadingNotifications={isLoadingNotifications}
-        notificationsError={notificationsError}
-        onMarkNotificationRead={onMarkNotificationRead}
-        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
-        onReloadNotifications={onReloadNotifications}
-        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
-      />
+  const mainContent = (
+    <>
+      <DashboardBackgroundDecoration />
 
-      <div className="flex-1 flex overflow-hidden relative">
-        <SuperAdminSidebar
-          isOpen={isSidebarOpen}
-          onClose={closeSidebar}
-          activeRoute={activeRoute}
-          onNavigate={handleSidebarNavigate}
-          canViewModule={canViewModule}
-          onLogout={onLogout}
-        />
-
-        <main
-          key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
-        >
-          <DashboardBackgroundDecoration />
-
-          {activeNotification && (
-            <PageToast message={activeNotification} tone={toastTone} />
-          )}
+      {activeNotification && !onNotice && (
+        <PageToast message={activeNotification} tone={toastTone} />
+      )}
 
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
             <div>
@@ -392,9 +373,11 @@ export function EspeciesRazasSuperAdmin({
               </div>
             </section>
           </div>
-        </main>
-      </div>
+    </>
+  )
 
+  const drawersAndModals = (
+    <>
       <EspecieDrawer
         isOpen={especieDrawerOpen}
         editing={editingEspecie}
@@ -464,6 +447,53 @@ export function EspeciesRazasSuperAdmin({
           onConfirm={() => void confirmDeleteRaza()}
         />
       )}
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
+        {mainContent}
+        {drawersAndModals}
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
+      <SuperAdminHeader
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        userName={userName}
+        userRole={userRole}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
+      />
+
+      <div className="flex-1 flex overflow-hidden relative">
+        <SuperAdminSidebar
+          isOpen={isSidebarOpen}
+          onClose={closeSidebar}
+          activeRoute={activeRoute}
+          onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
+          onLogout={onLogout}
+        />
+
+        <main
+          key={activeRoute}
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
+        >
+          {mainContent}
+        </main>
+      </div>
+
+      {drawersAndModals}
     </div>
   )
 }

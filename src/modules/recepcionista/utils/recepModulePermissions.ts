@@ -9,6 +9,10 @@ export type RecepModuleId =
   | 'duenos'
   | 'conversaciones'
   | 'signosVitales'
+  | 'especiesRazas'
+  | 'servicios'
+  | 'profesionales'
+  | 'reportes'
 
 interface RecepModulePermissionRule {
   viewModules: string[]
@@ -53,6 +57,30 @@ export const RECEP_MODULE_PERMISSION_RULES: Record<
     createModule: 'Signos Vitales',
     editModule: 'Signos Vitales',
     deleteModule: 'Signos Vitales',
+  },
+  especiesRazas: {
+    viewModules: ['Especies y Razas'],
+    createModule: 'Especies y Razas',
+    editModule: 'Especies y Razas',
+    deleteModule: 'Especies y Razas',
+  },
+  servicios: {
+    viewModules: ['Servicios'],
+    createModule: 'Servicios',
+    editModule: 'Servicios',
+    deleteModule: 'Servicios',
+  },
+  profesionales: {
+    viewModules: ['Veterinarios'],
+    createModule: 'Veterinarios',
+    editModule: 'Veterinarios',
+    deleteModule: 'Veterinarios',
+  },
+  reportes: {
+    viewModules: ['Reportes'],
+    createModule: 'Reportes',
+    editModule: 'Reportes',
+    deleteModule: 'Reportes',
   },
 }
 

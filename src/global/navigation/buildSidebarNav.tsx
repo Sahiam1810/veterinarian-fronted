@@ -9,6 +9,8 @@ import {
   SettingsIcon,
   OwnersIcon,
   ChatIcon,
+  StethoscopeIcon,
+  DoctorIcon,
 } from '../components/Icons.tsx'
 import type { NavCatalogItem, NavIconKey } from './types.ts'
 import type { SidebarNavItem, SidebarPrimaryAction } from '../components/Sidebar.tsx'
@@ -21,6 +23,7 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
     case 'calendar':
       return <CalendarIcon className={className} />
     case 'paw':
+    case 'species':
       return <PawIcon className="w-4.5 h-4.5 shrink-0" />
     case 'clinical-history':
       return <ClinicalHistoryIcon className={className} />
@@ -36,6 +39,10 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
       return <ChatIcon className={className} />
     case 'reports':
       return <SettingsIcon className={className} />
+    case 'services':
+      return <StethoscopeIcon className={className} />
+    case 'doctors':
+      return <DoctorIcon className={className} />
     default:
       return null
   }
