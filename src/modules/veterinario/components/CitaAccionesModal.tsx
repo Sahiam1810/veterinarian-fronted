@@ -20,6 +20,10 @@ export interface CitaActionTarget {
   ownerName?: string
   ownerPhone?: string
   rawStatusName?: string
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 interface CitaAccionesModalProps {
@@ -226,6 +230,49 @@ export function CitaAccionesModal({
                 </div>
               )}
             </div>
+
+            {/* Signos Vitales tomados en recepción */}
+            {(appointment.weightKg != null ||
+              appointment.temperature != null ||
+              appointment.heartRate != null ||
+              appointment.respiratoryRate != null) && (
+              <div className="rounded-xl border border-border-tan bg-white p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-sage flex items-center gap-1.5">
+                    <span>🩺</span> Signos Vitales al Llegar (Recepción)
+                  </h4>
+                  <span className="text-[10px] font-semibold text-brand bg-mint-soft border border-brand/20 px-2 py-0.5 rounded-full">
+                    Tomados en recepción
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <div className="bg-bone/60 border border-border-tan/70 rounded-xl p-2 text-center">
+                    <span className="text-[10px] font-bold uppercase text-sage block">Peso</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {appointment.weightKg != null ? `${appointment.weightKg} kg` : '—'}
+                    </span>
+                  </div>
+                  <div className="bg-bone/60 border border-border-tan/70 rounded-xl p-2 text-center">
+                    <span className="text-[10px] font-bold uppercase text-sage block">Temperatura</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {appointment.temperature != null ? `${appointment.temperature} °C` : '—'}
+                    </span>
+                  </div>
+                  <div className="bg-bone/60 border border-border-tan/70 rounded-xl p-2 text-center">
+                    <span className="text-[10px] font-bold uppercase text-sage block">Frec. Cardíaca</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {appointment.heartRate != null ? `${appointment.heartRate} lpm` : '—'}
+                    </span>
+                  </div>
+                  <div className="bg-bone/60 border border-border-tan/70 rounded-xl p-2 text-center">
+                    <span className="text-[10px] font-bold uppercase text-sage block">Frec. Resp.</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {appointment.respiratoryRate != null ? `${appointment.respiratoryRate} rpm` : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Acción principal: Atender y Registrar Consulta */}
             <div className="space-y-2">

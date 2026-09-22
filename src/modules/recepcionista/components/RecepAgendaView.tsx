@@ -55,6 +55,7 @@ interface RecepAgendaViewProps {
   onMarkNoAsistio?: (appointment: RecepAgendaDayAppointment) => void
   onCheckIn?: (appointment: RecepAgendaDayAppointment) => void
   onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
+  onVitalsUpdated?: () => void
 }
 
 // Fecha local (no UTC) para el min del input date — evita el desfase de día en zonas UTC negativas.
@@ -108,6 +109,7 @@ export function RecepAgendaView({
   onMarkNoAsistio,
   onCheckIn,
   onRegistrarPago,
+  onVitalsUpdated,
 }: RecepAgendaViewProps) {
   const showOwnerSuggestions =
     form.ownerQuery.trim().length > 0 &&
@@ -395,6 +397,7 @@ export function RecepAgendaView({
         onMarkNoAsistio={onMarkNoAsistio}
         onCheckIn={onCheckIn}
         onRegistrarPago={onRegistrarPago}
+        onVitalsUpdated={onVitalsUpdated}
       />
     </>
   )

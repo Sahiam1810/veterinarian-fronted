@@ -29,7 +29,7 @@ export type {
   RecepAgendaDayAppointment,
 } from './agenda.types.ts'
 
-export { isRecepAppointmentEditable, canMarkRecepNoAsistio, canCheckIn, mapRecepAgendaStatus } from './agenda.types.ts'
+export { isRecepAppointmentEditable, canMarkRecepNoAsistio, canCheckIn, canTakeRecepVitals, mapRecepAgendaStatus } from './agenda.types.ts'
 
 export type {
   RecepDuenoEstado,

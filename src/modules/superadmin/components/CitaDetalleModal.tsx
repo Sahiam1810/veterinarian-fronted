@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { CalendarIcon } from '@/global/components'
 import type { CitaSuperAdmin } from '../types'
 import { getCitaDetalleFooterActions } from '../utils/citaDetalleActions'
+import { TomarSignosVitalesModal } from '@/modules/recepcionista/components'
 
 export interface CitaDetalleModalProps {
   cita: CitaSuperAdmin | null
@@ -14,6 +16,7 @@ export interface CitaDetalleModalProps {
   onMarcarAtendida: (citaId: string) => void
   onMarcarNoAsistio: (citaId: string) => void
   onRegistrarPago?: (citaId: string) => void
+  onVitalsSaved?: () => void
 }
 
 function statusBadgeLabel(status: CitaSuperAdmin['status']): string {
@@ -44,7 +47,10 @@ export function CitaDetalleModal({
   onMarcarAtendida,
   onMarcarNoAsistio,
   onRegistrarPago,
+  onVitalsSaved,
 }: CitaDetalleModalProps) {
+  const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false)
+
   if (!isOpen || !cita) return null
 
   const actions = getCitaDetalleFooterActions(cita.status)
@@ -52,11 +58,19 @@ export function CitaDetalleModal({
   const showReprogramar = actions.showReprogramar && canEdit
   const showMarcarNoAsistio = actions.showMarcarNoAsistio && canEdit
   const showMarcarAtendida = actions.showMarcarAtendida && canEdit
+  const canTakeVitals = cita.status === 'AGENDADA' || cita.status === 'EN_ESPERA'
+  const hasVitals =
+    cita.weightKg != null ||
+    cita.temperature != null ||
+    cita.heartRate != null ||
+    cita.respiratoryRate != null
+
   const showNoActionsMessage =
     !showCancelar &&
     !showReprogramar &&
     !showMarcarNoAsistio &&
-    !showMarcarAtendida
+    !showMarcarAtendida &&
+    !canTakeVitals
 
   return (
     <div
@@ -156,6 +170,51 @@ export function CitaDetalleModal({
                 </div>
               </div>
 
+              {/* Signos Vitales */}
+              <div className="sm:col-span-2 md:col-span-4 rounded-xl border border-border-tan/80 bg-bone/30 p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sage font-bold uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <span>🩺</span> Signos Vitales (Recepción)
+                  </h4>
+                  {hasVitals ? (
+                    <span className="text-[10px] bg-mint-soft text-brand font-bold px-2 py-0.5 rounded-full border border-brand/20">
+                      Registrados
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-sage font-medium italic">
+                      No registrados
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <div className="bg-white p-2.5 rounded-xl border border-border-tan/70 text-center">
+                    <span className="text-[10px] font-bold text-sage block uppercase">Peso</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {cita.weightKg != null ? `${cita.weightKg} kg` : '—'}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-border-tan/70 text-center">
+                    <span className="text-[10px] font-bold text-sage block uppercase">Temperatura</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {cita.temperature != null ? `${cita.temperature} °C` : '—'}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-border-tan/70 text-center">
+                    <span className="text-[10px] font-bold text-sage block uppercase">Frec. Cardíaca</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {cita.heartRate != null ? `${cita.heartRate} lpm` : '—'}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-border-tan/70 text-center">
+                    <span className="text-[10px] font-bold text-sage block uppercase">Frec. Resp.</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-charcoal">
+                      {cita.respiratoryRate != null ? `${cita.respiratoryRate} rpm` : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="sm:col-span-2 md:col-span-4">
                 <h4 className="text-sage font-bold uppercase tracking-wider text-[10px]">Notas</h4>
                 <p className="mt-1.5 text-charcoal/80 text-[11px] sm:text-xs leading-relaxed italic">
@@ -166,6 +225,17 @@ export function CitaDetalleModal({
           </div>
 
           <footer className="shrink-0 flex flex-wrap items-center justify-end gap-3 px-4 sm:px-5 py-3.5 border-t border-border-tan/60 bg-white">
+            {canTakeVitals && (
+              <button
+                type="button"
+                onClick={() => setIsVitalsModalOpen(true)}
+                className="border border-brand/30 bg-mint-soft text-brand hover:bg-brand hover:text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
+              >
+                <span>🩺</span>
+                <span>{hasVitals ? 'Actualizar Signos Vitales' : 'Tomar Signos Vitales'}</span>
+              </button>
+            )}
+
             {showCancelar && (
               <button
                 type="button"
@@ -241,6 +311,25 @@ export function CitaDetalleModal({
           </footer>
         </div>
       </div>
+
+      {isVitalsModalOpen && (
+        <TomarSignosVitalesModal
+          isOpen={isVitalsModalOpen}
+          appointmentId={cita.id}
+          petName={cita.petName}
+          initialVitals={{
+            weightKg: cita.weightKg,
+            temperature: cita.temperature,
+            heartRate: cita.heartRate,
+            respiratoryRate: cita.respiratoryRate,
+          }}
+          onClose={() => setIsVitalsModalOpen(false)}
+          onSuccess={(_updated) => {
+            onVitalsSaved?.()
+            setIsVitalsModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
