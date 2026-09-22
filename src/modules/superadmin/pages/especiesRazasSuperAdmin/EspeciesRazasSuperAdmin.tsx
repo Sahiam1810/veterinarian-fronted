@@ -451,11 +451,17 @@ export function EspeciesRazasSuperAdmin({
   )
 
   if (embedded) {
+    // Los drawers/modales usan `fixed inset-0` y dependen de posicionarse contra
+    // el viewport. `animate-view-popup` deja un `transform` aplicado (fill-mode:
+    // both), lo que convierte a este div en containing block para sus hijos
+    // `position: fixed` — por eso los modales van FUERA de él, no adentro.
     return (
-      <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
-        {mainContent}
+      <>
+        <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          {mainContent}
+        </div>
         {drawersAndModals}
-      </div>
+      </>
     )
   }
 

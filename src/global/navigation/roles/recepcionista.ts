@@ -94,6 +94,17 @@ export const RECEP_NAV_CATALOG: NavCatalogItem[] = [
   },
 ]
 
+// Módulos que SuperAdmin puede otorgar pero que a propósito NO tienen entrada
+// de menú para Recepcionista:
+// - "Historiales Clínicos": Recepcionista no debe ver la historia clínica
+//   (ver commit "remove clinical history button and related handlers from
+//   recepcionista components"). Si en algún momento se le da acceso, sería
+//   contextual (desde la mascota/cita), no un ítem de menú aparte.
+// - "Estados de Cita": es un catálogo de referencia (los estados posibles de
+//   una cita, usados en el dropdown de CitaDrawer), pero no existe una
+//   pantalla de gestión para él en ningún rol, ni siquiera SuperAdmin. No hay
+//   nada que embeber aquí todavía; construir esa pantalla sería un ticket
+//   aparte.
 export const RECEP_DEFAULT_PERMISSIONS: NavPermissionKey[] = RECEP_NAV_CATALOG.map(
   (item) => item.permissionKey,
 )
