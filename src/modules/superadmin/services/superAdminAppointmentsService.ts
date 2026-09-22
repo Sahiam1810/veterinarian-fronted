@@ -14,7 +14,18 @@ export interface ApiAppointmentResponse {
   notes?: string | null
   requesterPhoneNumber?: string | null
   consultingRoom?: string | null
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
   createdAt: string
+}
+
+export interface ApiAppointmentVitalsRequest {
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 export interface ApiCreateAppointmentRequest {
@@ -61,6 +72,13 @@ export async function createAppointment(data: ApiCreateAppointmentRequest): Prom
 
 export async function updateAppointment(id: string, data: ApiUpdateAppointmentRequest): Promise<void> {
   return apiClient.put<void>(`/api/Appointments/${id}`, data)
+}
+
+export async function updateAppointmentVitals(
+  appointmentId: string,
+  data: ApiAppointmentVitalsRequest,
+): Promise<void> {
+  return apiClient.patch<void>(`/api/Appointments/${appointmentId}/vitals`, data)
 }
 
 export interface ApiUpdateAppointmentStatusRequest {

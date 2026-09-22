@@ -167,6 +167,10 @@ export function useAuxDashboard() {
           petId: pet?.id,
           veterinarianId: apt.veterinarianId,
           serviceId: apt.serviceId,
+          weightKg: apt.weightKg ?? null,
+          temperature: apt.temperature ?? null,
+          heartRate: apt.heartRate ?? null,
+          respiratoryRate: apt.respiratoryRate ?? null,
         }
       })
 

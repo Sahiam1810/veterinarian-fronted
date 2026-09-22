@@ -12,7 +12,7 @@ import {
   isAttendedStatus,
   isPendingStatus,
   mapAppointmentStatus,
-} from './mapAppointmentStatus'
+} from './mapAppointmentStatus.ts'
 
 const MAX_HOME_ROWS = 8
 
@@ -132,6 +132,10 @@ export function buildVetHomeDashboard(input: {
       clientPetId: apt.clientPetId,
       petId: link?.petId,
       rawStatusName: apt.statusName || undefined,
+      weightKg: apt.weightKg ?? null,
+      temperature: apt.temperature ?? null,
+      heartRate: apt.heartRate ?? null,
+      respiratoryRate: apt.respiratoryRate ?? null,
     }
   })
 

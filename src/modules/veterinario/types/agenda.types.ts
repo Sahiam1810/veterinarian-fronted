@@ -35,6 +35,10 @@ export interface AgendaCalendarEvent {
   ownerPhone?: string
   rawStatusName?: string
   veterinarianId?: string
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 export interface AgendaWeekPayload {

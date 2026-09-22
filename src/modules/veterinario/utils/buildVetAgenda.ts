@@ -11,7 +11,7 @@ import type {
   AgendaViewMode,
   AgendaWeekPayload,
 } from '../types'
-import { mapAgendaEventStatus } from './mapAgendaEventStatus'
+import { mapAgendaEventStatus } from './mapAgendaEventStatus.ts'
 
 const WEEKDAY_LABELS = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'] as const
 const DEFAULT_HOUR_START = 8
@@ -243,6 +243,10 @@ function mapAppointmentEvents(
         petId: link?.petId,
         rawStatusName: apt.statusName || undefined,
         veterinarianId: apt.veterinarianId,
+        weightKg: apt.weightKg ?? null,
+        temperature: apt.temperature ?? null,
+        heartRate: apt.heartRate ?? null,
+        respiratoryRate: apt.respiratoryRate ?? null,
       } satisfies AgendaCalendarEvent
     })
     .sort((a, b) => a.startTime.localeCompare(b.startTime))

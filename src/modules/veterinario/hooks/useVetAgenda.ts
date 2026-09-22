@@ -153,6 +153,10 @@ export function useVetAgenda(enabled: boolean) {
       ownerName: event.ownerName,
       ownerPhone: event.ownerPhone,
       rawStatusName: event.rawStatusName,
+      weightKg: event.weightKg,
+      temperature: event.temperature,
+      heartRate: event.heartRate,
+      respiratoryRate: event.respiratoryRate,
     }
 
     setSelectedAppointment(target)

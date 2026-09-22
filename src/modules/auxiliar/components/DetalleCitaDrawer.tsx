@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { AuxDayAppointment } from '../types'
+import { TomarSignosVitalesModal } from '@/modules/recepcionista/components'
 
 export interface DetalleCitaDrawerProps {
   isOpen: boolean
   appointment: AuxDayAppointment | null
   onClose: () => void
+  onVitalsUpdated?: () => void
 }
 
 export function DetalleCitaDrawer({
   isOpen,
   appointment,
   onClose,
+  onVitalsUpdated,
 }: DetalleCitaDrawerProps) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
+  const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false)
 
   useEffect(() => {
     if (isOpen && appointment) {
@@ -52,6 +56,13 @@ export function DetalleCitaDrawer({
   if (appointment.status === 'Atendida') aptBadgeClass = 'bg-[#d1fae5] text-[#065f46]'
   if (appointment.status === 'Cancelada' || appointment.status === 'No asistió') aptBadgeClass = 'bg-[#fde8e8] text-[#c81e1e]'
   if (appointment.status === 'En espera') aptBadgeClass = 'bg-[#fef0e6] text-[#b45309]'
+
+  const canTakeVitals = appointment.status === 'Agendada' || appointment.status === 'En espera'
+  const hasVitals =
+    appointment.weightKg != null ||
+    appointment.temperature != null ||
+    appointment.heartRate != null ||
+    appointment.respiratoryRate != null
 
   const drawerContent = (
     <div
@@ -153,6 +164,51 @@ export function DetalleCitaDrawer({
             </div>
           </div>
 
+          {/* Signos Vitales */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between border-b border-border-tan/50 pb-1">
+              <h4 className="text-xs font-bold text-sage uppercase tracking-wider flex items-center gap-1.5">
+                <span>🩺</span> Signos Vitales (Recepción)
+              </h4>
+              {hasVitals ? (
+                <span className="text-[10px] bg-mint-soft text-brand font-bold px-2 py-0.5 rounded-full border border-brand/20">
+                  Registrados
+                </span>
+              ) : (
+                <span className="text-[10px] text-sage font-medium italic">
+                  No registrados
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-bone/40 p-2.5 rounded-2xl border border-border-tan/60 text-center">
+                <span className="text-[10px] font-bold text-sage block uppercase">Peso</span>
+                <span className="font-bold text-charcoal text-xs sm:text-sm">
+                  {appointment.weightKg != null ? `${appointment.weightKg} kg` : '—'}
+                </span>
+              </div>
+              <div className="bg-bone/40 p-2.5 rounded-2xl border border-border-tan/60 text-center">
+                <span className="text-[10px] font-bold text-sage block uppercase">Temp.</span>
+                <span className="font-bold text-charcoal text-xs sm:text-sm">
+                  {appointment.temperature != null ? `${appointment.temperature} °C` : '—'}
+                </span>
+              </div>
+              <div className="bg-bone/40 p-2.5 rounded-2xl border border-border-tan/60 text-center">
+                <span className="text-[10px] font-bold text-sage block uppercase">FC</span>
+                <span className="font-bold text-charcoal text-xs sm:text-sm">
+                  {appointment.heartRate != null ? `${appointment.heartRate} lpm` : '—'}
+                </span>
+              </div>
+              <div className="bg-bone/40 p-2.5 rounded-2xl border border-border-tan/60 text-center">
+                <span className="text-[10px] font-bold text-sage block uppercase">FR</span>
+                <span className="font-bold text-charcoal text-xs sm:text-sm">
+                  {appointment.respiratoryRate != null ? `${appointment.respiratoryRate} rpm` : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Datos del Dueño */}
           <div className="space-y-3 pt-1">
             <h4 className="text-xs font-bold text-sage uppercase tracking-wider border-b border-border-tan/50 pb-1">
@@ -188,6 +244,17 @@ export function DetalleCitaDrawer({
 
         {/* 3. Footer fijo del Drawer */}
         <div className="flex items-center justify-end gap-3 sm:gap-4 px-6 py-4 border-t border-border-tan/70 bg-white">
+          {canTakeVitals && (
+            <button
+              type="button"
+              onClick={() => setIsVitalsModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-mint-soft text-brand border border-brand/30 hover:bg-brand hover:text-white transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
+            >
+              <span>🩺</span>
+              <span>{hasVitals ? 'Actualizar Signos' : 'Tomar Signos'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleClose}
@@ -197,6 +264,25 @@ export function DetalleCitaDrawer({
           </button>
         </div>
       </div>
+
+      {isVitalsModalOpen && (
+        <TomarSignosVitalesModal
+          isOpen={isVitalsModalOpen}
+          appointmentId={appointment.rawAppointmentId || appointment.id}
+          petName={appointment.petName}
+          initialVitals={{
+            weightKg: appointment.weightKg,
+            temperature: appointment.temperature,
+            heartRate: appointment.heartRate,
+            respiratoryRate: appointment.respiratoryRate,
+          }}
+          onClose={() => setIsVitalsModalOpen(false)}
+          onSuccess={(_updated) => {
+            onVitalsUpdated?.()
+            setIsVitalsModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 

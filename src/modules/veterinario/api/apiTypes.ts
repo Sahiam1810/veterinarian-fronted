@@ -24,6 +24,10 @@ export interface ApiAppointment {
   scheduledStart: string
   scheduledEnd: string
   notes?: string | null
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
   createdAt: string
 }
 
