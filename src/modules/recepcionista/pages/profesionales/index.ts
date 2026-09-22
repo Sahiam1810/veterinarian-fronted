@@ -1,0 +1,1 @@
+export { ProfesionalesPage } from './ProfesionalesPage'

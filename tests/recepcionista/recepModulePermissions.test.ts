@@ -107,3 +107,53 @@ test('recep Asesor requires Chat.View and Escalamientos.View', () => {
   assert.equal(withoutEscalationsView.canCreateModule('conversaciones'), false)
   assert.equal(withoutEscalationsView.canEditModule('conversaciones'), false)
 })
+
+test('recep permissions support Especies y Razas, Servicios, Veterinarios, Reportes', () => {
+  const helpers = createRecepPermissionHelpers({
+    'Especies y Razas': {
+      canView: true,
+      canCreate: true,
+      canEdit: true,
+      canDelete: false,
+    },
+    Servicios: {
+      canView: true,
+      canCreate: false,
+      canEdit: true,
+      canDelete: false,
+    },
+    Veterinarios: {
+      canView: true,
+      canCreate: true,
+      canEdit: false,
+      canDelete: true,
+    },
+    Reportes: {
+      canView: true,
+      canCreate: false,
+      canEdit: false,
+      canDelete: false,
+    },
+  })
+
+  assert.equal(helpers.canViewModule('especiesRazas'), true)
+  assert.equal(helpers.canCreateModule('especiesRazas'), true)
+  assert.equal(helpers.canEditModule('especiesRazas'), true)
+  assert.equal(helpers.canDeleteModule('especiesRazas'), false)
+
+  assert.equal(helpers.canViewModule('servicios'), true)
+  assert.equal(helpers.canCreateModule('servicios'), false)
+  assert.equal(helpers.canEditModule('servicios'), true)
+  assert.equal(helpers.canDeleteModule('servicios'), false)
+
+  assert.equal(helpers.canViewModule('profesionales'), true)
+  assert.equal(helpers.canCreateModule('profesionales'), true)
+  assert.equal(helpers.canEditModule('profesionales'), false)
+  assert.equal(helpers.canDeleteModule('profesionales'), true)
+
+  assert.equal(helpers.canViewModule('reportes'), true)
+  assert.equal(helpers.canCreateModule('reportes'), false)
+  assert.equal(helpers.canEditModule('reportes'), false)
+  assert.equal(helpers.canDeleteModule('reportes'), false)
+})
+

@@ -369,6 +369,33 @@ test('fetchRecepNavPermissions falls back to Inicio and Perfil on network/auth e
   assert.equal(permissions.includes('recep.conversaciones'), false)
 })
 
+
+test('resolveRecepNavPermissionsFromModules includes new modules when canView is true', () => {
+  const permissions = resolveRecepNavPermissionsFromModules({
+    Clientes: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Mascotas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Citas: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Chat: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Escalamientos: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    'Especies y Razas': { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Servicios: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Veterinarios: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+    Reportes: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+  })
+
+  assert.deepEqual(permissions, [
+    'recep.inicio',
+    'recep.duenos',
+    'recep.conversaciones',
+    'recep.mascotas',
+    'recep.agenda',
+    'recep.especiesRazas',
+    'recep.servicios',
+    'recep.profesionales',
+    'recep.reportes',
+    'recep.perfil',
+  ])
+
 test('fetchVetNavPermissions returns especiesRazas, servicios, and profesionales when granted by SuperAdmin', async () => {
   globalThis.fetch = async () => {
     return Response.json({
@@ -417,5 +444,6 @@ test('fetchVetNavPermissions hides especiesRazas, servicios, and profesionales w
   assert.equal(itemIds.includes('especiesRazas'), false)
   assert.equal(itemIds.includes('servicios'), false)
   assert.equal(itemIds.includes('profesionales'), false)
+
 })
 

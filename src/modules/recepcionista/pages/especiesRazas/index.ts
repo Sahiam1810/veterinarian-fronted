@@ -1,0 +1,1 @@
+export { EspeciesRazasPage } from './EspeciesRazasPage'

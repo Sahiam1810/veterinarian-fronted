@@ -14,6 +14,10 @@ import { DuenosPage } from '../duenos'
 import { MascotasPage } from '../mascotas'
 import { PerfilPage } from '../perfil'
 import { EscalacionesPage } from '../escalaciones'
+import { EspeciesRazasPage } from '../especiesRazas'
+import { ServiciosPage } from '../servicios'
+import { ProfesionalesPage } from '../profesionales'
+import { ReportesPage } from '../reportes'
 
 interface PuntoInicioProps {
   userName?: string
@@ -21,7 +25,7 @@ interface PuntoInicioProps {
   onLogout?: () => void
 }
 
-// Shell del recepcionista: Home + Dueños + Asesor/Conversaciones + Agenda + Mascotas + Perfil
+// Shell del recepcionista: Home + Dueños + Asesor/Conversaciones + Agenda + Mascotas + Especies + Servicios + Profesionales + Reportes + Perfil
 export function PuntoInicio({
   userName,
   userRole,
@@ -43,6 +47,9 @@ export function PuntoInicio({
     showToast,
     handleQuickAction,
     handleViewFullMonth,
+    canCreateModule,
+    canEditModule,
+    canDeleteModule,
   } = useRecepHome(onLogout)
 
   const isPerfil = activeRoute === 'perfil'
@@ -50,7 +57,19 @@ export function PuntoInicio({
   const isAgenda = activeRoute === 'agenda'
   const isDuenos = activeRoute === 'duenos'
   const isConversaciones = activeRoute === 'conversaciones'
-  const fillHeight = isMascotas || isAgenda || isDuenos || isConversaciones
+  const isEspeciesRazas = activeRoute === 'especiesRazas'
+  const isServicios = activeRoute === 'servicios'
+  const isProfesionales = activeRoute === 'profesionales'
+  const isReportes = activeRoute === 'reportes'
+  const fillHeight =
+    isMascotas ||
+    isAgenda ||
+    isDuenos ||
+    isConversaciones ||
+    isEspeciesRazas ||
+    isServicios ||
+    isProfesionales ||
+    isReportes
 
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
@@ -137,6 +156,35 @@ export function PuntoInicio({
 
           {isMascotas && <MascotasPage onNotice={showToast} />}
 
+          {isEspeciesRazas && (
+            <EspeciesRazasPage
+              onNotice={showToast}
+              canCreateModule={canCreateModule}
+              canEditModule={canEditModule}
+              canDeleteModule={canDeleteModule}
+            />
+          )}
+
+          {isServicios && (
+            <ServiciosPage
+              onNotice={showToast}
+              canCreateModule={canCreateModule}
+              canEditModule={canEditModule}
+              canDeleteModule={canDeleteModule}
+            />
+          )}
+
+          {isProfesionales && (
+            <ProfesionalesPage
+              onNotice={showToast}
+              canCreateModule={canCreateModule}
+              canEditModule={canEditModule}
+              canDeleteModule={canDeleteModule}
+            />
+          )}
+
+          {isReportes && <ReportesPage onNotice={showToast} />}
+
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
           {activeRoute !== 'inicio' &&
@@ -144,7 +192,11 @@ export function PuntoInicio({
             activeRoute !== 'mascotas' &&
             activeRoute !== 'agenda' &&
             activeRoute !== 'duenos' &&
-            activeRoute !== 'conversaciones' && (
+            activeRoute !== 'conversaciones' &&
+            activeRoute !== 'especiesRazas' &&
+            activeRoute !== 'servicios' &&
+            activeRoute !== 'profesionales' &&
+            activeRoute !== 'reportes' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">
                   Módulo “{activeRoute}” pendiente de implementación.

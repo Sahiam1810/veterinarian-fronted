@@ -143,6 +143,11 @@ export function ServiciosSuperAdmin({
     }
   }
 
+  useEffect(() => {
+    if (!activeNotification || !onNotice) return
+    onNotice(activeNotification)
+  }, [activeNotification, onNotice])
+
   // Navigation helper
   const handleSidebarNavigate = (routeId: string) => {
     if (onNavigate) {
@@ -151,6 +156,16 @@ export function ServiciosSuperAdmin({
       showToast(`Navegando a: ${routeId}`)
     }
   }
+
+
+  const mainContent = (
+    <>
+      <DashboardBackgroundDecoration />
+
+      {/* Toast Notification */}
+      {activeNotification && !onNotice && (
+        <PageToast message={activeNotification} tone={toastTone} />
+      )}
 
   const content = (
     <>
@@ -169,6 +184,7 @@ export function ServiciosSuperAdmin({
             Catálogo de prestaciones veterinarias.
           </p>
         </div>
+
 
         {canCreate && (
           <button
@@ -380,9 +396,16 @@ export function ServiciosSuperAdmin({
               Siguiente
             </button>
           </div>
+
+    </>
+  )
+
         </div>
       </div>
 
+
+  const drawersAndModals = (
+    <>
       {/* Side-over Drawer para Crear / Editar Servicio */}
       <ServicioDrawer
         isOpen={isDrawerOpen}
@@ -447,6 +470,19 @@ export function ServiciosSuperAdmin({
   )
 
   if (embedded) {
+
+    // Los drawers/modales usan `fixed inset-0` y dependen de posicionarse contra
+    // el viewport. `animate-view-popup` deja un `transform` aplicado (fill-mode:
+    // both), lo que convierte a este div en containing block para sus hijos
+    // `position: fixed` — por eso los modales van FUERA de él, no adentro.
+    return (
+      <>
+        <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          {mainContent}
+        </div>
+        {drawersAndModals}
+      </>
+
     return (
       <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
         {activeNotification && !onNotice && (
@@ -454,6 +490,7 @@ export function ServiciosSuperAdmin({
         )}
         {content}
       </div>
+
     )
   }
 
@@ -489,10 +526,18 @@ export function ServiciosSuperAdmin({
           key={activeRoute}
           className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
         >
+
+          {mainContent}
+        </main>
+      </div>
+
+      {drawersAndModals}
+
           <DashboardBackgroundDecoration />
           {content}
         </main>
       </div>
+
     </div>
   )
 }

@@ -28,6 +28,10 @@ const IMPLEMENTED_ROUTES = new Set([
   'agenda',
   'duenos',
   'conversaciones',
+  'especiesRazas',
+  'servicios',
+  'profesionales',
+  'reportes',
 ])
 
 const GATED_ROUTES: Record<string, NavPermissionKey> = {
@@ -35,6 +39,10 @@ const GATED_ROUTES: Record<string, NavPermissionKey> = {
   agenda: 'recep.agenda',
   duenos: 'recep.duenos',
   conversaciones: 'recep.conversaciones',
+  especiesRazas: 'recep.especiesRazas',
+  servicios: 'recep.servicios',
+  profesionales: 'recep.profesionales',
+  reportes: 'recep.reportes',
 }
 
 export function useRecepHome(onLogout?: () => void) {
@@ -215,5 +223,10 @@ export function useRecepHome(onLogout?: () => void) {
     showToast,
     handleQuickAction,
     handleViewFullMonth,
+    canViewModule: permissionHelpers.canViewModule,
+    canCreateModule: permissionHelpers.canCreateModule,
+    canEditModule: permissionHelpers.canEditModule,
+    canDeleteModule: permissionHelpers.canDeleteModule,
   }
 }
+
