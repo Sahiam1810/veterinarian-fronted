@@ -28,10 +28,9 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
   
   const displayName = profile?.fullName || userName
   const displayEmail = profile?.email || userEmail
-  const displayUserName = profile?.userName || 'auxiliar'
   const displayRole = profile?.role || 'Auxiliar'
   const displayInitials = profile?.initials || displayName.slice(0, 2).toUpperCase()
-  const displayStatus = profile?.accountStatus || 'Activo'
+  const displayStatus = 'Activo'
   const photoUrl = profile?.photoUrl || null
 
   const [isPhotoDrawerOpen, setIsPhotoDrawerOpen] = useState(false)
@@ -120,7 +119,7 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
               {displayName}
             </h2>
             <p className="text-xs text-charcoal/70 font-semibold mt-0.5">
-              @{displayUserName}
+              {displayEmail}
             </p>
             <p className="text-xs sm:text-sm text-sage font-semibold mt-1">
               {displayRole}
@@ -144,23 +143,6 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
                   />
                 </svg>
                 <span className="truncate" title={displayEmail}>{displayEmail}</span>
-              </div>
-              <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 shrink-0">
-                Servidor
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 text-xs text-charcoal">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <svg className="w-4.5 h-4.5 text-sage shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-                <span className="truncate">Usuario: {displayUserName}</span>
               </div>
               <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 shrink-0">
                 Servidor
@@ -231,22 +213,6 @@ export function PerfilAux({ onNotice, userName = 'Laura Gómez', userEmail = 'au
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-charcoal">
-                  Nombre de Usuario
-                </label>
-                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60">
-                  Servidor
-                </span>
-              </div>
-              <input
-                type="text"
-                disabled
-                value={displayUserName}
-                className="w-full px-4 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal bg-bone/35 cursor-not-allowed font-medium"
-              />
-            </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">

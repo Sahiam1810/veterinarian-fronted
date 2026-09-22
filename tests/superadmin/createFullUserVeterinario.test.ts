@@ -44,12 +44,6 @@ test('createFullUser manda specialtyId y licenseNumber en el mismo POST /api/Use
     if (urlStr.includes('/api/Users') && init?.method === 'POST') {
       return Response.json({ id: 'user-vet-1' }, { status: 201 })
     }
-    if (urlStr.includes('/api/UserAccounts')) {
-      return Response.json({ id: 'account-1' }, { status: 201 })
-    }
-    if (urlStr.includes('/api/UserCredentials')) {
-      return Response.json({ id: 'cred-1' }, { status: 201 })
-    }
     return new Response('Not found', { status: 404 })
   }
 
@@ -84,12 +78,6 @@ test('createFullUser sin specialtyId/licenseNumber (rol no veterinario) no los m
 
     if (urlStr.includes('/api/Users') && init?.method === 'POST') {
       return Response.json({ id: 'user-recep-1' }, { status: 201 })
-    }
-    if (urlStr.includes('/api/UserAccounts')) {
-      return Response.json({ id: 'account-2' }, { status: 201 })
-    }
-    if (urlStr.includes('/api/UserCredentials')) {
-      return Response.json({ id: 'cred-2' }, { status: 201 })
     }
     return new Response('Not found', { status: 404 })
   }

@@ -7,15 +7,13 @@ export async function fetchRecepProfile(): Promise<RecepProfilePayload> {
   const profile = await apiClient.get<CurrentProfileResponse>('/api/auth/me')
 
   return {
-    personId: profile.personId,
-    userAccountId: profile.userAccountId,
+    id: profile.id,
     displayName: profile.fullName,
     fullName: profile.fullName,
-    userName: profile.userName,
     email: profile.email,
     role: profile.role || 'Recepcionista',
     jobTitle: profile.role || 'Recepcionista',
-    accountStatus: profile.accountStatus || 'Activo',
+    accountStatus: 'Activo',
     initials: profile.initials || profile.fullName.slice(0, 2).toUpperCase(),
     photoUrl: profile.photoUrl?.trim() || null,
     passwordUpdatedLabel: 'Gestionada de forma segura',

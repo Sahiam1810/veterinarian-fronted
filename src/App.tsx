@@ -21,6 +21,7 @@ import {
 import { useAdminShellAccess, useNotificationsSuperAdmin } from '@/modules/superadmin/hooks'
 import { PuntoInicio as VetPuntoInicio } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
+import { isPublicPolicyRoute, PoliticaTratamientoDatosPage } from '@/modules/public'
 
 const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   inicio: 'inicio',
@@ -65,6 +66,24 @@ export default function App() {
     !isKnownAdmin
 
   const [platformAccess, setPlatformAccess] = useState<'checking' | 'granted' | 'denied'>('checking')
+  const [pathname, setPathname] = useState<string>(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/'
+  )
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPathname(window.location.pathname)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const navigateTo = (path: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', path)
+      setPathname(path)
+    }
+  }
 
   useEffect(() => {
     if (!isCustomRole) return
@@ -86,12 +105,22 @@ export default function App() {
     }
   }, [isCustomRole, currentUser?.id])
 
+  // Vista pública de políticas: no requiere login ni token de autenticación
+  if (isPublicPolicyRoute(pathname)) {
+    return (
+      <PoliticaTratamientoDatosPage
+        onGoToLogin={() => navigateTo('/')}
+      />
+    )
+  }
+
   if (!currentUser) {
     return (
       <LoginPage
         onLogin={login}
         isSubmitting={isSubmitting}
         error={error}
+        onNavigateToPolicy={() => navigateTo('/politica-tratamiento-datos')}
       />
     )
   }
@@ -104,6 +133,7 @@ export default function App() {
         onLogin={login}
         isSubmitting={isSubmitting}
         error="Este correo no tiene permisos de sesión para el panel. Los clientes solo usan Telegram o el chatbot."
+        onNavigateToPolicy={() => navigateTo('/politica-tratamiento-datos')}
       />
     )
   }
@@ -149,6 +179,7 @@ export default function App() {
       onLogin={login}
       isSubmitting={isSubmitting}
       error="Tu rol no tiene acceso concedido al panel web. Pídele a un administrador que active el permiso 'Plataforma' para tu rol."
+      onNavigateToPolicy={() => navigateTo('/politica-tratamiento-datos')}
     />
   )
 }
@@ -177,8 +208,7 @@ function SuperAdminApp({
     canDeleteModule,
     firstAllowedRoute,
   } = useAdminShellAccess({
-    personId: user.personId || user.id,
-    accountId: user.userAccountId,
+    id: user.id,
     email: user.email,
     roleId: user.roleId,
     isPlatformSuperAdmin,
@@ -190,7 +220,7 @@ function SuperAdminApp({
     markAsRead: onMarkNotificationRead,
     markAllAsRead: onMarkAllNotificationsRead,
     reload: onReloadNotifications,
-  } = useNotificationsSuperAdmin(user.personId || user.id)
+  } = useNotificationsSuperAdmin(user.id)
 
   const [currentRoute, setCurrentRoute] = useState<string>('inicio')
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)

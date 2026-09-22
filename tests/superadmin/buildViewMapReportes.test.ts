@@ -32,7 +32,7 @@ function installMemoryLocalStorage() {
 }
 
 const baseOptions = {
-  personId: 'person-1',
+  id: 'person-1',
   email: 'vet@veterinaria.com',
   roleId: '44444444-4444-4444-4444-444444444444',
 }
@@ -76,7 +76,7 @@ test('isPlatformSuperAdmin → reportes true sin depender de apiPermissions', ()
 
 test('override UI de reportes no pisa el valor de la API', () => {
   installMemoryLocalStorage()
-  setUiShellOverrides('user', baseOptions.personId, {
+  setUiShellOverrides('user', baseOptions.id, {
     reportes: { view: true, create: false, edit: false, delete: false },
   })
 
@@ -88,7 +88,7 @@ test('override UI de reportes no pisa el valor de la API', () => {
   )
   assert.equal(viewsForcedOn.reportes, false)
 
-  setUiShellOverrides('user', baseOptions.personId, {
+  setUiShellOverrides('user', baseOptions.id, {
     reportes: { view: false, create: false, edit: false, delete: false },
   })
   const viewsForcedOff = buildViewMap(
@@ -99,5 +99,5 @@ test('override UI de reportes no pisa el valor de la API', () => {
   )
   assert.equal(viewsForcedOff.reportes, true)
 
-  clearUiShellOverrides('user', baseOptions.personId)
+  clearUiShellOverrides('user', baseOptions.id)
 })

@@ -18,7 +18,7 @@ export interface SuperAdminProfileData {
   clinicBranch: string
   workHours: string
   accountStatus: 'activa' | 'inactiva'
-  personId?: string
+  id?: string
   isPlatformSuperAdmin: boolean
 }
 
@@ -68,7 +68,7 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
     clinicBranch: 'Sede Central',
     workHours: 'Lun - Sáb, 08:00 - 18:00',
     accountStatus: 'activa',
-    personId: stored?.personId,
+    id: stored?.id,
     isPlatformSuperAdmin: Boolean(stored?.isPlatformSuperAdmin),
   })
   const [isLoading, setIsLoading] = useState(true)
@@ -98,10 +98,8 @@ export function usePerfilSuperAdmin(fallbackName?: string, fallbackRole?: string
         clinicName: extras.clinicName || 'Veterinaria Huellitas',
         clinicBranch: extras.clinicBranch || 'Sede Central',
         workHours: extras.workHours || 'Lun - Sáb, 08:00 - 18:00',
-        accountStatus: me.accountStatus?.toLowerCase().includes('inactiv')
-          ? 'inactiva'
-          : 'activa',
-        personId: me.personId,
+        accountStatus: 'activa',
+        id: me.id,
         isPlatformSuperAdmin: Boolean(auth?.isPlatformSuperAdmin),
       })
     } catch (err) {

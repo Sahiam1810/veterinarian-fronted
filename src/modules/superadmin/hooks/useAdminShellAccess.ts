@@ -16,41 +16,39 @@ export function resolveFirstAllowedAdminRoute(
 
 // Permisos de menú y acciones del panel para el usuario autenticado
 export function useAdminShellAccess(options: {
-  personId: string
-  accountId?: string
+  id?: string
   email?: string
   roleId?: string
   isPlatformSuperAdmin?: boolean
 }) {
-  const { personId, accountId, email, roleId, isPlatformSuperAdmin } = options
+  const { id = '', email, roleId, isPlatformSuperAdmin } = options
+  const userId = id
 
   const { permissions: apiPermissions, isLoading, refresh } = useCurrentPermissions({
     skip: !!isPlatformSuperAdmin,
-    reloadKey: personId,
+    reloadKey: userId,
   })
 
   const actionMap = useMemo(
     () =>
       buildActionMap(apiPermissions, {
-        personId,
-        accountId,
+        id: userId,
         email,
         roleId,
         isPlatformSuperAdmin,
       }),
-    [apiPermissions, personId, accountId, email, roleId, isPlatformSuperAdmin],
+    [apiPermissions, userId, email, roleId, isPlatformSuperAdmin],
   )
 
   const viewMap = useMemo(
     () =>
       buildViewMap(apiPermissions, {
-        personId,
-        accountId,
+        id: userId,
         email,
         roleId,
         isPlatformSuperAdmin,
       }),
-    [apiPermissions, personId, accountId, email, roleId, isPlatformSuperAdmin],
+    [apiPermissions, userId, email, roleId, isPlatformSuperAdmin],
   )
 
   const canViewModule = useCallback(

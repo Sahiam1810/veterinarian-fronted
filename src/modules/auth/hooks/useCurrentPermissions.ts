@@ -11,7 +11,7 @@ export type PermissionsLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export function useCurrentPermissions(options?: {
   // Si true, no consulta la API (p. ej. SuperAdmin de plataforma)
   skip?: boolean
-  // Re-fetch cuando cambie (personId, etc.)
+  // Re-fetch cuando cambie (id, etc.)
   reloadKey?: string
 }) {
   const skip = options?.skip ?? false

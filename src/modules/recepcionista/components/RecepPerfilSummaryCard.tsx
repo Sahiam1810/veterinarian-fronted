@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { RecepProfilePayload } from '../types'
-import { BadgeIcon, CameraIcon, MailIcon, UserOutlineIcon } from './PerfilIcons'
+import { BadgeIcon, CameraIcon, MailIcon } from './PerfilIcons'
 
 interface RecepPerfilSummaryCardProps {
   profile: RecepProfilePayload
@@ -50,7 +50,7 @@ export function RecepPerfilSummaryCard({
           {profile.displayName}
         </h2>
         <p className="text-xs text-charcoal/70 font-semibold mt-0.5">
-          @{profile.userName}
+          {profile.email}
         </p>
         <p className="text-xs sm:text-sm text-sage font-semibold mt-1">
           {profile.jobTitle || 'Recepcionista'}
@@ -74,12 +74,6 @@ export function RecepPerfilSummaryCard({
           icon={<MailIcon className="w-4 h-4" />}
           label="Correo electrónico"
           value={profile.email}
-          persistence="server"
-        />
-        <ContactRow
-          icon={<UserOutlineIcon className="w-4 h-4" />}
-          label="Nombre de usuario"
-          value={`@${profile.userName}`}
           persistence="server"
         />
         <ContactRow

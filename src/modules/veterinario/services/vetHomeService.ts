@@ -88,7 +88,7 @@ export async function fetchVetHomeBundle(
     vetApiFetch<ApiClientPet[]>('/api/clientspets').catch(() => [] as ApiClientPet[]),
     vetApiFetch<ApiNamedCatalog[]>('/api/species').catch(() => [] as ApiNamedCatalog[]),
     vetApiFetch<ApiNamedCatalog[]>('/api/races').catch(() => [] as ApiNamedCatalog[]),
-    vetApiFetch<ApiNotification[]>(`/api/notifications/user/${profile.personId}`).catch(
+    vetApiFetch<ApiNotification[]>(`/api/notifications/user/${profile.id}`).catch(
       () => [] as ApiNotification[],
     ),
   ])
