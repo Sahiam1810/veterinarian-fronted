@@ -6,7 +6,7 @@ export async function fetchCurrentProfile(): Promise<CurrentProfileResponse> {
   return apiClient.get<CurrentProfileResponse>('/api/auth/me')
 }
 
-// Cambio de contraseña propia (solo cuentas con UserCredentials en BD)
+// Cambio de contraseña propia (autoservicio; la contraseña vive en USERS)
 export async function changeMyPassword(data: {
   currentPassword: string
   newPassword: string

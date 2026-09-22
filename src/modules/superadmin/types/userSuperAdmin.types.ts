@@ -56,8 +56,6 @@ export interface SystemUser {
   status: UserStatus
   registrationDate: string
   avatarUrl?: string
-  // Cuenta de login en USER_ACCOUNTS; vacía en dueños sin panel.
-  accountId?: string
 }
 
 export interface UserFormData {
