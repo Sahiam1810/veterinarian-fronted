@@ -11,12 +11,14 @@ interface LoginPageProps {
   onLogin?: (credentials: LoginCredentials) => Promise<AuthUser | null>
   isSubmitting?: boolean
   error?: string | null
+  onNavigateToPolicy?: () => void
 }
 
 export function LoginPage({
   onLogin: externalLogin,
   isSubmitting: externalIsSubmitting,
   error: externalError,
+  onNavigateToPolicy,
 }: LoginPageProps = {}) {
   const internalAuth = useAuth()
 
@@ -195,6 +197,21 @@ export function LoginPage({
             >
               {isSubmitting ? 'Ingresando…' : 'Iniciar sesión'}
             </button>
+
+            <div className="login-card__policy-container mt-4 pt-3 border-t border-[#e8dccf]/60 text-center">
+              <a
+                href="/politica-tratamiento-datos"
+                onClick={(e) => {
+                  if (onNavigateToPolicy) {
+                    e.preventDefault()
+                    onNavigateToPolicy()
+                  }
+                }}
+                className="text-xs text-[var(--color-slate,#334155)]/70 hover:text-[var(--color-brand,#234e46)] hover:underline transition-colors"
+              >
+                Política de Tratamiento de Datos Personales
+              </a>
+            </div>
           </form>
         </section>
       </div>
