@@ -52,7 +52,6 @@ export type {
   CreateChatParticipantRequestDto,
   CreateEscalationResolutionRequestDto,
   EscalationResolutionResponseDto,
-  EscalationPriority,
   EscalationStatus,
   EscalationChannel,
   EscalationStatusFilter,
@@ -68,12 +67,8 @@ export type {
 export {
   ESCALATION_STATUS_GUIDS,
   ESCALATION_STATUS_NAMES,
-  ESCALATION_PRIORITY_GUIDS,
-  ESCALATION_PRIORITY_NAMES,
   SENDER_TYPE_GUIDS,
   SENDER_TYPE_NAMES,
-  MESSAGE_TYPE_GUIDS,
-  MESSAGE_TYPE_NAMES,
 } from './escalaciones.types.ts'
 
 

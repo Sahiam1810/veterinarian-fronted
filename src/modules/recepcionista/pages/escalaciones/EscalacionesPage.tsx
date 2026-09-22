@@ -87,7 +87,6 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
         listMode={listMode}
         isRefreshing={isRefreshing}
         totalPending={directory.pendingCount}
-        totalUrgent={directory.urgentCount}
         pageStart={pageStart}
         pageEnd={pageEnd}
         totalCount={totalCount}

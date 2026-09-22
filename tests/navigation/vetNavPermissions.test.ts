@@ -369,6 +369,7 @@ test('fetchRecepNavPermissions falls back to Inicio and Perfil on network/auth e
   assert.equal(permissions.includes('recep.conversaciones'), false)
 })
 
+
 test('resolveRecepNavPermissionsFromModules includes new modules when canView is true', () => {
   const permissions = resolveRecepNavPermissionsFromModules({
     Clientes: { canView: true, canCreate: false, canEdit: false, canDelete: false },
@@ -394,5 +395,55 @@ test('resolveRecepNavPermissionsFromModules includes new modules when canView is
     'recep.reportes',
     'recep.perfil',
   ])
+
+test('fetchVetNavPermissions returns especiesRazas, servicios, and profesionales when granted by SuperAdmin', async () => {
+  globalThis.fetch = async () => {
+    return Response.json({
+      permissions: {
+        'Especies y Razas': { canView: true, canCreate: false, canEdit: false, canDelete: false },
+        Servicios: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+        Veterinarios: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+      },
+    })
+  }
+
+  const permissions = await fetchVetNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(isNavPermissionGranted(permissions, 'vet.especiesRazas'), true)
+  assert.equal(isNavPermissionGranted(permissions, 'vet.servicios'), true)
+  assert.equal(isNavPermissionGranted(permissions, 'vet.profesionales'), true)
+
+  const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
+  const itemIds = visibleItems.map((item) => item.id)
+  assert.equal(itemIds.includes('especiesRazas'), true)
+  assert.equal(itemIds.includes('servicios'), true)
+  assert.equal(itemIds.includes('profesionales'), true)
+})
+
+test('fetchVetNavPermissions hides especiesRazas, servicios, and profesionales when View is false', async () => {
+  globalThis.fetch = async () => {
+    return Response.json({
+      permissions: {
+        'Especies y Razas': { canView: false, canCreate: true, canEdit: true, canDelete: false },
+        Servicios: { canView: false, canCreate: true, canEdit: true, canDelete: false },
+        Veterinarios: { canView: false, canCreate: true, canEdit: true, canDelete: false },
+      },
+    })
+  }
+
+  const permissions = await fetchVetNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(isNavPermissionGranted(permissions, 'vet.especiesRazas'), false)
+  assert.equal(isNavPermissionGranted(permissions, 'vet.servicios'), false)
+  assert.equal(isNavPermissionGranted(permissions, 'vet.profesionales'), false)
+
+  const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
+  const itemIds = visibleItems.map((item) => item.id)
+  assert.equal(itemIds.includes('especiesRazas'), false)
+  assert.equal(itemIds.includes('servicios'), false)
+  assert.equal(itemIds.includes('profesionales'), false)
+
 })
 

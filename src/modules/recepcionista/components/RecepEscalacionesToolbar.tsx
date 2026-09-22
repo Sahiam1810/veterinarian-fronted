@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { SearchIcon, ReloadIcon } from '@/global/components'
 import type { ConversationsListMode, EscalationStatusFilter } from '../types'
 import { IS_DEV } from '@/config'
@@ -11,7 +11,6 @@ interface RecepEscalacionesToolbarProps {
   listMode: ConversationsListMode
   isRefreshing?: boolean
   totalPending?: number
-  totalUrgent?: number
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: EscalationStatusFilter) => void
   onListModeChange: (value: ConversationsListMode) => void
@@ -26,7 +25,6 @@ const LIST_MODES: { id: ConversationsListMode; label: string; hint: string }[] =
 const FILTERS: { id: EscalationStatusFilter; label: string }[] = [
   { id: 'todos', label: 'Cualquiera' },
   { id: 'pendientes', label: 'Esperando Asesor' },
-  { id: 'urgentes', label: 'Urgentes / Alta' },
   { id: 'en_atencion', label: 'En Atención' },
 ]
 
@@ -36,7 +34,6 @@ export function RecepEscalacionesToolbar({
   listMode,
   isRefreshing = false,
   totalPending,
-  totalUrgent,
   onSearchChange,
   onStatusFilterChange,
   onListModeChange,
@@ -54,7 +51,6 @@ export function RecepEscalacionesToolbar({
       clientName: `Cliente Prueba (${new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })})`,
       clientPhone: '+57 310 987 6543',
       reason: 'Consulta sobre urgencia veterinaria',
-      priority: 'HIGH',
       status: 'PENDING',
       channel: 'TELEGRAM',
       createdAt: new Date().toISOString(),
@@ -120,12 +116,10 @@ export function RecepEscalacionesToolbar({
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {FILTERS.map((filter) => {
             const active = statusFilter === filter.id
-            let badgeCount: number | undefined
-            if (filter.id === 'pendientes' && typeof totalPending === 'number') {
-              badgeCount = totalPending
-            } else if (filter.id === 'urgentes' && typeof totalUrgent === 'number') {
-              badgeCount = totalUrgent
-            }
+            const badgeCount =
+              filter.id === 'pendientes' && typeof totalPending === 'number'
+                ? totalPending
+                : undefined
 
             return (
               <button
@@ -142,11 +136,7 @@ export function RecepEscalacionesToolbar({
                 {typeof badgeCount === 'number' && badgeCount > 0 && (
                   <span
                     className={`inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full text-[10px] font-extrabold ${
-                      filter.id === 'urgentes'
-                        ? 'bg-danger/15 text-danger'
-                        : active
-                        ? 'bg-brand text-white'
-                        : 'bg-sage-soft text-brand'
+                      active ? 'bg-brand text-white' : 'bg-sage-soft text-brand'
                     }`}
                   >
                     {badgeCount}

@@ -1,7 +1,6 @@
 import type {
   EscalatedConversationListItem,
   EscalationChannel,
-  EscalationPriority,
   EscalationStatus,
   ConversationsListMode,
   ConversationInboxBadge,
@@ -64,11 +63,10 @@ export function RecepEscalacionesTable({
         <table className="w-full text-left border-collapse table-fixed">
           <thead className="sticky top-0 z-10 bg-sage-soft/80 backdrop-blur-xs">
             <tr className="border-b border-border-tan text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-sage">
-              <th className="py-3.5 px-3 sm:px-5 w-[28%]">Cliente / Canal</th>
-              <th className="py-3.5 px-2 sm:px-4 w-[34%]">Motivo / Último Mensaje</th>
-              <th className="py-3.5 px-2 sm:px-4 w-[12%] text-center">Prioridad</th>
+              <th className="py-3.5 px-3 sm:px-5 w-[32%]">Cliente / Canal</th>
+              <th className="py-3.5 px-2 sm:px-4 w-[40%]">Motivo / Último Mensaje</th>
               <th className="py-3.5 px-2 sm:px-4 w-[14%] text-center hidden sm:table-cell">En espera</th>
-              <th className="py-3.5 px-3 sm:px-5 w-[12%] text-right">Estado</th>
+              <th className="py-3.5 px-3 sm:px-5 w-[14%] text-right">Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -118,14 +116,6 @@ export function RecepEscalacionesTable({
                         Hora: {item.lastMessageTimeLabel}
                       </span>
                     </div>
-                  </td>
-
-                  <td className="py-3.5 px-2 sm:px-4 text-center">
-                    {item.escalationId ? (
-                      <PriorityBadge priority={item.priority} />
-                    ) : (
-                      <span className="text-[11px] text-sage font-medium">—</span>
-                    )}
                   </td>
 
                   <td className="py-3.5 px-2 sm:px-4 text-center hidden sm:table-cell">
@@ -254,26 +244,7 @@ function ChannelBadge({ channel }: { channel: EscalationChannel }) {
   )
 }
 
-function PriorityBadge({ priority }: { priority: EscalationPriority }) {
-  let styles = 'bg-bone text-sage border-border-tan'
-  if (priority === 'Urgente') {
-    styles = 'bg-danger/10 text-danger border-danger/30 font-extrabold animate-pulse'
-  } else if (priority === 'Alta') {
-    styles = 'bg-terracotta/15 text-terracotta border-terracotta/30 font-bold'
-  } else if (priority === 'Media') {
-    styles = 'bg-sage-soft text-brand border-border-tan font-semibold'
-  } else if (priority === 'Baja') {
-    styles = 'bg-bone text-sage border-border-tan font-normal'
-  }
 
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border ${styles}`}
-    >
-      {priority}
-    </span>
-  )
-}
 
 function WaitingTimeBadge({ label, minutes }: { label: string; minutes: number }) {
   const isHighWait = minutes >= 60

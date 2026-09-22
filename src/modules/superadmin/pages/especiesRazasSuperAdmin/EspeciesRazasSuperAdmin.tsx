@@ -102,6 +102,11 @@ export function EspeciesRazasSuperAdmin({
     removeRaza,
   } = useEspeciesRazasSuperAdmin()
 
+  useEffect(() => {
+    if (!activeNotification) return
+    onNotice?.(activeNotification)
+  }, [activeNotification, onNotice])
+
   const [especieDrawerOpen, setEspecieDrawerOpen] = useState(false)
   const [editingEspecie, setEditingEspecie] = useState<EspecieCatalogo | null>(null)
   const [razaDrawerOpen, setRazaDrawerOpen] = useState(false)
@@ -143,6 +148,7 @@ export function EspeciesRazasSuperAdmin({
     }
   }
 
+
   const mainContent = (
     <>
       <DashboardBackgroundDecoration />
@@ -152,6 +158,11 @@ export function EspeciesRazasSuperAdmin({
       )}
 
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
+
+  const content = (
+    <>
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
+
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
                 Especies y razas
@@ -373,8 +384,10 @@ export function EspeciesRazasSuperAdmin({
               </div>
             </section>
           </div>
+
     </>
   )
+
 
   const drawersAndModals = (
     <>
@@ -451,6 +464,7 @@ export function EspeciesRazasSuperAdmin({
   )
 
   if (embedded) {
+
     // Los drawers/modales usan `fixed inset-0` y dependen de posicionarse contra
     // el viewport. `animate-view-popup` deja un `transform` aplicado (fill-mode:
     // both), lo que convierte a este div en containing block para sus hijos
@@ -462,6 +476,15 @@ export function EspeciesRazasSuperAdmin({
         </div>
         {drawersAndModals}
       </>
+
+    return (
+      <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
+        {activeNotification && !onNotice && (
+          <PageToast message={activeNotification} tone={toastTone} />
+        )}
+        {content}
+      </div>
+
     )
   }
 
@@ -495,11 +518,23 @@ export function EspeciesRazasSuperAdmin({
           key={activeRoute}
           className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
         >
+
           {mainContent}
         </main>
       </div>
 
       {drawersAndModals}
+
+          <DashboardBackgroundDecoration />
+
+          {activeNotification && (
+            <PageToast message={activeNotification} tone={toastTone} />
+          )}
+
+          {content}
+        </main>
+      </div>
+
     </div>
   )
 }
