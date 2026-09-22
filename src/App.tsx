@@ -177,8 +177,7 @@ function SuperAdminApp({
     canDeleteModule,
     firstAllowedRoute,
   } = useAdminShellAccess({
-    personId: user.personId || user.id,
-    accountId: user.userAccountId,
+    id: user.id,
     email: user.email,
     roleId: user.roleId,
     isPlatformSuperAdmin,
@@ -190,7 +189,7 @@ function SuperAdminApp({
     markAsRead: onMarkNotificationRead,
     markAllAsRead: onMarkAllNotificationsRead,
     reload: onReloadNotifications,
-  } = useNotificationsSuperAdmin(user.personId || user.id)
+  } = useNotificationsSuperAdmin(user.id)
 
   const [currentRoute, setCurrentRoute] = useState<string>('inicio')
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)

@@ -7,9 +7,6 @@ export interface AuthUser {
   role: UserRole
   roleName: string
   roleId?: string
-  // Users.Id (person) — mismo id que usa SuperAdmin al guardar excepciones
-  personId?: string
-  userAccountId?: string
   // Compatibilidad de UI: true solo para el role_id canónico SuperAdmin persistido.
   isPlatformSuperAdmin?: boolean
   avatarUrl?: string
@@ -43,13 +40,11 @@ export interface AuthenticationResponse {
 }
 
 export interface CurrentProfileResponse {
-  personId: string
-  userAccountId: string
+  id: string
   fullName: string
   initials: string
-  userName: string
   email: string
   role: string
-  accountStatus: string
   photoUrl?: string | null
 }
+

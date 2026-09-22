@@ -80,11 +80,10 @@ export function findVeterinarianForProfile(
   vets: ApiVeterinarian[],
   profile: ApiCurrentProfile,
 ): ApiVeterinarian | undefined {
-  const personId = profile.personId?.toLowerCase()
-  const accountId = profile.userAccountId?.toLowerCase()
+  const profileId = profile.id?.toLowerCase()
   return vets.find((vet) => {
     const userId = vet.userId?.toLowerCase()
-    return userId === personId || userId === accountId
+    return userId === profileId
   })
 }
 

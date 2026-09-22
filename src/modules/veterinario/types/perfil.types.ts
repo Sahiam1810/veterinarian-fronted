@@ -10,7 +10,6 @@ export interface VetProfilePayload {
   fullName: string
   systemRole: string
   email: string
-  userName: string
   // El dominio actual no guarda teléfono del staff en la entidad de usuario.
   phone: string
   mainSpecialty: string

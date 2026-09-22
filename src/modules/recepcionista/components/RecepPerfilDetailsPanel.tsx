@@ -34,7 +34,6 @@ export function RecepPerfilDetailsPanel({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Field label="Nombre Completo" value={profile.fullName} persistence="server" />
-          <Field label="Nombre de Usuario" value={profile.userName} persistence="server" />
           <Field label="Correo Electrónico" value={profile.email} persistence="server" />
           <Field label="Cargo / Rol de Cuenta" value={profile.role || 'Recepcionista'} persistence="server" highlighted />
         </div>
