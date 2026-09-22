@@ -10,6 +10,7 @@ export type ModuleId =
   | 'agenda'
   | 'historiaClinica'
   | 'reportes'
+  | 'ordenesMedicas'
 
 export interface ModulePermission {
   view: boolean

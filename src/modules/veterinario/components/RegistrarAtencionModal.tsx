@@ -15,6 +15,11 @@ import {
   isTerminalAppointmentStatus,
   mapAppointmentStatus,
 } from '../utils/mapAppointmentStatus'
+import { useRef } from 'react'
+import { AnexarOrdenMedicaModal, type MedicalOrderType } from './AnexarOrdenMedicaModal'
+import { OrdenesMedicasConsultaList, type OrdenesMedicasConsultaListRef } from './OrdenesMedicasConsultaList'
+import { getStoredUser } from '@/modules/auth'
+import { PlusIcon, PillIcon } from '@/global/components'
 import {
   pickDefaultDiagnosticId,
   getMissingDiagnosticError,
@@ -67,6 +72,13 @@ export function RegistrarAtencionModal({
   const [temperature, setTemperature] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const [orderModalState, setOrderModalState] = useState<{ isOpen: boolean; type: MedicalOrderType }>({
+    isOpen: false,
+    type: 'MEDICAMENTO',
+  })
+  const ordersListRef = useRef<OrdenesMedicasConsultaListRef>(null)
+  const currentUser = getStoredUser()
 
   useEffect(() => {
     setSelectedAppointmentId(initialAppointmentId)
@@ -387,7 +399,65 @@ export function RegistrarAtencionModal({
                   className="w-full rounded-xl border border-border-tan bg-white p-3 text-xs sm:text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:border-brand transition resize-none leading-relaxed"
                 />
               </div>
+
+              {/* Sección Órdenes Médicas de la Consulta */}
+              <div className="pt-4 border-t border-border-tan space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-extrabold uppercase tracking-wide text-brand">
+                      Órdenes Médicas de la Consulta
+                    </h4>
+                    <p className="text-[11px] text-sage">
+                      Anexa órdenes de medicamentos o procedimientos/pruebas diagnósticas.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOrderModalState({ isOpen: true, type: 'MEDICAMENTO' })}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-brand hover:bg-sage-soft transition cursor-pointer"
+                    >
+                      <PillIcon className="w-3.5 h-3.5 text-brand" />
+                      <span>Anexar orden de medicamento</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setOrderModalState({ isOpen: true, type: 'PROCEDIMIENTO' })}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-brand hover:bg-sage-soft transition cursor-pointer"
+                    >
+                      <MedicalFolderIcon className="w-3.5 h-3.5 text-brand" />
+                      <span>Anexar orden de procedimiento</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista unificada de órdenes médicas */}
+                <OrdenesMedicasConsultaList
+                  ref={ordersListRef}
+                  appointmentId={selectedAppointmentId}
+                  petName={petName}
+                  speciesBreed={speciesBreed}
+                  veterinarianName={currentUser?.name || currentUser?.fullName || 'Veterinario'}
+                  canEditPermission={true}
+                />
+              </div>
             </div>
+
+            {/* Modal para anexar nueva orden médica */}
+            <AnexarOrdenMedicaModal
+              isOpen={orderModalState.isOpen}
+              orderType={orderModalState.type}
+              clientPetId={clientPetId}
+              veterinarianId={currentUser?.id || currentUser?.veterinarianId || currentUser?.userAccountId || ''}
+              appointmentId={selectedAppointmentId}
+              petName={petName}
+              onClose={() => setOrderModalState((prev) => ({ ...prev, isOpen: false }))}
+              onSuccess={() => {
+                void ordersListRef.current?.reload()
+              }}
+            />
 
             {/* Footer buttons */}
             <footer className="shrink-0 flex items-center justify-end gap-2.5 p-3 sm:p-4 border-t border-border-tan bg-white">
