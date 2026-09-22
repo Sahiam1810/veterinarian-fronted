@@ -1000,17 +1000,10 @@ function UserInfoPanel({
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 border-b border-border-tan/30 gap-1 sm:items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 gap-1 sm:items-center">
               <span className="text-sage font-medium">ID de Usuario:</span>
               <span className="text-charcoal font-mono text-[11px] sm:text-xs bg-bone/80 px-2 py-0.5 rounded border border-border-tan/60 break-all text-right">
                 {user.id}
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:justify-between py-1.5 gap-1 sm:items-center">
-              <span className="text-sage font-medium">ID de Cuenta Web:</span>
-              <span className="text-charcoal font-mono text-[11px] sm:text-xs bg-bone/80 px-2 py-0.5 rounded border border-border-tan/60 break-all text-right">
-                {user.accountId || 'Sin cuenta web vinculada'}
               </span>
             </div>
           </div>

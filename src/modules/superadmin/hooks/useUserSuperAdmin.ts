@@ -14,7 +14,6 @@ import type {
 import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
 import {
   fetchUsers,
-  fetchUserAccounts,
   deleteUser as apiDeleteUser,
   createFullUser as apiCreateFullUser,
   updateUser as apiUpdateUser,
@@ -204,7 +203,7 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
     try {
       // Sin canManagePermissions no pedimos Modules / ROLE_PERMISSIONS
       // (403 ruidosos en consola para Auxiliar/Admin sin Plataforma).
-      const [usersRes, rolesRes, modulesRes, rolePermsRes, accountsRes, specialtiesRes, vetsRes] =
+      const [usersRes, rolesRes, modulesRes, rolePermsRes, specialtiesRes, vetsRes] =
         await Promise.allSettled([
           fetchUsers(),
           fetchRoles(),
@@ -212,7 +211,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           canManagePermissions
             ? fetchAllRolePermissions()
             : Promise.resolve([] as ApiRolePermissionResponse[]),
-          fetchUserAccounts(),
           fetchSpecialties(),
           fetchVeterinarians(),
         ])
@@ -222,13 +220,9 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
 
       // 403 esperados fuera de SuperAdmin / Roles / Plataforma / Veterinarios:
       // no deben mostrarse como error de carga de la pantalla Usuarios.
-      const concerning = [accountsRes]
-        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-        .concat(
-          [rolesRes, modulesRes, rolePermsRes, vetsRes, specialtiesRes].filter(
-            (r): r is PromiseRejectedResult => r.status === 'rejected' && !isExpectedForbidden(r),
-          ),
-        )
+      const concerning = [rolesRes, modulesRes, rolePermsRes, vetsRes, specialtiesRes].filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected' && !isExpectedForbidden(r),
+      )
 
       if (usersRes.status === 'rejected') {
         const first = usersRes.reason
@@ -261,11 +255,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       const fetchedModules: ApiModuleResponse[] = modulesRes.status === 'fulfilled' ? modulesRes.value : []
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
       const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
-      const fetchedAccounts =
-        accountsRes.status === 'fulfilled' ? accountsRes.value : []
-      const accountsByUserId = new Map(
-        fetchedAccounts.map((account) => [account.userId.toLowerCase(), account.id]),
-      )
 
       const fetchedSpecialties =
         specialtiesRes.status === 'fulfilled' ? specialtiesRes.value : []
@@ -366,7 +355,6 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
           roleName,
           status: (u.isActive ? 'Activo' : 'Inactivo') as UserStatus,
           registrationDate: formatDate(u.createdAt),
-          accountId: accountsByUserId.get(u.id.toLowerCase()),
         }
       })
 
