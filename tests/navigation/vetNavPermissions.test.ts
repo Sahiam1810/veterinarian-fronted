@@ -395,6 +395,7 @@ test('resolveRecepNavPermissionsFromModules includes new modules when canView is
     'recep.reportes',
     'recep.perfil',
   ])
+})
 
 test('fetchVetNavPermissions returns especiesRazas, servicios, and profesionales when granted by SuperAdmin', async () => {
   globalThis.fetch = async () => {
