@@ -10,7 +10,6 @@ import {
   fetchAllConversations,
   fetchEscalatedConversations,
   resolveChannel,
-  resolvePriority,
   resolveStatus,
   formatWaitingTime,
   sortEscalatedConversationItems,
@@ -25,23 +24,19 @@ import { createRecepPermissionHelpers } from '../utils/recepModulePermissions.ts
 
 const ITEMS_PER_PAGE = 8
 
-// Ticket FE-6: se reordena con el mismo criterio de buildEscalatedDirectory
-// (prioridad, luego tiempo de espera) para que insertar una fila nueva por
+// Se reordena con el mismo criterio de buildEscalatedDirectory
+// (tiempo de espera) para que insertar una fila nueva por
 // SignalR no rompa el orden que ya ve la Recepcionista en la carga inicial.
 function recomputeDirectory(
   items: EscalatedConversationListItem[],
 ): EscalacionesDirectoryPayload {
   const sortedItems = sortEscalatedConversationItems(items)
   const pendingCount = sortedItems.filter((i) => i.status === 'Pendiente').length
-  const urgentCount = sortedItems.filter(
-    (i) => i.priority === 'Urgente' || i.priority === 'Alta',
-  ).length
   const inProgressCount = sortedItems.filter((i) => i.status === 'En atención').length
   return {
     items: sortedItems,
     totalCount: sortedItems.length,
     pendingCount,
-    urgentCount,
     inProgressCount,
     pageStart: sortedItems.length > 0 ? 1 : 0,
     pageEnd: sortedItems.length,
@@ -220,8 +215,6 @@ export function useRecepEscalaciones(
           lastMessageTimeLabel,
           waitingTimeLabel: waitingInfo.label,
           waitingMinutes: waitingInfo.minutes,
-          priority: resolvePriority(payload.priority),
-          priorityId: payload.priority ?? null,
           status: resolveStatus(payload.status),
           statusId: payload.status ?? null,
           createdAt: payload.createdAt,
@@ -324,9 +317,7 @@ export function useRecepEscalaciones(
         statusFilter === 'todos' ||
         (Boolean(item.escalationId) &&
           ((statusFilter === 'pendientes' && item.status === 'Pendiente') ||
-            (statusFilter === 'en_atencion' && item.status === 'En atención') ||
-            (statusFilter === 'urgentes' &&
-              (item.priority === 'Urgente' || item.priority === 'Alta'))))
+            (statusFilter === 'en_atencion' && item.status === 'En atención')))
 
       const matchesQuery =
         !query ||
@@ -334,8 +325,7 @@ export function useRecepEscalaciones(
         (item.clientPhone && item.clientPhone.toLowerCase().includes(query)) ||
         item.lastMessage.toLowerCase().includes(query) ||
         item.channel.toLowerCase().includes(query) ||
-        (item.reason && item.reason.toLowerCase().includes(query)) ||
-        item.priority.toLowerCase().includes(query)
+        (item.reason && item.reason.toLowerCase().includes(query))
 
       return matchesStatus && matchesQuery
     })

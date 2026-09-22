@@ -17,7 +17,6 @@ interface RecepEscalacionesViewProps {
   listMode: ConversationsListMode
   isRefreshing?: boolean
   totalPending?: number
-  totalUrgent?: number
   pageStart: number
   pageEnd: number
   totalCount: number
@@ -47,7 +46,6 @@ export function RecepEscalacionesView({
   listMode,
   isRefreshing = false,
   totalPending,
-  totalUrgent,
   pageStart,
   pageEnd,
   totalCount,
@@ -80,7 +78,6 @@ export function RecepEscalacionesView({
             listMode={listMode}
             isRefreshing={isRefreshing}
             totalPending={totalPending}
-            totalUrgent={totalUrgent}
             onSearchChange={onSearchChange}
             onStatusFilterChange={onStatusFilterChange}
             onListModeChange={onListModeChange}
