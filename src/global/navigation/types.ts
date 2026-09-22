@@ -15,6 +15,9 @@ export type NavIconKey =
   | 'owners'
   | 'chat'
   | 'reports'
+  | 'species'
+  | 'services'
+  | 'doctors'
 
 // Entrada del catálogo (fuente de verdad por rol; no es UI aún)
 export interface NavCatalogItem {
