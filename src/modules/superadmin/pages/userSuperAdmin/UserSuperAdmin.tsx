@@ -724,7 +724,7 @@ function PermissionMatrixPanel({
               <th className="py-1.5 px-1 text-center w-[16.5%]">Eliminar</th>
             </tr>
           </thead>
-          <tbody className="divide-y border-tan/35 text-[11px]">
+          <tbody className="divide-y divide-border-tan/35 text-[11px]">
             {modulesInfo.map((mod) => {
               const perms: ModulePermission = activePermissions[mod.id] || {
                 view: false,
