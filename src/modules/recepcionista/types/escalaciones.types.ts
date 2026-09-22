@@ -197,6 +197,12 @@ export type EscalationChannel = 'Telegram' | 'Web' | 'WhatsApp' | 'Otro'
 
 export type EscalationStatusFilter = 'todos' | 'pendientes' | 'en_atencion' | 'urgentes'
 
+// Cola de asesor (solo escaladas) vs bandeja completa de chat
+export type ConversationsListMode = 'escaladas' | 'todas'
+
+// Decoración visual en la bandeja "Todas" (no filtra la lista)
+export type ConversationInboxBadge = 'esperando_asesor' | 'escalada'
+
 export type MessageSenderRole = 'client' | 'ai_agent' | 'human_agent' | 'system'
 export type MessageDeliveryStatus = 'sent' | 'sending' | 'error'
 
@@ -217,7 +223,8 @@ export interface ChatMessageItem {
 export interface EscalatedConversationListItem {
   id: string
   conversationId: string
-  escalationId: string
+  // Null cuando la conversación nunca se escaló (vista "Todas")
+  escalationId: string | null
   clientName: string
   clientPhone?: string | null
   channel: EscalationChannel
@@ -234,6 +241,8 @@ export interface EscalatedConversationListItem {
   reason?: string | null
   createdAt: string
   assignedToId?: string | null
+  // Solo vista "Todas": insignia Escalada / Esperando asesor
+  inboxBadge?: ConversationInboxBadge | null
 }
 
 export interface EscalacionesDirectoryPayload {

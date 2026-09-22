@@ -17,6 +17,8 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
     setSearch,
     statusFilter,
     setStatusFilter,
+    listMode,
+    setListMode,
     isRefreshing,
     pageStart,
     pageEnd,
@@ -82,6 +84,7 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
         selectedItem={selectedItem}
         search={search}
         statusFilter={statusFilter}
+        listMode={listMode}
         isRefreshing={isRefreshing}
         totalPending={directory.pendingCount}
         totalUrgent={directory.urgentCount}
@@ -92,6 +95,7 @@ export function EscalacionesPage({ onNotice }: EscalacionesPageProps) {
         totalPages={totalPages}
         onSearchChange={setSearch}
         onStatusFilterChange={setStatusFilter}
+        onListModeChange={setListMode}
         onRefresh={() => void reloadDirectory()}
         onSelect={handleSelect}
         onCloseDetail={handleCloseDetail}

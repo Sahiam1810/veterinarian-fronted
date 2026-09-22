@@ -1,6 +1,7 @@
 import type {
   EscalatedConversationListItem,
   EscalationStatusFilter,
+  ConversationsListMode,
 } from '../types/index.ts'
 import { ViewPopup } from './ViewPopup'
 import { RecepEscalacionesToolbar } from './RecepEscalacionesToolbar'
@@ -13,6 +14,7 @@ interface RecepEscalacionesViewProps {
   selectedItem: EscalatedConversationListItem | null
   search: string
   statusFilter: EscalationStatusFilter
+  listMode: ConversationsListMode
   isRefreshing?: boolean
   totalPending?: number
   totalUrgent?: number
@@ -23,6 +25,7 @@ interface RecepEscalacionesViewProps {
   totalPages?: number
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: EscalationStatusFilter) => void
+  onListModeChange: (value: ConversationsListMode) => void
   onRefresh?: () => void
   onSelect: (id: string) => void
   onCloseDetail: () => void
@@ -41,6 +44,7 @@ export function RecepEscalacionesView({
   selectedItem,
   search,
   statusFilter,
+  listMode,
   isRefreshing = false,
   totalPending,
   totalUrgent,
@@ -51,6 +55,7 @@ export function RecepEscalacionesView({
   totalPages,
   onSearchChange,
   onStatusFilterChange,
+  onListModeChange,
   onRefresh,
   onSelect,
   onCloseDetail,
@@ -72,11 +77,13 @@ export function RecepEscalacionesView({
           <RecepEscalacionesToolbar
             search={search}
             statusFilter={statusFilter}
+            listMode={listMode}
             isRefreshing={isRefreshing}
             totalPending={totalPending}
             totalUrgent={totalUrgent}
             onSearchChange={onSearchChange}
             onStatusFilterChange={onStatusFilterChange}
+            onListModeChange={onListModeChange}
             onRefresh={onRefresh}
           />
         </div>
@@ -85,6 +92,7 @@ export function RecepEscalacionesView({
           <RecepEscalacionesTable
             items={items}
             selectedId={selectedId}
+            listMode={listMode}
             pageStart={pageStart}
             pageEnd={pageEnd}
             totalCount={totalCount}

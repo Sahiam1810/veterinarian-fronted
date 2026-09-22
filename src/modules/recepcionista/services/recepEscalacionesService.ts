@@ -15,6 +15,7 @@ import type {
   EscalacionesDirectoryPayload,
   EscalationChannel,
   EscalationPriority,
+  ConversationInboxBadge,
   EscalationResolutionResponseDto,
   EscalationStatus,
   MessageDeliveryStatus,
@@ -210,6 +211,65 @@ export function sortEscalatedConversationItems(
   })
 }
 
+// Escalamiento activo = sin resolución (cola de asesor)
+export function isActiveEscalation(esc: ChatEscalationResponseDto): boolean {
+  if (esc.resolvedAt) return false
+  if (
+    esc.escalationStatusId === ESCALATION_STATUS_GUIDS.RESOLVED ||
+    esc.escalationStatusId === ESCALATION_STATUS_GUIDS.CANCELLED
+  ) {
+    return false
+  }
+  // Formas femenina ("Resuelta"/"Cancelada", como las manda el backend real)
+  // y masculina, por si algún origen de datos las manda distinto.
+  const statusNorm = (esc.status || '').toLowerCase()
+  if (statusNorm.includes('resuel') || statusNorm === 'resolved' || statusNorm.includes('cancel')) {
+    return false
+  }
+  return true
+}
+
+function mapEscalationRow(
+  esc: ChatEscalationResponseDto,
+  conv: ChatConversationResponseDto | undefined,
+  now: Date,
+): EscalatedConversationListItem {
+  const clientName = conv?.clientName || conv?.fullName || 'Cliente sin nombre'
+  const clientPhone = conv?.clientPhone || conv?.phoneNumber || null
+  const channel = resolveChannel(conv?.channel)
+  const priority = resolvePriority(esc.priorityId, esc.priority)
+  const status = resolveStatus(esc.escalationStatusId, esc.status)
+  const waiting = formatWaitingTime(esc.createdAt, now)
+  const lastMessage = conv?.lastMessage || esc.reason || 'Solicita atención con un asesor.'
+  const lastMessageAt = conv?.lastMessageAt || conv?.updatedAt || esc.createdAt
+  const lastMessageTimeLabel = formatTimeLabel(lastMessageAt)
+  const inboxBadge: ConversationInboxBadge =
+    status === 'Pendiente' || status === 'Asignada' ? 'esperando_asesor' : 'escalada'
+
+  return {
+    id: esc.id,
+    conversationId: esc.chatConversationId,
+    escalationId: esc.id,
+    clientName,
+    clientPhone,
+    channel,
+    channelRaw: conv?.channel || 'web',
+    lastMessage,
+    lastMessageAt,
+    lastMessageTimeLabel,
+    waitingTimeLabel: waiting.label,
+    waitingMinutes: waiting.minutes,
+    priority,
+    priorityId: esc.priorityId,
+    status,
+    statusId: esc.escalationStatusId,
+    reason: esc.reason || null,
+    createdAt: esc.createdAt,
+    assignedToId: esc.assignedToId,
+    inboxBadge,
+  }
+}
+
 export function buildEscalatedDirectory(
   conversations: ChatConversationResponseDto[],
   escalations: ChatEscalationResponseDto[],
@@ -220,67 +280,94 @@ export function buildEscalatedDirectory(
     convMap.set(conv.id, conv)
   }
 
-  // Una conversación está en la bandeja si tiene un escalamiento sin resolución (§8)
-  const activeEscalations = escalations.filter((esc) => {
-    if (esc.resolvedAt) return false
-    if (
-      esc.escalationStatusId === ESCALATION_STATUS_GUIDS.RESOLVED ||
-      esc.escalationStatusId === ESCALATION_STATUS_GUIDS.CANCELLED
-    ) {
-      return false
-    }
-    // Formas femenina ("Resuelta"/"Cancelada", como las manda el backend real)
-    // y masculina, por si algún origen de datos las manda distinto.
-    const statusNorm = (esc.status || '').toLowerCase()
-    if (statusNorm.includes('resuel') || statusNorm === 'resolved' || statusNorm.includes('cancel')) {
-      return false
-    }
-    return true
-  })
-
-  const items: EscalatedConversationListItem[] = activeEscalations.map((esc) => {
-    // Ticket FE-7: esc.chatConversationId (no esc.conversationId) es el campo
-    // real que manda el backend — sin este cruce, "conv" siempre salía
-    // undefined y toda la fila caía a los valores por defecto.
-    const conv = convMap.get(esc.chatConversationId)
-    const clientName = conv?.clientName || conv?.fullName || 'Cliente sin nombre'
-    const clientPhone = conv?.clientPhone || conv?.phoneNumber || null
-    const channel = resolveChannel(conv?.channel)
-    const priority = resolvePriority(esc.priorityId, esc.priority)
-    const status = resolveStatus(esc.escalationStatusId, esc.status)
-    const waiting = formatWaitingTime(esc.createdAt, now)
-    const lastMessage = conv?.lastMessage || esc.reason || 'Solicita atención con un asesor.'
-    const lastMessageAt = conv?.lastMessageAt || conv?.updatedAt || esc.createdAt
-    const lastMessageTimeLabel = formatTimeLabel(lastMessageAt)
-
-    return {
-      id: esc.id,
-      conversationId: esc.chatConversationId,
-      escalationId: esc.id,
-      clientName,
-      clientPhone,
-      channel,
-      channelRaw: conv?.channel || 'web',
-      lastMessage,
-      lastMessageAt,
-      lastMessageTimeLabel,
-      waitingTimeLabel: waiting.label,
-      waitingMinutes: waiting.minutes,
-      priority,
-      priorityId: esc.priorityId,
-      status,
-      statusId: esc.escalationStatusId,
-      reason: esc.reason || null,
-      createdAt: esc.createdAt,
-      assignedToId: esc.assignedToId,
-    }
-  })
+  const activeEscalations = escalations.filter(isActiveEscalation)
+  const items: EscalatedConversationListItem[] = activeEscalations.map((esc) =>
+    mapEscalationRow(esc, convMap.get(esc.chatConversationId), now),
+  )
 
   const sortedItems = sortEscalatedConversationItems(items)
 
   const pendingCount = sortedItems.filter((i) => i.status === 'Pendiente').length
   const inProgressCount = sortedItems.filter((i) => i.status === 'En atención').length
   const urgentCount = sortedItems.filter((i) => i.priority === 'Urgente' || i.priority === 'Alta').length
+
+  return {
+    items: sortedItems,
+    totalCount: sortedItems.length,
+    pendingCount,
+    inProgressCount,
+    urgentCount,
+    pageStart: sortedItems.length > 0 ? 1 : 0,
+    pageEnd: sortedItems.length,
+  }
+}
+
+// Vista "Todas": una fila por conversación; escalations solo decoran la insignia
+export function buildAllConversationsDirectory(
+  conversations: ChatConversationResponseDto[],
+  escalations: ChatEscalationResponseDto[],
+  now: Date = new Date(),
+): EscalacionesDirectoryPayload {
+  const activeByConv = new Map<string, ChatEscalationResponseDto>()
+  for (const esc of escalations) {
+    if (!isActiveEscalation(esc)) continue
+    const prev = activeByConv.get(esc.chatConversationId)
+    if (!prev || new Date(esc.createdAt).getTime() > new Date(prev.createdAt).getTime()) {
+      activeByConv.set(esc.chatConversationId, esc)
+    }
+  }
+
+  const items: EscalatedConversationListItem[] = conversations.map((conv) => {
+    const esc = activeByConv.get(conv.id)
+    if (esc) {
+      const row = mapEscalationRow(esc, conv, now)
+      // En bandeja completa el id estable es la conversación (abrir hilo)
+      return { ...row, id: conv.id }
+    }
+
+    const clientName = conv.clientName || conv.fullName || 'Cliente sin nombre'
+    const clientPhone = conv.clientPhone || conv.phoneNumber || null
+    const channel = resolveChannel(conv.channel)
+    const activityAt = conv.lastMessageAt || conv.updatedAt || conv.createdAt
+    const waiting = formatWaitingTime(activityAt, now)
+
+    return {
+      id: conv.id,
+      conversationId: conv.id,
+      escalationId: null,
+      clientName,
+      clientPhone,
+      channel,
+      channelRaw: conv.channel || 'web',
+      lastMessage: conv.lastMessage || 'Sin mensajes aún.',
+      lastMessageAt: activityAt,
+      lastMessageTimeLabel: formatTimeLabel(activityAt),
+      waitingTimeLabel: waiting.label,
+      waitingMinutes: waiting.minutes,
+      priority: 'Normal',
+      priorityId: null,
+      status: 'Pendiente',
+      statusId: null,
+      reason: null,
+      createdAt: conv.createdAt,
+      assignedToId: null,
+      inboxBadge: null,
+    }
+  })
+
+  // Más recientes primero (bandeja de chat, no cola de prioridad)
+  const sortedItems = [...items].sort((a, b) => {
+    const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
+    const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
+    return bTime - aTime
+  })
+
+  const escalatedOnly = sortedItems.filter((i) => Boolean(i.escalationId))
+  const pendingCount = escalatedOnly.filter((i) => i.status === 'Pendiente').length
+  const inProgressCount = escalatedOnly.filter((i) => i.status === 'En atención').length
+  const urgentCount = escalatedOnly.filter(
+    (i) => i.priority === 'Urgente' || i.priority === 'Alta',
+  ).length
 
   return {
     items: sortedItems,
@@ -526,6 +613,71 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
   return buildEscalatedDirectory(mockConversations, mockEscalations, now)
 }
 
+export function getMockAllConversationsDirectory(now: Date = new Date()): EscalacionesDirectoryPayload {
+  const escalated = getMockEscalatedDirectory(now)
+  const m10 = new Date(now.getTime() - 10 * 60 * 1000).toISOString()
+  // Conversación solo con el bot: nunca pedió asesor
+  const botOnly: EscalatedConversationListItem = {
+    id: 'conv-bot-001',
+    conversationId: 'conv-bot-001',
+    escalationId: null,
+    clientName: 'Laura BotDemo',
+    clientPhone: '+57 300 111 2233',
+    channel: 'Telegram',
+    channelRaw: 'telegram',
+    lastMessage: '¿Cuál es el horario de vacunación los sábados?',
+    lastMessageAt: m10,
+    lastMessageTimeLabel: formatTimeLabel(m10),
+    waitingTimeLabel: formatWaitingTime(m10, now).label,
+    waitingMinutes: formatWaitingTime(m10, now).minutes,
+    priority: 'Normal',
+    priorityId: null,
+    status: 'Pendiente',
+    statusId: null,
+    reason: null,
+    createdAt: m10,
+    assignedToId: null,
+    inboxBadge: null,
+  }
+
+  return buildAllConversationsDirectory(
+    [
+      ...escalated.items.map((item) => ({
+        id: item.conversationId,
+        clientName: item.clientName,
+        clientPhone: item.clientPhone,
+        channel: item.channelRaw,
+        createdAt: item.createdAt,
+        lastMessageAt: item.lastMessageAt,
+        lastMessage: item.lastMessage,
+      })),
+      {
+        id: botOnly.conversationId,
+        clientName: botOnly.clientName,
+        clientPhone: botOnly.clientPhone,
+        channel: botOnly.channelRaw,
+        createdAt: botOnly.createdAt,
+        lastMessageAt: botOnly.lastMessageAt,
+        lastMessage: botOnly.lastMessage,
+      },
+    ],
+    escalated.items
+      .filter((i) => i.escalationId)
+      .map((i) => ({
+        id: i.escalationId!,
+        chatConversationId: i.conversationId,
+        reason: i.reason,
+        priorityId: i.priorityId || ESCALATION_PRIORITY_GUIDS.MEDIUM,
+        escalationStatusId: i.statusId || ESCALATION_STATUS_GUIDS.PENDING,
+        assignedToId: i.assignedToId,
+        createdAt: i.createdAt,
+        resolvedAt: null,
+        status: i.status,
+      })),
+    now,
+  )
+}
+
 // =========================================================================
 // Caché en Memoria para Flujo de 3 Pasos (§14)
 // =========================================================================
@@ -626,6 +778,24 @@ export async function fetchEscalatedConversations(): Promise<EscalacionesDirecto
   ])
 
   return buildEscalatedDirectory(convsRes || [], escalationsRes || [])
+}
+
+/**
+ * Todas las conversaciones del chat (sin filtrar por escalamiento).
+ * /api/chat/escalations solo decora la insignia Escalada / Esperando asesor.
+ */
+export async function fetchAllConversations(): Promise<EscalacionesDirectoryPayload> {
+  if (USE_MOCK_ESCALATIONS) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    return getMockAllConversationsDirectory()
+  }
+
+  const [convsRes, escalationsRes] = await Promise.all([
+    apiClient.get<ChatConversationResponseDto[]>('/api/chat/conversations'),
+    apiClient.get<ChatEscalationResponseDto[]>('/api/chat/escalations'),
+  ])
+
+  return buildAllConversationsDirectory(convsRes || [], escalationsRes || [])
 }
 
 /**

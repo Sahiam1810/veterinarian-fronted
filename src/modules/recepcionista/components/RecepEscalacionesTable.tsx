@@ -3,12 +3,15 @@ import type {
   EscalationChannel,
   EscalationPriority,
   EscalationStatus,
+  ConversationsListMode,
+  ConversationInboxBadge,
 } from '../types'
 import { ChatIcon, UserAvatarIcon } from '@/global/components'
 
 interface RecepEscalacionesTableProps {
   items: EscalatedConversationListItem[]
   selectedId: string | null
+  listMode?: ConversationsListMode
   pageStart: number
   pageEnd: number
   totalCount: number
@@ -23,6 +26,7 @@ interface RecepEscalacionesTableProps {
 export function RecepEscalacionesTable({
   items,
   selectedId,
+  listMode = 'escaladas',
   pageStart,
   pageEnd,
   totalCount,
@@ -34,17 +38,22 @@ export function RecepEscalacionesTable({
   onGoToPage,
 }: RecepEscalacionesTableProps) {
   if (totalCount === 0) {
+    const emptyTitle =
+      listMode === 'todas'
+        ? 'No hay conversaciones de chat todavía'
+        : 'No hay conversaciones esperando un asesor ahora mismo'
+    const emptyBody =
+      listMode === 'todas'
+        ? 'Cuando un cliente inicie un chat con el bot o Telegram, la conversación aparecerá aquí aunque no haya pedido asesor.'
+        : 'Cuando un cliente solicite hablar con una persona desde el chatbot o Telegram, la conversación aparecerá automáticamente aquí.'
+
     return (
       <section className="flex-1 min-w-0 min-h-[350px] flex flex-col items-center justify-center rounded-2xl border border-border-tan bg-white p-8 sm:p-12 text-center shadow-[0_2px_16px_rgba(35,78,70,0.04)]">
         <div className="w-16 h-16 rounded-full bg-cream text-brand border border-border-tan flex items-center justify-center mb-4">
           <ChatIcon className="w-8 h-8 opacity-80" />
         </div>
-        <h3 className="text-base sm:text-lg font-bold text-brand mb-1">
-          No hay conversaciones esperando un asesor ahora mismo
-        </h3>
-        <p className="text-xs sm:text-sm text-sage max-w-md font-medium">
-          Cuando un cliente solicite hablar con una persona desde el chatbot o Telegram, la conversación aparecerá automáticamente aquí.
-        </p>
+        <h3 className="text-base sm:text-lg font-bold text-brand mb-1">{emptyTitle}</h3>
+        <p className="text-xs sm:text-sm text-sage max-w-md font-medium">{emptyBody}</p>
       </section>
     )
   }
@@ -82,6 +91,9 @@ export function RecepEscalacionesTable({
                             {item.clientName}
                           </p>
                           <ChannelBadge channel={item.channel} />
+                          {listMode === 'todas' && (
+                            <InboxBadge badge={item.inboxBadge ?? null} />
+                          )}
                         </div>
                         {item.clientPhone && (
                           <p className="text-[11px] text-sage font-medium truncate mt-0.5">
@@ -109,7 +121,11 @@ export function RecepEscalacionesTable({
                   </td>
 
                   <td className="py-3.5 px-2 sm:px-4 text-center">
-                    <PriorityBadge priority={item.priority} />
+                    {item.escalationId ? (
+                      <PriorityBadge priority={item.priority} />
+                    ) : (
+                      <span className="text-[11px] text-sage font-medium">—</span>
+                    )}
                   </td>
 
                   <td className="py-3.5 px-2 sm:px-4 text-center hidden sm:table-cell">
@@ -117,7 +133,13 @@ export function RecepEscalacionesTable({
                   </td>
 
                   <td className="py-3.5 px-3 sm:px-5 text-right">
-                    <StatusBadge status={item.status} />
+                    {item.escalationId ? (
+                      <StatusBadge status={item.status} />
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-bone text-sage border border-border-tan">
+                        Con el bot
+                      </span>
+                    )}
                   </td>
                 </tr>
               )
@@ -167,6 +189,22 @@ export function RecepEscalacionesTable({
         </div>
       </footer>
     </section>
+  )
+}
+
+function InboxBadge({ badge }: { badge: ConversationInboxBadge | null }) {
+  if (!badge) return null
+  if (badge === 'esperando_asesor') {
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-terracotta/15 text-terracotta border border-terracotta/25">
+        Esperando asesor
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-brand/10 text-brand border border-brand/20">
+      Escalada
+    </span>
   )
 }
 

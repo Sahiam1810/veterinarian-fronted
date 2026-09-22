@@ -137,7 +137,7 @@ export function RecepConversacionDetalleModal({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {canResolveEscalations && (
+              {canResolveEscalations && conversation.escalationId && (
                 <button
                   type="button"
                   onClick={() => setIsResolveModalOpen(true)}
@@ -254,7 +254,7 @@ export function RecepConversacionDetalleModal({
 
       {/* MODAL DE RESOLUCIÓN */}
       <RecepResolverEscalacionModal
-        isOpen={isResolveModalOpen && canResolveEscalations}
+        isOpen={isResolveModalOpen && canResolveEscalations && Boolean(conversation.escalationId)}
         clientName={conversation.clientName}
         isResolving={isResolving}
         onClose={() => setIsResolveModalOpen(false)}
