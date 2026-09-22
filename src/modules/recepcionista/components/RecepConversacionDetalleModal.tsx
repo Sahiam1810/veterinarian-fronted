@@ -122,7 +122,6 @@ export function RecepConversacionDetalleModal({
                     {conversation.clientName}
                   </h2>
                   <ChannelBadge channel={conversation.channel} />
-                  <PriorityBadge priority={conversation.priority} />
                 </div>
                 <div className="flex items-center gap-2 text-xs text-sage font-medium mt-0.5 truncate">
                   {conversation.clientPhone && <span>{conversation.clientPhone} · </span>}
@@ -286,19 +285,4 @@ function ChannelBadge({ channel }: { channel: EscalatedConversationListItem['cha
   )
 }
 
-function PriorityBadge({ priority }: { priority: EscalatedConversationListItem['priority'] }) {
-  let styles = 'bg-bone text-sage border-border-tan'
-  if (priority === 'Urgente') {
-    styles = 'bg-danger/10 text-danger border-danger/30 font-extrabold'
-  } else if (priority === 'Alta') {
-    styles = 'bg-terracotta/15 text-terracotta border-terracotta/30 font-bold'
-  } else if (priority === 'Media') {
-    styles = 'bg-sage-soft text-brand border-border-tan font-semibold'
-  }
 
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${styles}`}>
-      {priority}
-    </span>
-  )
-}
