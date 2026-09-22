@@ -6,6 +6,7 @@ import {
   fetchRecepDayAppointments,
 } from '../../src/modules/recepcionista/services/recepAgendaService.ts'
 import { canTakeRecepVitals } from '../../src/modules/recepcionista/types/agenda.types.ts'
+import { createRecepPermissionHelpers } from '../../src/modules/recepcionista/utils/recepModulePermissions.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -158,16 +159,32 @@ test('fetchRecepDayAppointments mapea los signos vitales si existen en la respue
   assert.equal(appointments[0].respiratoryRate, 20)
 })
 
-test('validación de roles autorizados para tomar signos vitales (auxiliar/superadmin vs recepcionista)', () => {
-  const isRoleAuthorized = (role?: string) => {
-    const r = role?.toLowerCase()
-    return r === 'auxiliar' || r === 'superadmin' || r === 'admin'
-  }
+// Prueba el helper de permisos real que usa RecepDayCalendarPanel (no un rol
+// hardcodeado) -- así respeta lo que de verdad devuelva /api/auth/permissions,
+// sea cual sea el rol logueado.
+test('canEditModule("signosVitales") sigue el permiso real "Signos Vitales", no el nombre del rol', () => {
+  const auxiliarConPermiso = createRecepPermissionHelpers({
+    'Signos Vitales': { canView: true, canCreate: false, canEdit: true, canDelete: false },
+  })
+  assert.equal(auxiliarConPermiso.canEditModule('signosVitales'), true)
 
-  assert.equal(isRoleAuthorized('auxiliar'), true)
-  assert.equal(isRoleAuthorized('superadmin'), true)
-  assert.equal(isRoleAuthorized('admin'), true)
-  assert.equal(isRoleAuthorized('recepcionista'), false)
-  assert.equal(isRoleAuthorized('veterinario'), false)
-  assert.equal(isRoleAuthorized(undefined), false)
+  // Recepcionista hoy no tiene fila para "Signos Vitales" en el backend --
+  // el mapa de permisos ni siquiera trae esa clave.
+  const recepcionistaSinPermiso = createRecepPermissionHelpers({
+    Citas: { canView: true, canCreate: true, canEdit: true, canDelete: true },
+  })
+  assert.equal(recepcionistaSinPermiso.canEditModule('signosVitales'), false)
+
+  // Si algún día SuperAdmin le otorga el permiso a Recepcionista desde el
+  // panel, este mismo helper debe reflejarlo sin cambiar código.
+  const recepcionistaConPermisoOtorgado = createRecepPermissionHelpers({
+    'Signos Vitales': { canView: true, canCreate: false, canEdit: true, canDelete: false },
+  })
+  assert.equal(recepcionistaConPermisoOtorgado.canEditModule('signosVitales'), true)
+
+  // Ver sin poder editar (o al revés) no debe alcanzar -- ambos flags cuentan.
+  const soloVer = createRecepPermissionHelpers({
+    'Signos Vitales': { canView: true, canCreate: false, canEdit: false, canDelete: false },
+  })
+  assert.equal(soloVer.canEditModule('signosVitales'), false)
 })

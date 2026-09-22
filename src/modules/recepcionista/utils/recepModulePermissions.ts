@@ -8,6 +8,7 @@ export type RecepModuleId =
   | 'mascotas'
   | 'duenos'
   | 'conversaciones'
+  | 'signosVitales'
 
 interface RecepModulePermissionRule {
   viewModules: string[]
@@ -43,6 +44,15 @@ export const RECEP_MODULE_PERMISSION_RULES: Record<
     createModule: 'Chat',
     editModule: 'Escalamientos',
     deleteModule: 'Escalamientos',
+  },
+  // Módulo propio del backend (separado de "Citas" a propósito): Recepcionista
+  // no lo tiene por defecto -- si SuperAdmin se lo otorga desde el panel, el
+  // botón debe aparecer solo, sin tocar código.
+  signosVitales: {
+    viewModules: ['Signos Vitales'],
+    createModule: 'Signos Vitales',
+    editModule: 'Signos Vitales',
+    deleteModule: 'Signos Vitales',
   },
 }
 

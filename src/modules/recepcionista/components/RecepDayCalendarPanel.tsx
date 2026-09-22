@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   CalendarIcon,
   EditIcon,
@@ -6,9 +6,10 @@ import {
   SearchIcon,
   StethoscopeIcon,
 } from '@/global/components'
-import { getStoredUser } from '@/modules/auth'
+import { fetchMyModulePermissions } from '@/modules/auth'
 import type { RecepAgendaDayAppointment } from '../types'
 import { canMarkRecepNoAsistio, canCheckIn, isRecepAppointmentEditable, canTakeRecepVitals } from '../types'
+import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
 import { RecepAppointmentStatusBadge } from './RecepAppointmentStatusBadge'
 import { CloseIcon } from './RecepMascotasIcons'
 import { TomarSignosVitalesModal } from './TomarSignosVitalesModal'
@@ -91,11 +92,28 @@ export function RecepDayCalendarPanel({
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [vitalsTarget, setVitalsTarget] = useState<RecepAgendaDayAppointment | null>(null)
+  const [canEditSignosVitales, setCanEditSignosVitales] = useState(false)
 
-  const userRole = getStoredUser()?.role?.toLowerCase()
-  const canTakeVitalsRole =
-    canTakeVitals ??
-    (userRole === 'auxiliar' || userRole === 'superadmin' || userRole === 'admin')
+  useEffect(() => {
+    if (canTakeVitals !== undefined) return
+    let cancelled = false
+    fetchMyModulePermissions()
+      .then((permissions) => {
+        if (cancelled) return
+        setCanEditSignosVitales(createRecepPermissionHelpers(permissions).canEditModule('signosVitales'))
+      })
+      .catch(() => {
+        if (!cancelled) setCanEditSignosVitales(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [canTakeVitals])
+
+  // Permiso real "Signos Vitales" (módulo propio en el backend, separado de
+  // "Citas") -- no un rol hardcodeado, así que si SuperAdmin se lo otorga a
+  // Recepcionista desde el panel, el botón aparece solo sin tocar código.
+  const canTakeVitalsRole = canTakeVitals ?? canEditSignosVitales
 
   const hours = useMemo(
     () => Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i),
