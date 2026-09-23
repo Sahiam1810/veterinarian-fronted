@@ -123,10 +123,30 @@ export function ProfesionalesSuperAdmin({
   embedded = false,
   onNotice,
 }: ProfesionalesSuperAdminProps = {}) {
-  // Permisos CRUD del módulo profesionales (incluye bloques de horario)
+  // Bloques de horario: solo Veterinarios/profesionales (permiso actual).
   const canCreate = canCreateModule ? canCreateModule('profesionales') : true
-  const canEdit = canEditModule ? canEditModule('profesionales') : true
-  const canDelete = canDeleteModule ? canDeleteModule('profesionales') : true
+  // Editar muta perfil Veterinario + Usuario → requiere ambos Edit.
+  // Eliminar desactiva/borra User → Veterinarios.Delete + Usuarios.Edit + Usuarios.Delete.
+  // ModuleId frontend: 'profesionales' (API Veterinarios) y 'usuarios' (API Usuarios).
+  // Sin checker (SuperAdmin embebido legacy): fail-open, igual que antes.
+  // Helpers Vet/Recep sin mapa 'usuarios' pueden lanzar → denegar (no ampliar privilegios).
+  const checkModule = (
+    checker: ((moduleId: ModuleId) => boolean) | undefined,
+    moduleId: ModuleId,
+  ): boolean => {
+    if (!checker) return true
+    try {
+      return checker(moduleId)
+    } catch {
+      return false
+    }
+  }
+  const canEdit =
+    checkModule(canEditModule, 'profesionales') && checkModule(canEditModule, 'usuarios')
+  const canDelete =
+    checkModule(canDeleteModule, 'profesionales') &&
+    checkModule(canEditModule, 'usuarios') &&
+    checkModule(canDeleteModule, 'usuarios')
 
   // Estado de navegación y sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
