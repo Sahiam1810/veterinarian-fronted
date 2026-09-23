@@ -1,24 +1,6 @@
-import type { SVGProps } from 'react'
 import type { AppointmentReceiptResponse } from '../services/recepAgendaService'
-
-function PrinterIcon({ className = 'w-4 h-4', ...props }: SVGProps<SVGSVGElement> & { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true" {...props}>
-      <polyline points="6 9 6 2 18 2 18 9" />
-      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-      <rect x="6" y="14" width="12" height="8" />
-    </svg>
-  )
-}
-
-function XIcon({ className = 'w-5 h-5', ...props }: SVGProps<SVGSVGElement> & { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true" {...props}>
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  )
-}
+import { PrinterIcon } from '@/global/components'
+import { CloseIcon } from './RecepMascotasIcons'
 
 interface AppointmentReceiptModalProps {
   open: boolean
@@ -58,7 +40,7 @@ export function AppointmentReceiptModal({
             onClick={() => onOpenChange(false)}
             className="text-sage hover:text-charcoal transition"
           >
-            <XIcon className="w-5 h-5" />
+            <CloseIcon className="w-5 h-5" />
           </button>
         </div>
 
@@ -66,7 +48,7 @@ export function AppointmentReceiptModal({
         <div className="p-6 space-y-5">
           <div className="text-center pb-4 border-b border-border-tan">
             <h3 className="font-extrabold text-xl text-brand">Huellitas Veterinarian</h3>
-            <p className="text-sm font-medium text-sage">NIT: 900.123.456-7</p>
+            <p className="text-sm font-medium text-sage">Comprobante de pago</p>
           </div>
 
           <div className="grid grid-cols-2 gap-y-3 text-sm">
