@@ -118,23 +118,29 @@ export function createRecepPermissionHelpers(
   const getPermission = (moduleName: string) =>
     getRecepModulePermission(permissions, moduleName)
 
-  const canViewModule = (moduleId: RecepModuleId) =>
-    RECEP_MODULE_PERMISSION_RULES[moduleId].viewModules.every(
+  const canViewModule = (moduleId: RecepModuleId) => {
+    const rule = RECEP_MODULE_PERMISSION_RULES[moduleId]
+    if (!rule) return false
+    return rule.viewModules.every(
       (moduleName) => getPermission(moduleName).canView,
     )
+  }
 
   return {
     canViewModule,
     canCreateModule: (moduleId) => {
       const rule = RECEP_MODULE_PERMISSION_RULES[moduleId]
+      if (!rule) return false
       return canViewModule(moduleId) && getPermission(rule.createModule).canCreate
     },
     canEditModule: (moduleId) => {
       const rule = RECEP_MODULE_PERMISSION_RULES[moduleId]
+      if (!rule) return false
       return canViewModule(moduleId) && getPermission(rule.editModule).canEdit
     },
     canDeleteModule: (moduleId) => {
       const rule = RECEP_MODULE_PERMISSION_RULES[moduleId]
+      if (!rule) return false
       return canViewModule(moduleId) && getPermission(rule.deleteModule).canDelete
     },
   }

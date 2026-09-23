@@ -123,10 +123,30 @@ export function ProfesionalesSuperAdmin({
   embedded = false,
   onNotice,
 }: ProfesionalesSuperAdminProps = {}) {
-  // Permisos CRUD del módulo profesionales (incluye bloques de horario)
+  // Bloques de horario: solo Veterinarios/profesionales (permiso actual).
   const canCreate = canCreateModule ? canCreateModule('profesionales') : true
-  const canEdit = canEditModule ? canEditModule('profesionales') : true
-  const canDelete = canDeleteModule ? canDeleteModule('profesionales') : true
+  // Editar muta perfil Veterinario + Usuario → requiere ambos Edit.
+  // Eliminar desactiva/borra User → Veterinarios.Delete + Usuarios.Edit + Usuarios.Delete.
+  // ModuleId frontend: 'profesionales' (API Veterinarios) y 'usuarios' (API Usuarios).
+  // Sin checker (SuperAdmin embebido legacy): fail-open, igual que antes.
+  // Helpers Vet/Recep sin mapa 'usuarios' pueden lanzar → denegar (no ampliar privilegios).
+  const checkModule = (
+    checker: ((moduleId: ModuleId) => boolean) | undefined,
+    moduleId: ModuleId,
+  ): boolean => {
+    if (!checker) return true
+    try {
+      return checker(moduleId)
+    } catch {
+      return false
+    }
+  }
+  const canEdit =
+    checkModule(canEditModule, 'profesionales') && checkModule(canEditModule, 'usuarios')
+  const canDelete =
+    checkModule(canDeleteModule, 'profesionales') &&
+    checkModule(canEditModule, 'usuarios') &&
+    checkModule(canDeleteModule, 'usuarios')
 
   // Estado de navegación y sidebar
   const [internalIsSidebarOpen, setInternalIsSidebarOpen] = useState(false)
@@ -223,7 +243,9 @@ export function ProfesionalesSuperAdmin({
       {/* Toast Notification */}
       {activeNotification && !onNotice && <PageToast message={activeNotification} />}
 
-      {/* Header de la Vista: Título y Subtítulo */}
+      {/* Header de la Vista: Título y Subtítulo.
+          El alta de profesionales es Usuarios → Nuevo usuario → rol Veterinario;
+          no hay creación desde esta vista (S21 / V3). */}
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
@@ -233,20 +255,6 @@ export function ProfesionalesSuperAdmin({
                 Administra el equipo médico, sus horarios y agenda nuevas citas.
               </p>
             </div>
-
-            {canCreate && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingProfesional(null)
-                  setIsProfModalOpen(true)
-                }}
-                className="bg-terracotta hover:bg-[#A34E35] text-white text-xs sm:text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer active:translate-y-0.5 shrink-0 self-start sm:self-auto"
-              >
-                <PlusIcon className="w-4 h-4 text-white" />
-                <span>Agregar Profesional</span>
-              </button>
-            )}
           </div>
 
           {/* Contenedor Unificado: Filtros + Tabla de Profesionales */}
@@ -629,9 +637,9 @@ export function ProfesionalesSuperAdmin({
       />
 
       {/* ===================================================================== */}
-      {/* MODAL / DRAWER: AGREGAR / EDITAR PROFESIONAL                           */}
+      {/* MODAL / DRAWER: EDITAR PROFESIONAL (solo edición; alta vía Usuarios)   */}
       {/* ===================================================================== */}
-      {isProfModalOpen && (
+      {isProfModalOpen && editingProfesional && (
         <ProfesionalModal
           isOpen={isProfModalOpen}
           editingProfesional={editingProfesional}
@@ -768,10 +776,7 @@ export function ProfesionalesSuperAdmin({
 }
 
 /* ============================================================================
-   MODAL PARA AGREGAR / EDITAR PROFESIONAL
-   ============================================================================ */
-/* ============================================================================
-   DRAWER / PANEL LATERAL PARA AGREGAR / EDITAR PROFESIONAL
+   DRAWER / PANEL LATERAL PARA EDITAR PROFESIONAL
    ============================================================================ */
 function ProfesionalModal({
   isOpen,
@@ -781,37 +786,37 @@ function ProfesionalModal({
   onSave,
 }: {
   isOpen: boolean
-  editingProfesional: ProfesionalSuperAdmin | null
+  editingProfesional: ProfesionalSuperAdmin
   specialtyOptions: string[]
   onClose: () => void
   onSave: (data: ProfesionalFormData) => void
 }) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isClosing, setIsClosing] = useState(false)
-  const [name, setName] = useState(editingProfesional?.name || '')
-  const [cmp, setCmp] = useState(editingProfesional?.cmp || '')
+  const [name, setName] = useState(editingProfesional.name)
+  const [cmp, setCmp] = useState(editingProfesional.cmp)
   const [especialidad, setEspecialidad] = useState(
-    editingProfesional?.especialidad || specialtyOptions[0] || 'Medicina General',
+    editingProfesional.especialidad || specialtyOptions[0] || 'Medicina General',
   )
-  const [email, setEmail] = useState(editingProfesional?.email || '')
-  const [phone, setPhone] = useState(editingProfesional?.phone || '')
-  const [status, setStatus] = useState<EstadoProfesional>(editingProfesional?.status || 'Activo')
-  const [avatarUrl, setAvatarUrl] = useState(editingProfesional?.avatarUrl || '')
+  const [email, setEmail] = useState(editingProfesional.email)
+  const [phone, setPhone] = useState(editingProfesional.phone || '')
+  const [status, setStatus] = useState<EstadoProfesional>(editingProfesional.status)
+  const [avatarUrl, setAvatarUrl] = useState(editingProfesional.avatarUrl || '')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true)
       setIsClosing(false)
-      setName(editingProfesional?.name || '')
-      setCmp(editingProfesional?.cmp || '')
+      setName(editingProfesional.name)
+      setCmp(editingProfesional.cmp)
       setEspecialidad(
-        editingProfesional?.especialidad || specialtyOptions[0] || 'Medicina General',
+        editingProfesional.especialidad || specialtyOptions[0] || 'Medicina General',
       )
-      setEmail(editingProfesional?.email || '')
-      setPhone(editingProfesional?.phone || '')
-      setStatus(editingProfesional?.status || 'Activo')
-      setAvatarUrl(editingProfesional?.avatarUrl || '')
+      setEmail(editingProfesional.email)
+      setPhone(editingProfesional.phone || '')
+      setStatus(editingProfesional.status)
+      setAvatarUrl(editingProfesional.avatarUrl || '')
       setError(null)
     } else if (isRendered) {
       setIsClosing(true)
@@ -884,9 +889,7 @@ function ProfesionalModal({
             <div className="w-9 h-9 rounded-xl bg-mint-soft text-brand flex items-center justify-center">
               <DoctorIcon className="w-5 h-5" />
             </div>
-            <h3 className="text-xl font-bold text-brand">
-              {editingProfesional ? 'Editar Profesional' : 'Agregar Profesional'}
-            </h3>
+            <h3 className="text-xl font-bold text-brand">Editar Profesional</h3>
           </div>
 
           <button
@@ -1004,7 +1007,7 @@ function ProfesionalModal({
               type="submit"
               className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer"
             >
-              {editingProfesional ? 'Guardar Cambios' : 'Registrar Profesional'}
+              Guardar Cambios
             </button>
           </div>
         </form>
