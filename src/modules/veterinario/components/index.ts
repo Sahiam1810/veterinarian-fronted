@@ -28,5 +28,6 @@ export * from './VetHomeIcons'
 export * from './AgendaIcons'
 export * from './MascotasIcons'
 export * from './PerfilIcons'
+export * from './OrdenesMedicasPendientesPanel'
 
 

@@ -92,6 +92,12 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     label: 'Procedimientos',
     icon: <StethoscopeIcon className="w-5 h-5 shrink-0" />,
   },
+  {
+    id: 'ordenes-pendientes',
+    moduleId: 'ordenesMedicas',
+    label: 'Órdenes Pendientes',
+    icon: <MedicalHistoryIcon className="w-5 h-5 shrink-0" />,
+  },
 ]
 
 export function SuperAdminSidebar({

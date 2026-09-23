@@ -25,6 +25,7 @@ const RECEP_NAV_MODULES: Array<{
   { navKey: 'recep.servicios', moduleId: 'servicios' },
   { navKey: 'recep.profesionales', moduleId: 'profesionales' },
   { navKey: 'recep.reportes', moduleId: 'reportes' },
+  { navKey: 'recep.ordenesMedicas', moduleId: 'ordenesMedicas' },
 ]
 
 export function resolveRecepNavPermissionsFromModules(

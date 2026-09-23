@@ -19,6 +19,7 @@ import { EspeciesRazasPage } from '../especiesRazas'
 import { ServiciosPage } from '../servicios'
 import { ProfesionalesPage } from '../profesionales'
 import { ReportesPage } from '../reportes'
+import { OrdenesMedicasPage } from '../ordenesMedicas'
 
 interface PuntoInicioProps {
   userName?: string
@@ -65,6 +66,7 @@ export function PuntoInicio({
   const isServicios = activeRoute === 'servicios'
   const isProfesionales = activeRoute === 'profesionales'
   const isReportes = activeRoute === 'reportes'
+  const isOrdenesMedicas = activeRoute === 'ordenesMedicas'
   const fillHeight =
     isMascotas ||
     isAgenda ||
@@ -188,6 +190,8 @@ export function PuntoInicio({
           )}
 
           {isReportes && <ReportesPage onNotice={showToast} />}
+
+          {isOrdenesMedicas && <OrdenesMedicasPage canEditModule={canEditModule} />}
 
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
