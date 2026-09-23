@@ -57,6 +57,7 @@ export function useRecepHome(onLogout?: () => void) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeRoute, setActiveRoute] = useState('inicio')
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
+  const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false)
 
   const showToast = useCallback((message: string) => {
     setActiveNotification(message)
@@ -84,38 +85,31 @@ export function useRecepHome(onLogout?: () => void) {
     return actions
   }, [permissionHelpers])
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadHome() {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const [data, permissions, escalations] = await Promise.all([
-          fetchRecepHomeDashboard(),
-          fetchMyModulePermissions().catch(() => ({} as MyPermissionsMap)),
-          fetchEscalatedConversations().catch(() => null),
-        ])
-        if (!cancelled) {
-          setDashboard(data)
-          setModulePermissions(permissions)
-          setGrantedPermissions(resolveRecepNavPermissionsFromModules(permissions))
-          if (escalations) {
-            setUnreadEscalationsCount(escalations.pendingCount)
-          }
-        }
-      } catch {
-        if (!cancelled) setError('No se pudo cargar el resumen de recepción')
-      } finally {
-        if (!cancelled) setIsLoading(false)
+  const loadHome = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [data, permissions, escalations] = await Promise.all([
+        fetchRecepHomeDashboard(),
+        fetchMyModulePermissions().catch(() => ({} as MyPermissionsMap)),
+        fetchEscalatedConversations().catch(() => null),
+      ])
+      setDashboard(data)
+      setModulePermissions(permissions)
+      setGrantedPermissions(resolveRecepNavPermissionsFromModules(permissions))
+      if (escalations) {
+        setUnreadEscalationsCount(escalations.pendingCount)
       }
-    }
-
-    void loadHome()
-    return () => {
-      cancelled = true
+    } catch {
+      setError('No se pudo cargar el resumen de recepción')
+    } finally {
+      setIsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    void loadHome()
+  }, [loadHome])
 
   // Suscripción a eventos SignalR de escalamiento a nivel global del shell de Recepción
   const handleRealtimeEscalationCreated = useCallback(
@@ -174,7 +168,7 @@ export function useRecepHome(onLogout?: () => void) {
         showToast('No tienes permiso para crear citas')
         return
       }
-      handleNavigate('agenda')
+      setIsQuickBookingOpen(true)
       return
     }
     if (actionId === 'registrar-mascota') {
@@ -223,6 +217,9 @@ export function useRecepHome(onLogout?: () => void) {
     showToast,
     handleQuickAction,
     handleViewFullMonth,
+    isQuickBookingOpen,
+    setIsQuickBookingOpen,
+    reloadHome: loadHome,
     canViewModule: permissionHelpers.canViewModule,
     canCreateModule: permissionHelpers.canCreateModule,
     canEditModule: permissionHelpers.canEditModule,

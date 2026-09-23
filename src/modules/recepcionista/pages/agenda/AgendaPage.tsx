@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { RecepAgendaView } from '../../components'
+import { useEffect, useState } from 'react'
+import { RecepAgendaView, RecepAgendamientoRapidoModal } from '../../components'
 import { useRecepAgenda } from '../../hooks'
 
 interface AgendaPageProps {
@@ -8,6 +8,8 @@ interface AgendaPageProps {
 
 // Página Agenda y Citas del recepcionista
 export function AgendaPage({ onNotice }: AgendaPageProps) {
+  const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false)
+
   const {
     catalog,
     form,
@@ -101,6 +103,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onNotesChange={(value) => updateForm('notes', value)}
         onConfirm={canCreate ? handleConfirm : undefined}
         onCancel={handleCancel}
+        onOpenQuickBooking={canCreate ? () => setIsQuickBookingOpen(true) : undefined}
         onOpenDayPanel={handleOpenDayPanel}
         onCloseDayPanel={handleCloseDayPanel}
         onChangeDayPanelDate={handleChangeDayPanelDate}
@@ -110,6 +113,16 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onRegistrarPago={canEdit ? handleRegisterPayment : undefined}
         onVitalsUpdated={reloadAppointments}
       />
+
+      <RecepAgendamientoRapidoModal
+        isOpen={isQuickBookingOpen}
+        onClose={() => setIsQuickBookingOpen(false)}
+        onSuccess={(msg) => {
+          onNotice?.(msg)
+          void reloadAppointments()
+        }}
+      />
     </div>
   )
 }
+
