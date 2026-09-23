@@ -345,8 +345,8 @@ export function RecepMascotaModal({
               <input
                 id="mascota-weight"
                 type="number"
-                min="0.1"
-                step="0.1"
+                min="0.01"
+                step="any"
                 required
                 disabled={isLoading}
                 value={weight}

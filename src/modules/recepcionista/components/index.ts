@@ -27,6 +27,4 @@ export { RecepChatMessageBubble } from './RecepChatMessageBubble'
 export { RecepResolverEscalacionModal } from './RecepResolverEscalacionModal'
 export { RecepConversacionDetalleModal } from './RecepConversacionDetalleModal'
 export { TomarSignosVitalesModal } from './TomarSignosVitalesModal'
-
-
-
+export { RecepAgendamientoRapidoModal } from './RecepAgendamientoRapidoModal'

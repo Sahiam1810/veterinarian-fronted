@@ -1,5 +1,6 @@
 import { EditIcon, MedicalHistoryIcon } from '@/global/components'
 import type { MascotaDuenoDetailItem } from '../types'
+import { isOwnerContactPending, isPetExamPending } from '@/modules/recepcionista/utils/recepQuickBookingUtils'
 
 // Forma estructural compartida por MascotaDetail (veterinario) y
 // RecepMascotaDetail (recepcionista) -- ambas ya calzan aquí tal cual, sin
@@ -104,15 +105,22 @@ export function MascotaFichaModal({
                   <p className="text-xs text-sage font-medium">
                     {mascota.species} • {mascota.breed}
                   </p>
-                  <span
-                    className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                      mascota.status === 'Activo'
-                        ? 'bg-[#E8F2EF] text-brand border border-brand/15'
-                        : 'bg-[#F1EFEA] text-sage border border-border-tan'
-                    }`}
-                  >
-                    {mascota.status}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        mascota.status === 'Activo'
+                          ? 'bg-[#E8F2EF] text-brand border border-brand/15'
+                          : 'bg-[#F1EFEA] text-sage border border-border-tan'
+                      }`}
+                    >
+                      {mascota.status}
+                    </span>
+                    {isPetExamPending(mascota.age, mascota.weight) && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        Pendiente de examen
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -153,15 +161,22 @@ export function MascotaFichaModal({
                 <div>
                   <h4 className="text-xl font-bold text-charcoal">{dueno.name}</h4>
                   <p className="text-xs text-sage font-medium">{dueno.documentId}</p>
-                  <span
-                    className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                      dueno.status === 'Activo'
-                        ? 'bg-[#E8F2EF] text-brand border border-brand/15'
-                        : 'bg-[#F1EFEA] text-sage border border-border-tan'
-                    }`}
-                  >
-                    {dueno.status}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        dueno.status === 'Activo'
+                          ? 'bg-[#E8F2EF] text-brand border border-brand/15'
+                          : 'bg-[#F1EFEA] text-sage border border-border-tan'
+                      }`}
+                    >
+                      {dueno.status}
+                    </span>
+                    {isOwnerContactPending(dueno.email) && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        Datos de contacto por completar
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -217,11 +232,19 @@ export function MascotaFichaModal({
                   <p className="text-xs text-sage font-medium">
                     {vetMascota.species} • {vetMascota.breed}
                   </p>
-                  <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F2EF] text-brand border border-brand/15">
-                    {vetMascota.status}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#E8F2EF] text-brand border border-brand/15">
+                      {vetMascota.status}
+                    </span>
+                    {isPetExamPending(vetMascota.ageLabel, vetMascota.weightLabel) && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        Pendiente de examen
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+
 
               <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
                 <div className="p-3 rounded-xl bg-bone border border-border-tan/60">
