@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { RecepAgendaView } from '../../components'
+import { AppointmentReceiptModal } from '../../components/AppointmentReceiptModal'
 import { useRecepAgenda } from '../../hooks'
 
 interface AgendaPageProps {
@@ -44,6 +45,9 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleRegisterPayment,
     isCitaPaid,
     reloadAppointments,
+    receiptData,
+    isReceiptModalOpen,
+    setIsReceiptModalOpen,
   } = useRecepAgenda(true)
 
   useEffect(() => {
@@ -109,6 +113,12 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onCheckIn={canEdit ? handleCheckIn : undefined}
         onRegistrarPago={canEdit ? handleRegisterPayment : undefined}
         onVitalsUpdated={reloadAppointments}
+      />
+
+      <AppointmentReceiptModal
+        open={isReceiptModalOpen}
+        onOpenChange={setIsReceiptModalOpen}
+        receipt={receiptData}
       />
     </div>
   )

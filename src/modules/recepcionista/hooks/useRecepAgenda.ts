@@ -16,6 +16,9 @@ import {
   createRecepAppointment,
   markRecepAppointmentNoAsistio,
   checkInRecepAppointment,
+  registerRecepAppointmentPayment,
+  fetchAppointmentReceipt,
+  type AppointmentReceiptResponse
 } from '../services'
 import {
   isAppointmentDateInThePast,
@@ -57,25 +60,6 @@ function formatSummaryDate(dateValue: string, timeDisplay: string | null): strin
   return timeDisplay ? `${formatted}, ${timeDisplay}` : formatted
 }
 
-const PAID_APPOINTMENTS_KEY = 'huellitas_paid_appointments'
-
-function readPaidAppointments(): string[] {
-  try {
-    const raw = localStorage.getItem(PAID_APPOINTMENTS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function writePaidAppointments(ids: string[]): void {
-  try {
-    localStorage.setItem(PAID_APPOINTMENTS_KEY, JSON.stringify(ids))
-  } catch (e) {
-    console.error('Error saving paid appointments', e)
-  }
-}
-
 function formatDayTitle(dateValue: string): string {
   if (!dateValue) return 'Hoy'
   const [year, month, day] = dateValue.split('-').map(Number)
@@ -102,7 +86,8 @@ export function useRecepAgenda(enabled: boolean) {
   const [dayPanelDate, setDayPanelDate] = useState('')
   const [timeSlots, setTimeSlots] = useState<RecepAgendaTimeSlot[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
-  const [paidAppointmentIds, setPaidAppointmentIds] = useState<string[]>(readPaidAppointments)
+  const [receiptData, setReceiptData] = useState<AppointmentReceiptResponse | null>(null)
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -455,27 +440,33 @@ export function useRecepAgenda(enabled: boolean) {
 
   const isCitaPaid = useCallback(
     (appointmentId: string): boolean => {
-      return paidAppointmentIds.includes(appointmentId)
+      const apt = dayAppointments.find((a) => a.id === appointmentId)
+      return apt?.isPaid ?? false
     },
-    [paidAppointmentIds],
+    [dayAppointments],
   )
 
   const handleRegisterPayment = useCallback(
-    (appointment: RecepAgendaDayAppointment) => {
+    async (appointment: RecepAgendaDayAppointment) => {
       if (!canEdit) {
         showNotice('No tienes permiso para registrar pagos de citas.')
         return
       }
-      const appointmentId = appointment.id
-      setPaidAppointmentIds((prev) => {
-        if (prev.includes(appointmentId)) return prev
-        const updated = [...prev, appointmentId]
-        writePaidAppointments(updated)
-        return updated
-      })
-      showNotice('Pago registrado correctamente.')
+      try {
+        await registerRecepAppointmentPayment(appointment.id)
+        showNotice('Pago registrado correctamente.')
+        const receipt = await fetchAppointmentReceipt(appointment.id)
+        setReceiptData(receipt)
+        setIsReceiptModalOpen(true)
+        if (dayPanelDate) {
+          await loadDayAppointments(dayPanelDate)
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'No se pudo registrar el pago'
+        showNotice(msg)
+      }
     },
-    [canEdit, showNotice],
+    [canEdit, showNotice, dayPanelDate, loadDayAppointments],
   )
 
   const handleCheckIn = async (appointment: RecepAgendaDayAppointment) => {
@@ -544,5 +535,8 @@ export function useRecepAgenda(enabled: boolean) {
     handleRegisterPayment,
     isCitaPaid,
     reloadAppointments: () => loadDayAppointments(dayPanelDate || todayIsoDate()),
+    receiptData,
+    isReceiptModalOpen,
+    setIsReceiptModalOpen,
   }
 }
