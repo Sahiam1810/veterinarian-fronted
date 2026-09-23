@@ -316,3 +316,90 @@ test('fetchEscalatedConversations en modo mock devuelve datos completos de prueb
     assert.ok(data.items.some((i) => i.clientName === 'Cliente sin nombre'))
   }
 })
+
+test('buildAllConversationsDirectory muestra una sola fila por cliente y guarda el historial', () => {
+  const now = new Date('2026-09-14T12:00:00.000Z')
+
+  const conversations: ChatConversationResponseDto[] = [
+    {
+      id: 'conv-vieja',
+      clientId: 'cli-1',
+      clientName: 'Ana Pérez',
+      clientPhone: '3001234567',
+      channel: 'telegram',
+      createdAt: '2026-09-14T08:00:00.000Z',
+      lastMessageAt: '2026-09-14T08:10:00.000Z',
+      lastMessage: 'Hola',
+    },
+    {
+      id: 'conv-nueva',
+      clientId: 'cli-1',
+      clientName: 'Ana Pérez',
+      clientPhone: '3001234567',
+      channel: 'telegram',
+      createdAt: '2026-09-14T11:00:00.000Z',
+      lastMessageAt: '2026-09-14T11:30:00.000Z',
+      lastMessage: null,
+    },
+    {
+      id: 'conv-otro',
+      clientId: 'cli-2',
+      clientName: 'Henry Durán',
+      channel: 'telegram',
+      createdAt: '2026-09-14T09:00:00.000Z',
+      lastMessageAt: '2026-09-14T09:05:00.000Z',
+      lastMessage: 'Buenas',
+    },
+  ]
+
+  const payload = buildAllConversationsDirectory(conversations, [], now)
+
+  assert.equal(payload.items.length, 2)
+  const ana = payload.items.find((i) => i.clientName === 'Ana Pérez')
+  assert.ok(ana)
+  // La fila es la conversación más reciente, con el último mensaje conocido del cliente.
+  assert.equal(ana?.conversationId, 'conv-nueva')
+  assert.equal(ana?.lastMessage, 'Hola')
+  assert.deepEqual(ana?.relatedConversationIds, ['conv-vieja', 'conv-nueva'])
+})
+
+test('buildAllConversationsDirectory prioriza la conversación con escalamiento activo del cliente', () => {
+  const now = new Date('2026-09-14T12:00:00.000Z')
+
+  const conversations: ChatConversationResponseDto[] = [
+    {
+      id: 'conv-escalada',
+      clientId: 'cli-1',
+      clientName: 'Ana Pérez',
+      channel: 'telegram',
+      createdAt: '2026-09-14T08:00:00.000Z',
+      lastMessageAt: '2026-09-14T08:10:00.000Z',
+      lastMessage: 'Quiero un asesor',
+    },
+    {
+      id: 'conv-reciente',
+      clientId: 'cli-1',
+      clientName: 'Ana Pérez',
+      channel: 'telegram',
+      createdAt: '2026-09-14T11:00:00.000Z',
+      lastMessageAt: '2026-09-14T11:30:00.000Z',
+      lastMessage: 'Hola de nuevo',
+    },
+  ]
+  const escalations: ChatEscalationResponseDto[] = [
+    {
+      id: 'esc-1',
+      chatConversationId: 'conv-escalada',
+      reason: 'Pide asesor',
+      escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
+      createdAt: '2026-09-14T08:10:00.000Z',
+      resolvedAt: null,
+    },
+  ]
+
+  const payload = buildAllConversationsDirectory(conversations, escalations, now)
+
+  assert.equal(payload.items.length, 1)
+  assert.equal(payload.items[0].conversationId, 'conv-escalada')
+  assert.equal(payload.items[0].escalationId, 'esc-1')
+})

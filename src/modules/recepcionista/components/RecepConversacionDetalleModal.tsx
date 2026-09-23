@@ -41,6 +41,7 @@ export function RecepConversacionDetalleModal({
   } = useRecepConversacionDetalle({
     conversationId: conversation?.conversationId ?? null,
     escalationId: conversation?.escalationId ?? null,
+    relatedConversationIds: conversation?.relatedConversationIds,
     canSendMessages,
     canResolveEscalations,
     onResolved: (escId) => {

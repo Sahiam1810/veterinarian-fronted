@@ -266,6 +266,52 @@ export function buildEscalatedDirectory(
 }
 
 // Vista "Todas": una fila por conversación; escalations solo decoran la insignia
+// Una fila por cliente en la bandeja "Todas": el backend abre una conversación nueva
+// tras la inactividad, así que un mismo cliente acumula varias. Se muestra la más
+// relevante (la escalada activa si existe, si no la más reciente) y se guardan los
+// ids de todas para armar el historial completo en el detalle.
+function conversationClientKey(conv: ChatConversationResponseDto): string {
+  if (conv.clientId) return `client:${conv.clientId}`
+  const phone = (conv.clientPhone || conv.phoneNumber || '').replace(/\D/g, '')
+  if (phone) return `phone:${phone}`
+  return `conversation:${conv.id}`
+}
+
+function itemActivityTime(item: EscalatedConversationListItem): number {
+  return new Date(item.lastMessageAt || item.createdAt).getTime() || 0
+}
+
+export function collapseConversationsByClient(
+  conversations: ChatConversationResponseDto[],
+  items: EscalatedConversationListItem[],
+): EscalatedConversationListItem[] {
+  const keyByConversation = new Map(
+    conversations.map((conv) => [conv.id, conversationClientKey(conv)]),
+  )
+  const groups = new Map<string, EscalatedConversationListItem[]>()
+  for (const item of items) {
+    const key = keyByConversation.get(item.conversationId) ?? `conversation:${item.conversationId}`
+    groups.set(key, [...(groups.get(key) ?? []), item])
+  }
+
+  return [...groups.values()].map((group) => {
+    const byRecency = [...group].sort((a, b) => itemActivityTime(b) - itemActivityTime(a))
+    const representative = byRecency.find((item) => Boolean(item.escalationId)) ?? byRecency[0]
+    const lastMessage =
+      byRecency.map((item) => item.lastMessage).find((text) => text && text !== 'Sin mensajes aún.') ??
+      representative.lastMessage
+    const relatedConversationIds = [...group]
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .map((item) => item.conversationId)
+
+    return {
+      ...representative,
+      lastMessage,
+      relatedConversationIds,
+    }
+  })
+}
+
 export function buildAllConversationsDirectory(
   conversations: ChatConversationResponseDto[],
   escalations: ChatEscalationResponseDto[],
@@ -317,7 +363,7 @@ export function buildAllConversationsDirectory(
   })
 
   // Más recientes primero (bandeja de chat, no cola de prioridad)
-  const sortedItems = [...items].sort((a, b) => {
+  const sortedItems = collapseConversationsByClient(conversations, items).sort((a, b) => {
     const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0
     const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0
     return bTime - aTime
@@ -752,8 +798,20 @@ export async function fetchAllConversations(): Promise<EscalacionesDirectoryPayl
  */
 export async function fetchConversationThread(
   conversationId: string,
+  relatedConversationIds: string[] = [],
 ): Promise<ChatMessageItem[]> {
   if (!conversationId) return []
+
+  // Historial de las conversaciones anteriores del mismo cliente (vista "Todas")
+  const previousIds = relatedConversationIds.filter((id) => id && id !== conversationId)
+  if (previousIds.length > 0 && !USE_MOCK_ESCALATIONS) {
+    const threads = await Promise.all(
+      [...previousIds, conversationId].map((id) => fetchConversationThread(id)),
+    )
+    return threads
+      .flat()
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }
 
   if (USE_MOCK_ESCALATIONS) {
     await new Promise((resolve) => setTimeout(resolve, 150))

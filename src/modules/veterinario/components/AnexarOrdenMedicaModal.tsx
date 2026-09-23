@@ -9,6 +9,7 @@ import {
 } from '../services/ordenesMedicasService'
 import { CloseIcon, MedicalFolderIcon } from './MascotasIcons'
 import { ViewPopup } from './ViewPopup'
+import { ProfessionalCombobox } from '@/modules/superadmin/components/ProfessionalCombobox'
 import { PawIcon, PlusIcon, TrashIcon, PillIcon } from '@/global/components'
 
 export type MedicalOrderType = 'MEDICAMENTO' | 'PROCEDIMIENTO'
@@ -335,32 +336,24 @@ export function AnexarOrdenMedicaModal({
                         )}
                       </div>
 
-                      <select
+                      <ProfessionalCombobox
                         value={item.catalogId}
-                        onChange={(e) => handleItemChange(index, 'catalogId', e.target.value)}
+                        onChange={(value) => handleItemChange(index, 'catalogId', value)}
+                        options={(isMedication ? medicationsCatalog : proceduresCatalog).map((entry) => ({
+                          id: entry.id,
+                          name: entry.name,
+                          subtitle: entry.code || undefined,
+                        }))}
+                        hasAllOption={false}
                         disabled={isLoadingCatalog}
-                        className="w-full rounded-lg border border-border-tan bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-charcoal focus:outline-none focus:border-brand"
-                        required
-                      >
-                        <option value="" disabled>
-                          {isLoadingCatalog
+                        placeholder={
+                          isLoadingCatalog
                             ? 'Cargando catálogo…'
-                            : `Selecciona un ${isMedication ? 'medicamento' : 'procedimiento'}…`}
-                        </option>
-                        {isMedication
-                          ? medicationsCatalog.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.code ? `[${m.code}] ` : ''}
-                                {m.name}
-                              </option>
-                            ))
-                          : proceduresCatalog.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.code ? `[${p.code}] ` : ''}
-                                {p.name}
-                              </option>
-                            ))}
-                      </select>
+                            : `Selecciona un ${isMedication ? 'medicamento' : 'procedimiento'}…`
+                        }
+                        searchPlaceholder={`Buscar ${isMedication ? 'medicamento' : 'procedimiento'} por nombre o código…`}
+                        className="w-full bg-white"
+                      />
 
                       <input
                         type="text"
