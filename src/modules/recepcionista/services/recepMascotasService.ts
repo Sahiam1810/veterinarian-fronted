@@ -4,7 +4,6 @@ import type {
   RecepMascotaListItem,
   RecepMascotaRawFields,
   RecepMascotasDirectoryPayload,
-
 } from '../types/index.ts'
 import type { ApiPetResponse, ApiCreatePetRequest, ApiUpdatePetRequest } from '../../superadmin/services/superAdminPetsService.ts'
 import type { ApiSpeciesResponse, ApiRaceResponse } from '../../superadmin/services/superAdminCatalogService.ts'
@@ -15,10 +14,9 @@ import {
   buildRecepMascotaFormDuenos,
   mapRecepUiGenderToApi,
 } from '../utils/recepPetMapping.ts'
-
+import { findMestizoRaceId } from '../utils/recepQuickBookingUtils.ts'
 
 function formatDateLabel(dateStr?: string | null): string {
-
   if (!dateStr) return 'Sin visitas'
   try {
     const d = new Date(dateStr)
@@ -87,10 +85,11 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
     const lastVisitLabel = lastApt ? formatDateLabel(lastApt.scheduledStart) : 'Sin visitas recientes'
 
     const ownerName = client?.fullName || 'Dueño no asignado'
-    const ageNum = pet.age || 1
-    const ageLabel = `${ageNum} ${ageNum === 1 ? 'año' : 'años'}`
+    const ageNum = typeof pet.age === 'number' ? pet.age : 1
+    const ageLabel = ageNum === 0 ? '0 años' : `${ageNum} ${ageNum === 1 ? 'año' : 'años'}`
     const sexLabel = pet.gender?.toLowerCase().includes('h') || pet.gender === 'Hembra' ? 'Hembra' : 'Macho'
     const patientCode = `PAC-${pet.id.slice(0, 8).toUpperCase()}`
+    const weightNum = typeof pet.weight === 'number' ? pet.weight : 5
 
     const listItem: RecepMascotaListItem = {
       id: pet.id,
@@ -110,7 +109,7 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
     detailsById[pet.id] = {
       ...listItem,
       patientCode,
-      weightLabel: `${pet.weight || 5} kg`,
+      weightLabel: `${weightNum} kg`,
       microchip: `981020${pet.id.slice(0, 6).toUpperCase()}`,
       ownerPhone: client?.phoneNumber || '',
       allergyAlert: pet.observations || null,
@@ -123,7 +122,7 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
       raceId: pet.raceId,
       age: ageNum,
       gender: pet.gender,
-      weight: pet.weight || 5,
+      weight: weightNum,
       observations: pet.observations || null,
     }
   })
@@ -140,7 +139,6 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
 
 // Crear una nueva mascota
 export async function createRecepPet(data: ApiCreatePetRequest): Promise<{ id: string }> {
-
   return apiClient.post<{ id: string }>('/api/Pets', data)
 }
 
@@ -189,6 +187,42 @@ export async function createRecepPetWithClient(
   return newPet
 }
 
+export interface CreateQuickRecepPetPayload {
+  name: string
+  speciesId: string
+  gender: string
+  clientId: string
+  races: ApiRaceResponse[]
+}
+
+/**
+ * Alta rápida de mascota para Agendamiento Rápido:
+ * - raceId: busca "Mestizo" en el catálogo de razas de la especie seleccionada
+ * - age: 0
+ * - weight: 0.01 (mínimo aceptado por PetWeight)
+ * - vincula a clientId en ClientsPets
+ */
+export async function createQuickRecepPet(
+  payload: CreateQuickRecepPetPayload,
+): Promise<{ id: string }> {
+  const mestizoRaceId = findMestizoRaceId(payload.races, payload.speciesId)
+  if (!mestizoRaceId) {
+    throw new Error('No se encontró una raza válida para la especie seleccionada.')
+  }
+
+  return createRecepPetWithClient({
+    name: payload.name.trim(),
+    speciesId: payload.speciesId,
+    raceId: mestizoRaceId,
+    age: 0,
+    gender: payload.gender,
+    weight: 0.01,
+    clientId: payload.clientId,
+    observations: null,
+    photoUrl: null,
+  })
+}
+
 export interface RecepMascotaFormCatalogs {
   species: ApiSpeciesResponse[]
   races: ApiRaceResponse[]
@@ -211,5 +245,6 @@ export async function fetchRecepMascotaFormCatalogs(): Promise<RecepMascotaFormC
 
   return { species, races, duenos }
 }
+
 
 

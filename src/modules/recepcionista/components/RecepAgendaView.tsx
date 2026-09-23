@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import {
   CalendarIcon,
+  CalendarPlusIcon,
   PawIcon,
   SearchIcon,
   StethoscopeIcon,
@@ -47,6 +48,7 @@ interface RecepAgendaViewProps {
   onNotesChange: (value: string) => void
   onConfirm?: () => void
   onCancel: () => void
+  onOpenQuickBooking?: () => void
   isCitaPaid?: (appointmentId: string) => boolean
   onOpenDayPanel: () => void
   onCloseDayPanel: () => void
@@ -102,6 +104,7 @@ export function RecepAgendaView({
   onNotesChange,
   onConfirm,
   onCancel,
+  onOpenQuickBooking,
   onOpenDayPanel,
   onCloseDayPanel,
   onChangeDayPanelDate,
@@ -123,7 +126,23 @@ export function RecepAgendaView({
         className="h-full min-h-0 min-w-0 overflow-hidden flex flex-col lg:flex-row gap-3"
       >
         <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col gap-2.5">
-          <FormSection step={1} title="Detalles del Paciente">
+          <FormSection
+            step={1}
+            title="Detalles del Paciente"
+            action={
+              onOpenQuickBooking ? (
+                <button
+                  type="button"
+                  onClick={onOpenQuickBooking}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sage-soft border border-brand/20 text-brand hover:bg-brand hover:text-white transition text-xs font-bold cursor-pointer"
+                  title="Agendamiento rápido en un solo modal"
+                >
+                  <CalendarPlusIcon className="w-3.5 h-3.5" />
+                  <span>Agendamiento Rápido</span>
+                </button>
+              ) : undefined
+            }
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 min-w-0">
               <div className="min-w-0 relative">
                 <label className={labelClass} htmlFor="recep-owner-search">
@@ -407,24 +426,29 @@ function FormSection({
   step,
   title,
   children,
+  action,
   className = '',
 }: {
   step: number
   title: string
   children: ReactNode
+  action?: ReactNode
   className?: string
 }) {
   return (
     <section
       className={`shrink-0 rounded-2xl border border-border-tan bg-white shadow-[0_2px_16px_rgba(35,78,70,0.04)] px-3.5 py-3 min-w-0 ${className}`}
     >
-      <div className="flex items-center gap-2 mb-2.5 min-w-0">
-        <span className="w-6 h-6 rounded-full bg-brand text-white text-[11px] font-extrabold inline-flex items-center justify-center shrink-0">
-          {step}
-        </span>
-        <h3 className="text-sm font-extrabold text-brand tracking-tight truncate">
-          {title}
-        </h3>
+      <div className="flex items-center justify-between gap-2 mb-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-6 h-6 rounded-full bg-brand text-white text-[11px] font-extrabold inline-flex items-center justify-center shrink-0">
+            {step}
+          </span>
+          <h3 className="text-sm font-extrabold text-brand tracking-tight truncate">
+            {title}
+          </h3>
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       {children}
     </section>
