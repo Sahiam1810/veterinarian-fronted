@@ -2,28 +2,22 @@ import { useState, useEffect } from 'react'
 import {
   fetchPendingMedicationOrders,
   fetchPendingProcedureOrders,
-  type PendingMedicationOrder,
-  type PendingProcedureOrder,
   type ApiMedicationOrder,
   type ApiProcedureOrder,
+  type PendingMedicationOrder,
+  type PendingProcedureOrder,
 } from '../services/ordenesMedicasService'
+import {
+  buildUnifiedPendingOrders,
+  filterPendingOrders,
+  type PendingOrderFilterType,
+} from '../utils/pendingOrdersView'
 import { OrdenMedicaPrintModal, type PrintOrderType } from './OrdenMedicaPrintModal'
 import { CompletarOrdenModal, type CompleteOrderType } from './CompletarOrdenModal'
 import { PrinterIcon, CheckIcon, PillIcon } from '@/global/components'
 import { MedicalFolderIcon } from './MascotasIcons'
 
-export interface UnifiedPendingOrder {
-  id: string
-  type: 'MEDICAMENTO' | 'PROCEDIMIENTO'
-  petName: string
-  ownerName: string
-  appointmentId: string
-  isInHouse: boolean
-  status: string
-  createdAt: string
-  rawMedicationOrder?: PendingMedicationOrder
-  rawProcedureOrder?: PendingProcedureOrder
-}
+export type { UnifiedPendingOrder } from '../utils/pendingOrdersView'
 
 export interface OrdenesMedicasPendientesPanelProps {
   canEdit?: boolean
@@ -33,7 +27,7 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
   const [medicationOrders, setMedicationOrders] = useState<PendingMedicationOrder[]>([])
   const [procedureOrders, setProcedureOrders] = useState<PendingProcedureOrder[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [filterType, setFilterType] = useState<'TODOS' | 'MEDICAMENTO' | 'PROCEDIMIENTO'>('TODOS')
+  const [filterType, setFilterType] = useState<PendingOrderFilterType>('TODOS')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Estados de modales
@@ -74,46 +68,10 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
   }, [])
 
   // Combinar ambas listas
-  const unifiedPending: UnifiedPendingOrder[] = [
-    ...medicationOrders.map(
-      (m): UnifiedPendingOrder => ({
-        id: m.id,
-        type: 'MEDICAMENTO',
-        petName: m.petName || 'Mascota no registrada',
-        ownerName: m.ownerName || 'Cliente no registrado',
-        appointmentId: m.appointmentId,
-        isInHouse: m.isInHouse,
-        status: m.status,
-        createdAt: m.createdAt,
-        rawMedicationOrder: m,
-      }),
-    ),
-    ...procedureOrders.map(
-      (p): UnifiedPendingOrder => ({
-        id: p.id,
-        type: 'PROCEDIMIENTO',
-        petName: p.petName || 'Mascota no registrada',
-        ownerName: p.ownerName || 'Cliente no registrado',
-        appointmentId: p.appointmentId,
-        isInHouse: p.isInHouse,
-        status: p.status,
-        createdAt: p.createdAt,
-        rawProcedureOrder: p,
-      }),
-    ),
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const unifiedPending = buildUnifiedPendingOrders(medicationOrders, procedureOrders)
 
   // Filtrar resultados
-  const filteredOrders = unifiedPending.filter((order) => {
-    if (filterType !== 'TODOS' && order.type !== filterType) return false
-    if (!searchQuery.trim()) return true
-    const query = searchQuery.toLowerCase()
-    return (
-      order.petName.toLowerCase().includes(query) ||
-      order.ownerName.toLowerCase().includes(query) ||
-      order.id.toLowerCase().includes(query)
-    )
-  })
+  const filteredOrders = filterPendingOrders(unifiedPending, filterType, searchQuery)
 
   // Convertir PendingMedicationOrder a ApiMedicationOrder para modal de impresión y completar
   const toApiMedicationOrder = (p: PendingMedicationOrder): ApiMedicationOrder => ({
