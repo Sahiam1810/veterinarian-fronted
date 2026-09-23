@@ -7,6 +7,7 @@ import {
   StethoscopeIcon,
   MedicalHistoryIcon,
   DoctorIcon,
+  PillIcon,
   CalendarIcon,
   BarChartIcon,
 } from '@/global/components'
@@ -78,6 +79,18 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     moduleId: 'reportes',
     label: 'Reportes',
     icon: <BarChartIcon className="w-5 h-5 shrink-0" />,
+  },
+  {
+    id: 'medicamentos',
+    moduleId: 'ordenesMedicas',
+    label: 'Medicamentos',
+    icon: <PillIcon className="w-5 h-5 shrink-0" />,
+  },
+  {
+    id: 'procedimientos',
+    moduleId: 'ordenesMedicas',
+    label: 'Procedimientos',
+    icon: <StethoscopeIcon className="w-5 h-5 shrink-0" />,
   },
 ]
 

@@ -2,6 +2,7 @@ import { SuperAdminHeader, DashboardBackgroundDecoration } from '@/modules/super
 import { PageToast } from '@/global/components'
 import {
   RecepAgendaDelDia,
+  RecepAgendamientoRapidoModal,
   RecepHomeGreeting,
   RecepHomeStatCards,
   RecepQuickActions,
@@ -47,6 +48,9 @@ export function PuntoInicio({
     showToast,
     handleQuickAction,
     handleViewFullMonth,
+    isQuickBookingOpen,
+    setIsQuickBookingOpen,
+    reloadHome,
     canCreateModule,
     canEditModule,
     canDeleteModule,
@@ -207,6 +211,15 @@ export function PuntoInicio({
       </div>
 
       {activeNotification && <PageToast message={activeNotification} />}
+
+      <RecepAgendamientoRapidoModal
+        isOpen={isQuickBookingOpen}
+        onClose={() => setIsQuickBookingOpen(false)}
+        onSuccess={(msg) => {
+          showToast(msg)
+          void reloadHome()
+        }}
+      />
     </div>
   )
 }
