@@ -71,6 +71,7 @@ export interface RecepAgendaDayAppointment {
   temperature?: number | null
   heartRate?: number | null
   respiratoryRate?: number | null
+  isPaid: boolean
 }
 
 // Indica si la cita aún se puede editar (no finalizada ni cancelada)

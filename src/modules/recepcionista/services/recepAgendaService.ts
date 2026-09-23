@@ -243,6 +243,7 @@ export async function fetchRecepDayAppointments(
       temperature: apt.temperature ?? null,
       heartRate: apt.heartRate ?? null,
       respiratoryRate: apt.respiratoryRate ?? null,
+      isPaid: apt.isPaid ?? false,
     }
   })
 }
@@ -363,4 +364,25 @@ export async function markRecepAppointmentNoAsistio(appointmentId: string): Prom
     statusId,
     comment: 'Marcada como No asistió desde agenda de recepción',
   })
+}
+
+// Interfaz para el recibo (puede moverse a types.ts si se prefiere)
+export interface AppointmentReceiptResponse {
+  petName: string
+  ownerName: string
+  ownerPhone?: string
+  serviceName: string
+  servicePrice: number
+  scheduledStart: string
+  isPaid: boolean
+}
+
+// Obtener recibo de la cita
+export async function fetchAppointmentReceipt(appointmentId: string): Promise<AppointmentReceiptResponse> {
+  return apiClient.get<AppointmentReceiptResponse>(`/api/Appointments/${appointmentId}/receipt`)
+}
+
+// Registrar pago de la cita
+export async function registerRecepAppointmentPayment(appointmentId: string): Promise<void> {
+  return apiClient.patch<void>(`/api/Appointments/${appointmentId}/register-payment`, {})
 }
