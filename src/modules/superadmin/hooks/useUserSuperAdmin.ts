@@ -58,6 +58,7 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'servicios', label: 'Servicios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'profesionales', label: 'Profesionales', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'ordenesMedicas', label: 'Órdenes Médicas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
+  { id: 'insumos', label: 'Insumos', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'historiaClinica', label: 'Historia Clínica', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
@@ -72,6 +73,7 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   servicios: { view: true, create: true, edit: true, delete: true },
   profesionales: { view: true, create: true, edit: true, delete: true },
   ordenesMedicas: { view: true, create: true, edit: true, delete: true },
+  insumos: { view: true, create: true, edit: true, delete: true },
   disponibilidad: { view: true, create: true, edit: true, delete: true },
   agenda: { view: true, create: true, edit: true, delete: true },
   historiaClinica: { view: true, create: true, edit: true, delete: true },
@@ -87,6 +89,7 @@ const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
   servicios: { view: false, create: false, edit: false, delete: false },
   profesionales: { view: false, create: false, edit: false, delete: false },
   ordenesMedicas: { view: false, create: false, edit: false, delete: false },
+  insumos: { view: false, create: false, edit: false, delete: false },
   disponibilidad: { view: false, create: false, edit: false, delete: false },
   agenda: { view: false, create: false, edit: false, delete: false },
   historiaClinica: { view: false, create: false, edit: false, delete: false },
@@ -101,7 +104,7 @@ const EMPTY_ROLE: RoleDefinition = {
   permissions: DEFAULT_PERMISSIONS_EMPTY,
 }
 
-function normalizeModuleName(name: string): ModuleId | null {
+export function normalizeModuleName(name: string): ModuleId | null {
   const norm = name.trim().toLowerCase()
   if (norm.includes('usuario')) return 'usuarios'
   if (norm.includes('especie') || norm.includes('raza')) return 'especiesRazas'
@@ -114,6 +117,7 @@ function normalizeModuleName(name: string): ModuleId | null {
   if (norm.includes('historial') || norm.includes('historia')) return 'historiaClinica'
   if (norm.includes('reporte')) return 'reportes'
   if (norm.includes('orden')) return 'ordenesMedicas'
+  if (norm.includes('insumo')) return 'insumos'
   return null
 }
 

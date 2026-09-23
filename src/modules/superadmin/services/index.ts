@@ -15,3 +15,5 @@ export * from './superAdminMedicalRecordsService'
 export * from './superAdminVaccinationsService'
 export * from './superAdminNotificationsService'
 export * from './superAdminReportsService'
+export * from './suppliesService'
+

@@ -11,6 +11,8 @@ export type ModuleId =
   | 'historiaClinica'
   | 'reportes'
   | 'ordenesMedicas'
+  | 'insumos'
+
 
 export interface ModulePermission {
   view: boolean

@@ -13,6 +13,7 @@ export const API_MODULE_TO_SHELL: Record<string, ModuleId> = {
   'Historiales Clínicos': 'historiaClinica',
   Reportes: 'reportes',
   'Órdenes Médicas': 'ordenesMedicas',
+  Insumos: 'insumos',
 }
 
 // Acción CRUD sobre un módulo del shell
@@ -49,6 +50,7 @@ function emptyActionMap(inicioView: boolean): ShellActionMap {
     historiaClinica: { ...ALL_FALSE_ACTIONS },
     reportes: { ...ALL_FALSE_ACTIONS },
     ordenesMedicas: { ...ALL_FALSE_ACTIONS },
+    insumos: { ...ALL_FALSE_ACTIONS },
   }
 }
 
@@ -66,6 +68,7 @@ function platformFullActionMap(): ShellActionMap {
     'historiaClinica',
     'reportes',
     'ordenesMedicas',
+    'insumos',
   ]
   const map = {} as ShellActionMap
   for (const id of ids) {

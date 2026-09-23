@@ -16,6 +16,7 @@ import {
   DiagnosticosSuperAdmin,
   MedicamentosSuperAdmin,
   ProcedimientosSuperAdmin,
+  InsumosSuperAdmin,
   AgendaSuperAdmin,
   ReportesSuperAdmin,
   PerfilSuperAdmin,
@@ -39,6 +40,7 @@ const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   profesionales: 'profesionales',
   medicamentos: 'ordenesMedicas',
   procedimientos: 'ordenesMedicas',
+  insumos: 'insumos',
   'ordenes-pendientes': 'ordenesMedicas',
   agenda: 'agenda',
   reportes: 'reportes',
@@ -405,6 +407,44 @@ function SuperAdminApp({
               canCreate={canCreateModule('ordenesMedicas')}
               canEdit={canEditModule('ordenesMedicas')}
               canDelete={canDeleteModule('ordenesMedicas')}
+            />
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentRoute === 'insumos') {
+    return (
+      <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
+        <SuperAdminHeader
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+          userName={shellProps.userName}
+          userRole={shellProps.userRole}
+          notifications={notifications}
+          isLoadingNotifications={isLoadingNotifications}
+          notificationsError={notificationsError}
+          onMarkNotificationRead={onMarkNotificationRead}
+          onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+          onReloadNotifications={onReloadNotifications}
+          onProfileClick={shellProps.onProfileClick}
+        />
+        <div className="flex-1 flex overflow-hidden relative">
+          <SuperAdminSidebar
+            isOpen={isSidebarOpen}
+            onClose={closeSidebar}
+            activeRoute="insumos"
+            onNavigate={handleNavigate}
+            canViewModule={canViewModule}
+            onLogout={onLogout}
+          />
+          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+            <DashboardBackgroundDecoration />
+            <InsumosSuperAdmin
+              canCreate={canCreateModule('insumos')}
+              canEdit={canEditModule('insumos')}
+              canDelete={canDeleteModule('insumos')}
             />
           </main>
         </div>
