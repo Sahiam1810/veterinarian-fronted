@@ -181,6 +181,8 @@ export interface EscalatedConversationListItem {
   assignedToId?: string | null
   // Solo vista "Todas": insignia Escalada / Esperando asesor
   inboxBadge?: ConversationInboxBadge | null
+  // Solo vista "Todas": ids de todas las conversaciones del mismo cliente (antigua → reciente)
+  relatedConversationIds?: string[]
 }
 
 export interface EscalacionesDirectoryPayload {

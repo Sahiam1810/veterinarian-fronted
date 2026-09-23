@@ -19,6 +19,7 @@ import {
 interface UseRecepConversacionDetalleOptions {
   conversationId: string | null
   escalationId: string | null
+  relatedConversationIds?: string[]
   canSendMessages?: boolean
   canResolveEscalations?: boolean
   onResolved?: (escalationId: string) => void
@@ -28,6 +29,7 @@ interface UseRecepConversacionDetalleOptions {
 export function useRecepConversacionDetalle({
   conversationId,
   escalationId,
+  relatedConversationIds,
   canSendMessages = false,
   canResolveEscalations = false,
   onResolved,
@@ -51,7 +53,7 @@ export function useRecepConversacionDetalle({
     setIsLoadingThread(true)
     setError(null)
     try {
-      const data = await fetchConversationThread(conversationId)
+      const data = await fetchConversationThread(conversationId, relatedConversationIds)
       if (isMountedRef.current) {
         setMessages(data)
       }
