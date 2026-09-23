@@ -10,7 +10,6 @@ import type {
   CreateAgentHumanRequestDto,
   CreateChatMessageRequestDto,
   CreateChatParticipantRequestDto,
-  CreateEscalationResolutionRequestDto,
   EscalatedConversationListItem,
   EscalacionesDirectoryPayload,
   EscalationChannel,
@@ -850,14 +849,24 @@ export async function resolveConversation(
   }
 
   const user = getStoredUser()
-  // Ticket FE-7: el backend real no tiene un campo de estado en este POST —
-  // resolver es crear la fila de resolución, no mandar un statusId.
-  return apiClient.post<EscalationResolutionResponseDto>(
-    '/api/chat/escalation-resolutions',
-    {
-      chatEscalationId: escalationId,
-      resolvedBy: user?.id,
-      resolutionNote: notes?.trim() || null,
-    } satisfies CreateEscalationResolutionRequestDto,
-  )
+  // El backend resuelve con PATCH /api/chat/escalations/{id}/resolve (la ruta vieja
+  // POST /api/chat/escalation-resolutions ya no existe y respondía 404).
+  const resolved = await apiClient.patch<{
+    id: string
+    resolvedBy?: string | null
+    resolutionNote?: string | null
+    resolvedAt?: string | null
+  }>(`/api/chat/escalations/${escalationId}/resolve`, {
+    escalationStatusId: ESCALATION_STATUS_GUIDS.RESOLVED,
+    resolvedBy: user?.id,
+    resolutionNote: notes?.trim() || null,
+  })
+
+  return {
+    id: resolved.id,
+    chatEscalationId: resolved.id,
+    resolvedBy: resolved.resolvedBy ?? null,
+    resolutionNote: resolved.resolutionNote ?? null,
+    resolvedAt: resolved.resolvedAt ?? null,
+  }
 }
