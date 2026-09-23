@@ -647,7 +647,7 @@ async function resolveAgentHumanId(): Promise<string> {
   if (cachedAgentHumanId) return cachedAgentHumanId
 
   const user = getStoredUser()
-  const userId = user?.id || user?.personId || user?.userAccountId || 'unknown-user'
+  const userId = user?.id || 'unknown-user'
 
   try {
     // Ticket FE-7: lookup directo por usuario — la lista completa

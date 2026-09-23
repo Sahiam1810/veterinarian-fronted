@@ -12,7 +12,7 @@ import {
   EditIcon,
   TrashIcon,
   PageToast,
-  MedicalFolderIcon,
+  StethoscopeIcon,
 } from '@/global/components'
 
 interface ProcedimientosSuperAdminProps {
@@ -137,8 +137,7 @@ export function ProcedimientosSuperAdmin({
       {toastMessage && (
         <PageToast
           message={toastMessage}
-          type={toastType}
-          onClose={() => setToastMessage(null)}
+          tone={toastType === 'danger' ? 'warning' : 'success'}
         />
       )}
 
@@ -253,7 +252,7 @@ export function ProcedimientosSuperAdmin({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-xs">
           <div className="bg-white border border-border-tan rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <h3 className="text-lg font-extrabold text-brand flex items-center gap-2">
-              <MedicalFolderIcon className="w-5 h-5 text-brand" />
+              <StethoscopeIcon className="w-5 h-5 text-brand" />
               <span>{editingProcedure ? 'Editar Procedimiento' : 'Nuevo Procedimiento'}</span>
             </h3>
 

@@ -19,7 +19,7 @@ import { useRef } from 'react'
 import { AnexarOrdenMedicaModal, type MedicalOrderType } from './AnexarOrdenMedicaModal'
 import { OrdenesMedicasConsultaList, type OrdenesMedicasConsultaListRef } from './OrdenesMedicasConsultaList'
 import { getStoredUser } from '@/modules/auth'
-import { PlusIcon, PillIcon } from '@/global/components'
+import { PillIcon } from '@/global/components'
 import {
   pickDefaultDiagnosticId,
   getMissingDiagnosticError,

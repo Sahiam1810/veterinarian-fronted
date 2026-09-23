@@ -7,7 +7,8 @@ import {
 } from '../services/ordenesMedicasService'
 import { OrdenMedicaPrintModal, type PrintOrderType } from './OrdenMedicaPrintModal'
 import { CompletarOrdenModal, type CompleteOrderType } from './CompletarOrdenModal'
-import { PrinterIcon, CheckIcon, PillIcon, MedicalFolderIcon } from '@/global/components'
+import { PrinterIcon, CheckIcon, PillIcon } from '@/global/components'
+import { MedicalFolderIcon } from './MascotasIcons'
 
 export interface UnifiedOrder {
   id: string

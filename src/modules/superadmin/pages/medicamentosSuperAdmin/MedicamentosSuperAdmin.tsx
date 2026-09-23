@@ -137,8 +137,7 @@ export function MedicamentosSuperAdmin({
       {toastMessage && (
         <PageToast
           message={toastMessage}
-          type={toastType}
-          onClose={() => setToastMessage(null)}
+          tone={toastType === 'danger' ? 'warning' : 'success'}
         />
       )}
 

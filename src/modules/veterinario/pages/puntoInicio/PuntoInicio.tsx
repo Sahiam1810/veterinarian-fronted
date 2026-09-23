@@ -234,6 +234,8 @@ export function PuntoInicio({
           scheduledStart={selectedAppointment.startTime}
           initialWeight={selectedAppointment.weightKg}
           initialTemperature={selectedAppointment.temperature}
+          canCreateOrders={canCreateModule('ordenesMedicas')}
+          canEditOrders={canEditModule('ordenesMedicas')}
           onClose={handleCloseRegistrar}
           onSuccess={(result) => {
             void handleRegistrationSuccess(result)
