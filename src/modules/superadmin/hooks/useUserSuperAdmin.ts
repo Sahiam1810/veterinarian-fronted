@@ -113,6 +113,7 @@ function normalizeModuleName(name: string): ModuleId | null {
   if (norm.includes('cita') || norm.includes('agenda')) return 'agenda'
   if (norm.includes('historial') || norm.includes('historia')) return 'historiaClinica'
   if (norm.includes('reporte')) return 'reportes'
+  if (norm.includes('orden')) return 'ordenesMedicas'
   return null
 }
 
