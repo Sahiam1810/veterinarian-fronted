@@ -84,6 +84,15 @@ export const RECEP_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    id: 'ordenesMedicas',
+    label: 'Órdenes Médicas',
+    permissionKey: 'recep.ordenesMedicas',
+    iconKey: 'medical-orders',
+    kind: 'link',
+    order: 85,
+    placement: 'main',
+  },
+  {
     id: 'perfil',
     label: 'Perfil',
     permissionKey: 'recep.perfil',

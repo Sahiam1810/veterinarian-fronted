@@ -206,3 +206,35 @@ export async function completeProcedureOrder(id: string, resultFileUrl?: string 
 export async function fetchProcedureOrdersByAppointment(appointmentId: string): Promise<ApiProcedureOrder[]> {
   return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/appointment/${appointmentId}`).catch(() => [])
 }
+
+
+export interface PendingMedicationOrder {
+  id: string
+  petName: string
+  ownerName: string
+  appointmentId: string
+  isInHouse: boolean
+  status: string
+  createdAt: string
+  items: ApiMedicationOrderItem[]
+}
+
+export interface PendingProcedureOrder {
+  id: string
+  petName: string
+  ownerName: string
+  appointmentId: string
+  isInHouse: boolean
+  status: string
+  resultFileUrl?: string | null
+  createdAt: string
+  items: ApiProcedureOrderItem[]
+}
+
+export async function fetchPendingMedicationOrders(): Promise<PendingMedicationOrder[]> {
+  return vetApiFetch<PendingMedicationOrder[]>('/api/medication-orders/pending').catch(() => [])
+}
+
+export async function fetchPendingProcedureOrders(): Promise<PendingProcedureOrder[]> {
+  return vetApiFetch<PendingProcedureOrder[]>('/api/procedure-orders/pending').catch(() => [])
+}

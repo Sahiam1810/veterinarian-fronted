@@ -11,6 +11,7 @@ import {
   ChatIcon,
   DoctorIcon,
   StethoscopeIcon,
+  PillIcon,
 } from '../components/Icons.tsx'
 import type { NavCatalogItem, NavIconKey } from './types.ts'
 import type { SidebarNavItem, SidebarPrimaryAction } from '../components/Sidebar.tsx'
@@ -43,6 +44,8 @@ export function renderNavIcon(iconKey: NavIconKey, className = 'w-5 h-5 shrink-0
       return <StethoscopeIcon className={className} />
     case 'doctors':
       return <DoctorIcon className={className} />
+    case 'medical-orders':
+      return <PillIcon className={className} />
     default:
       return null
   }
