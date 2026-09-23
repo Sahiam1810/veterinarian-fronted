@@ -22,7 +22,6 @@ interface AnexarOrdenMedicaModalProps {
   isOpen: boolean
   orderType: MedicalOrderType
   clientPetId: string
-  veterinarianId: string
   appointmentId: string
   petName: string
   onClose: () => void
@@ -33,7 +32,6 @@ export function AnexarOrdenMedicaModal({
   isOpen,
   orderType,
   clientPetId,
-  veterinarianId,
   appointmentId,
   petName,
   onClose,
@@ -106,7 +104,7 @@ export function AnexarOrdenMedicaModal({
     e.preventDefault()
     setFormError(null)
 
-    if (!clientPetId || !veterinarianId || !appointmentId) {
+    if (!clientPetId || !appointmentId) {
       setFormError('Faltan datos obligatorios del contexto de la consulta.')
       return
     }
@@ -125,7 +123,6 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            veterinarianId,
             appointmentId,
             isInHouse: true,
             referredTo: null,
@@ -138,7 +135,6 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            veterinarianId,
             appointmentId,
             isInHouse: true,
             referredTo: null,
@@ -175,7 +171,6 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            veterinarianId,
             appointmentId,
             isInHouse: false,
             referredTo: referredTo.trim(),
@@ -185,7 +180,6 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            veterinarianId,
             appointmentId,
             isInHouse: false,
             referredTo: referredTo.trim(),

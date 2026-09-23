@@ -1,7 +1,7 @@
 import { vetApiFetch } from '../api/vetHttp'
 
 // Modelos del catálogo
-public interface ApiMedication {
+export interface ApiMedication {
   id: string
   name: string
   code?: string | null
@@ -10,7 +10,7 @@ public interface ApiMedication {
   updatedAt?: string | null
 }
 
-public interface ApiProcedure {
+export interface ApiProcedure {
   id: string
   name: string
   code?: string | null
@@ -20,7 +20,7 @@ public interface ApiProcedure {
 }
 
 // Detalle y Cabecera de Órdenes
-public interface ApiMedicationOrderItem {
+export interface ApiMedicationOrderItem {
   id: string
   medicationOrderId: string
   medicationId: string
@@ -28,7 +28,7 @@ public interface ApiMedicationOrderItem {
   notes?: string | null
 }
 
-public interface ApiMedicationOrder {
+export interface ApiMedicationOrder {
   id: string
   clientPetId: string
   veterinarianId: string
@@ -42,7 +42,7 @@ public interface ApiMedicationOrder {
   items: ApiMedicationOrderItem[]
 }
 
-public interface ApiProcedureOrderItem {
+export interface ApiProcedureOrderItem {
   id: string
   procedureOrderId: string
   procedureId: string
@@ -50,7 +50,7 @@ public interface ApiProcedureOrderItem {
   notes?: string | null
 }
 
-public interface ApiProcedureOrder {
+export interface ApiProcedureOrder {
   id: string
   clientPetId: string
   veterinarianId: string
@@ -66,38 +66,37 @@ public interface ApiProcedureOrder {
 }
 
 // DTOs de Creación / Edición
-public interface CreateMedicationDto {
+export interface CreateMedicationDto {
   name: string
   code?: string | null
   isActive?: boolean
 }
 
-public interface UpdateMedicationDto {
+export interface UpdateMedicationDto {
   name: string
   code?: string | null
   isActive: boolean
 }
 
-public interface CreateProcedureDto {
+export interface CreateProcedureDto {
   name: string
   code?: string | null
   isActive?: boolean
 }
 
-public interface UpdateProcedureDto {
+export interface UpdateProcedureDto {
   name: string
   code?: string | null
   isActive: boolean
 }
 
-public interface CreateMedicationOrderItemInput {
+export interface CreateMedicationOrderItemInput {
   medicationId: string
   notes?: string | null
 }
 
-public interface CreateMedicationOrderInput {
+export interface CreateMedicationOrderInput {
   clientPetId: string
-  veterinarianId: string
   appointmentId: string
   isInHouse: boolean
   referredTo?: string | null
@@ -105,14 +104,13 @@ public interface CreateMedicationOrderInput {
   items?: CreateMedicationOrderItemInput[] | null
 }
 
-public interface CreateProcedureOrderItemInput {
+export interface CreateProcedureOrderItemInput {
   procedureId: string
   notes?: string | null
 }
 
-public interface CreateProcedureOrderInput {
+export interface CreateProcedureOrderInput {
   clientPetId: string
-  veterinarianId: string
   appointmentId: string
   isInHouse: boolean
   referredTo?: string | null

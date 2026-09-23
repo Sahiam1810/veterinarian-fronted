@@ -45,6 +45,8 @@ interface RegistrarAtencionModalProps {
   availableAppointments?: AvailableAppointmentOption[]
   initialWeight?: string | number | null
   initialTemperature?: string | number | null
+  canCreateOrders?: boolean
+  canEditOrders?: boolean
   onClose: () => void
   onSuccess: (result: { recordId: string; petId: string; appointmentId: string }) => void
 }
@@ -62,6 +64,8 @@ export function RegistrarAtencionModal({
   availableAppointments = [],
   initialWeight,
   initialTemperature,
+  canCreateOrders = true,
+  canEditOrders = true,
   onClose,
   onSuccess,
 }: RegistrarAtencionModalProps) {
@@ -428,23 +432,27 @@ export function RegistrarAtencionModal({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setOrderModalState({ isOpen: true, type: 'MEDICAMENTO' })}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-brand hover:bg-sage-soft transition cursor-pointer"
-                    >
-                      <PillIcon className="w-3.5 h-3.5 text-brand" />
-                      <span>Anexar orden de medicamento</span>
-                    </button>
+                    {canCreateOrders && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderModalState({ isOpen: true, type: 'MEDICAMENTO' })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-brand hover:bg-sage-soft transition cursor-pointer"
+                      >
+                        <PillIcon className="w-3.5 h-3.5 text-brand" />
+                        <span>Anexar orden de medicamento</span>
+                      </button>
+                    )}
 
-                    <button
-                      type="button"
-                      onClick={() => setOrderModalState({ isOpen: true, type: 'PROCEDIMIENTO' })}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-brand hover:bg-sage-soft transition cursor-pointer"
-                    >
-                      <MedicalFolderIcon className="w-3.5 h-3.5 text-brand" />
-                      <span>Anexar orden de procedimiento</span>
-                    </button>
+                    {canCreateOrders && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderModalState({ isOpen: true, type: 'PROCEDIMIENTO' })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-brand hover:bg-sage-soft transition cursor-pointer"
+                      >
+                        <MedicalFolderIcon className="w-3.5 h-3.5 text-brand" />
+                        <span>Anexar orden de procedimiento</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -454,8 +462,8 @@ export function RegistrarAtencionModal({
                   appointmentId={selectedAppointmentId}
                   petName={petName}
                   speciesBreed={speciesBreed}
-                  veterinarianName={currentUser?.name || currentUser?.fullName || 'Veterinario'}
-                  canEditPermission={true}
+                  veterinarianName={currentUser?.name || 'Veterinario'}
+                  canEditPermission={canEditOrders}
                 />
               </div>
             </div>
@@ -465,7 +473,6 @@ export function RegistrarAtencionModal({
               isOpen={orderModalState.isOpen}
               orderType={orderModalState.type}
               clientPetId={clientPetId}
-              veterinarianId={currentUser?.id || currentUser?.veterinarianId || currentUser?.userAccountId || ''}
               appointmentId={selectedAppointmentId}
               petName={petName}
               onClose={() => setOrderModalState((prev) => ({ ...prev, isOpen: false }))}

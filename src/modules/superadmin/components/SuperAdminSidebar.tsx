@@ -79,6 +79,12 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     label: 'Reportes',
     icon: <BarChartIcon className="w-5 h-5 shrink-0" />,
   },
+  {
+    id: 'ordenes-medicas',
+    moduleId: 'ordenesMedicas',
+    label: 'Órdenes Médicas',
+    icon: <MedicalHistoryIcon className="w-5 h-5 shrink-0" />,
+  },
 ]
 
 export function SuperAdminSidebar({
