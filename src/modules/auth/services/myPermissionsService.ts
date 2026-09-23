@@ -21,6 +21,9 @@ export const VET_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   Citas: 'vet.agenda',
   Clientes: 'vet.duenos',
   Reportes: 'vet.reportes',
+  'Especies y Razas': 'vet.especiesRazas',
+  Servicios: 'vet.servicios',
+  Veterinarios: 'vet.profesionales',
 }
 
 // Claves de menú que siempre quedan visibles (no dependen de un módulo CRUD)
@@ -37,6 +40,10 @@ export const RECEP_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   Citas: 'recep.agenda',
   Chat: 'recep.conversaciones',
   Escalamientos: 'recep.conversaciones',
+  'Especies y Razas': 'recep.especiesRazas',
+  Servicios: 'recep.servicios',
+  Veterinarios: 'recep.profesionales',
+  Reportes: 'recep.reportes',
 }
 
 export const RECEP_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [

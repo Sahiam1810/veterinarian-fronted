@@ -15,6 +15,9 @@ import { MascotasPage } from '../mascotas'
 import { DuenosPage } from '../duenos'
 import { PerfilPage } from '../perfil'
 import { ReportesPage } from '../reportes'
+import { EspeciesRazasPage } from '../especiesRazas'
+import { ServiciosPage } from '../servicios'
+import { ProfesionalesPage } from '../profesionales'
 import { useVetHome } from '../../hooks'
 
 interface PuntoInicioProps {
@@ -68,8 +71,12 @@ export function PuntoInicio({
   const isMascotas = activeRoute === 'mascotas'
   const isDuenos = activeRoute === 'duenos'
   const isReportes = activeRoute === 'reportes'
+  const isEspeciesRazas = activeRoute === 'especiesRazas'
+  const isServicios = activeRoute === 'servicios'
+  const isProfesionales = activeRoute === 'profesionales'
   const isPerfil = activeRoute === 'perfil'
-  const fillHeight = isAgenda || isMascotas || isDuenos
+  const fillHeight =
+    isAgenda || isMascotas || isDuenos || isEspeciesRazas || isServicios || isProfesionales
   // Perfil ya no fuerza alto completo: se alinea al contenido
 
   return (
@@ -149,6 +156,33 @@ export function PuntoInicio({
 
           {isReportes && <ReportesPage onNotice={showToast} />}
 
+          {isEspeciesRazas && (
+            <EspeciesRazasPage
+              onNotice={showToast}
+              canCreateModule={canCreateModule}
+              canEditModule={canEditModule}
+              canDeleteModule={canDeleteModule}
+            />
+          )}
+
+          {isServicios && (
+            <ServiciosPage
+              onNotice={showToast}
+              canCreateModule={canCreateModule}
+              canEditModule={canEditModule}
+              canDeleteModule={canDeleteModule}
+            />
+          )}
+
+          {isProfesionales && (
+            <ProfesionalesPage
+              onNotice={showToast}
+              canCreateModule={canCreateModule}
+              canEditModule={canEditModule}
+              canDeleteModule={canDeleteModule}
+            />
+          )}
+
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
           {activeRoute !== 'inicio' &&
@@ -156,6 +190,9 @@ export function PuntoInicio({
             activeRoute !== 'mascotas' &&
             activeRoute !== 'duenos' &&
             activeRoute !== 'reportes' &&
+            activeRoute !== 'especiesRazas' &&
+            activeRoute !== 'servicios' &&
+            activeRoute !== 'profesionales' &&
             activeRoute !== 'perfil' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">
@@ -195,6 +232,8 @@ export function PuntoInicio({
           serviceName={selectedAppointment.service}
           statusName={selectedAppointment.rawStatusName || selectedAppointment.status}
           scheduledStart={selectedAppointment.startTime}
+          initialWeight={selectedAppointment.weightKg}
+          initialTemperature={selectedAppointment.temperature}
           onClose={handleCloseRegistrar}
           onSuccess={(result) => {
             void handleRegistrationSuccess(result)

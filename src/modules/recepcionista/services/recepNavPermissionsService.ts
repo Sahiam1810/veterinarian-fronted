@@ -17,10 +17,14 @@ const RECEP_NAV_MODULES: Array<{
   navKey: NavPermissionKey
   moduleId: RecepModuleId
 }> = [
-  { navKey: 'recep.mascotas', moduleId: 'mascotas' },
   { navKey: 'recep.duenos', moduleId: 'duenos' },
-  { navKey: 'recep.agenda', moduleId: 'agenda' },
   { navKey: 'recep.conversaciones', moduleId: 'conversaciones' },
+  { navKey: 'recep.mascotas', moduleId: 'mascotas' },
+  { navKey: 'recep.agenda', moduleId: 'agenda' },
+  { navKey: 'recep.especiesRazas', moduleId: 'especiesRazas' },
+  { navKey: 'recep.servicios', moduleId: 'servicios' },
+  { navKey: 'recep.profesionales', moduleId: 'profesionales' },
+  { navKey: 'recep.reportes', moduleId: 'reportes' },
 ]
 
 export function resolveRecepNavPermissionsFromModules(

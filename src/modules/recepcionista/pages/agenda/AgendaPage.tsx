@@ -43,6 +43,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleCheckIn,
     handleRegisterPayment,
     isCitaPaid,
+    reloadAppointments,
   } = useRecepAgenda(true)
 
   useEffect(() => {
@@ -107,6 +108,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onMarkNoAsistio={canEdit ? handleMarkNoAsistio : undefined}
         onCheckIn={canEdit ? handleCheckIn : undefined}
         onRegistrarPago={canEdit ? handleRegisterPayment : undefined}
+        onVitalsUpdated={reloadAppointments}
       />
     </div>
   )

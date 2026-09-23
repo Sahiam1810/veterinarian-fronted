@@ -67,6 +67,10 @@ export interface RecepAgendaDayAppointment {
   service: string
   notes?: string
   status: RecepAppointmentStatus
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 // Indica si la cita aún se puede editar (no finalizada ni cancelada)
@@ -74,6 +78,13 @@ export function isRecepAppointmentEditable(
   status: RecepAgendaDayAppointment['status'],
 ): boolean {
   return status === 'AGENDADO' || status === 'EN CONSULTORIO'
+}
+
+// Tomar signos vitales al llegar la mascota (citas activas/no terminales)
+export function canTakeRecepVitals(
+  status: RecepAgendaDayAppointment['status'],
+): boolean {
+  return status === 'AGENDADO' || status === 'EN ESPERA' || status === 'EN CONSULTORIO'
 }
 
 // Solo AGENDADO puede marcarse No Asistió (mismo criterio que SuperAdmin).

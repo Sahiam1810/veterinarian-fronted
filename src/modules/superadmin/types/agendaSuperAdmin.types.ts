@@ -33,6 +33,11 @@ export interface CitaSuperAdmin {
   consultorio?: string
   notes?: string
   blockLabel?: string
+  // Signos vitales tomados en recepción
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
   // IDs internos para sincronizar con la API
   clientPetId?: string
   serviceId?: string

@@ -35,6 +35,10 @@ export interface AgendaAppointmentItem {
   professional: string
   service: string
   notes?: string
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 function mapAgendaStatus(statusName?: string | null): AgendaAppointmentItem['status'] {
@@ -150,6 +154,10 @@ export function useAuxAgenda() {
           professional,
           service,
           notes: apt.notes || undefined,
+          weightKg: apt.weight ?? null,
+          temperature: apt.temperature ?? null,
+          heartRate: apt.heartRate ?? null,
+          respiratoryRate: apt.respiratoryRate ?? null,
         }
       })
 

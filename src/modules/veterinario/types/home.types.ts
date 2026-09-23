@@ -37,6 +37,10 @@ export interface VetDayAppointment {
   petId?: string
   ownerPhone?: string
   rawStatusName?: string
+  weightKg?: number | null
+  temperature?: number | null
+  heartRate?: number | null
+  respiratoryRate?: number | null
 }
 
 // Payload completo del dashboard de inicio

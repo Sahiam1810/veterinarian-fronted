@@ -5,14 +5,12 @@ import {
   buildAllConversationsDirectory,
   formatWaitingTime,
   resolveChannel,
-  resolvePriority,
   resolveStatus,
   sortEscalatedConversationItems,
   fetchEscalatedConversations,
   USE_MOCK_ESCALATIONS,
 } from '../../src/modules/recepcionista/services/recepEscalacionesService.ts'
 import {
-  ESCALATION_PRIORITY_GUIDS,
   ESCALATION_STATUS_GUIDS,
   type ChatConversationResponseDto,
   type ChatEscalationResponseDto,
@@ -29,16 +27,6 @@ test('resolveChannel identifica Telegram, Web y otros canales', () => {
   assert.equal(resolveChannel('whatsapp'), 'WhatsApp')
   assert.equal(resolveChannel(null), 'Otro')
   assert.equal(resolveChannel(undefined), 'Otro')
-})
-
-test('resolvePriority resuelve GUIDs del contrato §4 y nombres fallback', () => {
-  assert.equal(resolvePriority(ESCALATION_PRIORITY_GUIDS.URGENT), 'Urgente')
-  assert.equal(resolvePriority(ESCALATION_PRIORITY_GUIDS.HIGH), 'Alta')
-  assert.equal(resolvePriority(ESCALATION_PRIORITY_GUIDS.MEDIUM), 'Media')
-  assert.equal(resolvePriority(ESCALATION_PRIORITY_GUIDS.LOW), 'Baja')
-  assert.equal(resolvePriority(null, 'urgente'), 'Urgente')
-  assert.equal(resolvePriority(null, 'alta'), 'Alta')
-  assert.equal(resolvePriority(null, null), 'Normal')
 })
 
 test('resolveStatus resuelve GUIDs del contrato §4 y nombres fallback', () => {
@@ -82,7 +70,7 @@ test('formatWaitingTime calcula correctamente minutos, horas y días', () => {
   assert.equal(formatWaitingTime(d2, now).label, 'Hace 2 d')
 })
 
-test('sortEscalatedConversationItems ordena por prioridad y luego por tiempo de espera (Ticket FE-6, Opción A)', () => {
+test('sortEscalatedConversationItems ordena por tiempo de espera de mayor a menor', () => {
   const baseItem: EscalatedConversationListItem = {
     id: 'base',
     conversationId: 'conv-base',
@@ -96,8 +84,6 @@ test('sortEscalatedConversationItems ordena por prioridad y luego por tiempo de 
     lastMessageTimeLabel: '10:00',
     waitingTimeLabel: '',
     waitingMinutes: 0,
-    priority: 'Normal',
-    priorityId: null,
     status: 'Pendiente',
     statusId: null,
     reason: null,
@@ -105,11 +91,11 @@ test('sortEscalatedConversationItems ordena por prioridad y luego por tiempo de 
   }
 
   const items: EscalatedConversationListItem[] = [
-    { ...baseItem, id: 'media-espera-larga', priority: 'Media', waitingMinutes: 120 },
-    { ...baseItem, id: 'urgente-espera-corta', priority: 'Urgente', waitingMinutes: 1 },
-    { ...baseItem, id: 'alta-espera-media', priority: 'Alta', waitingMinutes: 30 },
-    { ...baseItem, id: 'urgente-espera-larga', priority: 'Urgente', waitingMinutes: 90 },
-    { ...baseItem, id: 'baja-espera-larguisima', priority: 'Baja', waitingMinutes: 500 },
+    { ...baseItem, id: 'espera-120', waitingMinutes: 120 },
+    { ...baseItem, id: 'espera-1', waitingMinutes: 1 },
+    { ...baseItem, id: 'espera-30', waitingMinutes: 30 },
+    { ...baseItem, id: 'espera-90', waitingMinutes: 90 },
+    { ...baseItem, id: 'espera-500', waitingMinutes: 500 },
   ]
 
   const sorted = sortEscalatedConversationItems(items)
@@ -117,17 +103,17 @@ test('sortEscalatedConversationItems ordena por prioridad y luego por tiempo de 
   assert.deepEqual(
     sorted.map((i) => i.id),
     [
-      'urgente-espera-larga', // Urgente, y entre los dos Urgente, el que más espera
-      'urgente-espera-corta',
-      'alta-espera-media',
-      'media-espera-larga',
-      'baja-espera-larguisima', // Baja, aunque sea el que más lleva esperando de todos
+      'espera-500',
+      'espera-120',
+      'espera-90',
+      'espera-30',
+      'espera-1',
     ],
   )
 
   // No muta el array original — buildEscalatedDirectory y el reducer de
   // tiempo real dependen de que devuelva una copia nueva.
-  assert.equal(items[0]?.id, 'media-espera-larga')
+  assert.equal(items[0]?.id, 'espera-120')
 })
 
 test('buildEscalatedDirectory cruza conversaciones y escalamientos activos excluyendo resueltos', () => {
@@ -163,7 +149,6 @@ test('buildEscalatedDirectory cruza conversaciones y escalamientos activos exclu
       id: 'esc-1',
       chatConversationId: 'conv-1',
       reason: 'Urgencia médica',
-      priorityId: ESCALATION_PRIORITY_GUIDS.URGENT,
       escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       createdAt: '2026-09-14T11:00:00.000Z',
       resolvedAt: null,
@@ -172,7 +157,6 @@ test('buildEscalatedDirectory cruza conversaciones y escalamientos activos exclu
       id: 'esc-2',
       chatConversationId: 'conv-2',
       reason: 'Consulta general',
-      priorityId: ESCALATION_PRIORITY_GUIDS.LOW,
       escalationStatusId: ESCALATION_STATUS_GUIDS.IN_PROGRESS,
       createdAt: '2026-09-14T11:30:00.000Z',
       resolvedAt: null,
@@ -181,7 +165,6 @@ test('buildEscalatedDirectory cruza conversaciones y escalamientos activos exclu
       id: 'esc-3',
       chatConversationId: 'conv-3',
       reason: 'Consulta resuelta',
-      priorityId: ESCALATION_PRIORITY_GUIDS.LOW,
       escalationStatusId: ESCALATION_STATUS_GUIDS.RESOLVED,
       createdAt: '2026-09-14T09:00:00.000Z',
       resolvedAt: '2026-09-14T10:00:00.000Z', // Resuelto -> debe ser ignorado
@@ -193,23 +176,20 @@ test('buildEscalatedDirectory cruza conversaciones y escalamientos activos exclu
   assert.equal(payload.totalCount, 2)
   assert.equal(payload.items.length, 2)
   
-  // La conversación con urgencia debe estar de primera
+  // La conversación con mayor tiempo de espera debe estar de primera (11:00 vs 11:30)
   assert.equal(payload.items[0]?.id, 'esc-1')
   assert.equal(payload.items[0]?.clientName, 'María García')
-  assert.equal(payload.items[0]?.priority, 'Urgente')
   assert.equal(payload.items[0]?.status, 'Pendiente')
   assert.equal(payload.items[0]?.channel, 'Telegram')
 
   // La segunda conversación debe tener fallback "Cliente sin nombre"
   assert.equal(payload.items[1]?.id, 'esc-2')
   assert.equal(payload.items[1]?.clientName, 'Cliente sin nombre')
-  assert.equal(payload.items[1]?.priority, 'Baja')
   assert.equal(payload.items[1]?.status, 'En atención')
   assert.equal(payload.items[1]?.channel, 'Web')
 
   assert.equal(payload.pendingCount, 1)
   assert.equal(payload.inProgressCount, 1)
-  assert.equal(payload.urgentCount, 1)
 })
 
 test('buildEscalatedDirectory excluye "Resuelta"/"Cancelada" (nombre real, femenino) sin depender del GUID ni de resolvedAt', () => {
@@ -301,7 +281,6 @@ test('buildAllConversationsDirectory lista todas las conversaciones y solo decor
       id: 'esc-esc',
       chatConversationId: 'conv-esc',
       reason: 'Pide asesor',
-      priorityId: ESCALATION_PRIORITY_GUIDS.HIGH,
       escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       createdAt: '2026-09-14T11:00:00.000Z',
       resolvedAt: null,
@@ -323,7 +302,6 @@ test('buildAllConversationsDirectory lista todas las conversaciones y solo decor
   assert.ok(escRow)
   assert.equal(escRow?.escalationId, 'esc-esc')
   assert.equal(escRow?.inboxBadge, 'esperando_asesor')
-  assert.equal(escRow?.priority, 'Alta')
 
   // Más reciente primero (lastMessageAt)
   assert.equal(payload.items[0]?.conversationId, 'conv-bot')

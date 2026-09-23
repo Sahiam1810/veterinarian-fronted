@@ -4,7 +4,6 @@ import test from 'node:test'
 import type { EscalatedConversationListItem } from '../../src/modules/recepcionista/types/index.ts'
 import {
   resolveChannel,
-  resolvePriority,
   resolveStatus,
   formatWaitingTime,
 } from '../../src/modules/recepcionista/services/recepEscalacionesService.ts'
@@ -45,8 +44,6 @@ function handleEscalationCreatedReducer(
     lastMessageTimeLabel: '10:30',
     waitingTimeLabel: waitingInfo.label,
     waitingMinutes: waitingInfo.minutes,
-    priority: resolvePriority(payload.priority),
-    priorityId: payload.priority ?? null,
     status: resolveStatus(payload.status),
     statusId: payload.status ?? null,
     createdAt: payload.createdAt,
@@ -94,7 +91,6 @@ test('handleEscalationCreatedReducer inserta la nueva conversación al inicio', 
       clientPhone: '300111',
       channel: 'Telegram',
       channelRaw: 'TELEGRAM',
-      priority: 'Media',
       status: 'Pendiente',
       waitingTimeLabel: 'Hace 5 min',
       waitingMinutes: 5,
@@ -110,7 +106,6 @@ test('handleEscalationCreatedReducer inserta la nueva conversación al inicio', 
     escalationId: 'e-2',
     conversationId: 'c-2',
     clientName: 'Ana Sofía',
-    priority: 'HIGH',
     status: 'PENDING',
     channel: 'TELEGRAM',
     createdAt: new Date().toISOString(),
@@ -121,7 +116,6 @@ test('handleEscalationCreatedReducer inserta la nueva conversación al inicio', 
   assert.equal(updated.length, 2)
   assert.equal(updated[0].escalationId, 'e-2')
   assert.equal(updated[0].clientName, 'Ana Sofía')
-  assert.equal(updated[0].priority, 'Alta')
   assert.equal(updated[1].escalationId, 'e-1')
 })
 
@@ -135,7 +129,6 @@ test('handleEscalationCreatedReducer previene duplicados en memoria', () => {
       clientPhone: '300111',
       channel: 'Telegram',
       channelRaw: 'TELEGRAM',
-      priority: 'Media',
       status: 'Pendiente',
       waitingTimeLabel: 'Hace 5 min',
       waitingMinutes: 5,
@@ -168,7 +161,6 @@ test('handleMessageReceivedReducer actualiza el último mensaje de la conversaci
       clientPhone: '300111',
       channel: 'Telegram',
       channelRaw: 'TELEGRAM',
-      priority: 'Media',
       status: 'Pendiente',
       waitingTimeLabel: 'Hace 5 min',
       waitingMinutes: 5,
@@ -203,7 +195,6 @@ test('handleEscalationResolvedReducer elimina la conversación de la bandeja', (
       clientPhone: '300111',
       channel: 'Telegram',
       channelRaw: 'TELEGRAM',
-      priority: 'Media',
       status: 'Pendiente',
       waitingTimeLabel: 'Hace 5 min',
       waitingMinutes: 5,
@@ -221,7 +212,6 @@ test('handleEscalationResolvedReducer elimina la conversación de la bandeja', (
       clientPhone: '300222',
       channel: 'Web',
       channelRaw: 'WEB',
-      priority: 'Baja',
       status: 'Pendiente',
       waitingTimeLabel: 'Hace 10 min',
       waitingMinutes: 10,

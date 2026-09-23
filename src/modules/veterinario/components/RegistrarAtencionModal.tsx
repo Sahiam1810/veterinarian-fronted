@@ -43,6 +43,8 @@ interface RegistrarAtencionModalProps {
   scheduledStart?: string
   statusName?: string | null
   availableAppointments?: AvailableAppointmentOption[]
+  initialWeight?: string | number | null
+  initialTemperature?: string | number | null
   onClose: () => void
   onSuccess: (result: { recordId: string; petId: string; appointmentId: string }) => void
 }
@@ -58,6 +60,8 @@ export function RegistrarAtencionModal({
   scheduledStart,
   statusName,
   availableAppointments = [],
+  initialWeight,
+  initialTemperature,
   onClose,
   onSuccess,
 }: RegistrarAtencionModalProps) {
@@ -68,8 +72,12 @@ export function RegistrarAtencionModal({
   const [diagnosticSearch, setDiagnosticSearch] = useState('')
   const [symptoms, setSymptoms] = useState('')
   const [treatment, setTreatment] = useState('')
-  const [weight, setWeight] = useState('')
-  const [temperature, setTemperature] = useState('')
+  const [weight, setWeight] = useState(
+    initialWeight != null ? String(initialWeight) : '',
+  )
+  const [temperature, setTemperature] = useState(
+    initialTemperature != null ? String(initialTemperature) : '',
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -83,6 +91,13 @@ export function RegistrarAtencionModal({
   useEffect(() => {
     setSelectedAppointmentId(initialAppointmentId)
   }, [initialAppointmentId])
+
+  useEffect(() => {
+    if (isOpen) {
+      setWeight(initialWeight != null ? String(initialWeight) : '')
+      setTemperature(initialTemperature != null ? String(initialTemperature) : '')
+    }
+  }, [isOpen, initialWeight, initialTemperature])
 
   useEffect(() => {
     if (!isOpen) return

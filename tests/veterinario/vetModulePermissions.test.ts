@@ -142,3 +142,57 @@ test('vet final matrix exposes Reportes only with View', () => {
   assert.equal(hidden.canViewModule('reportes'), false)
   assert.equal(visible.canViewModule('reportes'), true)
 })
+
+test('vet permission helpers map Especies y Razas to especiesRazas and gate actions by View', () => {
+  const withoutView = createVetPermissionHelpers({
+    'Especies y Razas': { canView: false, canCreate: true, canEdit: true, canDelete: true },
+  })
+  const full = createVetPermissionHelpers({
+    'Especies y Razas': { canView: true, canCreate: true, canEdit: true, canDelete: false },
+  })
+
+  assert.equal(withoutView.canViewModule('especiesRazas'), false)
+  assert.equal(withoutView.canCreateModule('especiesRazas'), false)
+  assert.equal(withoutView.canEditModule('especiesRazas'), false)
+  assert.equal(withoutView.canDeleteModule('especiesRazas'), false)
+
+  assert.equal(full.canViewModule('especiesRazas'), true)
+  assert.equal(full.canCreateModule('especiesRazas'), true)
+  assert.equal(full.canEditModule('especiesRazas'), true)
+  assert.equal(full.canDeleteModule('especiesRazas'), false)
+})
+
+test('vet permission helpers map Servicios to servicios and gate actions by View', () => {
+  const withoutView = createVetPermissionHelpers({
+    Servicios: { canView: false, canCreate: true, canEdit: true, canDelete: true },
+  })
+  const viewOnly = createVetPermissionHelpers({
+    Servicios: { canView: true, canCreate: false, canEdit: false, canDelete: false },
+  })
+
+  assert.equal(withoutView.canViewModule('servicios'), false)
+  assert.equal(withoutView.canCreateModule('servicios'), false)
+
+  assert.equal(viewOnly.canViewModule('servicios'), true)
+  assert.equal(viewOnly.canCreateModule('servicios'), false)
+  assert.equal(viewOnly.canEditModule('servicios'), false)
+  assert.equal(viewOnly.canDeleteModule('servicios'), false)
+})
+
+test('vet permission helpers map Veterinarios to profesionales and gate actions by View', () => {
+  const withoutView = createVetPermissionHelpers({
+    Veterinarios: { canView: false, canCreate: true, canEdit: true, canDelete: true },
+  })
+  const full = createVetPermissionHelpers({
+    Veterinarios: { canView: true, canCreate: true, canEdit: true, canDelete: true },
+  })
+
+  assert.equal(withoutView.canViewModule('profesionales'), false)
+  assert.equal(withoutView.canCreateModule('profesionales'), false)
+
+  assert.equal(full.canViewModule('profesionales'), true)
+  assert.equal(full.canCreateModule('profesionales'), true)
+  assert.equal(full.canEditModule('profesionales'), true)
+  assert.equal(full.canDeleteModule('profesionales'), true)
+})
+

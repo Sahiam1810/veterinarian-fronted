@@ -14,7 +14,6 @@ import type {
   EscalatedConversationListItem,
   EscalacionesDirectoryPayload,
   EscalationChannel,
-  EscalationPriority,
   ConversationInboxBadge,
   EscalationResolutionResponseDto,
   EscalationStatus,
@@ -22,11 +21,8 @@ import type {
   MessageSenderRole,
 } from '../types/index.ts'
 import {
-  ESCALATION_PRIORITY_GUIDS,
-  ESCALATION_PRIORITY_NAMES,
   ESCALATION_STATUS_GUIDS,
   ESCALATION_STATUS_NAMES,
-  MESSAGE_TYPE_GUIDS,
   SENDER_TYPE_GUIDS,
 } from '../types/index.ts'
 
@@ -47,22 +43,8 @@ export function resolveChannel(rawChannel?: string | null): EscalationChannel {
   if (norm.includes('telegram')) return 'Telegram'
   if (norm.includes('web')) return 'Web'
   if (norm.includes('whatsapp')) return 'WhatsApp'
+  if (norm.includes('otro')) return 'Otro'
   return 'Otro'
-}
-
-export function resolvePriority(
-  priorityId?: string | null,
-  rawPriorityName?: string | null,
-): EscalationPriority {
-  if (priorityId && ESCALATION_PRIORITY_NAMES[priorityId]) {
-    return ESCALATION_PRIORITY_NAMES[priorityId] as EscalationPriority
-  }
-  const norm = `${priorityId || ''} ${rawPriorityName || ''}`.toLowerCase()
-  if (norm.includes('urgente') || norm.includes('urgent')) return 'Urgente'
-  if (norm.includes('alta') || norm.includes('high')) return 'Alta'
-  if (norm.includes('media') || norm.includes('medium')) return 'Media'
-  if (norm.includes('baja') || norm.includes('low')) return 'Baja'
-  return 'Normal'
 }
 
 export function resolveStatus(
@@ -191,24 +173,11 @@ export function buildChatMessageItem(
 // misma prioridad, el que lleva más tiempo esperando. Es el comportamiento
 // típico de una cola de soporte: lo urgente y lo más viejo suben primero,
 // sin importar cuándo llegó. Se usa tanto en la carga inicial (REST, vía
-// buildEscalatedDirectory) como al insertar una fila nueva por SignalR
-// (useRecepEscalaciones.ts) para que el orden no cambie según la fuente.
+// Orden de la bandeja: mayor tiempo de espera primero
 export function sortEscalatedConversationItems(
   items: EscalatedConversationListItem[],
 ): EscalatedConversationListItem[] {
-  const priorityWeight: Record<EscalationPriority, number> = {
-    Urgente: 4,
-    Alta: 3,
-    Media: 2,
-    Normal: 1,
-    Baja: 0,
-  }
-
-  return [...items].sort((a, b) => {
-    const weightDiff = priorityWeight[b.priority] - priorityWeight[a.priority]
-    if (weightDiff !== 0) return weightDiff
-    return b.waitingMinutes - a.waitingMinutes
-  })
+  return [...items].sort((a, b) => b.waitingMinutes - a.waitingMinutes)
 }
 
 // Escalamiento activo = sin resolución (cola de asesor)
@@ -237,7 +206,6 @@ function mapEscalationRow(
   const clientName = conv?.clientName || conv?.fullName || 'Cliente sin nombre'
   const clientPhone = conv?.clientPhone || conv?.phoneNumber || null
   const channel = resolveChannel(conv?.channel)
-  const priority = resolvePriority(esc.priorityId, esc.priority)
   const status = resolveStatus(esc.escalationStatusId, esc.status)
   const waiting = formatWaitingTime(esc.createdAt, now)
   const lastMessage = conv?.lastMessage || esc.reason || 'Solicita atención con un asesor.'
@@ -259,8 +227,6 @@ function mapEscalationRow(
     lastMessageTimeLabel,
     waitingTimeLabel: waiting.label,
     waitingMinutes: waiting.minutes,
-    priority,
-    priorityId: esc.priorityId,
     status,
     statusId: esc.escalationStatusId,
     reason: esc.reason || null,
@@ -289,14 +255,12 @@ export function buildEscalatedDirectory(
 
   const pendingCount = sortedItems.filter((i) => i.status === 'Pendiente').length
   const inProgressCount = sortedItems.filter((i) => i.status === 'En atención').length
-  const urgentCount = sortedItems.filter((i) => i.priority === 'Urgente' || i.priority === 'Alta').length
 
   return {
     items: sortedItems,
     totalCount: sortedItems.length,
     pendingCount,
     inProgressCount,
-    urgentCount,
     pageStart: sortedItems.length > 0 ? 1 : 0,
     pageEnd: sortedItems.length,
   }
@@ -344,8 +308,6 @@ export function buildAllConversationsDirectory(
       lastMessageTimeLabel: formatTimeLabel(activityAt),
       waitingTimeLabel: waiting.label,
       waitingMinutes: waiting.minutes,
-      priority: 'Normal',
-      priorityId: null,
       status: 'Pendiente',
       statusId: null,
       reason: null,
@@ -365,16 +327,12 @@ export function buildAllConversationsDirectory(
   const escalatedOnly = sortedItems.filter((i) => Boolean(i.escalationId))
   const pendingCount = escalatedOnly.filter((i) => i.status === 'Pendiente').length
   const inProgressCount = escalatedOnly.filter((i) => i.status === 'En atención').length
-  const urgentCount = escalatedOnly.filter(
-    (i) => i.priority === 'Urgente' || i.priority === 'Alta',
-  ).length
 
   return {
     items: sortedItems,
     totalCount: sortedItems.length,
     pendingCount,
     inProgressCount,
-    urgentCount,
     pageStart: sortedItems.length > 0 ? 1 : 0,
     pageEnd: sortedItems.length,
   }
@@ -562,7 +520,6 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
       id: 'esc-001',
       chatConversationId: 'conv-001',
       reason: 'Urgencia médica - Paciente con síntomas agudos',
-      priorityId: ESCALATION_PRIORITY_GUIDS.URGENT,
       escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: m5,
@@ -572,7 +529,6 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
       id: 'esc-002',
       chatConversationId: 'conv-002',
       reason: 'Solicitud de reprogramación de cirugía',
-      priorityId: ESCALATION_PRIORITY_GUIDS.HIGH,
       escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: m18,
@@ -582,7 +538,6 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
       id: 'esc-003',
       chatConversationId: 'conv-003',
       reason: 'Consulta de tarifas y planes de vacunación',
-      priorityId: ESCALATION_PRIORITY_GUIDS.LOW,
       escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: m42,
@@ -592,7 +547,6 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
       id: 'esc-004',
       chatConversationId: 'conv-004',
       reason: 'Reacción adversa a medicamento prescrito',
-      priorityId: ESCALATION_PRIORITY_GUIDS.HIGH,
       escalationStatusId: ESCALATION_STATUS_GUIDS.IN_PROGRESS,
       assignedToId: 'usr-recep-1',
       createdAt: h2,
@@ -602,7 +556,6 @@ export function getMockEscalatedDirectory(now: Date = new Date()): EscalacionesD
       id: 'esc-005',
       chatConversationId: 'conv-005',
       reason: 'Solicitud de copia de historia clínica',
-      priorityId: ESCALATION_PRIORITY_GUIDS.MEDIUM,
       escalationStatusId: ESCALATION_STATUS_GUIDS.PENDING,
       assignedToId: null,
       createdAt: h5,
@@ -630,8 +583,6 @@ export function getMockAllConversationsDirectory(now: Date = new Date()): Escala
     lastMessageTimeLabel: formatTimeLabel(m10),
     waitingTimeLabel: formatWaitingTime(m10, now).label,
     waitingMinutes: formatWaitingTime(m10, now).minutes,
-    priority: 'Normal',
-    priorityId: null,
     status: 'Pendiente',
     statusId: null,
     reason: null,
@@ -667,7 +618,6 @@ export function getMockAllConversationsDirectory(now: Date = new Date()): Escala
         id: i.escalationId!,
         chatConversationId: i.conversationId,
         reason: i.reason,
-        priorityId: i.priorityId || ESCALATION_PRIORITY_GUIDS.MEDIUM,
         escalationStatusId: i.statusId || ESCALATION_STATUS_GUIDS.PENDING,
         assignedToId: i.assignedToId,
         createdAt: i.createdAt,
@@ -850,7 +800,6 @@ export async function sendAgentMessage(
       chatConversationId: conversationId,
       senderTypesId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
       senderName,
-      messageTypeId: MESSAGE_TYPE_GUIDS.TEXT,
       content: cleanContent,
       createdAt: new Date().toISOString(),
     }
@@ -869,7 +818,6 @@ export async function sendAgentMessage(
     chatConversationId: conversationId,
     chatParticipantId: participantId,
     senderTypesId: SENDER_TYPE_GUIDS.HUMAN_AGENT,
-    messageTypeId: MESSAGE_TYPE_GUIDS.TEXT,
     content: cleanContent,
   } satisfies CreateChatMessageRequestDto)
 

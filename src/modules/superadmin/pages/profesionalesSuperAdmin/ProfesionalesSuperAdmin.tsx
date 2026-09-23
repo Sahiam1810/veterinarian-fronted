@@ -75,6 +75,8 @@ export interface ProfesionalesSuperAdminProps {
   onMarkNotificationRead?: (id: string) => void
   onMarkAllNotificationsRead?: () => void
   onReloadNotifications?: () => void
+  embedded?: boolean
+  onNotice?: (message: string) => void
 }
 
 const DIAS_SEMANA: DiaSemana[] = [
@@ -118,6 +120,8 @@ export function ProfesionalesSuperAdmin({
   onMarkNotificationRead,
   onMarkAllNotificationsRead,
   onReloadNotifications,
+  embedded = false,
+  onNotice,
 }: ProfesionalesSuperAdminProps = {}) {
   // Permisos CRUD del módulo profesionales (incluye bloques de horario)
   const canCreate = canCreateModule ? canCreateModule('profesionales') : true
@@ -199,6 +203,11 @@ export function ProfesionalesSuperAdmin({
     }
   }
 
+  useEffect(() => {
+    if (!activeNotification || !onNotice) return
+    onNotice(activeNotification)
+  }, [activeNotification, onNotice])
+
   const handleSidebarNavigate = (routeId: string) => {
     if (onNavigate) {
       onNavigate(routeId)
@@ -207,47 +216,17 @@ export function ProfesionalesSuperAdmin({
     }
   }
 
-  return (
-    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
-      {/* 1. Top Header Fijo */}
-      <SuperAdminHeader
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        userName={userName}
-        userRole={userRole}
-        notifications={notifications}
-        isLoadingNotifications={isLoadingNotifications}
-        notificationsError={notificationsError}
-        onMarkNotificationRead={onMarkNotificationRead}
-        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
-        onReloadNotifications={onReloadNotifications}
-        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
-      />
+  const mainContent = (
+    <>
+      <DashboardBackgroundDecoration />
 
-      {/* 2. Cuerpo Principal */}
-      <div className="flex-1 flex overflow-hidden relative">
-        <SuperAdminSidebar
-          isOpen={isSidebarOpen}
-          onClose={closeSidebar}
-          activeRoute={activeRoute}
-          onNavigate={handleSidebarNavigate}
-          canViewModule={canViewModule}
-          onLogout={onLogout}
-        />
+      {/* Toast Notification */}
+      {activeNotification && !onNotice && <PageToast message={activeNotification} />}
 
-        <main
-          key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
-        >
-          <DashboardBackgroundDecoration />
-
-          {/* Toast Notification */}
-          {activeNotification && <PageToast message={activeNotification} />}
-
-          {/* Header de la Vista: Título y Subtítulo */}
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
+      {/* Header de la Vista: Título y Subtítulo */}
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
                 Gestión de Profesionales
               </h1>
               <p className="text-xs sm:text-sm text-sage font-medium mt-1">
@@ -629,9 +608,11 @@ export function ProfesionalesSuperAdmin({
               </div>
             </div>
           )}
-        </main>
-      </div>
+    </>
+  )
 
+  const drawersAndModals = (
+    <>
       {/* ===================================================================== */}
       {/* DRAWER: NUEVA CITA CONECTADA CON LA AGENDA                            */}
       {/* ===================================================================== */}
@@ -727,6 +708,61 @@ export function ProfesionalesSuperAdmin({
           </div>
         </div>
       )}
+    </>
+  )
+
+  if (embedded) {
+    // Los drawers/modales usan `fixed inset-0` y dependen de posicionarse contra
+    // el viewport. `animate-view-popup` deja un `transform` aplicado (fill-mode:
+    // both), lo que convierte a este div en containing block para sus hijos
+    // `position: fixed` — por eso los modales van FUERA de él, no adentro.
+    return (
+      <>
+        <div className="h-full min-h-0 min-w-0 overflow-y-auto relative flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          {mainContent}
+        </div>
+        {drawersAndModals}
+      </>
+    )
+  }
+
+  return (
+    <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
+      {/* 1. Top Header Fijo */}
+      <SuperAdminHeader
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={toggleSidebar}
+        userName={userName}
+        userRole={userRole}
+        notifications={notifications}
+        isLoadingNotifications={isLoadingNotifications}
+        notificationsError={notificationsError}
+        onMarkNotificationRead={onMarkNotificationRead}
+        onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+        onReloadNotifications={onReloadNotifications}
+        onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
+      />
+
+      {/* 2. Cuerpo Principal */}
+      <div className="flex-1 flex overflow-hidden relative">
+        <SuperAdminSidebar
+          isOpen={isSidebarOpen}
+          onClose={closeSidebar}
+          activeRoute={activeRoute}
+          onNavigate={handleSidebarNavigate}
+          canViewModule={canViewModule}
+          onLogout={onLogout}
+        />
+
+        <main
+          key={activeRoute}
+          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
+        >
+          {mainContent}
+        </main>
+      </div>
+
+      {drawersAndModals}
     </div>
   )
 }

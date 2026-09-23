@@ -199,6 +199,7 @@ export function AgendaSuperAdmin({
     handleMarkNoAsistio,
     handleRegisterPayment,
     isCitaPaid,
+    reload,
   } = useAgendaSuperAdmin()
 
   const { hourStart, hourEnd, hourRows } = useMemo(() => {
@@ -715,6 +716,7 @@ export function AgendaSuperAdmin({
             if (ok) setIsDetalleModalOpen(false)
           })
         }}
+        onVitalsSaved={reload}
       />
 
       {/* Drawer para Reprogramar / Editar Cita */}
