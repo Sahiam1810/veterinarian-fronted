@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { HospitalizationInvoice } from '../types/hospitalizacion.types'
 import {
   formatInvoiceCurrency,
@@ -5,7 +6,7 @@ import {
   getInvoicePaymentStatus,
   getInvoiceStayStatusBadge,
 } from '../utils/hospitalizacionInvoiceUtils'
-import { PrinterIcon } from '@/global/components'
+import { PrinterIcon } from '../../../global/components/Icons.tsx'
 
 export interface HospitalizationInvoiceModalProps {
   open: boolean
@@ -26,8 +27,17 @@ export function HospitalizationInvoiceModal({
 }: HospitalizationInvoiceModalProps) {
   if (!open) return null
 
+  const [isPreparingPrint, setIsPreparingPrint] = useState(false)
+
   const handlePrint = () => {
-    window.print()
+    setIsPreparingPrint(true)
+    setTimeout(() => {
+      try {
+        window.print()
+      } finally {
+        setIsPreparingPrint(false)
+      }
+    }, 50)
   }
 
   const paymentStatus = invoice
@@ -39,12 +49,12 @@ export function HospitalizationInvoiceModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm print:bg-white print:p-0 print:backdrop-blur-none animate-view-popup"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm print:bg-white print:p-0 print:backdrop-blur-none print:static print:inset-auto animate-view-popup"
       role="dialog"
       aria-modal="true"
       aria-labelledby="hospitalization-invoice-title"
     >
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden print:shadow-none print:max-w-none print:border-none print:m-0 flex flex-col max-h-[90vh] print:max-h-none">
+      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden print:shadow-none print:max-w-none print:border-none print:m-0 print:rounded-none print:p-0 flex flex-col max-h-[90vh] print:max-h-none print:overflow-visible">
         {/* Header - Screen only */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-tan print:hidden bg-[#FAF8F5]">
           <div>
@@ -392,6 +402,17 @@ export function HospitalizationInvoiceModal({
               </div>
             </>
           )}
+
+          {!isLoading && !error && !invoice && (
+            <div className="py-12 flex flex-col items-center justify-center text-center gap-2">
+              <p className="text-sm font-semibold text-charcoal">
+                No hay información de liquidación disponible.
+              </p>
+              <p className="text-xs text-sage">
+                No se encontraron registros de cobro para esta estancia.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions - Screen only */}
@@ -406,11 +427,20 @@ export function HospitalizationInvoiceModal({
           <button
             type="button"
             onClick={handlePrint}
-            disabled={isLoading || !!error || !invoice}
+            disabled={isLoading || !!error || !invoice || isPreparingPrint}
             className="px-5 py-2 rounded-xl text-sm font-semibold bg-brand text-white hover:bg-brand-hover transition flex items-center gap-2 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <PrinterIcon className="w-4 h-4" />
-            <span>Imprimir liquidación</span>
+            {isPreparingPrint ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Preparando...</span>
+              </>
+            ) : (
+              <>
+                <PrinterIcon className="w-4 h-4" />
+                <span>Imprimir liquidación</span>
+              </>
+            )}
           </button>
         </div>
       </div>
