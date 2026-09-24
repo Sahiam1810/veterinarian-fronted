@@ -42,7 +42,6 @@ export interface AddStayNoteDto {
   entregadoAUserId?: string | null
 }
 
-
 export interface HospitalizationInvoiceItem {
   name: string
   quantity: number
@@ -70,6 +69,7 @@ export interface HospitalizationInvoice {
   supplies: HospitalizationInvoiceItem[]
   medications: HospitalizationInvoiceItem[]
   procedures: HospitalizationInvoiceItem[]
+}
 
 export interface ApiSupplyConsumption {
   id: string
@@ -109,6 +109,4 @@ export interface FormattedSupplyConsumption extends ApiSupplyConsumption {
   supplyName: string
   supplyUnit: string
   supplyStock?: number
-
 }
-
