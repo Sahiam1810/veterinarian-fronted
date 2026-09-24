@@ -15,12 +15,15 @@ const navItems: { id: string; moduleId: ModuleId }[] = [
   { id: 'inicio', moduleId: 'inicio' },
   { id: 'usuarios', moduleId: 'usuarios' },
   { id: 'mascotas', moduleId: 'mascotas' },
+  { id: 'duenos', moduleId: 'duenos' },
   { id: 'especies-razas', moduleId: 'especiesRazas' },
   { id: 'servicios', moduleId: 'servicios' },
   { id: 'diagnosticos', moduleId: 'historiaClinica' },
   { id: 'profesionales', moduleId: 'profesionales' },
   { id: 'agenda', moduleId: 'agenda' },
   { id: 'reportes', moduleId: 'reportes' },
+  { id: 'insumos', moduleId: 'insumos' },
+  { id: 'hospitalizacion', moduleId: 'hospitalizacion' },
 ]
 
 function visibleRoutes(apiPermissions: MyPermissionsMap): string[] {
@@ -62,7 +65,9 @@ test('Auxiliar sin Mascotas.View no ve Mascotas aunque llegue Create accidentalm
   }
 
   assert.deepEqual(visibleRoutes(permissions), ['inicio'])
-  assert.equal(actions(permissions, 'mascotas').create, true)
+  assert.equal(actions(permissions, 'mascotas').create, false)
+  assert.equal(actions(permissions, 'mascotas').edit, false)
+  assert.equal(actions(permissions, 'mascotas').delete, false)
 })
 
 test('Auxiliar ve Especies y Razas, Reportes y Agenda solo cuando llega View', () => {

@@ -3,7 +3,6 @@ import type {
   SystemUser,
   RoleDefinition,
   ModuleId,
-  ModuleInfo,
   ModulePermission,
   UserFilters,
   UserStatus,
@@ -50,21 +49,9 @@ import { ApiError } from '@/services'
 import {
   clearDeprecatedUiShellOverrides,
 } from '../utils/uiShellPermissionsStorage'
+import { MODULES_INFO } from '../utils/superAdminNavCatalog'
+export { MODULES_INFO } from '../utils/superAdminNavCatalog'
 
-export const MODULES_INFO: ModuleInfo[] = [
-  { id: 'usuarios', label: 'Usuarios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'mascotas', label: 'Mascotas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'duenos', label: 'Dueños', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'especiesRazas', label: 'Especies y Razas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'servicios', label: 'Servicios', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'profesionales', label: 'Profesionales', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'ordenesMedicas', label: 'Órdenes Médicas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'insumos', label: 'Insumos', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'hospitalizacion', label: 'Hospitalización', supportsCreate: true, supportsEdit: true, supportsDelete: false },
-  { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'historiaClinica', label: 'Historia Clínica', supportsCreate: true, supportsEdit: true, supportsDelete: false },
-  { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
-]
 
 const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   inicio: { view: true, create: true, edit: true, delete: true },
