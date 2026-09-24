@@ -42,6 +42,7 @@ export interface AddStayNoteDto {
   entregadoAUserId?: string | null
 }
 
+
 export interface HospitalizationInvoiceItem {
   name: string
   quantity: number
@@ -69,5 +70,45 @@ export interface HospitalizationInvoice {
   supplies: HospitalizationInvoiceItem[]
   medications: HospitalizationInvoiceItem[]
   procedures: HospitalizationInvoiceItem[]
+
+export interface ApiSupplyConsumption {
+  id: string
+  hospitalizationStayId: string
+  supplyId: string
+  quantity: number
+  unitPrice: number
+  total: number
+  registeredByUserId: string
+  notes: string | null
+  createdAt: string
+}
+
+export interface ApiSupplyConsumptionTotal {
+  hospitalizationStayId: string
+  total: number
+}
+
+export interface RegisterStaySupplyConsumptionDto {
+  supplyId: string
+  quantity: number
+  notes?: string | null
+}
+
+export interface ApiSupply {
+  id: string
+  name: string
+  unit: string
+  unitPrice: number
+  stock: number
+  isActive: boolean
+  createdAt?: string
+  updatedAt?: string | null
+}
+
+export interface FormattedSupplyConsumption extends ApiSupplyConsumption {
+  supplyName: string
+  supplyUnit: string
+  supplyStock?: number
+
 }
 

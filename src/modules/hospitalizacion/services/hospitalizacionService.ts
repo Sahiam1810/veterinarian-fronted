@@ -5,7 +5,14 @@ import type {
   ApiStaffMember,
   AdmitStayDto,
   AddStayNoteDto,
+
   HospitalizationInvoice,
+
+  ApiSupplyConsumption,
+  ApiSupplyConsumptionTotal,
+  RegisterStaySupplyConsumptionDto,
+  ApiSupply,
+
 } from '../types/hospitalizacion.types'
 
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
@@ -40,7 +47,30 @@ export async function fetchStaff(): Promise<ApiStaffMember[]> {
   return apiClient.get<ApiStaffMember[]>('/api/hospitalization-stays/staff')
 }
 
+
 export async function fetchHospitalizationInvoice(stayId: string): Promise<HospitalizationInvoice> {
   return apiClient.get<HospitalizationInvoice>(`/api/hospitalization-stays/${stayId}/invoice`)
+
+export async function fetchStaySupplyConsumptions(stayId: string): Promise<ApiSupplyConsumption[]> {
+  return apiClient.get<ApiSupplyConsumption[]>(`/api/hospitalization-stays/${stayId}/supply-consumptions`)
+}
+
+export async function fetchStaySupplyTotal(stayId: string): Promise<ApiSupplyConsumptionTotal> {
+  return apiClient.get<ApiSupplyConsumptionTotal>(`/api/hospitalization-stays/${stayId}/supply-consumptions/total`)
+}
+
+export async function registerStaySupplyConsumption(
+  stayId: string,
+  data: RegisterStaySupplyConsumptionDto,
+): Promise<ApiSupplyConsumption | { id: string }> {
+  return apiClient.post<ApiSupplyConsumption | { id: string }>(
+    `/api/hospitalization-stays/${stayId}/supply-consumptions`,
+    data,
+  )
+}
+
+export async function fetchActiveSupplies(): Promise<ApiSupply[]> {
+  return apiClient.get<ApiSupply[]>('/api/supplies?onlyActive=true')
+
 }
 

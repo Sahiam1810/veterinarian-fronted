@@ -13,6 +13,7 @@ export type VetModuleId =
   | 'servicios'
   | 'profesionales'
   | 'ordenesMedicas'
+  | 'insumos'
   | 'hospitalizacion'
 
 export const VET_MODULE_ID_TO_API_MODULE: Record<VetModuleId, string> = {
@@ -25,6 +26,7 @@ export const VET_MODULE_ID_TO_API_MODULE: Record<VetModuleId, string> = {
   servicios: 'Servicios',
   profesionales: 'Veterinarios',
   ordenesMedicas: 'Órdenes Médicas',
+  insumos: 'Insumos',
   hospitalizacion: 'Hospitalización',
 }
 

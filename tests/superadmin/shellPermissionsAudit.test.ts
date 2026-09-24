@@ -34,8 +34,10 @@ test('Audit 2: Every module in MODULES_INFO has a navigation item in SUPER_ADMIN
   const navModuleIds = new Set(SUPER_ADMIN_NAV_CATALOG.map((item) => item.moduleId))
 
   for (const info of MODULES_INFO) {
+    const isCoveredByCombinedPetsEntry =
+      info.id === 'duenos' && navModuleIds.has('mascotas')
     assert.ok(
-      navModuleIds.has(info.id),
+      navModuleIds.has(info.id) || isCoveredByCombinedPetsEntry,
       `Module '${info.id}' (${info.label}) must be present in SUPER_ADMIN_NAV_CATALOG`,
     )
   }

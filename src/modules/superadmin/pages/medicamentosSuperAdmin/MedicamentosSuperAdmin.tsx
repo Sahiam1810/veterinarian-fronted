@@ -14,6 +14,7 @@ import {
   PageToast,
   PillIcon,
 } from '@/global/components'
+import { ApiError } from '@/services/apiClient'
 
 interface MedicamentosSuperAdminProps {
   canCreate?: boolean
@@ -87,18 +88,19 @@ export function MedicamentosSuperAdmin({
     if (!name.trim()) return
 
     setIsSubmitting(true)
+    const normalizedCode = code.trim() ? code.trim().toUpperCase() : null
     try {
       if (editingMedication) {
         await updateMedication(editingMedication.id, {
           name: name.trim(),
-          code: code.trim() || null,
+          code: normalizedCode,
           isActive,
         })
         showToast('Medicamento actualizado correctamente.')
       } else {
         await createMedication({
           name: name.trim(),
-          code: code.trim() || null,
+          code: normalizedCode,
           isActive,
         })
         showToast('Medicamento registrado correctamente.')
@@ -106,7 +108,13 @@ export function MedicamentosSuperAdmin({
       setIsFormOpen(false)
       await loadData()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar el medicamento.'
+      const msg =
+        err instanceof ApiError &&
+        (err.status === 409 || err.code === 'Medications.CodeAlreadyExists')
+          ? err.message || `Ya existe un medicamento registrado con el código '${normalizedCode}'.`
+          : err instanceof Error
+            ? err.message
+            : 'Error al guardar el medicamento.'
       showToast(msg, 'danger')
     } finally {
       setIsSubmitting(false)

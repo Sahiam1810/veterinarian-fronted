@@ -48,6 +48,18 @@ const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   reportes: 'reportes',
 }
 
+function canViewAdminRoute(
+  routeId: string,
+  canViewModule: (moduleId: ModuleId) => boolean,
+) {
+  if (routeId === 'mascotas' || routeId === 'duenos') {
+    return canViewModule('mascotas') || canViewModule('duenos')
+  }
+
+  const moduleId = ROUTE_TO_MODULE[routeId]
+  return !moduleId || canViewModule(moduleId)
+}
+
 export default function App() {
   const {
     currentUser,
@@ -238,8 +250,7 @@ function SuperAdminApp({
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
 
   useEffect(() => {
-    const moduleId = ROUTE_TO_MODULE[currentRoute]
-    if (moduleId && !canViewModule(moduleId)) {
+    if (!canViewAdminRoute(currentRoute, canViewModule)) {
       setCurrentRoute(firstAllowedRoute)
     }
   }, [canViewModule, currentRoute, firstAllowedRoute])
@@ -249,8 +260,7 @@ function SuperAdminApp({
       onLogout()
       return
     }
-    const moduleId = ROUTE_TO_MODULE[routeId]
-    if (moduleId && !canViewModule(moduleId)) {
+    if (!canViewAdminRoute(routeId, canViewModule)) {
       return
     }
     setCurrentRoute(routeId)
@@ -484,6 +494,8 @@ function SuperAdminApp({
             <HospitalizacionPage
               canCreate={canCreateModule('hospitalizacion')}
               canEdit={canEditModule('hospitalizacion')}
+              canViewSupplies={canViewModule('insumos')}
+              canCreateSupplies={canCreateModule('insumos')}
             />
           </main>
         </div>
