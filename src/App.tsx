@@ -484,6 +484,8 @@ function SuperAdminApp({
             <HospitalizacionPage
               canCreate={canCreateModule('hospitalizacion')}
               canEdit={canEditModule('hospitalizacion')}
+              canViewSupplies={canViewModule('insumos')}
+              canCreateSupplies={canCreateModule('insumos')}
             />
           </main>
         </div>
