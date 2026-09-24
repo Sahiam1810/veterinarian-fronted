@@ -101,11 +101,12 @@ export function buildActionMap(
     for (const [apiName, perm] of Object.entries(apiPermissions)) {
       const shellId = API_MODULE_TO_SHELL[apiName]
       if (!shellId) continue
+      const isViewAllowed = !!perm.canView
       actions[shellId] = {
-        view: !!perm.canView,
-        create: !!perm.canCreate,
-        edit: !!perm.canEdit,
-        delete: !!perm.canDelete,
+        view: isViewAllowed,
+        create: isViewAllowed && !!perm.canCreate,
+        edit: isViewAllowed && !!perm.canEdit,
+        delete: isViewAllowed && !!perm.canDelete,
       }
     }
   }

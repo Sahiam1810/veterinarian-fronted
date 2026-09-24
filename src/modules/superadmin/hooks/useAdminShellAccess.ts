@@ -57,17 +57,20 @@ export function useAdminShellAccess(options: {
   )
 
   const canCreateModule = useCallback(
-    (moduleId: ModuleId) => actionMap[moduleId]?.create === true,
+    (moduleId: ModuleId) =>
+      actionMap[moduleId]?.view === true && actionMap[moduleId]?.create === true,
     [actionMap],
   )
 
   const canEditModule = useCallback(
-    (moduleId: ModuleId) => actionMap[moduleId]?.edit === true,
+    (moduleId: ModuleId) =>
+      actionMap[moduleId]?.view === true && actionMap[moduleId]?.edit === true,
     [actionMap],
   )
 
   const canDeleteModule = useCallback(
-    (moduleId: ModuleId) => actionMap[moduleId]?.delete === true,
+    (moduleId: ModuleId) =>
+      actionMap[moduleId]?.view === true && actionMap[moduleId]?.delete === true,
     [actionMap],
   )
 

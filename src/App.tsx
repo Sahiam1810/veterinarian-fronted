@@ -299,7 +299,7 @@ function SuperAdminApp({
     return (
       <MascotasSuperAdmin
         {...shellProps}
-        activeRoute="mascotas"
+        activeRoute={currentRoute}
       />
     )
   }

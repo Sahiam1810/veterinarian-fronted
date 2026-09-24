@@ -500,6 +500,7 @@ export function MascotasSuperAdmin({
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Acciones efectivas por módulo (fail-open solo si no llega el helper = SuperAdmin legacy)
+  const canViewMascotas = canViewModule ? canViewModule('mascotas') : true
   const canCreateMascota = canCreateModule ? canCreateModule('mascotas') : true
   const canEditMascota = canEditModule ? canEditModule('mascotas') : true
   const canDeleteMascota = canDeleteModule ? canDeleteModule('mascotas') : true
@@ -507,7 +508,6 @@ export function MascotasSuperAdmin({
   const canCreateDueno = canCreateModule ? canCreateModule('duenos') : true
   const canEditDueno = canEditModule ? canEditModule('duenos') : true
   const canDeleteDueno = canDeleteModule ? canDeleteModule('duenos') : true
-
 
   const {
     activeTab,
@@ -553,12 +553,18 @@ export function MascotasSuperAdmin({
     showToast,
   } = useMascotasSuperAdmin()
 
-  // Si no tiene Clientes.View, no puede quedarse en la pestaña Dueños
+  // Sincroniza la pestaña activa según la ruta y permisos disponibles
   useEffect(() => {
-    if (!canViewDuenos && activeTab === 'duenos') {
+    if (activeRoute === 'duenos' && canViewDuenos) {
+      setActiveTab('duenos')
+    } else if (activeRoute === 'mascotas' && canViewMascotas) {
+      setActiveTab('mascotas')
+    } else if (!canViewMascotas && canViewDuenos) {
+      setActiveTab('duenos')
+    } else if (!canViewDuenos && canViewMascotas) {
       setActiveTab('mascotas')
     }
-  }, [canViewDuenos, activeTab, setActiveTab])
+  }, [activeRoute, canViewDuenos, canViewMascotas, setActiveTab])
 
   const isSidebarOpen =
     externalIsSidebarOpen !== undefined ? externalIsSidebarOpen : internalIsSidebarOpen
@@ -634,40 +640,44 @@ export function MascotasSuperAdmin({
           {activeNotification && <PageToast message={activeNotification} />}
 
           {/* Barra de Pestañas Superiores (Mascotas / Dueños) */}
-          <div className="relative z-10 border-b border-border-tan/70 flex items-center justify-between gap-4 animate-pop-in stagger-1">
-            <div className="flex items-center gap-6 sm:gap-8">
-              <button
-                type="button"
-                onClick={() => setActiveTab('mascotas')}
-                className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
-                  activeTab === 'mascotas'
-                    ? 'text-brand font-bold after:content-[\'\'] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
-                    : 'text-sage hover:text-brand'
-                }`}
-              >
-                Mascotas
-              </button>
+          {(canViewMascotas || canViewDuenos) && (
+            <div className="relative z-10 border-b border-border-tan/70 flex items-center justify-between gap-4 animate-pop-in stagger-1">
+              <div className="flex items-center gap-6 sm:gap-8">
+                {canViewMascotas && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('mascotas')}
+                    className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
+                      activeTab === 'mascotas'
+                        ? 'text-brand font-bold after:content-[\'\'] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
+                        : 'text-sage hover:text-brand'
+                    }`}
+                  >
+                    Mascotas
+                  </button>
+                )}
 
-              {canViewDuenos && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('duenos')}
-                  className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
-                    activeTab === 'duenos'
-                      ? 'text-brand font-bold after:content-[\'\'] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
-                      : 'text-sage hover:text-brand'
-                  }`}
-                >
-                  Dueños
-                </button>
-              )}
+                {canViewDuenos && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('duenos')}
+                    className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
+                      activeTab === 'duenos'
+                        ? 'text-brand font-bold after:content-[\'\'] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full'
+                        : 'text-sage hover:text-brand'
+                    }`}
+                  >
+                    Dueños
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ================================================================= */}
           {/* TAB 1: MASCOTAS                                                   */}
           {/* ================================================================= */}
-          {activeTab === 'mascotas' && (
+          {activeTab === 'mascotas' && canViewMascotas && (
             <div className="flex-1 flex flex-col gap-4 sm:gap-5 relative z-10 animate-view-popup">
               {/* Barra de Filtros y Botón Registrar */}
               <div
@@ -985,6 +995,15 @@ export function MascotasSuperAdmin({
               canEdit={canEditDueno}
               canDelete={canDeleteDueno}
             />
+          )}
+
+          {!canViewMascotas && !canViewDuenos && (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-warm-grey/40 text-center gap-3">
+              <p className="text-base font-bold text-charcoal">Acceso Restringido</p>
+              <p className="text-sm text-sage">
+                No tienes permisos para visualizar mascotas ni dueños en el sistema.
+              </p>
+            </div>
           )}
         </main>
       </div>
