@@ -73,7 +73,11 @@ export function isNavPermissionGranted(
   return granted.includes(permissionKey)
 }
 
-// Lee permisos efectivos del usuario autenticado
+// Lee permisos efectivos del usuario autenticado.
+// Los permisos vienen del JWT vigente a través de /api/auth/permissions.
+// Después de cambiar permisos en la matriz, cerrar sesión e iniciar sesión
+// nuevamente para reflejarlos de inmediato. Sin re-login, el token puede
+// conservar los permisos anteriores hasta 15 minutos.
 export async function fetchMyModulePermissions(): Promise<MyPermissionsMap> {
   const raw = await apiClient.get<AuthPermissionsResponse | MyPermissionsMap>(
     '/api/auth/permissions',
