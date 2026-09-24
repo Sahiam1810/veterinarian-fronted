@@ -1,4 +1,4 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 import type {
   ApiHospitalizationStay,
   ApiHospitalizationNote,
@@ -8,15 +8,8 @@ import type {
   ApiHospitalizationSupplyConsumption,
   AddStaySupplyConsumptionDto,
   HospitalizationLiquidationSummary,
-} from '../types/hospitalizacion.types'
-
-export interface PetAdmissionOption {
-  clientPetId: string
-  petName: string
-  ownerName: string
-  petId: string
-  clientId: string
-}
+  PetAdmissionOption,
+} from '../types/hospitalizacion.types.ts'
 
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
   return apiClient.get<ApiHospitalizationStay[]>('/api/hospitalization-stays/active')
@@ -81,32 +74,5 @@ export async function fetchStayLiquidation(stayId: string): Promise<Hospitalizat
 }
 
 export async function fetchPetAdmissionOptions(): Promise<PetAdmissionOption[]> {
-  const [clientsPets, pets, clients] = await Promise.all([
-    apiClient.get<{ id: string; clientId: string; petId: string }[]>('/api/ClientsPets').catch(() =>
-      apiClient.get<{ id: string; clientId: string; petId: string }[]>('/api/clientspets').catch(() => []),
-    ),
-    apiClient.get<{ id: string; name: string }[]>('/api/Pets').catch(() =>
-      apiClient.get<{ id: string; name: string }[]>('/api/pets').catch(() => []),
-    ),
-    apiClient.get<{ id: string; fullName?: string; name?: string }[]>('/api/Clients').catch(() =>
-      apiClient.get<{ id: string; fullName?: string; name?: string }[]>('/api/clients').catch(() => []),
-    ),
-  ])
-
-  const petsById = new Map((pets || []).map((p) => [p.id.toLowerCase(), p.name]))
-  const clientsById = new Map(
-    (clients || []).map((c) => [c.id.toLowerCase(), c.fullName || c.name || 'Propietario']),
-  )
-
-  return (clientsPets || []).map((cp) => {
-    const petName = petsById.get(cp.petId.toLowerCase()) || 'Mascota'
-    const ownerName = clientsById.get(cp.clientId.toLowerCase()) || 'Propietario'
-    return {
-      clientPetId: cp.id,
-      petName,
-      ownerName,
-      petId: cp.petId,
-      clientId: cp.clientId,
-    }
-  })
+  return apiClient.get<PetAdmissionOption[]>('/api/hospitalization-stays/admission-options')
 }

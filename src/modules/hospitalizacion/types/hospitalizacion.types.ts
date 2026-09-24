@@ -69,3 +69,9 @@ export interface HospitalizationLiquidationSummary {
   procedimientosTotal: number
   total: number
 }
+
+export interface PetAdmissionOption {
+  clientPetId: string
+  petName: string
+  ownerName: string
+}

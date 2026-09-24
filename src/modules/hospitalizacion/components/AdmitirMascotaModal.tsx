@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import {
   fetchPetAdmissionOptions,
   admitStay,
-  type PetAdmissionOption,
 } from '../services/hospitalizacionService'
+import type { PetAdmissionOption } from '../types/hospitalizacion.types'
 import { validateAdmissionForm } from '../utils/hospitalizacionDays'
 import { ProfessionalCombobox } from '@/modules/superadmin/components/ProfessionalCombobox'
 import { PawIcon, PlusIcon } from '@/global/components'
@@ -43,11 +43,21 @@ export function AdmitirMascotaModal({
     async function loadOptions() {
       try {
         const list = await fetchPetAdmissionOptions()
-        if (!cancelled) setPets(list)
-      } catch {
-        if (!cancelled) setLoadPetsError('Error al cargar la lista de mascotas.')
+        if (!cancelled) {
+          setPets(list || [])
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : 'Error al cargar las mascotas para admisión.'
+          setLoadPetsError(msg)
+        }
       } finally {
-        if (!cancelled) setIsLoadingPets(false)
+        if (!cancelled) {
+          setIsLoadingPets(false)
+        }
       }
     }
 
@@ -62,6 +72,11 @@ export function AdmitirMascotaModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
+
+    if (loadPetsError) {
+      setFormError('No se puede admitir mientras haya errores en la carga de mascotas.')
+      return
+    }
 
     const validation = validateAdmissionForm(selectedClientPetId, motivo)
     if (!validation.ok) {
@@ -80,10 +95,12 @@ export function AdmitirMascotaModal({
       // Limpiar formulario y notificar éxito
       setSelectedClientPetId('')
       setMotivo('')
+      setFormError(null)
       onSuccess()
       onClose()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al admitir la mascota.'
+      const msg =
+        err instanceof Error ? err.message : 'Error al admitir la mascota.'
       setFormError(msg)
     } finally {
       setIsSubmitting(false)
@@ -161,16 +178,23 @@ export function AdmitirMascotaModal({
                 </label>
                 <ProfessionalCombobox
                   value={selectedClientPetId}
-                  onChange={(val) => setSelectedClientPetId(val)}
+                  onChange={(val) => {
+                    setSelectedClientPetId(val)
+                    setFormError(null)
+                  }}
                   options={pets.map((p) => ({
                     id: p.clientPetId,
                     name: p.petName,
                     subtitle: `Propietario: ${p.ownerName}`,
                   }))}
                   hasAllOption={false}
-                  disabled={isLoadingPets}
+                  disabled={isLoadingPets || !!loadPetsError}
                   placeholder={
-                    isLoadingPets ? 'Cargando listado de mascotas…' : 'Selecciona una mascota…'
+                    isLoadingPets
+                      ? 'Cargando listado de mascotas…'
+                      : loadPetsError
+                        ? 'Error al cargar mascotas'
+                        : 'Selecciona una mascota…'
                   }
                   searchPlaceholder="Buscar mascota o dueño por nombre…"
                   className="w-full bg-white"
@@ -186,8 +210,12 @@ export function AdmitirMascotaModal({
                   required
                   placeholder="Describe la condición médica del paciente, diagnóstico presuntivo o motivo de internación…"
                   value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand resize-none placeholder:text-text-placeholder"
+                  onChange={(e) => {
+                    setMotivo(e.target.value)
+                    setFormError(null)
+                  }}
+                  disabled={isLoadingPets || !!loadPetsError}
+                  className="w-full p-3 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand resize-none placeholder:text-text-placeholder disabled:opacity-60"
                 />
               </div>
             </div>
@@ -205,7 +233,13 @@ export function AdmitirMascotaModal({
 
               <button
                 type="submit"
-                disabled={isSubmitting || !selectedClientPetId || !motivo.trim()}
+                disabled={
+                  isSubmitting ||
+                  !selectedClientPetId ||
+                  !motivo.trim() ||
+                  isLoadingPets ||
+                  !!loadPetsError
+                }
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm disabled:opacity-60"
               >
                 {isSubmitting ? (
