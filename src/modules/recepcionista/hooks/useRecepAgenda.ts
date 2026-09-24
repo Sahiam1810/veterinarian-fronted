@@ -25,6 +25,29 @@ import {
   PAST_APPOINTMENT_MESSAGE,
 } from '@/modules/superadmin/utils/appointmentDateGuard'
 import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
+import { fetchAvailabilitiesByVeterinarian } from '@/modules/superadmin/services/superAdminAvailabilitiesService'
+
+// Convierte el número dayOfWeek (0=Dom,.NET) al nombre en español
+const DAY_NAMES_ES: Record<number, string> = {
+  0: 'Domingo',
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado',
+}
+
+function buildAvailableDaysLabel(availabilities: { dayOfWeek: number | string; isActive: boolean }[]): string {
+  const activeDays = [...new Set(
+    availabilities
+      .filter((a) => a.isActive)
+      .map((a) => Number(a.dayOfWeek))
+  )].sort((a, b) => a - b)
+
+  if (activeDays.length === 0) return ''
+  return activeDays.map((d) => DAY_NAMES_ES[d] ?? String(d)).join(', ')
+}
 
 const EMPTY_FORM: RecepAgendaFormState = {
   ownerQuery: '',
@@ -86,6 +109,7 @@ export function useRecepAgenda(enabled: boolean) {
   const [dayPanelDate, setDayPanelDate] = useState('')
   const [timeSlots, setTimeSlots] = useState<RecepAgendaTimeSlot[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+  const [availableDaysLabel, setAvailableDaysLabel] = useState<string>('')
   const [receiptData, setReceiptData] = useState<AppointmentReceiptResponse | null>(null)
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
@@ -182,6 +206,24 @@ export function useRecepAgenda(enabled: boolean) {
       cancelled = true
     }
   }, [enabled, form.professionalId, form.dateValue])
+
+  // Carga los días de disponibilidad del profesional cada vez que cambia la selección
+  // para mostrárselos al recepcionista como guía antes de elegir la fecha.
+  useEffect(() => {
+    if (!enabled || !form.professionalId) {
+      setAvailableDaysLabel('')
+      return
+    }
+    let cancelled = false
+    fetchAvailabilitiesByVeterinarian(form.professionalId)
+      .then((avs) => {
+        if (!cancelled) setAvailableDaysLabel(buildAvailableDaysLabel(avs))
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableDaysLabel('')
+      })
+    return () => { cancelled = true }
+  }, [enabled, form.professionalId])
 
   // Si el horario elegido deja de estar disponible (cambió profesional/fecha
   // o ya pasó), se limpia en vez de dejar seleccionado un horario inválido.
@@ -508,6 +550,7 @@ export function useRecepAgenda(enabled: boolean) {
     canDelete,
     timeSlots,
     isLoadingSlots,
+    availableDaysLabel,
     matchedOwners,
     selectedOwner,
     petsForOwner,

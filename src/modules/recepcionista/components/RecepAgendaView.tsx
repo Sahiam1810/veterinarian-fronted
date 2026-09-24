@@ -27,6 +27,7 @@ interface RecepAgendaViewProps {
   professionals: RecepAgendaProfessionalOption[]
   timeSlots: RecepAgendaTimeSlot[]
   isLoadingSlots?: boolean
+  availableDaysLabel?: string
   selectedOwner?: RecepAgendaOwnerOption | null
   selectedOwnerName: string | null
   selectedPetLabel: string | null
@@ -82,6 +83,7 @@ export function RecepAgendaView({
   professionals,
   timeSlots,
   isLoadingSlots = false,
+  availableDaysLabel = '',
   selectedOwner,
   selectedOwnerName,
   selectedPetLabel,
@@ -263,6 +265,15 @@ export function RecepAgendaView({
                     <span>Ver citas</span>
                   </button>
                 </div>
+                {availableDaysLabel && (
+                  <p className="mb-1.5 flex items-center gap-1 text-[11px] text-sage font-medium">
+                    <CalendarIcon className="w-3 h-3 shrink-0 text-brand/60" />
+                    <span>
+                      <span className="font-bold text-brand/80">Días disponibles:</span>{' '}
+                      {availableDaysLabel}
+                    </span>
+                  </p>
+                )}
                 <div className="relative">
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sage pointer-events-none" />
                   <input
