@@ -365,7 +365,7 @@ function SuperAdminApp({
             canViewModule={canViewModule}
             onLogout={onLogout}
           />
-          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          <main className="flex-1 overflow-hidden relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
             <DashboardBackgroundDecoration />
             <MedicamentosSuperAdmin
               canCreate={canCreateModule('ordenesMedicas')}
@@ -403,7 +403,7 @@ function SuperAdminApp({
             canViewModule={canViewModule}
             onLogout={onLogout}
           />
-          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          <main className="flex-1 overflow-hidden relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
             <DashboardBackgroundDecoration />
             <ProcedimientosSuperAdmin
               canCreate={canCreateModule('ordenesMedicas')}
@@ -441,7 +441,7 @@ function SuperAdminApp({
             canViewModule={canViewModule}
             onLogout={onLogout}
           />
-          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          <main className="flex-1 overflow-hidden relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
             <DashboardBackgroundDecoration />
             <InsumosSuperAdmin
               canCreate={canCreateModule('insumos')}
@@ -479,7 +479,7 @@ function SuperAdminApp({
             canViewModule={canViewModule}
             onLogout={onLogout}
           />
-          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          <main className="flex-1 overflow-hidden relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
             <DashboardBackgroundDecoration />
             <HospitalizacionPage
               canCreate={canCreateModule('hospitalizacion')}
@@ -516,7 +516,7 @@ function SuperAdminApp({
             canViewModule={canViewModule}
             onLogout={onLogout}
           />
-          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+          <main className="flex-1 overflow-hidden relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
             <DashboardBackgroundDecoration />
             <OrdenesMedicasPendientesPanel
               canEdit={canEditModule('ordenesMedicas')}
