@@ -5,11 +5,15 @@ import { HospitalizacionDetalleView } from '../components/HospitalizacionDetalle
 export interface HospitalizacionPageProps {
   canCreate?: boolean
   canEdit?: boolean
+  canViewSupplies?: boolean
+  canCreateSupplies?: boolean
 }
 
 export function HospitalizacionPage({
   canCreate = false,
   canEdit = false,
+  canViewSupplies = false,
+  canCreateSupplies = false,
 }: HospitalizacionPageProps) {
   const [selectedStayId, setSelectedStayId] = useState<string | null>(null)
 
@@ -18,10 +22,13 @@ export function HospitalizacionPage({
       <HospitalizacionDetalleView
         stayId={selectedStayId}
         canEdit={canEdit}
+        canViewSupplies={canViewSupplies}
+        canCreateSupplies={canCreateSupplies}
         onBack={() => setSelectedStayId(null)}
       />
     )
   }
+
 
   return (
     <HospitalizacionListaView
