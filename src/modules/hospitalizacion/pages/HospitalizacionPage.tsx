@@ -17,6 +17,7 @@ export function HospitalizacionPage({
     return (
       <HospitalizacionDetalleView
         stayId={selectedStayId}
+        canCreate={canCreate}
         canEdit={canEdit}
         onBack={() => setSelectedStayId(null)}
       />

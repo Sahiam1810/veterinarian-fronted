@@ -44,8 +44,11 @@ import {
   ReloadIcon,
 } from '@/global/components'
 
+import { calculateStayDays, formatStayDays } from '../utils/hospitalizacionDays'
+
 export interface HospitalizacionDetalleViewProps {
   stayId: string
+  canCreate?: boolean
   canEdit?: boolean
   onBack?: () => void
 }
@@ -54,6 +57,7 @@ type OrderFilterTab = 'all' | 'medications' | 'procedures'
 
 export function HospitalizacionDetalleView({
   stayId,
+  canCreate = true,
   canEdit = true,
   onBack,
 }: HospitalizacionDetalleViewProps) {
@@ -409,6 +413,18 @@ export function HospitalizacionDetalleView({
             </p>
             <p className="text-[11px] text-sage">
               Estado: <span className="font-semibold text-brand">{stay.status}</span>
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-sage uppercase tracking-wider">
+              Días Internado
+            </span>
+            <p className="text-xs sm:text-sm font-black text-brand">
+              {formatStayDays(calculateStayDays(stay.admittedAt, stay.dischargedAt))}
+            </p>
+            <p className="text-[10px] text-sage">
+              {stay.dischargedAt ? 'Tiempo total internado' : 'Transcurridos'}
             </p>
           </div>
 
@@ -921,11 +937,11 @@ export function HospitalizacionDetalleView({
             </div>
 
             {/* Formulario para agregar nota */}
-            {isActive && canEdit && (
+            {isActive && canCreate && (
               <form onSubmit={handleAddNote} className="space-y-3 bg-bone/30 p-3.5 rounded-xl border border-border-tan">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-sage mb-1">
-                    Nueva Nota de Evolución
+                    Nueva Nota de Evolución *
                   </label>
                   <textarea
                     rows={3}
@@ -940,7 +956,7 @@ export function HospitalizacionDetalleView({
                 {staffList.length > 0 && (
                   <div>
                     <label className="block text-[10px] font-bold uppercase tracking-wider text-sage mb-1">
-                      Entregar turno a (Staff / Colega)
+                      Entregar turno a (Personal / Colega - Opcional)
                     </label>
                     <select
                       value={handedToUserId}
@@ -957,13 +973,26 @@ export function HospitalizacionDetalleView({
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isSubmittingNote || !newNoteText.trim()}
-                  className="w-full py-2 rounded-xl bg-brand text-white text-xs font-bold hover:bg-brand-hover transition cursor-pointer disabled:opacity-60"
-                >
-                  {isSubmittingNote ? 'Guardando nota…' : 'Registrar Nota de Evolución'}
-                </button>
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewNoteText('')
+                      setHandedToUserId('')
+                    }}
+                    disabled={isSubmittingNote || (!newNoteText && !handedToUserId)}
+                    className="px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs font-bold text-charcoal hover:bg-bone transition cursor-pointer disabled:opacity-50"
+                  >
+                    Limpiar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingNote || !newNoteText.trim()}
+                    className="px-4 py-1.5 rounded-xl bg-brand text-white text-xs font-bold hover:bg-brand-hover transition cursor-pointer disabled:opacity-60"
+                  >
+                    {isSubmittingNote ? 'Guardando nota…' : 'Guardar Nota'}
+                  </button>
+                </div>
               </form>
             )}
 
@@ -974,28 +1003,30 @@ export function HospitalizacionDetalleView({
                   No hay notas de evolución registradas aún.
                 </p>
               ) : (
-                notes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="p-3 rounded-xl border border-border-tan/80 bg-bone/20 space-y-1.5 text-xs"
-                  >
-                    <div className="flex items-center justify-between text-[11px] text-sage font-medium">
-                      <span className="font-bold text-brand flex items-center gap-1">
-                        <UserAvatarIcon className="w-3.5 h-3.5" />
-                        {note.authorName || 'Personal médico'}
-                      </span>
-                      <span>{formatDate(note.createdAt)}</span>
-                    </div>
-                    <p className="text-charcoal whitespace-pre-wrap leading-relaxed">
-                      {note.nota}
-                    </p>
-                    {note.handedToName && (
-                      <div className="text-[10px] font-bold text-sage bg-sage-soft px-2 py-0.5 rounded-md inline-block">
-                        🤝 Entregado a: {note.handedToName}
+                [...notes]
+                  .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                  .map((note) => (
+                    <div
+                      key={note.id}
+                      className="p-3 rounded-xl border border-border-tan/80 bg-bone/20 space-y-1.5 text-xs"
+                    >
+                      <div className="flex items-center justify-between text-[11px] text-sage font-medium">
+                        <span className="font-bold text-brand flex items-center gap-1">
+                          <UserAvatarIcon className="w-3.5 h-3.5" />
+                          {note.authorName || 'Personal médico'}
+                        </span>
+                        <span>{formatDate(note.createdAt)}</span>
                       </div>
-                    )}
-                  </div>
-                ))
+                      <p className="text-charcoal whitespace-pre-wrap leading-relaxed">
+                        {note.nota}
+                      </p>
+                      {note.handedToName && (
+                        <div className="text-[10px] font-bold text-sage bg-sage-soft px-2 py-0.5 rounded-md inline-block">
+                          🤝 Entregado a: {note.handedToName}
+                        </div>
+                      )}
+                    </div>
+                  ))
               )}
             </div>
           </div>
