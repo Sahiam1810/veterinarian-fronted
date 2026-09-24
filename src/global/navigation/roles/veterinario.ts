@@ -59,6 +59,15 @@ export const VET_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    id: 'hospitalizacion',
+    label: 'Hospitalización',
+    permissionKey: 'vet.hospitalizacion',
+    iconKey: 'hospital',
+    kind: 'link',
+    order: 55,
+    placement: 'main',
+  },
+  {
     id: 'profesionales',
     label: 'Profesionales',
     permissionKey: 'vet.profesionales',

@@ -19,6 +19,7 @@ export type NavIconKey =
   | 'services'
   | 'doctors'
   | 'medical-orders'
+  | 'hospital'
 
 // Entrada del catálogo (fuente de verdad por rol; no es UI aún)
 export interface NavCatalogItem {

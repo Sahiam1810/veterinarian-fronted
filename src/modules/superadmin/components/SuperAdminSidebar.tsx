@@ -100,6 +100,12 @@ export const superAdminNavItems: (SidebarNavItem & { moduleId: ModuleId })[] = [
     icon: <PackageIcon className="w-5 h-5 shrink-0" />,
   },
   {
+    id: 'hospitalizacion',
+    moduleId: 'hospitalizacion',
+    label: 'Hospitalización',
+    icon: <MedicalHistoryIcon className="w-5 h-5 shrink-0" />,
+  },
+  {
     id: 'ordenes-pendientes',
     moduleId: 'ordenesMedicas',
     label: 'Órdenes Pendientes',

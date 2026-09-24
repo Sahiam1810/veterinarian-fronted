@@ -41,6 +41,7 @@ const IMPLEMENTED_ROUTES = new Set([
   'especiesRazas',
   'servicios',
   'profesionales',
+  'hospitalizacion',
   'perfil',
 ])
 
@@ -52,6 +53,7 @@ const GATED_ROUTES: Record<string, NavPermissionKey> = {
   especiesRazas: 'vet.especiesRazas',
   servicios: 'vet.servicios',
   profesionales: 'vet.profesionales',
+  hospitalizacion: 'vet.hospitalizacion',
 }
 
 export function useVetHome() {

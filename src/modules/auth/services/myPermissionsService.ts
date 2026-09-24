@@ -24,6 +24,7 @@ export const VET_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   'Especies y Razas': 'vet.especiesRazas',
   Servicios: 'vet.servicios',
   Veterinarios: 'vet.profesionales',
+  Hospitalización: 'vet.hospitalizacion',
 }
 
 // Claves de menú que siempre quedan visibles (no dependen de un módulo CRUD)
