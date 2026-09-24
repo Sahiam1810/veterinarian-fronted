@@ -5,6 +5,7 @@ import type {
   ApiStaffMember,
   AdmitStayDto,
   AddStayNoteDto,
+  HospitalizationInvoice,
 } from '../types/hospitalizacion.types'
 
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
@@ -38,3 +39,8 @@ export async function addStayNote(id: string, data: AddStayNoteDto): Promise<{ i
 export async function fetchStaff(): Promise<ApiStaffMember[]> {
   return apiClient.get<ApiStaffMember[]>('/api/hospitalization-stays/staff')
 }
+
+export async function fetchHospitalizationInvoice(stayId: string): Promise<HospitalizationInvoice> {
+  return apiClient.get<HospitalizationInvoice>(`/api/hospitalization-stays/${stayId}/invoice`)
+}
+
