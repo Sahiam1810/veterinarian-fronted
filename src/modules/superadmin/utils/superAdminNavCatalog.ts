@@ -25,7 +25,6 @@ export const SUPER_ADMIN_NAV_CATALOG: AdminNavItemMeta[] = [
   { id: 'inicio', moduleId: 'inicio', label: 'Inicio' },
   { id: 'usuarios', moduleId: 'usuarios', label: 'Usuarios' },
   { id: 'mascotas', moduleId: 'mascotas', label: 'Mascotas' },
-  { id: 'duenos', moduleId: 'duenos', label: 'Dueños' },
   { id: 'especies-razas', moduleId: 'especiesRazas', label: 'Especies y razas' },
   { id: 'servicios', moduleId: 'servicios', label: 'Servicios' },
   { id: 'diagnosticos', moduleId: 'historiaClinica', label: 'Diagnósticos' },
