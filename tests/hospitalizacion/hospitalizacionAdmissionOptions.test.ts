@@ -4,11 +4,7 @@ import {
   fetchPetAdmissionOptions,
   admitStay,
 } from '../../src/modules/hospitalizacion/services/hospitalizacionService.ts'
-import {
-  validateAdmissionForm,
-  calculateStayDays,
-  formatStayDays,
-} from '../../src/modules/hospitalizacion/utils/hospitalizacionDays.ts'
+import { validateAdmissionForm } from '../../src/modules/hospitalizacion/utils/hospitalizacionDays.ts'
 import type { PetAdmissionOption } from '../../src/modules/hospitalizacion/types/hospitalizacion.types.ts'
 
 const originalFetch = globalThis.fetch
