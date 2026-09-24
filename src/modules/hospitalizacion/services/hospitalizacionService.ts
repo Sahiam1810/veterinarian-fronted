@@ -10,6 +10,14 @@ import type {
   HospitalizationLiquidationSummary,
 } from '../types/hospitalizacion.types'
 
+export interface PetAdmissionOption {
+  clientPetId: string
+  petName: string
+  ownerName: string
+  petId: string
+  clientId: string
+}
+
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
   return apiClient.get<ApiHospitalizationStay[]>('/api/hospitalization-stays/active')
 }
@@ -23,7 +31,11 @@ export async function fetchStaysByPet(clientPetId: string): Promise<ApiHospitali
 }
 
 export async function admitStay(data: AdmitStayDto): Promise<{ id: string } | string> {
-  return apiClient.post<{ id: string } | string>('/api/hospitalization-stays', data)
+  return apiClient.post<{ id: string } | string>('/api/hospitalization-stays', {
+    clientPetId: data.clientPetId,
+    appointmentId: data.appointmentId ?? null,
+    motivo: data.motivo,
+  })
 }
 
 export async function dischargeStay(id: string): Promise<void> {
@@ -66,4 +78,35 @@ export async function fetchStayLiquidation(stayId: string): Promise<Hospitalizat
   return apiClient
     .get<HospitalizationLiquidationSummary>(`/api/hospitalization-stays/${stayId}/liquidation`)
     .catch(() => null)
+}
+
+export async function fetchPetAdmissionOptions(): Promise<PetAdmissionOption[]> {
+  const [clientsPets, pets, clients] = await Promise.all([
+    apiClient.get<{ id: string; clientId: string; petId: string }[]>('/api/ClientsPets').catch(() =>
+      apiClient.get<{ id: string; clientId: string; petId: string }[]>('/api/clientspets').catch(() => []),
+    ),
+    apiClient.get<{ id: string; name: string }[]>('/api/Pets').catch(() =>
+      apiClient.get<{ id: string; name: string }[]>('/api/pets').catch(() => []),
+    ),
+    apiClient.get<{ id: string; fullName?: string; name?: string }[]>('/api/Clients').catch(() =>
+      apiClient.get<{ id: string; fullName?: string; name?: string }[]>('/api/clients').catch(() => []),
+    ),
+  ])
+
+  const petsById = new Map((pets || []).map((p) => [p.id.toLowerCase(), p.name]))
+  const clientsById = new Map(
+    (clients || []).map((c) => [c.id.toLowerCase(), c.fullName || c.name || 'Propietario']),
+  )
+
+  return (clientsPets || []).map((cp) => {
+    const petName = petsById.get(cp.petId.toLowerCase()) || 'Mascota'
+    const ownerName = clientsById.get(cp.clientId.toLowerCase()) || 'Propietario'
+    return {
+      clientPetId: cp.id,
+      petName,
+      ownerName,
+      petId: cp.petId,
+      clientId: cp.clientId,
+    }
+  })
 }
