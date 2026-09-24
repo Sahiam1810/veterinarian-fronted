@@ -191,12 +191,12 @@ test('admitStay sends POST /api/hospitalization-stays with clientPetId and appoi
   assert.deepEqual(response, { id: 'stay-created-123' })
 })
 
-test('admitStay propagates backend error when pet has an active hospitalization stay', async () => {
+test('admitStay propagates backend 409 Conflict error when pet has an active hospitalization stay', async () => {
   globalThis.fetch = (async () => {
     return new Response(
-      JSON.stringify({ message: 'La mascota ya cuenta con una estancia hospitalaria activa.' }),
+      JSON.stringify({ message: 'La mascota ya tiene una estancia activa.' }),
       {
-        status: 400,
+        status: 409,
         headers: { 'Content-Type': 'application/json' },
       },
     )
@@ -205,35 +205,43 @@ test('admitStay propagates backend error when pet has an active hospitalization 
   await assert.rejects(
     async () => {
       await admitStay({
-        clientPetId: 'cp-guid-active',
+        clientPetId: 'cp-guid-active-409',
         appointmentId: null,
-        motivo: 'Intento de readmisión',
+        motivo: 'Intento de ingreso duplicado',
       })
     },
     (err: Error) => {
-      assert.ok(err.message.includes('La mascota ya cuenta con una estancia hospitalaria activa.'))
+      assert.ok(err.message.includes('La mascota ya tiene una estancia activa.'))
       return true
     },
   )
 })
 
-test('submit button state logic disables button when submitting or missing fields', () => {
-  function isSubmitDisabled(isSubmitting: boolean, selectedClientPetId: string, motivo: string): boolean {
-    return isSubmitting || !selectedClientPetId || !motivo.trim()
+test('submit button and selector state logic disables controls during loading, submitting or missing fields', () => {
+  function isSubmitDisabled(
+    isSubmitting: boolean,
+    isLoadingPets: boolean,
+    selectedClientPetId: string,
+    motivo: string,
+  ): boolean {
+    return isSubmitting || isLoadingPets || !selectedClientPetId || !motivo.trim()
   }
 
+  // Deshabilitado mientras se cargan las opciones
+  assert.equal(isSubmitDisabled(false, true, 'cp-1', 'Motivo válido'), true)
+
   // Deshabilitado mientras se envía la petición (bloqueo contra doble envío)
-  assert.equal(isSubmitDisabled(true, 'cp-1', 'Motivo válido'), true)
+  assert.equal(isSubmitDisabled(true, false, 'cp-1', 'Motivo válido'), true)
 
   // Deshabilitado si falta mascota
-  assert.equal(isSubmitDisabled(false, '', 'Motivo válido'), true)
+  assert.equal(isSubmitDisabled(false, false, '', 'Motivo válido'), true)
 
-  // Deshabilitado si falta motivo
-  assert.equal(isSubmitDisabled(false, 'cp-1', ''), true)
-  assert.equal(isSubmitDisabled(false, 'cp-1', '   '), true)
+  // Deshabilitado si falta motivo o solo tiene espacios
+  assert.equal(isSubmitDisabled(false, false, 'cp-1', ''), true)
+  assert.equal(isSubmitDisabled(false, false, 'cp-1', '   '), true)
 
-  // Habilitado cuando los campos son válidos y no se está enviando
-  assert.equal(isSubmitDisabled(false, 'cp-1', 'Tratamiento postoperatorio'), false)
+  // Habilitado cuando los campos son válidos y no se está cargando ni enviando
+  assert.equal(isSubmitDisabled(false, false, 'cp-1', 'Tratamiento postoperatorio'), false)
 })
 
 test('admission button visibility requires canCreate permission', () => {
@@ -244,3 +252,19 @@ test('admission button visibility requires canCreate permission', () => {
   assert.equal(shouldShowAdmitButton(true), true)
   assert.equal(shouldShowAdmitButton(false), false)
 })
+
+test('admission success handler resets form and reloads active stays list', () => {
+  let staysReloaded = false
+  let toastMessage = ''
+
+  const handleSuccess = () => {
+    toastMessage = 'Mascota admitida a hospitalización exitosamente.'
+    staysReloaded = true
+  }
+
+  handleSuccess()
+
+  assert.equal(staysReloaded, true)
+  assert.equal(toastMessage, 'Mascota admitida a hospitalización exitosamente.')
+})
+

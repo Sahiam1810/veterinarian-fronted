@@ -5,10 +5,10 @@ import {
 } from '../services/hospitalizacionService'
 import { validateAdmissionForm } from '../utils/hospitalizacionDays'
 import type { PetAdmissionOption } from '../types/hospitalizacion.types'
-import { ProfessionalCombobox } from '@/modules/superadmin/components/ProfessionalCombobox'
-import { PawIcon, PlusIcon } from '@/global/components'
-import { ViewPopup } from '@/modules/veterinario/components/ViewPopup'
-import { CloseIcon } from '@/modules/veterinario/components/MascotasIcons'
+import { ProfessionalCombobox } from '../../superadmin/components/ProfessionalCombobox'
+import { PawIcon, PlusIcon } from '../../../global/components/Icons.tsx'
+import { ViewPopup } from '../../veterinario/components/ViewPopup'
+import { CloseIcon } from '../../veterinario/components/MascotasIcons'
 
 export interface AdmitirMascotaModalProps {
   isOpen: boolean
@@ -179,7 +179,7 @@ export function AdmitirMascotaModal({
                     subtitle: `Propietario: ${p.ownerName}`,
                   }))}
                   hasAllOption={false}
-                  disabled={isLoadingPets}
+                  disabled={isLoadingPets || isSubmitting}
                   placeholder={
                     isLoadingPets ? 'Cargando listado de mascotas…' : 'Selecciona una mascota…'
                   }
@@ -195,10 +195,11 @@ export function AdmitirMascotaModal({
                 <textarea
                   rows={4}
                   required
+                  disabled={isSubmitting}
                   placeholder="Describe la condición médica del paciente, diagnóstico presuntivo o motivo de internación…"
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand resize-none placeholder:text-text-placeholder"
+                  className="w-full p-3 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand resize-none placeholder:text-text-placeholder disabled:opacity-60"
                 />
               </div>
             </div>
@@ -216,7 +217,7 @@ export function AdmitirMascotaModal({
 
               <button
                 type="submit"
-                disabled={isSubmitting || !selectedClientPetId || !motivo.trim()}
+                disabled={isSubmitting || isLoadingPets || !selectedClientPetId || !motivo.trim()}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm disabled:opacity-60"
               >
                 {isSubmitting ? (

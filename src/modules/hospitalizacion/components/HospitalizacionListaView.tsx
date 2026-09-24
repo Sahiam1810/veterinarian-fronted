@@ -18,6 +18,7 @@ import {
 } from '@/global/components'
 
 export interface HospitalizacionListaViewProps {
+  canView?: boolean
   canCreate?: boolean
   canEdit?: boolean
   onSelectStay?: (stayId: string) => void
@@ -35,10 +36,21 @@ function formatDate(dateStr: string | null | undefined): string {
 }
 
 export function HospitalizacionListaView({
+  canView = true,
   canCreate = false,
   canEdit: _canEdit = false,
   onSelectStay,
 }: HospitalizacionListaViewProps) {
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-warm-grey/40 text-center gap-3">
+        <p className="text-base font-bold text-charcoal">Acceso Restringido</p>
+        <p className="text-sm text-sage">
+          No tienes permisos para visualizar el módulo de hospitalización.
+        </p>
+      </div>
+    )
+  }
   const [stays, setStays] = useState<ApiHospitalizationStay[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)

@@ -3,6 +3,7 @@ import { HospitalizacionListaView } from '../components/HospitalizacionListaView
 import { HospitalizacionDetalleView } from '../components/HospitalizacionDetalleView'
 
 export interface HospitalizacionPageProps {
+  canView?: boolean
   canCreate?: boolean
   canEdit?: boolean
   canViewSupplies?: boolean
@@ -10,6 +11,7 @@ export interface HospitalizacionPageProps {
 }
 
 export function HospitalizacionPage({
+  canView = true,
   canCreate = false,
   canEdit = false,
   canViewSupplies = false,
@@ -21,6 +23,7 @@ export function HospitalizacionPage({
     return (
       <HospitalizacionDetalleView
         stayId={selectedStayId}
+        canView={canView}
         canEdit={canEdit}
         canViewSupplies={canViewSupplies}
         canCreateSupplies={canCreateSupplies}
@@ -32,6 +35,7 @@ export function HospitalizacionPage({
 
   return (
     <HospitalizacionListaView
+      canView={canView}
       canCreate={canCreate}
       canEdit={canEdit}
       onSelectStay={(stayId) => setSelectedStayId(stayId)}
