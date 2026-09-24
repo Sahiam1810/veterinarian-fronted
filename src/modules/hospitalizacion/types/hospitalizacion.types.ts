@@ -12,6 +12,7 @@ export interface ApiHospitalizationStay {
   motivo: string
   admittedByUserId: string
   admittedByName: string | null
+  baseCost?: number | null
 }
 
 export interface ApiHospitalizationNote {
@@ -40,4 +41,31 @@ export interface AdmitStayDto {
 export interface AddStayNoteDto {
   nota: string
   entregadoAUserId?: string | null
+}
+
+export interface ApiHospitalizationSupplyConsumption {
+  id: string
+  stayId: string
+  supplyId: string
+  supplyName?: string | null
+  quantity: number
+  unitPrice: number
+  subtotal: number
+  notes?: string | null
+  createdAt: string
+  registeredByName?: string | null
+}
+
+export interface AddStaySupplyConsumptionDto {
+  supplyId: string
+  quantity: number
+  notes?: string | null
+}
+
+export interface HospitalizationLiquidationSummary {
+  hospitalizationTotal: number
+  insumosTotal: number
+  medicamentosTotal: number
+  procedimientosTotal: number
+  total: number
 }

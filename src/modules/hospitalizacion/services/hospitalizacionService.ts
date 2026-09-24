@@ -5,6 +5,9 @@ import type {
   ApiStaffMember,
   AdmitStayDto,
   AddStayNoteDto,
+  ApiHospitalizationSupplyConsumption,
+  AddStaySupplyConsumptionDto,
+  HospitalizationLiquidationSummary,
 } from '../types/hospitalizacion.types'
 
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
@@ -37,4 +40,30 @@ export async function addStayNote(id: string, data: AddStayNoteDto): Promise<{ i
 
 export async function fetchStaff(): Promise<ApiStaffMember[]> {
   return apiClient.get<ApiStaffMember[]>('/api/hospitalization-stays/staff')
+}
+
+export async function fetchStaySupplyConsumptions(stayId: string): Promise<ApiHospitalizationSupplyConsumption[]> {
+  return apiClient
+    .get<ApiHospitalizationSupplyConsumption[]>(`/api/hospitalization-stays/${stayId}/supplies`)
+    .catch(() =>
+      apiClient
+        .get<ApiHospitalizationSupplyConsumption[]>(`/api/hospitalization-stays/${stayId}/consumptions`)
+        .catch(() => []),
+    )
+}
+
+export async function addStaySupplyConsumption(
+  stayId: string,
+  data: AddStaySupplyConsumptionDto,
+): Promise<ApiHospitalizationSupplyConsumption | { id: string }> {
+  return apiClient.post<ApiHospitalizationSupplyConsumption | { id: string }>(
+    `/api/hospitalization-stays/${stayId}/supplies`,
+    data,
+  )
+}
+
+export async function fetchStayLiquidation(stayId: string): Promise<HospitalizationLiquidationSummary | null> {
+  return apiClient
+    .get<HospitalizationLiquidationSummary>(`/api/hospitalization-stays/${stayId}/liquidation`)
+    .catch(() => null)
 }

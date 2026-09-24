@@ -7,6 +7,7 @@ import {
   type ApiMedication,
   type ApiProcedure,
 } from '../services/ordenesMedicasService'
+import { formatCatalogCurrency } from '../utils/catalogPriceValidation'
 import { CloseIcon, MedicalFolderIcon } from './MascotasIcons'
 import { ViewPopup } from './ViewPopup'
 import { ProfessionalCombobox } from '@/modules/superadmin/components/ProfessionalCombobox'
@@ -19,12 +20,14 @@ interface SelectedItemInput {
   notes: string
 }
 
-interface AnexarOrdenMedicaModalProps {
+export interface AnexarOrdenMedicaModalProps {
   isOpen: boolean
   orderType: MedicalOrderType
   clientPetId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   petName: string
+  isDischarged?: boolean
   onClose: () => void
   onSuccess: () => void
 }
@@ -34,7 +37,9 @@ export function AnexarOrdenMedicaModal({
   orderType,
   clientPetId,
   appointmentId,
+  hospitalizationStayId,
   petName,
+  isDischarged = false,
   onClose,
   onSuccess,
 }: AnexarOrdenMedicaModalProps) {
@@ -54,7 +59,7 @@ export function AnexarOrdenMedicaModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isMedication = orderType === 'MEDICAMENTO'
-  const title = isMedication ? 'Anexar Orden de Medicamento' : 'Anexar Orden de Procedimiento'
+  const title = isMedication ? 'Anexar Orden de Medicamento' : 'Anexar Orden de Procedimiento o Examen'
 
   useEffect(() => {
     if (!isOpen) return
@@ -73,7 +78,7 @@ export function AnexarOrdenMedicaModal({
           if (!cancelled) setProceduresCatalog(list)
         }
       } catch {
-        // Handle silenly
+        // Handle silently
       } finally {
         if (!cancelled) setIsLoadingCatalog(false)
       }
@@ -101,12 +106,27 @@ export function AnexarOrdenMedicaModal({
     )
   }
 
+  const getItemPrice = (catalogId: string): number | null => {
+    if (!catalogId) return null
+    if (isMedication) {
+      const found = medicationsCatalog.find((m) => m.id === catalogId)
+      return found?.price ?? null
+    }
+    const found = proceduresCatalog.find((p) => p.id === catalogId)
+    return found?.price ?? null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
 
-    if (!clientPetId || !appointmentId) {
-      setFormError('Faltan datos obligatorios del contexto de la consulta.')
+    if (isDischarged) {
+      setFormError('Esta estancia ya fue dada de alta. No se pueden expedir nuevas órdenes médicas.')
+      return
+    }
+
+    if (!clientPetId || (!appointmentId && !hospitalizationStayId)) {
+      setFormError('Faltan datos obligatorios del contexto de la consulta o estancia hospitalaria.')
       return
     }
 
@@ -124,7 +144,8 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: true,
             referredTo: null,
             referralReason: null,
@@ -136,7 +157,8 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: true,
             referredTo: null,
             referralReason: null,
@@ -172,7 +194,8 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: false,
             referredTo: referredTo.trim(),
             referralReason: referralReason.trim(),
@@ -181,7 +204,8 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: false,
             referredTo: referredTo.trim(),
             referralReason: referralReason.trim(),
@@ -234,6 +258,7 @@ export function AnexarOrdenMedicaModal({
                 </h2>
                 <p className="text-xs text-sage font-medium truncate">
                   Paciente: <span className="font-bold text-charcoal">{petName}</span>
+                  {hospitalizationStayId ? ' • Estancia Hospitalaria' : ''}
                 </p>
               </div>
             </div>
@@ -251,6 +276,15 @@ export function AnexarOrdenMedicaModal({
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {isDischarged && (
+                <div
+                  role="alert"
+                  className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs sm:text-sm font-semibold flex items-center gap-2"
+                >
+                  <span>⚠️ Esta estancia ya se encuentra dada de alta. No es posible anexar nuevas órdenes.</span>
+                </div>
+              )}
+
               {formError && (
                 <div
                   role="alert"
@@ -268,27 +302,29 @@ export function AnexarOrdenMedicaModal({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
+                    disabled={isDischarged}
                     onClick={() => setIsInHouse(true)}
                     className={`px-4 py-3 rounded-xl text-xs sm:text-sm font-bold border text-center transition cursor-pointer ${
                       isInHouse
                         ? 'bg-brand text-white border-brand shadow-xs'
                         : 'bg-white text-charcoal border-border-tan hover:bg-bone'
-                    }`}
+                    } ${isDischarged ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     Atención Interna
                     <span className="block text-[10px] font-normal opacity-85 mt-0.5">
-                      Ítems del catálogo de la clínica
+                      Ítems del catálogo con precio vigente
                     </span>
                   </button>
 
                   <button
                     type="button"
+                    disabled={isDischarged}
                     onClick={() => setIsInHouse(false)}
                     className={`px-4 py-3 rounded-xl text-xs sm:text-sm font-bold border text-center transition cursor-pointer ${
                       !isInHouse
                         ? 'bg-brand text-white border-brand shadow-xs'
                         : 'bg-white text-charcoal border-border-tan hover:bg-bone'
-                    }`}
+                    } ${isDischarged ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     Remisión Externa
                     <span className="block text-[10px] font-normal opacity-85 mt-0.5">
@@ -305,69 +341,82 @@ export function AnexarOrdenMedicaModal({
                     <label className="text-[11px] font-bold uppercase tracking-wide text-sage">
                       {isMedication ? 'Medicamentos Formulados' : 'Procedimientos Solicitados'} *
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleAddItem}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline cursor-pointer"
-                    >
-                      <PlusIcon className="w-3.5 h-3.5" />
-                      <span>Agregar ítem</span>
-                    </button>
+                    {!isDischarged && (
+                      <button
+                        type="button"
+                        onClick={handleAddItem}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline cursor-pointer"
+                      >
+                        <PlusIcon className="w-3.5 h-3.5" />
+                        <span>Agregar ítem</span>
+                      </button>
+                    )}
                   </div>
 
-                  {items.map((item, index) => (
-                    <div
-                      key={index}
-                      className="p-3.5 rounded-xl bg-white border border-border-tan space-y-2.5 relative"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-sage">
-                          Ítem #{index + 1}
-                        </span>
-                        {items.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveItem(index)}
-                            className="text-sage hover:text-danger p-1 transition cursor-pointer"
-                            title="Eliminar ítem"
-                          >
-                            <TrashIcon className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                  {items.map((item, index) => {
+                    const activePrice = getItemPrice(item.catalogId)
+                    return (
+                      <div
+                        key={index}
+                        className="p-3.5 rounded-xl bg-white border border-border-tan space-y-2.5 relative"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wide text-sage">
+                            Ítem #{index + 1}
+                          </span>
+                          {activePrice !== null && (
+                            <span className="text-[11px] font-bold text-brand bg-sage-soft px-2 py-0.5 rounded-full">
+                              Precio vigente: {formatCatalogCurrency(activePrice)}
+                            </span>
+                          )}
+                          {items.length > 1 && !isDischarged && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(index)}
+                              className="text-sage hover:text-danger p-1 transition cursor-pointer"
+                              title="Eliminar ítem"
+                            >
+                              <TrashIcon className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        <ProfessionalCombobox
+                          value={item.catalogId}
+                          onChange={(value) => handleItemChange(index, 'catalogId', value)}
+                          options={(isMedication ? medicationsCatalog : proceduresCatalog).map((entry) => ({
+                            id: entry.id,
+                            name: entry.name,
+                            subtitle: entry.code
+                              ? `${entry.code} • ${formatCatalogCurrency(entry.price)}`
+                              : formatCatalogCurrency(entry.price),
+                          }))}
+                          hasAllOption={false}
+                          disabled={isLoadingCatalog || isDischarged}
+                          placeholder={
+                            isLoadingCatalog
+                              ? 'Cargando catálogo…'
+                              : `Selecciona un ${isMedication ? 'medicamento' : 'procedimiento'}…`
+                          }
+                          searchPlaceholder={`Buscar ${isMedication ? 'medicamento' : 'procedimiento'} por nombre o código…`}
+                          className="w-full bg-white"
+                        />
+
+                        <input
+                          type="text"
+                          disabled={isDischarged}
+                          placeholder={
+                            isMedication
+                              ? 'Dosis e indicaciones (Ej. 1 tableta cada 12 horas por 7 días con alimento)'
+                              : 'Notas o especificaciones (Ej. Con ayuno previo de 8 horas)'
+                          }
+                          value={item.notes}
+                          onChange={(e) => handleItemChange(index, 'notes', e.target.value)}
+                          className="w-full rounded-lg border border-border-tan bg-white px-3 py-1.5 text-xs text-charcoal placeholder:text-text-placeholder focus:outline-none focus:border-brand disabled:opacity-60"
+                        />
                       </div>
-
-                      <ProfessionalCombobox
-                        value={item.catalogId}
-                        onChange={(value) => handleItemChange(index, 'catalogId', value)}
-                        options={(isMedication ? medicationsCatalog : proceduresCatalog).map((entry) => ({
-                          id: entry.id,
-                          name: entry.name,
-                          subtitle: entry.code || undefined,
-                        }))}
-                        hasAllOption={false}
-                        disabled={isLoadingCatalog}
-                        placeholder={
-                          isLoadingCatalog
-                            ? 'Cargando catálogo…'
-                            : `Selecciona un ${isMedication ? 'medicamento' : 'procedimiento'}…`
-                        }
-                        searchPlaceholder={`Buscar ${isMedication ? 'medicamento' : 'procedimiento'} por nombre o código…`}
-                        className="w-full bg-white"
-                      />
-
-                      <input
-                        type="text"
-                        placeholder={
-                          isMedication
-                            ? 'Dosis e indicaciones (Ej. 1 tableta cada 12 horas por 7 días con alimento)'
-                            : 'Notas o especificaciones (Ej. Con ayuno previo de 8 horas)'
-                        }
-                        value={item.notes}
-                        onChange={(e) => handleItemChange(index, 'notes', e.target.value)}
-                        className="w-full rounded-lg border border-border-tan bg-white px-3 py-1.5 text-xs text-charcoal placeholder:text-text-placeholder focus:outline-none focus:border-brand"
-                      />
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 /* Formulario Remisión Externa */
@@ -379,10 +428,11 @@ export function AnexarOrdenMedicaModal({
                     <input
                       type="text"
                       required
+                      disabled={isDischarged}
                       placeholder="Ej. Centro de Diagnóstico Veterinario del Norte / Laboratorio Especializado"
                       value={referredTo}
                       onChange={(e) => setReferredTo(e.target.value)}
-                      className="w-full rounded-xl border border-border-tan bg-white px-3 py-2.5 text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand"
+                      className="w-full rounded-xl border border-border-tan bg-white px-3 py-2.5 text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand disabled:opacity-60"
                     />
                   </div>
 
@@ -393,10 +443,11 @@ export function AnexarOrdenMedicaModal({
                     <textarea
                       rows={3}
                       required
+                      disabled={isDischarged}
                       placeholder="Describe la razón médica por la cual se remite la orden fuera de la clínica…"
                       value={referralReason}
                       onChange={(e) => setReferralReason(e.target.value)}
-                      className="w-full rounded-xl border border-border-tan bg-white p-3 text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand resize-none"
+                      className="w-full rounded-xl border border-border-tan bg-white p-3 text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand resize-none disabled:opacity-60"
                     />
                   </div>
                 </div>
@@ -416,7 +467,7 @@ export function AnexarOrdenMedicaModal({
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isDischarged}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-brand text-white text-xs sm:text-sm font-bold hover:bg-brand-hover transition cursor-pointer shadow-sm disabled:opacity-60"
               >
                 {isSubmitting ? (
@@ -435,3 +486,4 @@ export function AnexarOrdenMedicaModal({
     </div>
   )
 }
+

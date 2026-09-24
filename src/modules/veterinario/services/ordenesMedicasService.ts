@@ -5,6 +5,7 @@ export interface ApiMedication {
   id: string
   name: string
   code?: string | null
+  price?: number | null
   isActive: boolean
   createdAt: string
   updatedAt?: string | null
@@ -14,6 +15,7 @@ export interface ApiProcedure {
   id: string
   name: string
   code?: string | null
+  price?: number | null
   isActive: boolean
   createdAt: string
   updatedAt?: string | null
@@ -25,18 +27,23 @@ export interface ApiMedicationOrderItem {
   medicationOrderId: string
   medicationId: string
   medicationName?: string | null
+  unitPrice?: number | null
+  subtotal?: number | null
+  quantity?: number | null
   notes?: string | null
 }
 
 export interface ApiMedicationOrder {
   id: string
   clientPetId: string
-  veterinarianId: string
-  appointmentId: string
+  veterinarianId?: string
+  veterinarianName?: string | null
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
-  status: 'Pendiente' | 'Entregada' | string
+  status: 'Pendiente' | 'Entregada' | 'Cancelada' | string
   createdAt: string
   updatedAt?: string | null
   items: ApiMedicationOrderItem[]
@@ -47,18 +54,23 @@ export interface ApiProcedureOrderItem {
   procedureOrderId: string
   procedureId: string
   procedureName?: string | null
+  unitPrice?: number | null
+  subtotal?: number | null
+  quantity?: number | null
   notes?: string | null
 }
 
 export interface ApiProcedureOrder {
   id: string
   clientPetId: string
-  veterinarianId: string
-  appointmentId: string
+  veterinarianId?: string
+  veterinarianName?: string | null
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
-  status: 'Pendiente' | 'Completada' | string
+  status: 'Pendiente' | 'Completada' | 'Cancelada' | string
   resultFileUrl?: string | null
   createdAt: string
   updatedAt?: string | null
@@ -69,35 +81,41 @@ export interface ApiProcedureOrder {
 export interface CreateMedicationDto {
   name: string
   code?: string | null
+  price?: number | null
   isActive?: boolean
 }
 
 export interface UpdateMedicationDto {
   name: string
   code?: string | null
+  price?: number | null
   isActive: boolean
 }
 
 export interface CreateProcedureDto {
   name: string
   code?: string | null
+  price?: number | null
   isActive?: boolean
 }
 
 export interface UpdateProcedureDto {
   name: string
   code?: string | null
+  price?: number | null
   isActive: boolean
 }
 
 export interface CreateMedicationOrderItemInput {
   medicationId: string
+  quantity?: number | null
   notes?: string | null
 }
 
 export interface CreateMedicationOrderInput {
   clientPetId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
@@ -106,12 +124,14 @@ export interface CreateMedicationOrderInput {
 
 export interface CreateProcedureOrderItemInput {
   procedureId: string
+  quantity?: number | null
   notes?: string | null
 }
 
 export interface CreateProcedureOrderInput {
   clientPetId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
@@ -184,8 +204,20 @@ export async function completeMedicationOrder(id: string): Promise<void> {
   })
 }
 
+export async function cancelMedicationOrder(id: string): Promise<void> {
+  await vetApiFetch(`/api/medication-orders/${id}/cancel`, {
+    method: 'PATCH',
+  })
+}
+
 export async function fetchMedicationOrdersByAppointment(appointmentId: string): Promise<ApiMedicationOrder[]> {
   return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/appointment/${appointmentId}`).catch(() => [])
+}
+
+export async function fetchMedicationOrdersByStay(stayId: string): Promise<ApiMedicationOrder[]> {
+  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/stay/${stayId}`).catch(() =>
+    vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders?hospitalizationStayId=${stayId}`).catch(() => []),
+  )
 }
 
 // Services - Órdenes de Procedimientos
@@ -203,10 +235,21 @@ export async function completeProcedureOrder(id: string, resultFileUrl?: string 
   })
 }
 
+export async function cancelProcedureOrder(id: string): Promise<void> {
+  await vetApiFetch(`/api/procedure-orders/${id}/cancel`, {
+    method: 'PATCH',
+  })
+}
+
 export async function fetchProcedureOrdersByAppointment(appointmentId: string): Promise<ApiProcedureOrder[]> {
   return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/appointment/${appointmentId}`).catch(() => [])
 }
 
+export async function fetchProcedureOrdersByStay(stayId: string): Promise<ApiProcedureOrder[]> {
+  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/stay/${stayId}`).catch(() =>
+    vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders?hospitalizationStayId=${stayId}`).catch(() => []),
+  )
+}
 
 export interface PendingMedicationOrder {
   id: string
@@ -238,3 +281,4 @@ export async function fetchPendingMedicationOrders(): Promise<PendingMedicationO
 export async function fetchPendingProcedureOrders(): Promise<PendingProcedureOrder[]> {
   return vetApiFetch<PendingProcedureOrder[]>('/api/procedure-orders/pending').catch(() => [])
 }
+

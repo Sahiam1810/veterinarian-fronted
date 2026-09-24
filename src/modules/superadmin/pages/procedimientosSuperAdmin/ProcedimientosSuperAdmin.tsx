@@ -7,6 +7,10 @@ import {
   type ApiProcedure,
 } from '@/modules/veterinario/services/ordenesMedicasService'
 import {
+  validateCatalogPrice,
+  formatCatalogCurrency,
+} from '@/modules/veterinario/utils/catalogPriceValidation'
+import {
   SearchIcon,
   PlusIcon,
   EditIcon,
@@ -38,6 +42,7 @@ export function ProcedimientosSuperAdmin({
   const [editingProcedure, setEditingProcedure] = useState<ApiProcedure | null>(null)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [price, setPrice] = useState<string | number>('')
   const [isActive, setIsActive] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -70,6 +75,7 @@ export function ProcedimientosSuperAdmin({
     setEditingProcedure(null)
     setName('')
     setCode('')
+    setPrice('')
     setIsActive(true)
     setIsFormOpen(true)
   }
@@ -78,6 +84,7 @@ export function ProcedimientosSuperAdmin({
     setEditingProcedure(item)
     setName(item.name)
     setCode(item.code || '')
+    setPrice(item.price !== undefined && item.price !== null ? item.price : '')
     setIsActive(item.isActive)
     setIsFormOpen(true)
   }
@@ -86,12 +93,19 @@ export function ProcedimientosSuperAdmin({
     e.preventDefault()
     if (!name.trim()) return
 
+    const priceValidation = validateCatalogPrice(price)
+    if (!priceValidation.ok) {
+      showToast(priceValidation.error || 'El precio no puede ser negativo.', 'danger')
+      return
+    }
+
     setIsSubmitting(true)
     try {
       if (editingProcedure) {
         await updateProcedure(editingProcedure.id, {
           name: name.trim(),
           code: code.trim() || null,
+          price: priceValidation.value,
           isActive,
         })
         showToast('Procedimiento actualizado correctamente.')
@@ -99,6 +113,7 @@ export function ProcedimientosSuperAdmin({
         await createProcedure({
           name: name.trim(),
           code: code.trim() || null,
+          price: priceValidation.value,
           isActive,
         })
         showToast('Procedimiento registrado correctamente.')
@@ -193,6 +208,7 @@ export function ProcedimientosSuperAdmin({
                 <tr>
                   <th className="p-3.5 pl-5">Código / Ref</th>
                   <th className="p-3.5">Nombre del Procedimiento / Prueba</th>
+                  <th className="p-3.5">Precio Vigente</th>
                   <th className="p-3.5">Estado</th>
                   <th className="p-3.5 pr-5 text-right">Acciones</th>
                 </tr>
@@ -204,6 +220,9 @@ export function ProcedimientosSuperAdmin({
                       {item.code || '—'}
                     </td>
                     <td className="p-3.5 font-bold text-brand">{item.name}</td>
+                    <td className="p-3.5 font-semibold text-charcoal">
+                      {formatCatalogCurrency(item.price)}
+                    </td>
                     <td className="p-3.5">
                       <span
                         className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
@@ -284,6 +303,21 @@ export function ProcedimientosSuperAdmin({
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-sage mb-1 uppercase tracking-wider">
+                  Precio Unitario Vigente ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand"
+                />
+              </div>
+
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
@@ -348,3 +382,4 @@ export function ProcedimientosSuperAdmin({
     </div>
   )
 }
+
