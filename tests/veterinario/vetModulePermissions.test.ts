@@ -196,3 +196,22 @@ test('vet permission helpers map Veterinarios to profesionales and gate actions 
   assert.equal(full.canDeleteModule('profesionales'), true)
 })
 
+test('vet permission helpers map Insumos to insumos and gate actions by View', () => {
+  const withoutView = createVetPermissionHelpers({
+    Insumos: { canView: false, canCreate: true, canEdit: true, canDelete: true },
+  })
+  const full = createVetPermissionHelpers({
+    Insumos: { canView: true, canCreate: true, canEdit: true, canDelete: true },
+  })
+
+  assert.equal(withoutView.canViewModule('insumos'), false)
+  assert.equal(withoutView.canCreateModule('insumos'), false)
+
+  assert.equal(full.canViewModule('insumos'), true)
+  assert.equal(full.canCreateModule('insumos'), true)
+  assert.equal(full.canEditModule('insumos'), true)
+  assert.equal(full.canDeleteModule('insumos'), true)
+})
+
+
+

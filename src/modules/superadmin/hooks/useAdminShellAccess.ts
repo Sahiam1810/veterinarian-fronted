@@ -10,7 +10,11 @@ export { buildViewMap, buildActionMap } from '../utils/buildAdminShellViewMap'
 export function resolveFirstAllowedAdminRoute(
   canViewModule: (moduleId: ModuleId) => boolean,
 ): string {
-  const first = superAdminNavItems.find((item) => canViewModule(item.moduleId))
+  const first = superAdminNavItems.find((item) =>
+    item.id === 'mascotas'
+      ? canViewModule('mascotas') || canViewModule('duenos')
+      : canViewModule(item.moduleId),
+  )
   return first?.id ?? 'perfil'
 }
 
