@@ -6,6 +6,7 @@ import {
   deleteSupply,
   type ApiSupply,
 } from '../../services/suppliesService'
+import { validateSupplyForm } from '../../utils/supplyForm'
 import {
   SearchIcon,
   PlusIcon,
@@ -92,54 +93,18 @@ export function InsumosSuperAdmin({
     setIsFormOpen(true)
   }
 
-  const validateForm = (): boolean => {
-    const trimmedName = name.trim()
-    const trimmedUnit = unit.trim()
-
-    if (!trimmedName) {
-      setFormError('El nombre del insumo es obligatorio.')
-      return false
-    }
-    if (trimmedName.length > 150) {
-      setFormError('El nombre del insumo no debe superar 150 caracteres.')
-      return false
-    }
-    if (!trimmedUnit) {
-      setFormError('La unidad de medida es obligatoria.')
-      return false
-    }
-    if (trimmedUnit.length > 50) {
-      setFormError('La unidad de medida no debe superar 50 caracteres.')
-      return false
-    }
-    const numPrice = Number(unitPrice)
-    if (unitPrice === '' || isNaN(numPrice) || numPrice < 0) {
-      setFormError('El precio unitario debe ser un número mayor o igual a 0.')
-      return false
-    }
-    const numStock = Number(stock)
-    if (stock === '' || isNaN(numStock) || numStock < 0) {
-      setFormError('El stock debe ser un número mayor o igual a 0.')
-      return false
-    }
-
-    setFormError(null)
-    return true
-  }
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!validateForm()) return
+    const validation = validateSupplyForm({ name, unit, unitPrice, stock })
+    if (!validation.ok) {
+      setFormError(validation.error)
+      return
+    }
+    setFormError(null)
 
     setIsSubmitting(true)
     try {
-      const payload = {
-        name: name.trim(),
-        unit: unit.trim(),
-        unitPrice: Number(unitPrice),
-        stock: Number(stock),
-        isActive,
-      }
+      const payload = { ...validation.payload, isActive }
 
       if (editingSupply) {
         await updateSupply(editingSupply.id, payload)
