@@ -41,3 +41,9 @@ export interface AddStayNoteDto {
   nota: string
   entregadoAUserId?: string | null
 }
+
+export interface PetAdmissionOption {
+  clientPetId: string
+  petName: string
+  ownerName: string
+}

@@ -1,11 +1,12 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 import type {
   ApiHospitalizationStay,
   ApiHospitalizationNote,
   ApiStaffMember,
   AdmitStayDto,
   AddStayNoteDto,
-} from '../types/hospitalizacion.types'
+  PetAdmissionOption,
+} from '../types/hospitalizacion.types.ts'
 
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
   return apiClient.get<ApiHospitalizationStay[]>('/api/hospitalization-stays/active')
@@ -19,8 +20,16 @@ export async function fetchStaysByPet(clientPetId: string): Promise<ApiHospitali
   return apiClient.get<ApiHospitalizationStay[]>(`/api/hospitalization-stays/pet/${clientPetId}`)
 }
 
+export async function fetchPetAdmissionOptions(): Promise<PetAdmissionOption[]> {
+  return apiClient.get<PetAdmissionOption[]>('/api/hospitalization-stays/admission-options')
+}
+
 export async function admitStay(data: AdmitStayDto): Promise<{ id: string } | string> {
-  return apiClient.post<{ id: string } | string>('/api/hospitalization-stays', data)
+  return apiClient.post<{ id: string } | string>('/api/hospitalization-stays', {
+    clientPetId: data.clientPetId,
+    appointmentId: data.appointmentId ?? null,
+    motivo: data.motivo,
+  })
 }
 
 export async function dischargeStay(id: string): Promise<void> {
