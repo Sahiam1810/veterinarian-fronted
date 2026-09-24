@@ -2,7 +2,7 @@
   position: relative;
   isolation: isolate;
   height: 100dvh;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   color: var(--color-ink);
 }
