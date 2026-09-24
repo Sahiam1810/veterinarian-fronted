@@ -115,18 +115,18 @@ export function ReportesSuperAdmin({
 
         <main
           key={activeRoute}
-          className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup"
+          className="flex-1 overflow-y-auto relative p-3.5 sm:p-5 flex flex-col gap-3.5 sm:gap-4 animate-view-popup scrollbar-none"
         >
           <DashboardBackgroundDecoration />
 
           {activeNotification && <PageToast message={activeNotification} />}
 
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pop-in stagger-1">
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pop-in stagger-1">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-brand tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-brand tracking-tight">
                 Reportes Administrativos
               </h1>
-              <p className="text-xs sm:text-sm text-sage font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-sage font-medium mt-0.5">
                 Indicadores del periodo {range.from} → {range.to}.
                 {usingReportsApi
                   ? ' Datos desde API de Reportes.'
@@ -134,11 +134,11 @@ export function ReportesSuperAdmin({
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
               <select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value as ReportesPeriodoId)}
-                className="px-3.5 py-2.5 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal font-bold focus:outline-none cursor-pointer shadow-2xs"
+                className="px-3 py-1.5 rounded-xl border border-border-tan bg-white text-xs text-charcoal font-bold focus:outline-none cursor-pointer shadow-2xs"
               >
                 {periodOptions.map((opt) => (
                   <option key={opt.id} value={opt.id}>
@@ -150,9 +150,9 @@ export function ReportesSuperAdmin({
               <button
                 type="button"
                 onClick={exportCsv}
-                className="bg-brand hover:bg-brand-hover text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs active:translate-y-0.5"
+                className="bg-brand hover:bg-brand-hover text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs active:translate-y-0.5"
               >
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -166,13 +166,13 @@ export function ReportesSuperAdmin({
           </div>
 
           {isLoading && (
-            <p className="relative z-10 text-sm text-sage font-medium animate-pop-in">
+            <p className="relative z-10 text-xs text-sage font-medium animate-pop-in">
               Cargando reportes...
             </p>
           )}
 
           <div className="relative z-10 border-b border-border-tan/70 flex items-center justify-between gap-4 animate-pop-in stagger-1.5">
-            <div className="flex items-center gap-6 sm:gap-8">
+            <div className="flex items-center gap-4 sm:gap-6">
               <TabButton
                 active={activeTab === 'resumen'}
                 onClick={() => setActiveTab('resumen')}
@@ -187,7 +187,7 @@ export function ReportesSuperAdmin({
           </div>
 
           {activeTab === 'resumen' && !isLoading && (
-            <div className="flex-1 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+            <div className="flex-1 flex flex-col gap-3 sm:gap-3.5 animate-view-popup min-h-0">
               <ReportesKpiCards summary={dashboard.summary} topServices={dashboard.topServices} />
               <ReportesChartsPanel
                 byStatus={dashboard.byStatus}
@@ -224,7 +224,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`relative px-5 pt-3 pb-3.5 text-sm sm:text-[15px] font-semibold transition-colors cursor-pointer ${
+      className={`relative px-4 pt-2 pb-2.5 text-xs sm:text-sm font-semibold transition-colors cursor-pointer ${
         active
           ? "text-brand font-bold after:content-[''] after:absolute after:bottom-[-1px] after:left-0 after:right-0 after:h-[2.5px] after:bg-brand after:rounded-full"
           : 'text-sage hover:text-brand'
