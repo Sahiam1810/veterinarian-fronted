@@ -55,13 +55,9 @@ export async function fetchStaff(): Promise<ApiStaffMember[]> {
 }
 
 export async function fetchStaySupplyConsumptions(stayId: string): Promise<ApiHospitalizationSupplyConsumption[]> {
-  return apiClient
-    .get<ApiHospitalizationSupplyConsumption[]>(`/api/hospitalization-stays/${stayId}/supplies`)
-    .catch(() =>
-      apiClient
-        .get<ApiHospitalizationSupplyConsumption[]>(`/api/hospitalization-stays/${stayId}/consumptions`)
-        .catch(() => []),
-    )
+  return apiClient.get<ApiHospitalizationSupplyConsumption[]>(
+    `/api/hospitalization-stays/${stayId}/supply-consumptions`,
+  )
 }
 
 export async function addStaySupplyConsumption(
@@ -69,15 +65,13 @@ export async function addStaySupplyConsumption(
   data: AddStaySupplyConsumptionDto,
 ): Promise<ApiHospitalizationSupplyConsumption | { id: string }> {
   return apiClient.post<ApiHospitalizationSupplyConsumption | { id: string }>(
-    `/api/hospitalization-stays/${stayId}/supplies`,
+    `/api/hospitalization-stays/${stayId}/supply-consumptions`,
     data,
   )
 }
 
-export async function fetchStayLiquidation(stayId: string): Promise<HospitalizationLiquidationSummary | null> {
-  return apiClient
-    .get<HospitalizationLiquidationSummary>(`/api/hospitalization-stays/${stayId}/liquidation`)
-    .catch(() => null)
+export async function fetchStayLiquidation(stayId: string): Promise<HospitalizationLiquidationSummary> {
+  return apiClient.get<HospitalizationLiquidationSummary>(`/api/hospitalization-stays/${stayId}/liquidation`)
 }
 
 export async function fetchPetAdmissionOptions(): Promise<PetAdmissionOption[]> {

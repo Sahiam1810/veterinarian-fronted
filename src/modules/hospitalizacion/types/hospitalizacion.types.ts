@@ -45,15 +45,19 @@ export interface AddStayNoteDto {
 
 export interface ApiHospitalizationSupplyConsumption {
   id: string
-  stayId: string
+  hospitalizationStayId?: string
+  /** Compatibilidad con respuestas antiguas del endpoint de consumos. */
+  stayId?: string
   supplyId: string
   supplyName?: string | null
   quantity: number
   unitPrice: number
-  subtotal: number
+  total?: number
+  /** Compatibilidad con respuestas antiguas del endpoint de consumos. */
+  subtotal?: number
   notes?: string | null
   createdAt: string
-  registeredByName?: string | null
+  registeredByUserId?: string
 }
 
 export interface AddStaySupplyConsumptionDto {

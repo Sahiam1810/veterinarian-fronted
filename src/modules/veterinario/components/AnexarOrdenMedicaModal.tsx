@@ -60,6 +60,7 @@ export function AnexarOrdenMedicaModal({
 
   const isMedication = orderType === 'MEDICAMENTO'
   const title = isMedication ? 'Anexar Orden de Medicamento' : 'Anexar Orden de Procedimiento o Examen'
+  const orderAppointmentId = hospitalizationStayId ? null : appointmentId || null
 
   useEffect(() => {
     if (!isOpen) return
@@ -144,7 +145,7 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            appointmentId: appointmentId || null,
+            appointmentId: orderAppointmentId,
             hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: true,
             referredTo: null,
@@ -157,7 +158,7 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            appointmentId: appointmentId || null,
+            appointmentId: orderAppointmentId,
             hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: true,
             referredTo: null,
@@ -194,7 +195,7 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            appointmentId: appointmentId || null,
+            appointmentId: orderAppointmentId,
             hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: false,
             referredTo: referredTo.trim(),
@@ -204,7 +205,7 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            appointmentId: appointmentId || null,
+            appointmentId: orderAppointmentId,
             hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: false,
             referredTo: referredTo.trim(),

@@ -36,7 +36,9 @@ export function calculateHospitalizationLiquidation(
   const hospitalizationTotal = stay?.baseCost ? Number(stay.baseCost) || 0 : 0
 
   const insumosTotal = supplies.reduce((sum, item) => {
-    const subtotal = item.subtotal !== undefined && item.subtotal !== null
+    const subtotal = item.total !== undefined && item.total !== null
+      ? Number(item.total)
+      : item.subtotal !== undefined && item.subtotal !== null
       ? Number(item.subtotal)
       : (Number(item.unitPrice) || 0) * (Number(item.quantity) || 1)
     return sum + (Number.isNaN(subtotal) ? 0 : subtotal)

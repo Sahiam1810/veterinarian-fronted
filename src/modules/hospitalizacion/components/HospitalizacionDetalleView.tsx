@@ -6,6 +6,7 @@ import {
   dischargeStay,
   fetchStaff,
   fetchStaySupplyConsumptions,
+  fetchStayLiquidation,
 } from '../services/hospitalizacionService'
 import type {
   ApiHospitalizationStay,
@@ -19,13 +20,10 @@ import {
   fetchProcedureOrdersByStay,
   completeMedicationOrder,
   completeProcedureOrder,
-  cancelMedicationOrder,
-  cancelProcedureOrder,
   type ApiMedicationOrder,
   type ApiProcedureOrder,
 } from '@/modules/veterinario/services/ordenesMedicasService'
 import {
-  calculateHospitalizationLiquidation,
   formatLiquidationCurrency,
   isMedicationOrderDelivered,
   isProcedureOrderCompleted,
@@ -64,6 +62,13 @@ export function HospitalizacionDetalleView({
   const [procedureOrders, setProcedureOrders] = useState<ApiProcedureOrder[]>([])
   const [supplies, setSupplies] = useState<ApiHospitalizationSupplyConsumption[]>([])
   const [staffList, setStaffList] = useState<ApiStaffMember[]>([])
+  const [liquidation, setLiquidation] = useState({
+    hospitalizationTotal: 0,
+    insumosTotal: 0,
+    medicamentosTotal: 0,
+    procedimientosTotal: 0,
+    total: 0,
+  })
 
   // Estados de carga y error
   const [isLoadingStay, setIsLoadingStay] = useState(true)
@@ -102,19 +107,25 @@ export function HospitalizacionDetalleView({
       setStay(stayData)
 
       // Cargar en paralelo datos adicionales
-      const [loadedNotes, medOrders, procOrders, supps, staff] = await Promise.all([
-        fetchStayNotes(stayId).catch(() => []),
-        fetchMedicationOrdersByStay(stayId).catch(() => []),
-        fetchProcedureOrdersByStay(stayId).catch(() => []),
-        fetchStaySupplyConsumptions(stayId).catch(() => []),
-        fetchStaff().catch(() => []),
+      const results = await Promise.allSettled([
+        fetchStayNotes(stayId),
+        fetchMedicationOrdersByStay(stayId),
+        fetchProcedureOrdersByStay(stayId),
+        fetchStaySupplyConsumptions(stayId),
+        fetchStaff(),
+        fetchStayLiquidation(stayId),
       ])
 
-      setNotes(loadedNotes)
-      setMedicationOrders(medOrders)
-      setProcedureOrders(procOrders)
-      setSupplies(supps)
-      setStaffList(staff)
+      const [notesResult, medicationsResult, proceduresResult, suppliesResult, staffResult, liquidationResult] = results
+      setNotes(notesResult.status === 'fulfilled' ? notesResult.value : [])
+      setMedicationOrders(medicationsResult.status === 'fulfilled' ? medicationsResult.value : [])
+      setProcedureOrders(proceduresResult.status === 'fulfilled' ? proceduresResult.value : [])
+      setSupplies(suppliesResult.status === 'fulfilled' ? suppliesResult.value : [])
+      setStaffList(staffResult.status === 'fulfilled' ? staffResult.value : [])
+      if (liquidationResult.status === 'fulfilled') setLiquidation(liquidationResult.value)
+      if (results.some((result) => result.status === 'rejected')) {
+        showToast('Algunos datos de la estancia no pudieron cargarse. Revisa los permisos o inténtalo de nuevo.', 'danger')
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al cargar los datos de la estancia hospitalaria.'
       setLoadError(msg)
@@ -131,16 +142,23 @@ export function HospitalizacionDetalleView({
   const refreshOrdersAndSupplies = async () => {
     setIsLoadingOrders(true)
     try {
-      const [medOrders, procOrders, supps] = await Promise.all([
-        fetchMedicationOrdersByStay(stayId).catch(() => []),
-        fetchProcedureOrdersByStay(stayId).catch(() => []),
-        fetchStaySupplyConsumptions(stayId).catch(() => []),
+      const results = await Promise.allSettled([
+        fetchMedicationOrdersByStay(stayId),
+        fetchProcedureOrdersByStay(stayId),
+        fetchStaySupplyConsumptions(stayId),
+        fetchStayLiquidation(stayId),
       ])
-      setMedicationOrders(medOrders)
-      setProcedureOrders(procOrders)
-      setSupplies(supps)
-    } catch {
-      // Ignorar
+      const [medicationsResult, proceduresResult, suppliesResult, liquidationResult] = results
+      if (medicationsResult.status === 'fulfilled') setMedicationOrders(medicationsResult.value)
+      if (proceduresResult.status === 'fulfilled') setProcedureOrders(proceduresResult.value)
+      if (suppliesResult.status === 'fulfilled') setSupplies(suppliesResult.value)
+      if (liquidationResult.status === 'fulfilled') setLiquidation(liquidationResult.value)
+      if (results.some((result) => result.status === 'rejected')) {
+        showToast('No se pudo actualizar toda la información de la estancia.', 'danger')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al actualizar la estancia.'
+      showToast(msg, 'danger')
     } finally {
       setIsLoadingOrders(false)
     }
@@ -195,29 +213,7 @@ export function HospitalizacionDetalleView({
   }
 
   // Cancelar orden de medicamento
-  const handleCancelMedication = async (orderId: string) => {
-    try {
-      await cancelMedicationOrder(orderId)
-      showToast('Orden de medicamento cancelada.')
-      await refreshOrdersAndSupplies()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al cancelar la orden.'
-      showToast(msg, 'danger')
-    }
-  }
-
   // Cancelar orden de procedimiento
-  const handleCancelProcedure = async (orderId: string) => {
-    try {
-      await cancelProcedureOrder(orderId)
-      showToast('Orden de procedimiento cancelada.')
-      await refreshOrdersAndSupplies()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al cancelar la orden.'
-      showToast(msg, 'danger')
-    }
-  }
-
   // Confirmar alta médica
   const handleConfirmDischarge = async () => {
     setIsDischarging(true)
@@ -238,8 +234,6 @@ export function HospitalizacionDetalleView({
   const isDischarged = !isActive && Boolean(stay?.dischargedAt || stay?.status === 'Dada de alta')
 
   // Liquidación calculada
-  const liquidation = calculateHospitalizationLiquidation(stay, supplies, medicationOrders, procedureOrders)
-
   // Formato de fechas
   const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return '—'
@@ -592,14 +586,6 @@ export function HospitalizacionDetalleView({
                                   >
                                     Entregar
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleCancelMedication(ord.id)}
-                                    className="px-2 py-1 rounded-lg border border-border-tan text-sage hover:text-danger text-[11px] font-bold transition cursor-pointer"
-                                    title="Cancelar orden"
-                                  >
-                                    Cancelar
-                                  </button>
                                 </div>
                               )}
                             </div>
@@ -696,14 +682,6 @@ export function HospitalizacionDetalleView({
                                     title="Marcar como completado para sumar a la liquidación"
                                   >
                                     Completar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleCancelProcedure(ord.id)}
-                                    className="px-2 py-1 rounded-lg border border-border-tan text-sage hover:text-danger text-[11px] font-bold transition cursor-pointer"
-                                    title="Cancelar orden"
-                                  >
-                                    Cancelar
                                   </button>
                                 </div>
                               )}
@@ -839,7 +817,7 @@ export function HospitalizacionDetalleView({
                           <td className="p-2.5 text-sage">{formatLiquidationCurrency(s.unitPrice)}</td>
                           <td className="p-2.5 font-bold text-charcoal">
                             {formatLiquidationCurrency(
-                              s.subtotal ?? (s.unitPrice || 0) * (s.quantity || 1),
+                              s.total ?? (s.unitPrice || 0) * (s.quantity || 1),
                             )}
                           </td>
                           <td className="p-2.5 text-sage">{formatDate(s.createdAt)}</td>
@@ -1009,7 +987,7 @@ export function HospitalizacionDetalleView({
           orderType={orderModalType}
           clientPetId={stay.clientPetId}
           hospitalizationStayId={stayId}
-          appointmentId={stay.appointmentId}
+          appointmentId={null}
           petName={stay.petName || 'Mascota'}
           isDischarged={isDischarged}
           onClose={() => setOrderModalType(null)}

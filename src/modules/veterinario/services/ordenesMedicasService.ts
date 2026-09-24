@@ -215,9 +215,7 @@ export async function fetchMedicationOrdersByAppointment(appointmentId: string):
 }
 
 export async function fetchMedicationOrdersByStay(stayId: string): Promise<ApiMedicationOrder[]> {
-  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/stay/${stayId}`).catch(() =>
-    vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders?hospitalizationStayId=${stayId}`).catch(() => []),
-  )
+  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/stay/${stayId}`)
 }
 
 // Services - Órdenes de Procedimientos
@@ -246,9 +244,7 @@ export async function fetchProcedureOrdersByAppointment(appointmentId: string): 
 }
 
 export async function fetchProcedureOrdersByStay(stayId: string): Promise<ApiProcedureOrder[]> {
-  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/stay/${stayId}`).catch(() =>
-    vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders?hospitalizationStayId=${stayId}`).catch(() => []),
-  )
+  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/stay/${stayId}`)
 }
 
 export interface PendingMedicationOrder {
