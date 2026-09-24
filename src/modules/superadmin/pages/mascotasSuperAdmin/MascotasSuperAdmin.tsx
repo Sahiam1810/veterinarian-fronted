@@ -36,6 +36,7 @@ import {
   PawIcon,
   MedicalHistoryIcon,
   PageToast,
+  Pagination,
 } from '@/global/components'
 
 // Estilo base de botones de acción en la tabla
@@ -925,50 +926,14 @@ export function MascotasSuperAdmin({
                   </table>
                 </div>
 
-                {/* Footer de Paginación */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-border-tan/50 bg-white text-xs text-sage">
-                  <span>
-                    Mostrando {totalMascotas === 0 ? 0 : (mascotaPage - 1) * itemsPerPage + 1} -{' '}
-                    {Math.min(mascotaPage * itemsPerPage, totalMascotas)} de {totalMascotas}
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={mascotaPage <= 1}
-                      onClick={() => setMascotaPage((p) => Math.max(1, p - 1))}
-                      className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
-                      aria-label="Página anterior"
-                    >
-                      Anterior
-                    </button>
-
-                    {Array.from({ length: totalMascotaPages }, (_, i) => i + 1).map((num) => (
-                      <button
-                        key={num}
-                        type="button"
-                        onClick={() => setMascotaPage(num)}
-                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] cursor-pointer transition-all duration-150 ${
-                          mascotaPage === num
-                            ? 'bg-brand text-white font-bold'
-                            : 'font-semibold text-sage hover:bg-[#F5F3EE] hover:text-brand'
-                        }`}
-                      >
-                        {num}
-                      </button>
-                    ))}
-
-                    <button
-                      type="button"
-                      disabled={mascotaPage >= totalMascotaPages}
-                      onClick={() => setMascotaPage((p) => Math.min(totalMascotaPages, p + 1))}
-                      className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
-                      aria-label="Página siguiente"
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
+                <Pagination
+                  currentPage={mascotaPage}
+                  totalPages={totalMascotaPages}
+                  totalItems={totalMascotas}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setMascotaPage}
+                  itemName="mascotas"
+                />
               </div>
             </div>
           )}
