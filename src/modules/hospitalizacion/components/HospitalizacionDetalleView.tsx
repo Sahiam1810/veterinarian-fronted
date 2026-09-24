@@ -17,8 +17,8 @@ export function HospitalizacionDetalleView({
   stayId,
   stay: initialStay = null,
   canEdit: _canEdit = false,
-  canViewSupplies = true,
-  canCreateSupplies = true,
+  canViewSupplies = false,
+  canCreateSupplies = false,
   onBack,
 }: HospitalizacionDetalleViewProps) {
   const [stay, setStay] = useState<ApiHospitalizationStay | null>(initialStay)
@@ -164,6 +164,7 @@ export function HospitalizacionDetalleView({
       <HospitalizacionInsumosPanel
         stayId={stayId}
         isDischarged={isDischarged}
+        isStayLoading={isLoadingStay || !!stayError || !stay}
         canViewSupplies={canViewSupplies}
         canCreateSupplies={canCreateSupplies}
       />

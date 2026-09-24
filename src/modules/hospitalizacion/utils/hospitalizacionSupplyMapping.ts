@@ -42,6 +42,28 @@ export function calculateSupplyConsumptionsTotal(
   return consumptions.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
 }
 
+export function canRegisterSupplyConsumption({
+  canCreateSupplies,
+  isDischarged,
+  isStayLoading,
+  isLoadingSupplies,
+  suppliesError,
+}: {
+  canCreateSupplies: boolean
+  isDischarged: boolean
+  isStayLoading: boolean
+  isLoadingSupplies: boolean
+  suppliesError: string | null
+}): boolean {
+  return (
+    canCreateSupplies &&
+    !isDischarged &&
+    !isStayLoading &&
+    !isLoadingSupplies &&
+    !suppliesError
+  )
+}
+
 export interface ValidateSupplyConsumptionParams {
   supplyId: string
   quantity: number | string

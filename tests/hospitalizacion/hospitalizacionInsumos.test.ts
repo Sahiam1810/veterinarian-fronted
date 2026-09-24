@@ -7,6 +7,7 @@ import {
   validateSupplyConsumptionForm,
   formatSupplyCurrency,
   formatSupplyDate,
+  canRegisterSupplyConsumption,
 } from '../../src/modules/hospitalizacion/utils/hospitalizacionSupplyMapping.ts'
 import type {
   ApiSupply,
@@ -268,28 +269,19 @@ test('formatSupplyDate formats date strings or returns fallback', () => {
   assert.ok(formatted.length > 5)
 })
 
-test('permission & status rules for supply consumption action gating', () => {
-  // Helper to evaluate if registration button is allowed
-  const canRegisterConsumption = (
-    canViewSupplies: boolean,
-    canCreateSupplies: boolean,
-    isDischarged: boolean,
-  ) => {
-    if (!canViewSupplies) return false
-    if (!canCreateSupplies) return false
-    if (isDischarged) return false
-    return true
+test('permission, loading and status rules gate supply consumption registration', () => {
+  const base = {
+    canCreateSupplies: true,
+    isDischarged: false,
+    isStayLoading: false,
+    isLoadingSupplies: false,
+    suppliesError: null,
   }
 
-  // 1. Without Insumos:View -> cannot view or register
-  assert.equal(canRegisterConsumption(false, true, false), false)
-
-  // 2. With Insumos:View but without Insumos:Create -> read-only mode
-  assert.equal(canRegisterConsumption(true, false, false), false)
-
-  // 3. With Insumos:View and Insumos:Create on active stay -> allowed
-  assert.equal(canRegisterConsumption(true, true, false), true)
-
-  // 4. With Insumos:View and Insumos:Create on discharged stay -> not allowed (read-only)
-  assert.equal(canRegisterConsumption(true, true, true), false)
+  assert.equal(canRegisterSupplyConsumption({ ...base, canCreateSupplies: false }), false)
+  assert.equal(canRegisterSupplyConsumption({ ...base, isStayLoading: true }), false)
+  assert.equal(canRegisterSupplyConsumption({ ...base, isLoadingSupplies: true }), false)
+  assert.equal(canRegisterSupplyConsumption({ ...base, suppliesError: 'Catálogo no disponible' }), false)
+  assert.equal(canRegisterSupplyConsumption({ ...base, isDischarged: true }), false)
+  assert.equal(canRegisterSupplyConsumption(base), true)
 })

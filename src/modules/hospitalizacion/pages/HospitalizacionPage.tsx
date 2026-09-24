@@ -12,8 +12,8 @@ export interface HospitalizacionPageProps {
 export function HospitalizacionPage({
   canCreate = false,
   canEdit = false,
-  canViewSupplies = true,
-  canCreateSupplies = true,
+  canViewSupplies = false,
+  canCreateSupplies = false,
 }: HospitalizacionPageProps) {
   const [selectedStayId, setSelectedStayId] = useState<string | null>(null)
 

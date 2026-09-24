@@ -13,6 +13,7 @@ import {
   mapSupplyConsumptions,
   formatSupplyCurrency,
   formatSupplyDate,
+  canRegisterSupplyConsumption,
 } from '../utils/hospitalizacionSupplyMapping'
 import { RegistrarInsumoModal } from './RegistrarInsumoModal'
 import { PageToast, PackageIcon, PlusIcon } from '@/global/components'
@@ -20,6 +21,7 @@ import { PageToast, PackageIcon, PlusIcon } from '@/global/components'
 export interface HospitalizacionInsumosPanelProps {
   stayId: string
   isDischarged?: boolean
+  isStayLoading?: boolean
   canViewSupplies?: boolean
   canCreateSupplies?: boolean
 }
@@ -27,15 +29,20 @@ export interface HospitalizacionInsumosPanelProps {
 export function HospitalizacionInsumosPanel({
   stayId,
   isDischarged = false,
-  canViewSupplies = true,
-  canCreateSupplies = true,
+  isStayLoading = true,
+  canViewSupplies = false,
+  canCreateSupplies = false,
 }: HospitalizacionInsumosPanelProps) {
   const [consumptions, setConsumptions] = useState<ApiSupplyConsumption[]>([])
   const [supplyTotal, setSupplyTotal] = useState<ApiSupplyConsumptionTotal | null>(null)
   const [supplies, setSupplies] = useState<ApiSupply[]>([])
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoadingConsumptions, setIsLoadingConsumptions] = useState(true)
+  const [isLoadingTotal, setIsLoadingTotal] = useState(true)
+  const [isLoadingSupplies, setIsLoadingSupplies] = useState(true)
+  const [consumptionsError, setConsumptionsError] = useState<string | null>(null)
+  const [totalError, setTotalError] = useState<string | null>(null)
+  const [suppliesError, setSuppliesError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -44,51 +51,84 @@ export function HospitalizacionInsumosPanel({
     setTimeout(() => setToastMessage(null), 4000)
   }
 
-  const loadData = useCallback(async () => {
-    if (!canViewSupplies || !stayId) {
-      setIsLoading(false)
-      return
-    }
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+    return apiErr.response?.data?.message || apiErr.message || fallback
+  }
 
-    setIsLoading(true)
-    setError(null)
+  const loadConsumptions = useCallback(async () => {
+    if (!canViewSupplies || !stayId) return
 
+    setIsLoadingConsumptions(true)
+    setConsumptionsError(null)
     try {
-      const [consumptionsRes, totalRes, suppliesRes] = await Promise.all([
-        fetchStaySupplyConsumptions(stayId),
-        fetchStaySupplyTotal(stayId).catch(() => null),
-        fetchActiveSupplies().catch(() => [] as ApiSupply[]),
-      ])
-
-      setConsumptions(consumptionsRes || [])
-      setSupplyTotal(totalRes)
-      setSupplies(suppliesRes || [])
+      setConsumptions(await fetchStaySupplyConsumptions(stayId))
     } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
-      setError(
-        apiErr.response?.data?.message ||
-          apiErr.message ||
-          'Error al cargar los consumos de insumos.',
-      )
+      setConsumptionsError(getErrorMessage(err, 'Error al cargar los consumos de insumos.'))
     } finally {
-      setIsLoading(false)
+      setIsLoadingConsumptions(false)
     }
   }, [canViewSupplies, stayId])
 
+  const loadTotal = useCallback(async () => {
+    if (!canViewSupplies || !stayId) return
+
+    setIsLoadingTotal(true)
+    setTotalError(null)
+    try {
+      setSupplyTotal(await fetchStaySupplyTotal(stayId))
+    } catch (err: unknown) {
+      setSupplyTotal(null)
+      setTotalError(getErrorMessage(err, 'Error al cargar el total de insumos.'))
+    } finally {
+      setIsLoadingTotal(false)
+    }
+  }, [canViewSupplies, stayId])
+
+  const loadSupplies = useCallback(async () => {
+    if (!canViewSupplies) return
+
+    setIsLoadingSupplies(true)
+    setSuppliesError(null)
+    try {
+      setSupplies(await fetchActiveSupplies())
+    } catch (err: unknown) {
+      setSupplies([])
+      setSuppliesError(getErrorMessage(err, 'Error al cargar el catálogo de insumos.'))
+    } finally {
+      setIsLoadingSupplies(false)
+    }
+  }, [canViewSupplies])
+
+  const reloadAll = useCallback(() => {
+    void Promise.allSettled([loadConsumptions(), loadTotal(), loadSupplies()])
+  }, [loadConsumptions, loadTotal, loadSupplies])
+
   useEffect(() => {
-    void loadData()
-  }, [loadData])
+    reloadAll()
+  }, [reloadAll])
 
   const mappedConsumptions = useMemo(() => {
     return mapSupplyConsumptions(consumptions, supplies)
   }, [consumptions, supplies])
 
   const displayTotal = useMemo(() => {
-    if (supplyTotal && typeof supplyTotal.total === 'number') {
-      return supplyTotal.total
+    return supplyTotal && typeof supplyTotal.total === 'number' ? supplyTotal.total : null
+  }, [supplyTotal])
+
+  const canRegisterConsumption = canRegisterSupplyConsumption({
+    canCreateSupplies,
+    isDischarged,
+    isStayLoading,
+    isLoadingSupplies,
+    suppliesError,
+  })
+
+  useEffect(() => {
+    if (!canRegisterConsumption) {
+      setIsModalOpen(false)
     }
-    return consumptions.reduce((sum, c) => sum + (c.total || 0), 0)
-  }, [supplyTotal, consumptions])
+  }, [canRegisterConsumption])
 
   // Si no tiene permiso de visualización de insumos, no mostramos el panel de consumos
   if (!canViewSupplies) {
@@ -139,13 +179,25 @@ export function HospitalizacionInsumosPanel({
           {/* Total Acumulado Badge */}
           <div className="px-3.5 py-1.5 bg-brand-teal/5 border border-brand-teal/20 rounded-xl flex items-center gap-2">
             <span className="text-xs text-sage font-medium">Total insumos:</span>
-            <span className="text-sm font-bold text-brand-dark">
-              {formatSupplyCurrency(displayTotal)}
-            </span>
+            {isLoadingTotal ? (
+              <span className="text-xs text-sage">Cargando...</span>
+            ) : totalError ? (
+              <button
+                type="button"
+                onClick={() => void loadTotal()}
+                className="text-xs font-semibold text-terracotta underline"
+              >
+                Error. Reintentar
+              </button>
+            ) : (
+              <span className="text-sm font-bold text-brand-dark">
+                {displayTotal === null ? '-' : formatSupplyCurrency(displayTotal)}
+              </span>
+            )}
           </div>
 
           {/* Botón Registrar Consumo */}
-          {canCreateSupplies && !isDischarged && (
+          {canRegisterConsumption && (
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
@@ -166,8 +218,34 @@ export function HospitalizacionInsumosPanel({
 
       {/* Panel Content */}
       <div className="p-6">
+        {suppliesError && (
+          <div className="mb-4 p-4 bg-terracotta-soft/30 border border-terracotta/30 rounded-xl flex items-center justify-between gap-3 text-xs text-terracotta">
+            <span>{suppliesError}</span>
+            <button
+              type="button"
+              onClick={() => void loadSupplies()}
+              className="px-3 py-1 bg-white border border-terracotta/40 rounded-lg font-medium hover:bg-terracotta-soft transition shrink-0"
+            >
+              Reintentar catálogo
+            </button>
+          </div>
+        )}
+
+        {totalError && (
+          <div className="mb-4 p-4 bg-terracotta-soft/30 border border-terracotta/30 rounded-xl flex items-center justify-between gap-3 text-xs text-terracotta">
+            <span>{totalError}</span>
+            <button
+              type="button"
+              onClick={() => void loadTotal()}
+              className="px-3 py-1 bg-white border border-terracotta/40 rounded-lg font-medium hover:bg-terracotta-soft transition shrink-0"
+            >
+              Reintentar total
+            </button>
+          </div>
+        )}
+
         {/* Loading State */}
-        {isLoading && (
+        {isLoadingConsumptions && (
           <div className="py-12 flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 border-3 border-brand-teal/30 border-t-brand-teal rounded-full animate-spin" />
             <p className="text-xs text-sage font-medium">Cargando consumos de insumos...</p>
@@ -175,12 +253,12 @@ export function HospitalizacionInsumosPanel({
         )}
 
         {/* Error State */}
-        {!isLoading && error && (
+        {!isLoadingConsumptions && consumptionsError && (
           <div className="p-4 bg-terracotta-soft/30 border border-terracotta/30 rounded-xl flex items-center justify-between gap-3 text-xs text-terracotta">
-            <span>{error}</span>
+            <span>{consumptionsError}</span>
             <button
               type="button"
-              onClick={() => void loadData()}
+              onClick={() => void loadConsumptions()}
               className="px-3 py-1 bg-white border border-terracotta/40 rounded-lg font-medium hover:bg-terracotta-soft transition shrink-0"
             >
               Reintentar
@@ -189,7 +267,7 @@ export function HospitalizacionInsumosPanel({
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && mappedConsumptions.length === 0 && (
+        {!isLoadingConsumptions && !consumptionsError && mappedConsumptions.length === 0 && (
           <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-bone border border-warm-grey/40 flex items-center justify-center text-sage">
               <PackageIcon className="w-6 h-6 opacity-60" />
@@ -202,7 +280,7 @@ export function HospitalizacionInsumosPanel({
                 Los insumos y medicamentos suministrados durante esta estancia aparecerán aquí con su valor acumulado.
               </p>
             </div>
-            {canCreateSupplies && !isDischarged && (
+            {canRegisterConsumption && (
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
@@ -216,7 +294,7 @@ export function HospitalizacionInsumosPanel({
         )}
 
         {/* Tabla de Consumos */}
-        {!isLoading && !error && mappedConsumptions.length > 0 && (
+        {!isLoadingConsumptions && !consumptionsError && mappedConsumptions.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-charcoal border-collapse">
               <thead>
@@ -234,9 +312,9 @@ export function HospitalizacionInsumosPanel({
                 {mappedConsumptions.map((item) => (
                   <tr key={item.id} className="hover:bg-[#FAF8F5] transition">
                     <td className="py-3 px-3.5 font-semibold text-charcoal">
-                      {item.supplyName}
+                      {suppliesError ? 'Catálogo no disponible' : item.supplyName}
                     </td>
-                    <td className="py-3 px-3.5 text-slate">{item.supplyUnit}</td>
+                    <td className="py-3 px-3.5 text-slate">{suppliesError ? '-' : item.supplyUnit}</td>
                     <td className="py-3 px-3.5 text-center font-medium">
                       <span className="px-2 py-0.5 rounded-md bg-bone text-charcoal font-semibold">
                         {item.quantity}
@@ -267,7 +345,11 @@ export function HospitalizacionInsumosPanel({
                     Total Acumulado de Insumos:
                   </td>
                   <td className="py-3 px-3.5 text-right text-brand-dark text-sm font-mono">
-                    {formatSupplyCurrency(displayTotal)}
+                    {isLoadingTotal
+                      ? '...'
+                      : totalError || displayTotal === null
+                        ? '-'
+                        : formatSupplyCurrency(displayTotal)}
                   </td>
                   <td colSpan={2} />
                 </tr>
@@ -282,10 +364,11 @@ export function HospitalizacionInsumosPanel({
         isOpen={isModalOpen}
         stayId={stayId}
         activeSupplies={supplies}
+        isLoadingSupplies={isLoadingSupplies}
         onClose={() => setIsModalOpen(false)}
         onSuccess={(msg) => {
           showToast(msg)
-          void loadData()
+          reloadAll()
         }}
       />
 
