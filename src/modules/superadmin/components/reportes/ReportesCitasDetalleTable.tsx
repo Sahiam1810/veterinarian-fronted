@@ -124,6 +124,8 @@ export function ReportesCitasDetalleTable({
           <Pagination
             currentPage={safePage}
             totalPages={totalPages}
+            totalItems={citas.length}
+            itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
         )}
