@@ -12,6 +12,7 @@ import type {
   UserSaveResult,
 } from '../types'
 import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
+import { normalizeModuleName } from '../utils/normalizeModuleName'
 import {
   fetchUsers,
   deleteUser as apiDeleteUser,
@@ -59,6 +60,7 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'profesionales', label: 'Profesionales', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'ordenesMedicas', label: 'Órdenes Médicas', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'insumos', label: 'Insumos', supportsCreate: true, supportsEdit: true, supportsDelete: true },
+  { id: 'hospitalizacion', label: 'Hospitalización', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'historiaClinica', label: 'Historia Clínica', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
@@ -74,6 +76,7 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   profesionales: { view: true, create: true, edit: true, delete: true },
   ordenesMedicas: { view: true, create: true, edit: true, delete: true },
   insumos: { view: true, create: true, edit: true, delete: true },
+  hospitalizacion: { view: true, create: true, edit: true, delete: true },
   disponibilidad: { view: true, create: true, edit: true, delete: true },
   agenda: { view: true, create: true, edit: true, delete: true },
   historiaClinica: { view: true, create: true, edit: true, delete: true },
@@ -90,6 +93,7 @@ const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
   profesionales: { view: false, create: false, edit: false, delete: false },
   ordenesMedicas: { view: false, create: false, edit: false, delete: false },
   insumos: { view: false, create: false, edit: false, delete: false },
+  hospitalizacion: { view: false, create: false, edit: false, delete: false },
   disponibilidad: { view: false, create: false, edit: false, delete: false },
   agenda: { view: false, create: false, edit: false, delete: false },
   historiaClinica: { view: false, create: false, edit: false, delete: false },
@@ -104,22 +108,7 @@ const EMPTY_ROLE: RoleDefinition = {
   permissions: DEFAULT_PERMISSIONS_EMPTY,
 }
 
-export function normalizeModuleName(name: string): ModuleId | null {
-  const norm = name.trim().toLowerCase()
-  if (norm.includes('usuario')) return 'usuarios'
-  if (norm.includes('especie') || norm.includes('raza')) return 'especiesRazas'
-  if (norm.includes('mascota')) return 'mascotas'
-  if (norm.includes('dueño') || norm.includes('dueno') || norm.includes('cliente')) return 'duenos'
-  if (norm.includes('servicio')) return 'servicios'
-  if (norm.includes('profesional') || norm.includes('veterinar')) return 'profesionales'
-  if (norm.includes('disponib')) return 'disponibilidad'
-  if (norm.includes('cita') || norm.includes('agenda')) return 'agenda'
-  if (norm.includes('historial') || norm.includes('historia')) return 'historiaClinica'
-  if (norm.includes('reporte')) return 'reportes'
-  if (norm.includes('orden')) return 'ordenesMedicas'
-  if (norm.includes('insumo')) return 'insumos'
-  return null
-}
+export { normalizeModuleName } from '../utils/normalizeModuleName'
 
 // SuperAdmin es un rol de sistema persistido y no se ofrece como rol administrable.
 export function isPlatformSuperAdminRoleName(name: string): boolean {

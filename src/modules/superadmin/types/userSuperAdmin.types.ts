@@ -12,6 +12,7 @@ export type ModuleId =
   | 'reportes'
   | 'ordenesMedicas'
   | 'insumos'
+  | 'hospitalizacion'
 
 
 export interface ModulePermission {

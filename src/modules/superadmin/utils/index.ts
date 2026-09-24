@@ -5,3 +5,5 @@ export * from './defaultVeterinarianSchedule'
 
 export * from './buildDuenoDrawerFormState'
 
+export * from './normalizeModuleName'
+

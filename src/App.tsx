@@ -28,6 +28,7 @@ import { useAdminShellAccess, useNotificationsSuperAdmin } from '@/modules/super
 import { PuntoInicio as VetPuntoInicio, OrdenesMedicasPendientesPanel } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
 import { isPublicPolicyRoute, PoliticaTratamientoDatosPage } from '@/modules/public'
+import { HospitalizacionPage } from '@/modules/hospitalizacion'
 
 const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   inicio: 'inicio',
@@ -41,6 +42,7 @@ const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   medicamentos: 'ordenesMedicas',
   procedimientos: 'ordenesMedicas',
   insumos: 'insumos',
+  hospitalizacion: 'hospitalizacion',
   'ordenes-pendientes': 'ordenesMedicas',
   agenda: 'agenda',
   reportes: 'reportes',
@@ -445,6 +447,43 @@ function SuperAdminApp({
               canCreate={canCreateModule('insumos')}
               canEdit={canEditModule('insumos')}
               canDelete={canDeleteModule('insumos')}
+            />
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentRoute === 'hospitalizacion') {
+    return (
+      <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
+        <SuperAdminHeader
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+          userName={shellProps.userName}
+          userRole={shellProps.userRole}
+          notifications={notifications}
+          isLoadingNotifications={isLoadingNotifications}
+          notificationsError={notificationsError}
+          onMarkNotificationRead={onMarkNotificationRead}
+          onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+          onReloadNotifications={onReloadNotifications}
+          onProfileClick={shellProps.onProfileClick}
+        />
+        <div className="flex-1 flex overflow-hidden relative">
+          <SuperAdminSidebar
+            isOpen={isSidebarOpen}
+            onClose={closeSidebar}
+            activeRoute="hospitalizacion"
+            onNavigate={handleNavigate}
+            canViewModule={canViewModule}
+            onLogout={onLogout}
+          />
+          <main className="flex-1 overflow-y-auto relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
+            <DashboardBackgroundDecoration />
+            <HospitalizacionPage
+              canCreate={canCreateModule('hospitalizacion')}
+              canEdit={canEditModule('hospitalizacion')}
             />
           </main>
         </div>

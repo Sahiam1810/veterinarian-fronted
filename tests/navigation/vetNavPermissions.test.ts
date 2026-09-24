@@ -445,6 +445,55 @@ test('fetchVetNavPermissions hides especiesRazas, servicios, and profesionales w
   assert.equal(itemIds.includes('especiesRazas'), false)
   assert.equal(itemIds.includes('servicios'), false)
   assert.equal(itemIds.includes('profesionales'), false)
+})
 
+test('fetchVetNavPermissions returns hospitalizacion when granted by SuperAdmin', async () => {
+  globalThis.fetch = async () => {
+    return Response.json({
+      permissions: {
+        Hospitalización: { canView: true, canCreate: true, canEdit: false, canDelete: false },
+      },
+    })
+  }
+
+  const permissions = await fetchVetNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(isNavPermissionGranted(permissions, 'vet.hospitalizacion'), true)
+
+  const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
+  const itemIds = visibleItems.map((item) => item.id)
+  assert.equal(itemIds.includes('hospitalizacion'), true)
+})
+
+test('fetchVetNavPermissions hides hospitalizacion when View is false', async () => {
+  globalThis.fetch = async () => {
+    return Response.json({
+      permissions: {
+        Hospitalización: { canView: false, canCreate: true, canEdit: true, canDelete: false },
+      },
+    })
+  }
+
+  const permissions = await fetchVetNavPermissions()
+  assert.ok(permissions)
+  if (!permissions) return
+  assert.equal(isNavPermissionGranted(permissions, 'vet.hospitalizacion'), false)
+
+  const visibleItems = resolveNavCatalog(VET_NAV_CATALOG, VET_DEFAULT_PERMISSIONS, permissions)
+  const itemIds = visibleItems.map((item) => item.id)
+  assert.equal(itemIds.includes('hospitalizacion'), false)
+})
+
+test('VET_NAV_CATALOG places hospitalizacion between servicios and profesionales', () => {
+  const serviciosIdx = VET_NAV_CATALOG.findIndex((item) => item.id === 'servicios')
+  const hospIdx = VET_NAV_CATALOG.findIndex((item) => item.id === 'hospitalizacion')
+  const profIdx = VET_NAV_CATALOG.findIndex((item) => item.id === 'profesionales')
+
+  assert.ok(serviciosIdx !== -1, 'servicios should exist in catalog')
+  assert.ok(hospIdx !== -1, 'hospitalizacion should exist in catalog')
+  assert.ok(profIdx !== -1, 'profesionales should exist in catalog')
+  assert.ok(serviciosIdx < hospIdx, 'servicios should precede hospitalizacion')
+  assert.ok(hospIdx < profIdx, 'hospitalizacion should precede profesionales')
 })
 
