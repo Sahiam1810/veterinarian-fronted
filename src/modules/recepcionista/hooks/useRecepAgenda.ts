@@ -25,29 +25,8 @@ import {
   PAST_APPOINTMENT_MESSAGE,
 } from '@/modules/superadmin/utils/appointmentDateGuard'
 import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
+import { buildAvailableDaysLabel } from '../utils/availableDays'
 import { fetchAvailabilitiesByVeterinarian } from '@/modules/superadmin/services/superAdminAvailabilitiesService'
-
-// Convierte el número dayOfWeek (0=Dom,.NET) al nombre en español
-const DAY_NAMES_ES: Record<number, string> = {
-  0: 'Domingo',
-  1: 'Lunes',
-  2: 'Martes',
-  3: 'Miércoles',
-  4: 'Jueves',
-  5: 'Viernes',
-  6: 'Sábado',
-}
-
-function buildAvailableDaysLabel(availabilities: { dayOfWeek: number | string; isActive: boolean }[]): string {
-  const activeDays = [...new Set(
-    availabilities
-      .filter((a) => a.isActive)
-      .map((a) => Number(a.dayOfWeek))
-  )].sort((a, b) => a - b)
-
-  if (activeDays.length === 0) return ''
-  return activeDays.map((d) => DAY_NAMES_ES[d] ?? String(d)).join(', ')
-}
 
 const EMPTY_FORM: RecepAgendaFormState = {
   ownerQuery: '',
@@ -215,6 +194,7 @@ export function useRecepAgenda(enabled: boolean) {
       return
     }
     let cancelled = false
+    setAvailableDaysLabel('')
     fetchAvailabilitiesByVeterinarian(form.professionalId)
       .then((avs) => {
         if (!cancelled) setAvailableDaysLabel(buildAvailableDaysLabel(avs))
