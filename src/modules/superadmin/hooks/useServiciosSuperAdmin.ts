@@ -19,7 +19,7 @@ export function useServiciosSuperAdmin() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const itemsPerPage = 7
 
   const [activeNotification, setActiveNotification] = useState<string | null>(null)
   const [toastTone, setToastTone] = useState<'success' | 'warning'>('success')

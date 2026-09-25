@@ -109,7 +109,7 @@ export function EspeciesRazasSuperAdmin({
   const [editingRaza, setEditingRaza] = useState<RazaCatalogo | null>(null)
 
   const [razaPage, setRazaPage] = useState(1)
-  const ITEMS_PER_PAGE = 5
+  const ITEMS_PER_PAGE = 7
 
   useEffect(() => {
     setRazaPage(1)

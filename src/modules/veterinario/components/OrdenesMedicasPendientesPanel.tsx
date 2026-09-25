@@ -30,7 +30,7 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
   const [filterType, setFilterType] = useState<PendingOrderFilterType>('TODOS')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 4
+  const ITEMS_PER_PAGE = 7
 
   useEffect(() => {
     setCurrentPage(1)

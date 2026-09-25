@@ -1098,7 +1098,7 @@ function ByUserModeView({
   const [showMobileDetail, setShowMobileDetail] = useState(false)
   // Carrusel manual: 10 cuentas por página con flechas.
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 5
+  const ITEMS_PER_PAGE = 7
 
   useEffect(() => {
     setCurrentPage(1)
