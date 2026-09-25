@@ -40,6 +40,7 @@ export const OrdenesMedicasConsultaList = forwardRef<
   const [medicationOrders, setMedicationOrders] = useState<ApiMedicationOrder[]>([])
   const [procedureOrders, setProcedureOrders] = useState<ApiProcedureOrder[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Estados de modales
   const [printModalState, setPrintModalState] = useState<{
@@ -59,6 +60,7 @@ export const OrdenesMedicasConsultaList = forwardRef<
   const loadOrders = async () => {
     if (!appointmentId) return
     setIsLoading(true)
+    setLoadError(null)
     try {
       const [meds, procs] = await Promise.all([
         fetchMedicationOrdersByAppointment(appointmentId),
@@ -66,8 +68,9 @@ export const OrdenesMedicasConsultaList = forwardRef<
       ])
       setMedicationOrders(meds)
       setProcedureOrders(procs)
-    } catch {
-      // Silently fail or fallback
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudieron cargar las órdenes médicas de la consulta.'
+      setLoadError(msg)
     } finally {
       setIsLoading(false)
     }
@@ -141,6 +144,27 @@ export const OrdenesMedicasConsultaList = forwardRef<
 
   if (isLoading) {
     return <div className="text-xs text-sage py-3 text-center">Cargando órdenes de la consulta…</div>
+  }
+
+  if (loadError) {
+    return (
+      <div
+        role="alert"
+        className="p-3 rounded-xl bg-danger-soft border border-danger/30 text-danger text-xs font-medium flex items-center justify-between gap-2"
+      >
+        <div className="min-w-0 truncate">
+          <span className="font-bold">Error: </span>
+          <span>{loadError}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => void loadOrders()}
+          className="px-2.5 py-1 rounded-lg bg-danger text-white text-[11px] font-bold hover:bg-danger/90 transition cursor-pointer shrink-0"
+        >
+          Reintentar
+        </button>
+      </div>
+    )
   }
 
   if (unifiedOrders.length === 0) {
