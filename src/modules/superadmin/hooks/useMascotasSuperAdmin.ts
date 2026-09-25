@@ -7,43 +7,182 @@ import type {
   MascotaFilters,
   DuenoFilters,
   MascotaDuenoDetailItem,
-} from '../types'
+} from '../types/mascotasSuperAdmin.types.ts'
 import {
   fetchClients,
-  fetchPets,
-  fetchClientsPets,
-  createPet,
-  updatePet,
-  deletePet,
-  createClientPet,
-  deleteClientPet,
   createClient,
   updateClient,
   deleteClient,
+} from '../services/superAdminClientsService.ts'
+import {
+  fetchPets,
+  createPet,
+  updatePet,
+  deletePet,
+} from '../services/superAdminPetsService.ts'
+import {
+  fetchClientsPets,
+  createClientPet,
+  deleteClientPet,
+} from '../services/superAdminClientsPetsService.ts'
+import {
   fetchSpecies,
   fetchRaces,
-} from '../services'
+} from '../services/superAdminCatalogService.ts'
 import {
   mapClientToDueno,
-  mapPetToMascota,
   findSpeciesId,
   findRaceId,
   filterRacesBySpecies,
   parseAgeToInt,
   parseWeightToDecimal,
   mapSexoToGender,
-} from '../utils/superAdminApiMappers'
-import { ApiError } from '@/services'
-import { extractUserApiErrorMessage } from '../utils/translateUserApiError'
+} from '../utils/superAdminApiMappers.ts'
+import { ApiError } from '../../../services/apiClient.ts'
+import { extractUserApiErrorMessage } from '../utils/translateUserApiError.ts'
+import {
+  applyMascotasSettledResults,
+  assertMascotaFormCatalogsOpen,
+  assertMascotaSubmitCatalogs,
+  resolveCatalogResourceError,
+  statusFromListResult,
+  type CatalogResourceStatus,
+  type MascotasLoadBundle,
+} from './mascotasLoadHelpers.ts'
+
+export type {
+  CatalogResourceStatus,
+  MascotasCatalogResource,
+  MascotasLoadBundle,
+} from './mascotasLoadHelpers.ts'
+
+export {
+  applyMascotasSettledResults,
+  applyOwnersRetryPreserveCatalogs,
+  assertMascotaFormCatalogsOpen,
+  assertMascotaSubmitCatalogs,
+  getRacesUnavailableMessage,
+  getSpeciesSelectPlaceholder,
+  resolveCatalogResourceError,
+  statusFromListResult,
+} from './mascotasLoadHelpers.ts'
+
+/** Carga inicial: allSettled + apply independiente. */
+export async function fetchMascotasLoadBundle(): Promise<MascotasLoadBundle> {
+  const [clientsResult, petsResult, clientsPetsResult, speciesResult, racesResult] =
+    await Promise.allSettled([
+      fetchClients(),
+      fetchPets(),
+      fetchClientsPets(),
+      fetchSpecies(),
+      fetchRaces(),
+    ])
+
+  return applyMascotasSettledResults(
+    clientsResult,
+    petsResult,
+    clientsPetsResult,
+    speciesResult,
+    racesResult,
+  )
+}
+
+/** Reintento exclusivo de dueños: no toca species/races. */
+export async function fetchOwnersRetryResult(): Promise<{
+  status: Exclude<CatalogResourceStatus, 'loading'>
+  error: string | null
+  duenos: SuperAdminDueno[]
+}> {
+  try {
+    const clients = await fetchClients()
+    const settled = statusFromListResult(
+      { status: 'fulfilled', value: clients },
+      'owners',
+    )
+    return {
+      status: settled.status,
+      error: settled.error,
+      duenos: settled.items.map((c) => mapClientToDueno(c, [])),
+    }
+  } catch (err) {
+    return {
+      status: 'error',
+      error: resolveCatalogResourceError('owners', err),
+      duenos: [],
+    }
+  }
+}
+
+/** Reintento exclusivo de especies. */
+export async function fetchSpeciesRetryResult(): Promise<{
+  status: Exclude<CatalogResourceStatus, 'loading'>
+  error: string | null
+  options: { id: string; name: string }[]
+}> {
+  try {
+    const species = await fetchSpecies()
+    const settled = statusFromListResult(
+      { status: 'fulfilled', value: species },
+      'species',
+    )
+    return {
+      status: settled.status,
+      error: settled.error,
+      options: settled.items.map((s) => ({ id: s.id, name: s.name })),
+    }
+  } catch (err) {
+    return {
+      status: 'error',
+      error: resolveCatalogResourceError('species', err),
+      options: [],
+    }
+  }
+}
+
+/** Reintento exclusivo de razas. */
+export async function fetchRacesRetryResult(): Promise<{
+  status: Exclude<CatalogResourceStatus, 'loading'>
+  error: string | null
+  options: { id: string; name: string; speciesId: string }[]
+}> {
+  try {
+    const races = await fetchRaces()
+    const settled = statusFromListResult(
+      { status: 'fulfilled', value: races },
+      'races',
+    )
+    return {
+      status: settled.status,
+      error: settled.error,
+      options: settled.items.map((r) => ({
+        id: r.id,
+        name: r.name,
+        speciesId: r.speciesId,
+      })),
+    }
+  } catch (err) {
+    return {
+      status: 'error',
+      error: resolveCatalogResourceError('races', err),
+      options: [],
+    }
+  }
+}
 
 export function useMascotasSuperAdmin() {
   const [activeTab, setActiveTab] = useState<'mascotas' | 'duenos'>('mascotas')
   const [mascotas, setMascotas] = useState<SuperAdminMascota[]>([])
   const [duenos, setDuenos] = useState<SuperAdminDueno[]>([])
-  // Catálogos de especies/razas desde la API (para filtros y formularios)
   const [speciesOptions, setSpeciesOptions] = useState<{ id: string; name: string }[]>([])
   const [raceOptions, setRaceOptions] = useState<{ id: string; name: string; speciesId: string }[]>([])
+  const [speciesStatus, setSpeciesStatus] = useState<CatalogResourceStatus>('loading')
+  const [speciesError, setSpeciesError] = useState<string | null>(null)
+  const [racesStatus, setRacesStatus] = useState<CatalogResourceStatus>('loading')
+  const [racesError, setRacesError] = useState<string | null>(null)
+  const [ownersStatus, setOwnersStatus] = useState<CatalogResourceStatus>('loading')
+  const [ownersError, setOwnersError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  // Compat: DuenosPage (y consumidores) leen loadError como fallo de dueños
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [mascotaFilters, setMascotaFilters] = useState<MascotaFilters>({
@@ -76,76 +215,32 @@ export function useMascotasSuperAdmin() {
     }, 3000)
   }, [])
 
+  const applyBundle = useCallback((bundle: MascotasLoadBundle) => {
+    // Species/Races: en error no borrar opciones ya ready (evita falso vacío en reload)
+    setSpeciesStatus(bundle.speciesStatus)
+    setSpeciesError(bundle.speciesError)
+    if (bundle.speciesStatus !== 'error') {
+      setSpeciesOptions(bundle.speciesOptions)
+    }
+    setRacesStatus(bundle.racesStatus)
+    setRacesError(bundle.racesError)
+    if (bundle.racesStatus !== 'error') {
+      setRaceOptions(bundle.raceOptions)
+    }
+    setOwnersStatus(bundle.ownersStatus)
+    setOwnersError(bundle.ownersError)
+    setDuenos(bundle.duenos)
+    setMascotas(bundle.mascotas)
+    setLoadError(bundle.ownersError)
+    if (bundle.petsError) showToast(bundle.petsError)
+    if (bundle.clientsPetsError) showToast(bundle.clientsPetsError)
+  }, [showToast])
+
   const loadData = useCallback(async () => {
     setIsLoading(true)
-    setLoadError(null)
     try {
-      // allSettled: un fallo en plataforma/catálogo no tumba la página entera
-      const [clientsResult, petsResult, clientsPetsResult, speciesResult, racesResult] =
-        await Promise.allSettled([
-          fetchClients(),
-          fetchPets(),
-          fetchClientsPets(),
-          fetchSpecies(),
-          fetchRaces(),
-        ])
-
-      if (clientsResult.status === 'rejected') {
-        throw clientsResult.reason
-      }
-
-      const clients = clientsResult.value
-      const pets = petsResult.status === 'fulfilled' ? petsResult.value : []
-      const clientsPets = clientsPetsResult.status === 'fulfilled' ? clientsPetsResult.value : []
-      const species = speciesResult.status === 'fulfilled' ? speciesResult.value : []
-      const races = racesResult.status === 'fulfilled' ? racesResult.value : []
-
-      // Normaliza GUIDs: Oracle/JSON a veces cambia mayúsculas y rompe el Map
-      const normId = (id: string) => id.toLowerCase()
-      const speciesById = new Map(species.map((s) => [normId(s.id), s.name]))
-      const racesById = new Map(races.map((r) => [normId(r.id), r.name]))
-      const petsById = new Map(pets.map((p) => [normId(p.id), p]))
-      setSpeciesOptions(species.map((s) => ({ id: s.id, name: s.name })))
-      setRaceOptions(races.map((r) => ({ id: r.id, name: r.name, speciesId: r.speciesId })))
-
-      const duenosMapped = clients.map((client) => {
-        const petLinks = clientsPets.filter((cp) => normId(cp.clientId) === normId(client.id))
-        const summary = petLinks
-          .map((link) => {
-            const pet = petsById.get(normId(link.petId))
-            if (!pet) return null
-            const speciesName = speciesById.get(normId(pet.speciesId)) ?? ''
-            return `${pet.name} (${mapPetToMascota({ pet, speciesName }).species})`
-          })
-          .filter((s): s is string => Boolean(s))
-        return mapClientToDueno(client, summary)
-      })
-
-      const duenosById = new Map(duenosMapped.map((d) => [normId(d.id), d]))
-      // Si hay varios dueños, prioriza el principal
-      const clientPetByPetId = new Map<string, (typeof clientsPets)[number]>()
-      for (const cp of clientsPets) {
-        const key = normId(cp.petId)
-        const prev = clientPetByPetId.get(key)
-        if (!prev || (cp.isPrimaryOwner && !prev.isPrimaryOwner)) {
-          clientPetByPetId.set(key, cp)
-        }
-      }
-
-      const mascotasMapped = pets.map((pet) => {
-        const clientPet = clientPetByPetId.get(normId(pet.id))
-        const owner = clientPet ? duenosById.get(normId(clientPet.clientId)) : undefined
-        return mapPetToMascota({
-          pet,
-          clientPet,
-          owner,
-          speciesName: speciesById.get(normId(pet.speciesId)),
-          raceName: racesById.get(normId(pet.raceId)),
-        })
-      })
-
-      setDuenos(duenosMapped)
-      setMascotas(mascotasMapped)
+      const bundle = await fetchMascotasLoadBundle()
+      applyBundle(bundle)
     } catch (err) {
       const message =
         err instanceof ApiError
@@ -154,15 +249,50 @@ export function useMascotasSuperAdmin() {
             : err.message
           : 'No se pudieron cargar mascotas y dueños.'
       setLoadError(message)
+      setOwnersError(message)
+      setOwnersStatus('error')
       showToast(message)
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [applyBundle, showToast])
 
   useEffect(() => {
     void loadData()
   }, [loadData])
+
+  const retryOwners = useCallback(async () => {
+    setOwnersStatus('loading')
+    setOwnersError(null)
+    const result = await fetchOwnersRetryResult()
+    setOwnersStatus(result.status)
+    setOwnersError(result.error)
+    setLoadError(result.error)
+    setDuenos(result.duenos)
+    // Species/Races no se tocan
+  }, [])
+
+  const retrySpecies = useCallback(async () => {
+    setSpeciesStatus('loading')
+    setSpeciesError(null)
+    const result = await fetchSpeciesRetryResult()
+    setSpeciesStatus(result.status)
+    setSpeciesError(result.error)
+    if (result.status !== 'error') {
+      setSpeciesOptions(result.options)
+    }
+  }, [])
+
+  const retryRaces = useCallback(async () => {
+    setRacesStatus('loading')
+    setRacesError(null)
+    const result = await fetchRacesRetryResult()
+    setRacesStatus(result.status)
+    setRacesError(result.error)
+    if (result.status !== 'error') {
+      setRaceOptions(result.options)
+    }
+  }, [])
 
   const filteredMascotas = useMemo(() => {
     return mascotas.filter((m) => {
@@ -220,10 +350,33 @@ export function useMascotasSuperAdmin() {
   }, [filteredDuenos, duenoPage, itemsPerPage])
 
   const createMascota = async (data: MascotaFormData) => {
+    const guard = assertMascotaSubmitCatalogs(
+      speciesStatus,
+      racesStatus,
+      ownersStatus,
+      duenos.length,
+    )
+    if (!guard.ok) {
+      showToast(guard.message)
+      return
+    }
+
     try {
-      const [species, races] = await Promise.all([fetchSpecies(), fetchRaces()])
+      const [speciesResult, racesResult] = await Promise.allSettled([
+        fetchSpecies(),
+        fetchRaces(),
+      ])
+      if (speciesResult.status === 'rejected') {
+        showToast(resolveCatalogResourceError('species', speciesResult.reason))
+        return
+      }
+      if (racesResult.status === 'rejected') {
+        showToast(resolveCatalogResourceError('races', racesResult.reason))
+        return
+      }
+      const species = speciesResult.value
+      const races = racesResult.value
       const speciesId = findSpeciesId(data.species, species)
-      // Solo razas de esa especie (evita Golden con Conejo)
       const racesForSpecies = filterRacesBySpecies(data.species, races, species)
       if (racesForSpecies.length === 0) {
         showToast('No hay razas registradas para esa especie.')
@@ -258,9 +411,33 @@ export function useMascotasSuperAdmin() {
   }
 
   const updateMascota = async (id: string, data: MascotaFormData) => {
+    const guard = assertMascotaSubmitCatalogs(
+      speciesStatus,
+      racesStatus,
+      ownersStatus,
+      duenos.length,
+    )
+    if (!guard.ok) {
+      showToast(guard.message)
+      return
+    }
+
     try {
       const current = mascotas.find((m) => m.id === id)
-      const [species, races] = await Promise.all([fetchSpecies(), fetchRaces()])
+      const [speciesResult, racesResult] = await Promise.allSettled([
+        fetchSpecies(),
+        fetchRaces(),
+      ])
+      if (speciesResult.status === 'rejected') {
+        showToast(resolveCatalogResourceError('species', speciesResult.reason))
+        return
+      }
+      if (racesResult.status === 'rejected') {
+        showToast(resolveCatalogResourceError('races', racesResult.reason))
+        return
+      }
+      const species = speciesResult.value
+      const races = racesResult.value
       const speciesId = findSpeciesId(data.species, species)
       const racesForSpecies = filterRacesBySpecies(data.species, races, species)
       if (racesForSpecies.length === 0) {
@@ -269,7 +446,6 @@ export function useMascotasSuperAdmin() {
       }
       const raceId = findRaceId(data.breed, racesForSpecies)
 
-      // PUT /api/Pets/{id}
       await updatePet(id, {
         name: data.name.trim(),
         age: parseAgeToInt(data.age),
@@ -281,7 +457,6 @@ export function useMascotasSuperAdmin() {
         photoUrl: data.photoUrl?.trim() || null,
       })
 
-      // Sincroniza vínculo ClientsPets (el PUT de ClientsPets no cambia clientId)
       const ownerChanged =
         !current?.ownerId ||
         current.ownerId.toLowerCase() !== data.ownerId.toLowerCase()
@@ -409,11 +584,21 @@ export function useMascotasSuperAdmin() {
   }
 
   const openCreateMascota = () => {
+    const guard = assertMascotaFormCatalogsOpen(speciesStatus, racesStatus)
+    if (!guard.ok) {
+      showToast(guard.message)
+      return
+    }
     setEditingMascota(null)
     setIsMascotaModalOpen(true)
   }
 
   const openEditMascota = (m: SuperAdminMascota) => {
+    const guard = assertMascotaFormCatalogsOpen(speciesStatus, racesStatus)
+    if (!guard.ok) {
+      showToast(guard.message)
+      return
+    }
     setEditingMascota(m)
     setIsMascotaModalOpen(true)
   }
@@ -435,9 +620,18 @@ export function useMascotasSuperAdmin() {
     duenos,
     speciesOptions,
     raceOptions,
+    speciesStatus,
+    speciesError,
+    racesStatus,
+    racesError,
+    ownersStatus,
+    ownersError,
     isLoading,
     loadError,
     reload: loadData,
+    retryOwners,
+    retrySpecies,
+    retryRaces,
     filteredMascotas,
     filteredDuenos,
     paginatedMascotas,
