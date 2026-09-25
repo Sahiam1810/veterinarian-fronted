@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import {
-  fetchPetAdmissionOptions,
+  fetchAdmissionOptions,
   admitStay,
 } from '../services/hospitalizacionService'
 import { validateAdmissionForm } from '../utils/hospitalizacionDays'
-import type { PetAdmissionOption } from '../types/hospitalizacion.types'
+import type { HospitalizationAdmissionOption } from '../types/hospitalizacion.types'
 import { ProfessionalCombobox } from '../../superadmin/components/ProfessionalCombobox'
 import { PawIcon, PlusIcon } from '../../../global/components/Icons.tsx'
 import { ViewPopup } from '../../veterinario/components/ViewPopup'
@@ -21,7 +21,7 @@ export function AdmitirMascotaModal({
   onClose,
   onSuccess,
 }: AdmitirMascotaModalProps) {
-  const [pets, setPets] = useState<PetAdmissionOption[]>([])
+  const [pets, setPets] = useState<HospitalizationAdmissionOption[]>([])
   const [isLoadingPets, setIsLoadingPets] = useState(false)
   const [loadPetsError, setLoadPetsError] = useState<string | null>(null)
 
@@ -42,7 +42,7 @@ export function AdmitirMascotaModal({
 
     async function loadOptions() {
       try {
-        const list = await fetchPetAdmissionOptions()
+        const list = await fetchAdmissionOptions()
         if (!cancelled) {
           setPets(list)
         }
@@ -179,13 +179,22 @@ export function AdmitirMascotaModal({
                     subtitle: `Propietario: ${p.ownerName}`,
                   }))}
                   hasAllOption={false}
-                  disabled={isLoadingPets || isSubmitting}
+                  disabled={isLoadingPets || isSubmitting || pets.length === 0}
                   placeholder={
-                    isLoadingPets ? 'Cargando listado de mascotas…' : 'Selecciona una mascota…'
+                    isLoadingPets
+                      ? 'Cargando listado de mascotas…'
+                      : pets.length === 0
+                        ? 'No hay mascotas disponibles para admisión'
+                        : 'Selecciona una mascota…'
                   }
                   searchPlaceholder="Buscar mascota o dueño por nombre…"
                   className="w-full bg-white"
                 />
+                {!isLoadingPets && !loadPetsError && pets.length === 0 && (
+                  <p className="text-xs text-sage mt-1.5 font-medium">
+                    No hay mascotas disponibles para admisión hospitalaria.
+                  </p>
+                )}
               </div>
 
               <div>

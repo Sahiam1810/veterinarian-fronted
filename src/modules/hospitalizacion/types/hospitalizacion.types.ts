@@ -42,11 +42,13 @@ export interface AddStayNoteDto {
   entregadoAUserId?: string | null
 }
 
-export interface PetAdmissionOption {
+export interface HospitalizationAdmissionOption {
   clientPetId: string
   petName: string
   ownerName: string
 }
+
+export type PetAdmissionOption = HospitalizationAdmissionOption
 
 export interface HospitalizationInvoiceItem {
   name: string

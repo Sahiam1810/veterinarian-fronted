@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import test, { beforeEach, afterEach } from 'node:test'
 import {
+  fetchAdmissionOptions,
   fetchPetAdmissionOptions,
   admitStay,
 } from '../../src/modules/hospitalizacion/services/hospitalizacionService.ts'
 import { validateAdmissionForm } from '../../src/modules/hospitalizacion/utils/hospitalizacionDays.ts'
-import type { PetAdmissionOption } from '../../src/modules/hospitalizacion/types/hospitalizacion.types.ts'
+import type { HospitalizationAdmissionOption } from '../../src/modules/hospitalizacion/types/hospitalizacion.types.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -53,14 +54,14 @@ afterEach(() => {
   globalThis.fetch = originalFetch
 })
 
-test('fetchPetAdmissionOptions consumes only GET /api/hospitalization-stays/admission-options', async () => {
+test('fetchAdmissionOptions consumes only GET /api/hospitalization-stays/admission-options without Mascotas or Clientes endpoints', async () => {
   const requestedUrls: string[] = []
 
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input)
     requestedUrls.push(url)
 
-    const mockResponse: PetAdmissionOption[] = [
+    const mockResponse: HospitalizationAdmissionOption[] = [
       {
         clientPetId: 'cp-guid-1',
         petName: 'Luna',
@@ -79,20 +80,45 @@ test('fetchPetAdmissionOptions consumes only GET /api/hospitalization-stays/admi
     })
   }) as typeof fetch
 
-  const result = await fetchPetAdmissionOptions()
+  const result = await fetchAdmissionOptions()
+  const resultAlias = await fetchPetAdmissionOptions()
 
-  assert.equal(requestedUrls.length, 1)
+  assert.equal(requestedUrls.length, 2)
   assert.ok(requestedUrls[0].includes('/api/hospitalization-stays/admission-options'))
-  assert.ok(!requestedUrls.some((u) => u.includes('/api/ClientsPets') || u.includes('/api/Pets') || u.includes('/api/Clients')))
+  assert.ok(requestedUrls[1].includes('/api/hospitalization-stays/admission-options'))
+  assert.ok(
+    !requestedUrls.some(
+      (u) =>
+        u.includes('/api/ClientsPets') ||
+        u.includes('/api/Pets') ||
+        u.includes('/api/Clients') ||
+        u.includes('/api/mascotas') ||
+        u.includes('/api/duenos'),
+    ),
+  )
   assert.equal(result.length, 2)
   assert.equal(result[0].clientPetId, 'cp-guid-1')
   assert.equal(result[0].petName, 'Luna')
   assert.equal(result[0].ownerName, 'Juan Pérez')
+  assert.deepEqual(resultAlias, result)
 })
 
-test('fetchPetAdmissionOptions maps petName, ownerName and clientPetId for selector display', async () => {
+test('fetchAdmissionOptions handles empty response list correctly', async () => {
   globalThis.fetch = (async () => {
-    const mockResponse: PetAdmissionOption[] = [
+    return new Response(JSON.stringify([]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  const result = await fetchAdmissionOptions()
+  assert.ok(Array.isArray(result))
+  assert.equal(result.length, 0)
+})
+
+test('fetchAdmissionOptions maps petName, ownerName and clientPetId for selector display', async () => {
+  globalThis.fetch = (async () => {
+    const mockResponse: HospitalizationAdmissionOption[] = [
       {
         clientPetId: 'cp-abc-123',
         petName: 'Firulais',
@@ -105,7 +131,7 @@ test('fetchPetAdmissionOptions maps petName, ownerName and clientPetId for selec
     })
   }) as typeof fetch
 
-  const list = await fetchPetAdmissionOptions()
+  const list = await fetchAdmissionOptions()
   const comboboxOptions = list.map((p) => ({
     id: p.clientPetId,
     name: p.petName,
@@ -118,7 +144,26 @@ test('fetchPetAdmissionOptions maps petName, ownerName and clientPetId for selec
   assert.equal(comboboxOptions[0].subtitle, 'Propietario: Carlos Gómez')
 })
 
-test('fetchPetAdmissionOptions propagates API load errors without silent fallbacks', async () => {
+test('fetchAdmissionOptions propagates 401 Unauthorized error', async () => {
+  globalThis.fetch = (async () => {
+    return new Response(JSON.stringify({ message: 'No autorizado.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }) as typeof fetch
+
+  await assert.rejects(
+    async () => {
+      await fetchAdmissionOptions()
+    },
+    (err: Error) => {
+      assert.ok(err.message.includes('No autorizado.'))
+      return true
+    },
+  )
+})
+
+test('fetchAdmissionOptions propagates 403 Forbidden error', async () => {
   globalThis.fetch = (async () => {
     return new Response(JSON.stringify({ message: 'No tienes permisos de hospitalización.' }), {
       status: 403,
@@ -128,7 +173,7 @@ test('fetchPetAdmissionOptions propagates API load errors without silent fallbac
 
   await assert.rejects(
     async () => {
-      await fetchPetAdmissionOptions()
+      await fetchAdmissionOptions()
     },
     (err: Error) => {
       assert.ok(err.message.includes('No tienes permisos de hospitalización.'))
@@ -217,7 +262,7 @@ test('admitStay propagates backend 409 Conflict error when pet has an active hos
   )
 })
 
-test('submit button and selector state logic disables controls during loading, submitting or missing fields', () => {
+test('submit button and selector state logic disables controls during loading, submitting, empty list or missing fields', () => {
   function isSubmitDisabled(
     isSubmitting: boolean,
     isLoadingPets: boolean,

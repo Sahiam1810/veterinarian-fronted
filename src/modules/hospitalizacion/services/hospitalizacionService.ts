@@ -5,7 +5,7 @@ import type {
   ApiStaffMember,
   AdmitStayDto,
   AddStayNoteDto,
-  PetAdmissionOption,
+  HospitalizationAdmissionOption,
   HospitalizationInvoice,
   ApiSupplyConsumption,
   ApiSupplyConsumptionTotal,
@@ -25,9 +25,11 @@ export async function fetchStaysByPet(clientPetId: string): Promise<ApiHospitali
   return apiClient.get<ApiHospitalizationStay[]>(`/api/hospitalization-stays/pet/${clientPetId}`)
 }
 
-export async function fetchPetAdmissionOptions(): Promise<PetAdmissionOption[]> {
-  return apiClient.get<PetAdmissionOption[]>('/api/hospitalization-stays/admission-options')
+export async function fetchAdmissionOptions(): Promise<HospitalizationAdmissionOption[]> {
+  return apiClient.get<HospitalizationAdmissionOption[]>('/api/hospitalization-stays/admission-options')
 }
+
+export const fetchPetAdmissionOptions = fetchAdmissionOptions
 
 export async function admitStay(data: AdmitStayDto): Promise<{ id: string } | string> {
   return apiClient.post<{ id: string } | string>('/api/hospitalization-stays', {
