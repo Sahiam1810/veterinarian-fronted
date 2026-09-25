@@ -760,8 +760,8 @@ export function MascotasSuperAdmin({
               </div>
 
               {/* Tabla de Mascotas */}
-              <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 flex flex-col">
-                <div className="overflow-x-auto">
+              <div className="bg-white border border-border-tan rounded-2xl sm:rounded-[1.25rem] pt-2 shadow-[0_4px_20px_rgba(35,78,70,0.04)] overflow-hidden flex-1 min-h-0 flex flex-col">
+                <div className="overflow-auto min-h-0 flex-1">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
                       <tr className="bg-bone/80 border-b border-border-tan/60">
