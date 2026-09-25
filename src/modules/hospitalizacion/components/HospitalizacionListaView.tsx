@@ -141,15 +141,16 @@ export function HospitalizacionListaView({
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-sage bg-bone px-3 py-1.5 rounded-xl border border-border-tan">
-            Estancias activas: {stays.length}
+            Estancias activas: {isLoading ? '…' : stays.length}
           </span>
           <button
             type="button"
             onClick={() => void loadStays()}
-            className="p-2 rounded-xl border border-border-tan hover:bg-bone text-sage hover:text-brand transition cursor-pointer"
+            disabled={isLoading}
+            className="p-2 rounded-xl border border-border-tan hover:bg-bone text-sage hover:text-brand transition cursor-pointer disabled:opacity-60"
             title="Refrescar lista"
           >
-            <ReloadIcon className="w-4 h-4" />
+            <ReloadIcon className={`w-4 h-4 ${isLoading ? 'animate-spin text-brand' : ''}`} />
           </button>
         </div>
       </div>
@@ -157,9 +158,10 @@ export function HospitalizacionListaView({
       {/* Tabla de Estancias */}
       <div className="bg-white border border-border-tan rounded-2xl shadow-xs overflow-hidden">
         {isLoading ? (
-          <div className="p-12 text-center text-sage text-sm space-y-2">
-            <div className="animate-spin inline-block w-6 h-6 border-2 border-brand border-t-transparent rounded-full" />
-            <p>Cargando estancias hospitalarias activas…</p>
+          <div className="p-12 text-center text-sage text-sm space-y-3">
+            <div className="w-8 h-8 border-3 border-brand/30 border-t-brand rounded-full animate-spin inline-block" />
+            <p className="font-semibold text-charcoal text-sm">Cargando estancias hospitalarias activas…</p>
+            <p className="text-xs text-sage font-medium">Obteniendo pacientes ingresados a hospitalización</p>
           </div>
         ) : loadError ? (
           <div className="p-8 text-center space-y-3 bg-danger-soft/40">
