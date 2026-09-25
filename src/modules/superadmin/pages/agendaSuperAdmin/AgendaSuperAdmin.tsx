@@ -198,6 +198,7 @@ export function AgendaSuperAdmin({
     handleStartAttention,
     handleMarkNoAsistio,
     handleRegisterPayment,
+    handleCheckIn,
     isCitaPaid,
     reload,
   } = useAgendaSuperAdmin()
@@ -713,6 +714,12 @@ export function AgendaSuperAdmin({
         onMarcarNoAsistio={(citaId) => {
           if (!canEdit) return
           void handleMarkNoAsistio(citaId).then((ok) => {
+            if (ok) setIsDetalleModalOpen(false)
+          })
+        }}
+        onMarcarLlegada={(citaId) => {
+          if (!canEdit) return
+          void handleCheckIn(citaId).then((ok) => {
             if (ok) setIsDetalleModalOpen(false)
           })
         }}

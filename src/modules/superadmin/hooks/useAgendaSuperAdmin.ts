@@ -177,6 +177,7 @@ export function useAgendaSuperAdmin() {
       const racesById = new Map(races.map((r) => [r.id, r.name]))
       const vetsById = new Map(veterinarians.map((v) => [v.id, v]))
 
+      const statusesById = new Map(statuses.map((s) => [s.id.toLowerCase(), s.name]))
       setStatusCatalog(statuses.map((s) => ({ id: s.id, name: s.name })))
 
       const mapped = apiAppointments.map((apt) => {
@@ -184,6 +185,7 @@ export function useAgendaSuperAdmin() {
         const pet = clientPet ? petsById.get(clientPet.petId) : undefined
         const client = clientPet ? clientsById.get(clientPet.clientId) : undefined
         const vet = vetsById.get(apt.veterinarianId)
+        const statusName = apt.statusName || (apt.statusId ? statusesById.get(apt.statusId.toLowerCase()) : undefined)
 
         return mapAppointmentToCita(apt, {
           petName: pet?.name,
@@ -191,6 +193,7 @@ export function useAgendaSuperAdmin() {
           species: pet ? speciesById.get(pet.speciesId) : undefined,
           ownerName: client?.fullName,
           professionalName: vet?.userFullName ?? undefined,
+          statusName,
         })
       })
 
@@ -482,6 +485,37 @@ export function useAgendaSuperAdmin() {
     }
   }
 
+  // Marcar llegada (AGENDADA → CONFIRMADA / EN ESPERA)
+  const handleCheckIn = async (id: string): Promise<boolean> => {
+    const target = citas.find((c) => c.id === id)
+    if (!target) return false
+
+    if (target.status !== 'AGENDADA') {
+      showToast('Solo se puede marcar la llegada en citas agendadas.')
+      return false
+    }
+
+    const confirmId = findStatusId(statusCatalog, 'confirmada', 'espera')
+    if (!confirmId) {
+      showToast('No hay estado CONFIRMADA en el catálogo.')
+      return false
+    }
+
+    try {
+      await updateAppointmentStatus(id, {
+        statusId: confirmId,
+        comment: 'Llegada del paciente marcada desde agenda SuperAdmin',
+      })
+      showToast(`Se marcó la llegada de ${target.petName || 'la mascota'}.`)
+      await loadData()
+      return true
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : 'No se pudo marcar la llegada de la cita.'
+      showToast(message)
+      return false
+    }
+  }
+
   // Mismo endpoint que el veterinario: AGENDADA → NO_ASISTIO con comentario.
   const handleMarkNoAsistio = async (id: string): Promise<boolean> => {
     const target = citas.find((c) => c.id === id)
@@ -545,6 +579,7 @@ export function useAgendaSuperAdmin() {
     setEditingCita,
     handleSaveCita,
     handleCancelCita,
+    handleCheckIn,
     handleStartAttention,
     handleMarkNoAsistio,
     handleRegisterPayment,

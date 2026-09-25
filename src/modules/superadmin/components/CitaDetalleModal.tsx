@@ -13,6 +13,7 @@ export interface CitaDetalleModalProps {
   onClose: () => void
   onCancel: (citaId: string) => void
   onReprogramar: (cita: CitaSuperAdmin) => void
+  onMarcarLlegada?: (citaId: string) => void
   onMarcarAtendida: (citaId: string) => void
   onMarcarNoAsistio: (citaId: string) => void
   onRegistrarPago?: (citaId: string) => void
@@ -44,6 +45,7 @@ export function CitaDetalleModal({
   onClose,
   onCancel,
   onReprogramar,
+  onMarcarLlegada,
   onMarcarAtendida,
   onMarcarNoAsistio,
   onRegistrarPago,
@@ -54,6 +56,7 @@ export function CitaDetalleModal({
   if (!isOpen || !cita) return null
 
   const actions = getCitaDetalleFooterActions(cita.status)
+  const showMarcarLlegada = actions.showMarcarLlegada && canEdit && Boolean(onMarcarLlegada)
   const showCancelar = actions.showCancelar && canDelete
   const showReprogramar = actions.showReprogramar && canEdit
   const showMarcarNoAsistio = actions.showMarcarNoAsistio && canEdit
@@ -66,6 +69,7 @@ export function CitaDetalleModal({
     cita.respiratoryRate != null
 
   const showNoActionsMessage =
+    !showMarcarLlegada &&
     !showCancelar &&
     !showReprogramar &&
     !showMarcarNoAsistio &&
@@ -253,6 +257,17 @@ export function CitaDetalleModal({
                 className="border border-border-tan bg-white hover:bg-bone text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs"
               >
                 Reprogramar
+              </button>
+            )}
+
+            {showMarcarLlegada && (
+              <button
+                type="button"
+                onClick={() => onMarcarLlegada?.(cita.id)}
+                title="Marcar llegada del paciente"
+                className="border border-ochre/40 bg-ochre hover:bg-ochre/90 text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
+              >
+                <span>Marcar llegada</span>
               </button>
             )}
 
