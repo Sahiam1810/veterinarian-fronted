@@ -74,11 +74,12 @@ export interface RecepAgendaDayAppointment {
   isPaid: boolean
 }
 
-// Indica si la cita aún se puede editar (no finalizada ni cancelada)
+// Solo una cita en estado AGENDADO puede editarse o reprogramarse.
+// Una vez marcada la llegada (EN ESPERA) o en estados posteriores, la edición queda inhabilitada.
 export function isRecepAppointmentEditable(
   status: RecepAgendaDayAppointment['status'],
 ): boolean {
-  return status === 'AGENDADO' || status === 'EN ESPERA' || status === 'EN CONSULTORIO'
+  return status === 'AGENDADO'
 }
 
 // Tomar signos vitales al llegar la mascota (citas activas/no terminales)

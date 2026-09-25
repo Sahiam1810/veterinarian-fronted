@@ -567,15 +567,16 @@ function AppointmentDetail({
               </button>
             </>
           )}
-          <button
-            type="button"
-            hidden={!onEdit}
-            onClick={onEdit}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
-          >
-            <EditIcon className="w-4 h-4" />
-            <span>Editar cita</span>
-          </button>
+          {canEdit && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-4 py-2.5 text-sm font-bold hover:bg-brand-hover transition cursor-pointer"
+            >
+              <EditIcon className="w-4 h-4" />
+              <span>Editar cita</span>
+            </button>
+          )}
           {canNoShow && onMarkNoAsistio && (
             <button
               type="button"
@@ -588,13 +589,15 @@ function AppointmentDetail({
         </div>
       ) : (
         <p className="mt-auto text-[11px] text-sage font-medium text-center px-2 py-2 rounded-xl border border-dashed border-border-tan bg-white">
-          Esta cita ya está{' '}
-          {appointment.status === 'ATENDIDO'
-            ? 'completada'
-            : appointment.status === 'NO ASISTIÓ'
-              ? 'marcada como no asistió'
-              : 'cancelada'}{' '}
-          y no se puede editar.
+          {appointment.status === 'EN ESPERA'
+            ? 'El paciente ya llegó (en espera) y la cita no se puede editar.'
+            : appointment.status === 'EN CONSULTORIO'
+              ? 'El paciente está en consultorio y la cita no se puede editar.'
+              : appointment.status === 'ATENDIDO'
+                ? 'Esta cita ya está completada y no se puede editar.'
+                : appointment.status === 'NO ASISTIÓ'
+                  ? 'Esta cita está marcada como no asistió y no se puede editar.'
+                  : 'Esta cita está cancelada y no se puede editar.'}
         </p>
       )}
     </div>

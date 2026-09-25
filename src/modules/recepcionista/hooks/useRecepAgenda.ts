@@ -8,7 +8,7 @@ import type {
   RecepAgendaPetOption,
   RecepAgendaTimeSlot,
 } from '../types'
-import { canMarkRecepNoAsistio, canCheckIn } from '../types'
+import { canMarkRecepNoAsistio, canCheckIn, isRecepAppointmentEditable } from '../types'
 import {
   fetchRecepAgendaCatalog,
   fetchRecepDayAppointments,
@@ -420,8 +420,8 @@ export function useRecepAgenda(enabled: boolean) {
       return
     }
     if (!catalog) return
-    if (appointment.status === 'ATENDIDO' || appointment.status === 'CANCELADO' || appointment.status === 'NO ASISTIÓ') {
-      showNotice('Esta cita ya no se puede editar')
+    if (!isRecepAppointmentEditable(appointment.status)) {
+      showNotice('Solo se pueden editar citas en estado agendado')
       return
     }
 
