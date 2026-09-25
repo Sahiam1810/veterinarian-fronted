@@ -21,6 +21,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     canEdit,
     timeSlots,
     isLoadingSlots,
+    availableDaysLabel,
     matchedOwners,
     selectedOwner,
     petsForOwner,
@@ -81,6 +82,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         professionals={catalog.professionals}
         timeSlots={timeSlots}
         isLoadingSlots={isLoadingSlots}
+        availableDaysLabel={availableDaysLabel}
         selectedOwner={selectedOwner}
         selectedOwnerName={selectedOwner?.name ?? null}
         selectedPetLabel={
