@@ -42,6 +42,18 @@ export interface AddStayNoteDto {
   entregadoAUserId?: string | null
 }
 
+export interface PetAdmissionOption {
+  clientPetId: string
+  petName: string
+  ownerName: string
+}
+
+export interface HospitalizationAdmissionOption {
+  clientPetId: string
+  petName: string
+  ownerName: string
+}
+
 export interface HospitalizationInvoiceItem {
   name: string
   quantity: number
