@@ -14,7 +14,7 @@ import {
 } from '../utils/pendingOrdersView'
 import { OrdenMedicaPrintModal, type PrintOrderType } from './OrdenMedicaPrintModal'
 import { CompletarOrdenModal, type CompleteOrderType } from './CompletarOrdenModal'
-import { PrinterIcon, CheckIcon, PillIcon } from '@/global/components'
+import { PrinterIcon, CheckIcon, PillIcon, Pagination } from '@/global/components'
 import { MedicalFolderIcon } from './MascotasIcons'
 
 export type { UnifiedPendingOrder } from '../utils/pendingOrdersView'
@@ -29,6 +29,12 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
   const [isLoading, setIsLoading] = useState(false)
   const [filterType, setFilterType] = useState<PendingOrderFilterType>('TODOS')
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 4
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterType, searchQuery])
 
   // Estados de modales
   const [printModalState, setPrintModalState] = useState<{
@@ -72,6 +78,11 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
 
   // Filtrar resultados
   const filteredOrders = filterPendingOrders(unifiedPending, filterType, searchQuery)
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE)
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   // Convertir PendingMedicationOrder a ApiMedicationOrder para modal de impresión y completar
   const toApiMedicationOrder = (p: PendingMedicationOrder): ApiMedicationOrder => ({
@@ -183,160 +194,173 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
 
       {/* Grilla de Ordenes */}
       {!isLoading && filteredOrders.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredOrders.map((order) => {
-            const isMed = order.type === 'MEDICAMENTO'
-            const rawMed = order.rawMedicationOrder
-            const rawProc = order.rawProcedureOrder
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paginatedOrders.map((order) => {
+              const isMed = order.type === 'MEDICAMENTO'
+              const rawMed = order.rawMedicationOrder
+              const rawProc = order.rawProcedureOrder
 
-            return (
-              <div
-                key={`${order.type}-${order.id}`}
-                className="bg-white rounded-2xl border border-border-tan p-5 shadow-xs flex flex-col justify-between hover:border-brand/30 transition"
-              >
-                <div className="space-y-3">
-                  {/* Encabezado Ítem */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                          isMed
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}
-                      >
-                        {isMed ? (
-                          <PillIcon className="w-3.5 h-3.5" />
-                        ) : (
-                          <MedicalFolderIcon className="w-3.5 h-3.5" />
-                        )}
-                        {isMed ? 'Medicamento' : 'Procedimiento'}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          order.isInHouse
-                            ? 'bg-sage-soft text-brand'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}
-                      >
-                        {order.isInHouse ? 'Interna' : 'Remitida'}
+              return (
+                <div
+                  key={`${order.type}-${order.id}`}
+                  className="bg-white rounded-2xl border border-border-tan p-5 shadow-xs flex flex-col justify-between hover:border-brand/30 transition"
+                >
+                  <div className="space-y-3">
+                    {/* Encabezado Ítem */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
+                            isMed
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}
+                        >
+                          {isMed ? (
+                            <PillIcon className="w-3.5 h-3.5" />
+                          ) : (
+                            <MedicalFolderIcon className="w-3.5 h-3.5" />
+                          )}
+                          {isMed ? 'Medicamento' : 'Procedimiento'}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            order.isInHouse
+                              ? 'bg-sage-soft text-brand'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}
+                        >
+                          {order.isInHouse ? 'Interna' : 'Remitida'}
+                        </span>
+                      </div>
+
+                      <span className="text-[11px] text-brand/60 font-medium">
+                        {new Date(order.createdAt).toLocaleDateString('es-CO', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </span>
                     </div>
 
-                    <span className="text-[11px] text-brand/60 font-medium">
-                      {new Date(order.createdAt).toLocaleDateString('es-CO', {
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    {/* Datos Paciente y Dueño */}
+                    <div className="bg-sage-soft/30 p-3 rounded-xl border border-border-tan/60">
+                      <div className="text-sm font-bold text-brand">{order.petName}</div>
+                      <div className="text-xs text-brand/70 font-medium">Dueño: {order.ownerName}</div>
+                    </div>
+
+                    {/* Detalle de Items */}
+                    <div className="space-y-1.5">
+                      <div className="text-xs font-bold text-brand/80">Detalle de la Orden:</div>
+                      {isMed && rawMed?.items && (
+                        <ul className="text-xs space-y-1 pl-1">
+                          {rawMed.items.map((item) => (
+                            <li key={item.id} className="text-brand/90 flex items-start gap-1.5">
+                              <span className="text-brand font-bold">•</span>
+                              <div>
+                                <span className="font-semibold">{item.medicationName || 'Medicamento'}</span>
+                                {item.notes && (
+                                  <span className="text-brand/70 italic block text-[11px]">
+                                    Nota: {item.notes}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {!isMed && rawProc?.items && (
+                        <ul className="text-xs space-y-1 pl-1">
+                          {rawProc.items.map((item) => (
+                            <li key={item.id} className="text-brand/90 flex items-start gap-1.5">
+                              <span className="text-brand font-bold">•</span>
+                              <div>
+                                <span className="font-semibold">{item.procedureName || 'Procedimiento'}</span>
+                                {item.notes && (
+                                  <span className="text-brand/70 italic block text-[11px]">
+                                    Nota: {item.notes}
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Datos Paciente y Dueño */}
-                  <div className="bg-sage-soft/30 p-3 rounded-xl border border-border-tan/60">
-                    <div className="text-sm font-bold text-brand">{order.petName}</div>
-                    <div className="text-xs text-brand/70 font-medium">Dueño: {order.ownerName}</div>
-                  </div>
-
-                  {/* Detalle de Items */}
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-bold text-brand/80">Detalle de la Orden:</div>
-                    {isMed && rawMed?.items && (
-                      <ul className="text-xs space-y-1 pl-1">
-                        {rawMed.items.map((item) => (
-                          <li key={item.id} className="text-brand/90 flex items-start gap-1.5">
-                            <span className="text-brand font-bold">•</span>
-                            <div>
-                              <span className="font-semibold">{item.medicationName || 'Medicamento'}</span>
-                              {item.notes && (
-                                <span className="text-brand/70 italic block text-[11px]">
-                                  Nota: {item.notes}
-                                </span>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {!isMed && rawProc?.items && (
-                      <ul className="text-xs space-y-1 pl-1">
-                        {rawProc.items.map((item) => (
-                          <li key={item.id} className="text-brand/90 flex items-start gap-1.5">
-                            <span className="text-brand font-bold">•</span>
-                            <div>
-                              <span className="font-semibold">{item.procedureName || 'Procedimiento'}</span>
-                              {item.notes && (
-                                <span className="text-brand/70 italic block text-[11px]">
-                                  Nota: {item.notes}
-                                </span>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-
-                {/* Acciones */}
-                <div className="pt-4 mt-3 border-t border-border-tan/60 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isMed && rawMed) {
-                        setPrintModalState({
-                          isOpen: true,
-                          orderType: 'MEDICAMENTO',
-                          medicationOrder: toApiMedicationOrder(rawMed),
-                          petName: rawMed.petName,
-                          ownerName: rawMed.ownerName,
-                        })
-                      } else if (!isMed && rawProc) {
-                        setPrintModalState({
-                          isOpen: true,
-                          orderType: 'PROCEDIMIENTO',
-                          procedureOrder: toApiProcedureOrder(rawProc),
-                          petName: rawProc.petName,
-                          ownerName: rawProc.ownerName,
-                        })
-                      }
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan text-xs font-semibold text-brand hover:bg-sage-soft transition cursor-pointer"
-                  >
-                    <PrinterIcon className="w-3.5 h-3.5" />
-                    <span>Imprimir</span>
-                  </button>
-
-                  {canEdit && (
+                  {/* Acciones */}
+                  <div className="pt-4 mt-3 border-t border-border-tan/60 flex items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         if (isMed && rawMed) {
-                          setCompleteModalState({
+                          setPrintModalState({
                             isOpen: true,
                             orderType: 'MEDICAMENTO',
                             medicationOrder: toApiMedicationOrder(rawMed),
+                            petName: rawMed.petName,
+                            ownerName: rawMed.ownerName,
                           })
                         } else if (!isMed && rawProc) {
-                          setCompleteModalState({
+                          setPrintModalState({
                             isOpen: true,
                             orderType: 'PROCEDIMIENTO',
                             procedureOrder: toApiProcedureOrder(rawProc),
+                            petName: rawProc.petName,
+                            ownerName: rawProc.ownerName,
                           })
                         }
                       }}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition shadow-xs cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-tan text-xs font-semibold text-brand hover:bg-sage-soft transition cursor-pointer"
                     >
-                      <CheckIcon className="w-3.5 h-3.5" />
-                      <span>{isMed ? 'Entregar' : 'Completar'}</span>
+                      <PrinterIcon className="w-3.5 h-3.5" />
+                      <span>Imprimir</span>
                     </button>
-                  )}
+
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isMed && rawMed) {
+                            setCompleteModalState({
+                              isOpen: true,
+                              orderType: 'MEDICAMENTO',
+                              medicationOrder: toApiMedicationOrder(rawMed),
+                            })
+                          } else if (!isMed && rawProc) {
+                            setCompleteModalState({
+                              isOpen: true,
+                              orderType: 'PROCEDIMIENTO',
+                              procedureOrder: toApiProcedureOrder(rawProc),
+                            })
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand text-white text-xs font-semibold hover:bg-brand/90 transition shadow-xs cursor-pointer"
+                      >
+                        <CheckIcon className="w-3.5 h-3.5" />
+                        <span>{isMed ? 'Entregar' : 'Completar'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-border-tan overflow-hidden">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredOrders.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+              itemName="órdenes pendientes"
+            />
+          </div>
         </div>
       )}
 

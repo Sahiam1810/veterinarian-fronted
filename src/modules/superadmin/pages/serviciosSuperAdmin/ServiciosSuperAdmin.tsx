@@ -18,6 +18,7 @@ import {
   TrashIcon,
   StethoscopeIcon,
   PageToast,
+  Pagination,
 } from '@/global/components'
 
 export interface ServiciosSuperAdminProps {
@@ -332,51 +333,14 @@ export function ServiciosSuperAdmin({
               </table>
             </div>
 
-            {/* Footer de Paginación */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-border-tan/50 bg-white text-xs text-sage">
-              <span>
-                Mostrando {filteredServicios.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} -{' '}
-                {Math.min(currentPage * itemsPerPage, filteredServicios.length)} de{' '}
-                {filteredServicios.length} servicios
-              </span>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
-                  aria-label="Página anterior"
-                >
-                  Anterior
-                </button>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setCurrentPage(num)}
-                    className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] cursor-pointer transition-all duration-150 ${
-                      currentPage === num
-                        ? 'bg-brand text-white font-bold'
-                        : 'font-semibold text-sage hover:bg-[#F5F3EE] hover:text-brand'
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-
-                <button
-                  type="button"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
-                  aria-label="Página siguiente"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredServicios.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              itemName="servicios"
+            />
           </div>
     </>
   )

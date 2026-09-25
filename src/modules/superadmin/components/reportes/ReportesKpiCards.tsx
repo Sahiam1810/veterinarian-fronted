@@ -12,56 +12,56 @@ export function ReportesKpiCards({ summary, topServices }: ReportesKpiCardsProps
   const attendance = Math.round(summary.attendanceRate)
 
   return (
-    <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-5 animate-pop-in stagger-2">
-      <div className="bg-white border border-border-tan rounded-2xl p-5 shadow-[0_4px_20px_rgba(35,78,70,0.02)] flex items-start justify-between">
-        <div className="space-y-1">
-          <span className="text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wider">
+    <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3 animate-pop-in stagger-2">
+      <div className="bg-white border border-border-tan rounded-xl p-3 sm:p-3.5 shadow-2xs flex items-center justify-between">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-bold text-sage uppercase tracking-wider">
             Total Citas
           </span>
-          <p className="text-3xl font-black text-brand tracking-tight">
+          <p className="text-xl sm:text-2xl font-black text-brand tracking-tight leading-none">
             {summary.totalAppointments.toLocaleString('es-ES')}
           </p>
-          <p className="text-[10px] sm:text-xs text-sage font-semibold">
+          <p className="text-[10px] text-sage font-semibold">
             Del {summary.from} al {summary.to}
           </p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-sage-soft text-brand flex items-center justify-center">
+        <div className="w-8 h-8 rounded-lg bg-sage-soft text-brand flex items-center justify-center shrink-0">
           <CalendarIcon />
         </div>
       </div>
 
-      <div className="bg-white border border-border-tan rounded-2xl p-5 shadow-[0_4px_20px_rgba(35,78,70,0.02)] flex items-start justify-between">
-        <div className="space-y-1.5 w-full pr-4">
-          <span className="text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wider">
+      <div className="bg-white border border-border-tan rounded-xl p-3 sm:p-3.5 shadow-2xs flex items-center justify-between">
+        <div className="space-y-0.5 w-full pr-2">
+          <span className="text-[10px] font-bold text-sage uppercase tracking-wider">
             % de Asistencia
           </span>
-          <p className="text-3xl font-black text-brand tracking-tight">{attendance}%</p>
-          <div className="w-full h-1.5 bg-[#F1EFEA] rounded-full overflow-hidden">
+          <p className="text-xl sm:text-2xl font-black text-brand tracking-tight leading-none">{attendance}%</p>
+          <div className="w-full h-1.5 bg-[#F1EFEA] rounded-full overflow-hidden my-0.5">
             <div className="h-full bg-brand rounded-full" style={{ width: `${attendance}%` }} />
           </div>
-          <p className="text-[10px] text-sage font-medium">
+          <p className="text-[10px] text-sage font-medium leading-none">
             {summary.attendedCount} atendidas · {summary.canceledCount} canceladas
           </p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-sage-soft text-brand flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-sage-soft text-brand flex items-center justify-center shrink-0">
           <CheckIcon />
         </div>
       </div>
 
-      <div className="bg-white border border-border-tan rounded-2xl p-5 shadow-[0_4px_20px_rgba(35,78,70,0.02)] flex items-start justify-between">
-        <div className="space-y-1">
-          <span className="text-[11px] sm:text-xs font-bold text-sage uppercase tracking-wider">
+      <div className="bg-white border border-border-tan rounded-xl p-3 sm:p-3.5 shadow-2xs flex items-center justify-between">
+        <div className="space-y-0.5 min-w-0 pr-2">
+          <span className="text-[10px] font-bold text-sage uppercase tracking-wider">
             Servicio más solicitado
           </span>
           <p
-            className="text-xl sm:text-2xl font-black text-[#A66D5B] tracking-tight truncate max-w-[200px]"
+            className="text-base sm:text-lg font-black text-[#A66D5B] tracking-tight truncate"
             title={topName}
           >
             {topName}
           </p>
-          <p className="text-[10px] sm:text-xs text-sage font-semibold">{topPct}% de las citas</p>
+          <p className="text-[10px] text-sage font-semibold">{topPct}% de las citas</p>
         </div>
-        <div className="w-10 h-10 rounded-xl bg-terracotta-soft text-[#A66D5B] flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-terracotta-soft text-[#A66D5B] flex items-center justify-center shrink-0">
           <BoxIcon />
         </div>
       </div>

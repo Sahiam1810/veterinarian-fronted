@@ -13,6 +13,7 @@ import {
   TrashIcon,
   PageToast,
   StethoscopeIcon,
+  Pagination,
 } from '@/global/components'
 
 interface ProcedimientosSuperAdminProps {
@@ -30,6 +31,8 @@ export function ProcedimientosSuperAdmin({
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterActiveOnly, setFilterActiveOnly] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 5
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastType, setToastType] = useState<'success' | 'danger'>('success')
 
@@ -59,6 +62,10 @@ export function ProcedimientosSuperAdmin({
   useEffect(() => {
     void loadData()
   }, [filterActiveOnly])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterActiveOnly])
 
   const showToast = (msg: string, type: 'success' | 'danger' = 'success') => {
     setToastMessage(msg)
@@ -132,6 +139,12 @@ export function ProcedimientosSuperAdmin({
     return p.name.toLowerCase().includes(q) || (p.code && p.code.toLowerCase().includes(q))
   })
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedItems = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
+
   return (
     <div className="space-y-6">
       {toastMessage && (
@@ -187,63 +200,74 @@ export function ProcedimientosSuperAdmin({
             No se encontraron procedimientos o pruebas registradas.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-bone border-b border-border-tan text-sage font-bold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="p-3.5 pl-5">Código / Ref</th>
-                  <th className="p-3.5">Nombre del Procedimiento / Prueba</th>
-                  <th className="p-3.5">Estado</th>
-                  <th className="p-3.5 pr-5 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-tan/60 text-charcoal">
-                {filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-bone/40 transition">
-                    <td className="p-3.5 pl-5 font-mono text-xs font-bold text-sage">
-                      {item.code || '—'}
-                    </td>
-                    <td className="p-3.5 font-bold text-brand">{item.name}</td>
-                    <td className="p-3.5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          item.isActive
-                            ? 'bg-sage-soft text-brand'
-                            : 'bg-bone text-sage border border-border-tan'
-                        }`}
-                      >
-                        {item.isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="p-3.5 pr-5 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {canEdit && (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 rounded-lg hover:bg-bone text-sage hover:text-brand transition cursor-pointer"
-                            title="Editar"
-                          >
-                            <EditIcon className="w-4 h-4" />
-                          </button>
-                        )}
-                        {canDelete && item.isActive && (
-                          <button
-                            type="button"
-                            onClick={() => setDeletingProcedure(item)}
-                            className="p-1.5 rounded-lg hover:bg-danger-soft text-sage hover:text-danger transition cursor-pointer"
-                            title="Desactivar"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead className="bg-bone border-b border-border-tan text-sage font-bold uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th className="p-3.5 pl-5">Código / Ref</th>
+                    <th className="p-3.5">Nombre del Procedimiento / Prueba</th>
+                    <th className="p-3.5">Estado</th>
+                    <th className="p-3.5 pr-5 text-right">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border-tan/60 text-charcoal">
+                  {paginatedItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-bone/40 transition">
+                      <td className="p-3.5 pl-5 font-mono text-xs font-bold text-sage">
+                        {item.code || '—'}
+                      </td>
+                      <td className="p-3.5 font-bold text-brand">{item.name}</td>
+                      <td className="p-3.5">
+                        <span
+                          className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                            item.isActive
+                              ? 'bg-sage-soft text-brand'
+                              : 'bg-bone text-sage border border-border-tan'
+                          }`}
+                        >
+                          {item.isActive ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="p-3.5 pr-5 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(item)}
+                              className="p-1.5 rounded-lg hover:bg-bone text-sage hover:text-brand transition cursor-pointer"
+                              title="Editar"
+                            >
+                              <EditIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canDelete && item.isActive && (
+                            <button
+                              type="button"
+                              onClick={() => setDeletingProcedure(item)}
+                              className="p-1.5 rounded-lg hover:bg-danger-soft text-sage hover:text-danger transition cursor-pointer"
+                              title="Desactivar"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+              itemName="procedimientos"
+            />
+          </>
         )}
       </div>
 

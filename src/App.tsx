@@ -492,6 +492,7 @@ function SuperAdminApp({
           <main className="flex-1 overflow-hidden relative p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-7 animate-view-popup">
             <DashboardBackgroundDecoration />
             <HospitalizacionPage
+              canView={canViewModule('hospitalizacion')}
               canCreate={canCreateModule('hospitalizacion')}
               canEdit={canEditModule('hospitalizacion')}
               canViewSupplies={canViewModule('insumos')}

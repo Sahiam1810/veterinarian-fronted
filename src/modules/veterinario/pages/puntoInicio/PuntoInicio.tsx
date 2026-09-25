@@ -187,6 +187,7 @@ export function PuntoInicio({
 
           {isHospitalizacion && (
             <HospitalizacionPage
+              canView={canViewModule('hospitalizacion')}
               canCreate={canCreateModule('hospitalizacion')}
               canEdit={canEditModule('hospitalizacion')}
               canViewSupplies={canViewModule('insumos')}
