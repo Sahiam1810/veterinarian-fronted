@@ -9,7 +9,13 @@ import {
   DuenoDrawer,
   DuenosTablePanel,
 } from '../../components'
-import { useMascotasSuperAdmin } from '../../hooks'
+import {
+  useMascotasSuperAdmin,
+  assertMascotaSubmitCatalogs,
+  getSpeciesSelectPlaceholder,
+  getRacesUnavailableMessage,
+  type CatalogResourceStatus,
+} from '../../hooks'
 import type {
   SuperAdminMascota,
   SuperAdminDueno,
@@ -79,6 +85,12 @@ interface MascotaDrawerProps {
   duenos: SuperAdminDueno[]
   speciesOptions: { id: string; name: string }[]
   raceOptions: { id: string; name: string; speciesId: string }[]
+  speciesStatus: CatalogResourceStatus
+  racesStatus: CatalogResourceStatus
+  ownersStatus: CatalogResourceStatus
+  onRetryOwners?: () => void
+  onRetrySpecies?: () => void
+  onRetryRaces?: () => void
 }
 
 function MascotaDrawer({
@@ -89,6 +101,12 @@ function MascotaDrawer({
   duenos,
   speciesOptions,
   raceOptions,
+  speciesStatus,
+  racesStatus,
+  ownersStatus,
+  onRetryOwners,
+  onRetrySpecies,
+  onRetryRaces,
 }: MascotaDrawerProps) {
   const defaultSpecies = (speciesOptions[0]?.name || 'Canino') as EspecieMascota
 
@@ -199,6 +217,16 @@ function MascotaDrawer({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
+    const catalogGuard = assertMascotaSubmitCatalogs(
+      speciesStatus,
+      racesStatus,
+      ownersStatus,
+      duenos.length,
+    )
+    if (!catalogGuard.ok) {
+      setFormError(catalogGuard.message)
+      return
+    }
     if (!name.trim()) {
       setFormError('Por favor ingresa el nombre de la mascota.')
       return
@@ -246,6 +274,12 @@ function MascotaDrawer({
     })
   }
 
+  const speciesPlaceholder = getSpeciesSelectPlaceholder(speciesStatus)
+  const racesHint = getRacesUnavailableMessage(racesStatus, racesForSpecies.length > 0)
+  const ownersBlocked = ownersStatus === 'error' || ownersStatus === 'empty' || duenos.length === 0
+  const submitBlocked =
+    speciesStatus !== 'ready' || racesStatus !== 'ready' || ownersBlocked
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-hidden bg-charcoal/40 backdrop-blur-xs flex justify-end modal-backdrop-animate"
@@ -282,6 +316,28 @@ function MascotaDrawer({
             </div>
           )}
 
+          {ownersBlocked && (
+            <div
+              className="p-3 rounded-xl bg-terracotta-soft text-danger text-xs font-semibold border border-danger/20 flex flex-col gap-2"
+              role="alert"
+            >
+              <span>
+                {ownersStatus === 'error'
+                  ? 'Faltan dueños: no fue posible cargarlos. Reintenta antes de guardar.'
+                  : 'No hay dueños disponibles. Registra un dueño antes de guardar la mascota.'}
+              </span>
+              {ownersStatus === 'error' && onRetryOwners && (
+                <button
+                  type="button"
+                  onClick={onRetryOwners}
+                  className="self-start px-3 py-1.5 rounded-lg bg-white border border-danger/30 text-danger text-[11px] font-bold hover:bg-bone transition cursor-pointer"
+                >
+                  Reintentar dueños
+                </button>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-charcoal mb-1.5">
               Nombre de la mascota <span className="text-terracotta">*</span>
@@ -302,12 +358,13 @@ function MascotaDrawer({
                 Especie <span className="text-terracotta">*</span>
               </label>
               <select
-                value={species}
+                value={speciesOptions.length > 0 ? species : ''}
                 onChange={(e) => handleSpeciesChange(e.target.value as EspecieMascota)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                disabled={speciesStatus !== 'ready'}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal bg-white focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition disabled:opacity-60"
               >
                 {speciesOptions.length === 0 ? (
-                  <option value="">Sin especies en API</option>
+                  <option value="">{speciesPlaceholder}</option>
                 ) : (
                   speciesOptions.map((s) => (
                     <option key={s.id} value={s.name}>
@@ -316,13 +373,22 @@ function MascotaDrawer({
                   ))
                 )}
               </select>
+              {speciesStatus === 'error' && onRetrySpecies && (
+                <button
+                  type="button"
+                  onClick={onRetrySpecies}
+                  className="mt-1 text-[11px] font-bold text-brand hover:underline cursor-pointer"
+                >
+                  Reintentar especies
+                </button>
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-bold text-charcoal mb-1.5">
                 Raza <span className="text-terracotta">*</span>
               </label>
-              {racesForSpecies.length > 0 ? (
+              {racesStatus === 'ready' && racesForSpecies.length > 0 ? (
                 <>
                   <select
                     required
@@ -344,8 +410,17 @@ function MascotaDrawer({
                   </p>
                 </>
               ) : (
-                <div className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan/80 bg-bone text-sm text-sage">
-                  No hay razas disponibles para la especie
+                <div className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan/80 bg-bone text-sm text-sage space-y-1">
+                  <p>{racesHint ?? 'No hay razas disponibles para la especie'}</p>
+                  {racesStatus === 'error' && onRetryRaces && (
+                    <button
+                      type="button"
+                      onClick={onRetryRaces}
+                      className="text-[11px] font-bold text-brand hover:underline cursor-pointer"
+                    >
+                      Reintentar razas
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -459,7 +534,8 @@ function MascotaDrawer({
           <button
             type="submit"
             form="mascota-form"
-            className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#B85D43] hover:bg-[#A34E35] text-white transition shadow-xs cursor-pointer active:translate-y-0.5"
+            disabled={submitBlocked}
+            className="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#B85D43] hover:bg-[#A34E35] text-white transition shadow-xs cursor-pointer active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {editingMascota ? 'Guardar Cambios' : 'Registrar Mascota'}
           </button>
@@ -516,6 +592,15 @@ export function MascotasSuperAdmin({
     duenos,
     speciesOptions,
     raceOptions,
+    speciesStatus,
+    speciesError,
+    racesStatus,
+    racesError,
+    ownersStatus,
+    ownersError,
+    retryOwners,
+    retrySpecies,
+    retryRaces,
     paginatedMascotas,
     paginatedDuenos,
     mascotaPage,
@@ -553,6 +638,8 @@ export function MascotasSuperAdmin({
     activeNotification,
     showToast,
   } = useMascotasSuperAdmin()
+
+  const catalogsReadyForForm = speciesStatus === 'ready' && racesStatus === 'ready'
 
   // Sincroniza la pestaña activa según la ruta y permisos disponibles
   useEffect(() => {
@@ -640,6 +727,62 @@ export function MascotasSuperAdmin({
 
           {activeNotification && <PageToast message={activeNotification} />}
 
+          {ownersStatus === 'error' && ownersError && (
+            <div
+              className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl border border-danger/25 bg-terracotta-soft text-danger animate-pop-in"
+              role="alert"
+            >
+              <p className="text-sm font-semibold">
+                No fue posible cargar los dueños: {ownersError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void retryOwners()}
+                className="shrink-0 px-4 py-2 rounded-xl bg-white border border-danger/30 text-danger text-xs font-bold hover:bg-bone transition cursor-pointer"
+              >
+                Reintentar dueños
+              </button>
+            </div>
+          )}
+
+          {(speciesStatus === 'error' || racesStatus === 'error') && (
+            <div
+              className="relative z-10 flex flex-col gap-3 p-4 rounded-2xl border border-danger/25 bg-terracotta-soft text-danger animate-pop-in"
+              role="alert"
+            >
+              {speciesStatus === 'error' && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-sm font-semibold">
+                    No fue posible cargar el catálogo de especies.
+                    {speciesError ? ` ${speciesError}` : ''}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void retrySpecies()}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-white border border-danger/30 text-danger text-xs font-bold hover:bg-bone transition cursor-pointer"
+                  >
+                    Reintentar especies
+                  </button>
+                </div>
+              )}
+              {racesStatus === 'error' && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-sm font-semibold">
+                    No fue posible cargar el catálogo de razas.
+                    {racesError ? ` ${racesError}` : ''}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void retryRaces()}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-white border border-danger/30 text-danger text-xs font-bold hover:bg-bone transition cursor-pointer"
+                  >
+                    Reintentar razas
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Barra de Pestañas Superiores (Mascotas / Dueños) */}
           {(canViewMascotas || canViewDuenos) && (
             <div className="relative z-10 border-b border-border-tan/70 flex items-center justify-between gap-4 animate-pop-in stagger-1">
@@ -699,12 +842,21 @@ export function MascotasSuperAdmin({
                     }}
                     className="px-3.5 py-2 rounded-xl border border-border-tan bg-white text-xs sm:text-sm text-charcoal font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition cursor-pointer min-w-[150px]"
                   >
-                    <option value="all">Todas las Especies</option>
-                    {speciesOptions.map((s) => (
-                      <option key={s.id} value={s.name}>
-                        {s.name}
-                      </option>
-                    ))}
+                    <option value="all">
+                      {speciesStatus === 'loading'
+                        ? 'Cargando especies…'
+                        : speciesStatus === 'error'
+                          ? 'Catálogo de especies no disponible'
+                          : speciesStatus === 'empty'
+                            ? 'No hay especies registradas.'
+                            : 'Todas las Especies'}
+                    </option>
+                    {speciesStatus === 'ready' &&
+                      speciesOptions.map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name}
+                        </option>
+                      ))}
                   </select>
 
                   {/* Dropdown Estados */}
@@ -751,7 +903,13 @@ export function MascotasSuperAdmin({
                   <button
                     type="button"
                     onClick={openCreateMascota}
-                    className="bg-terracotta hover:bg-[#A34E35] text-white inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer shrink-0 active:translate-y-0.5"
+                    disabled={!catalogsReadyForForm}
+                    title={
+                      !catalogsReadyForForm
+                        ? 'Se requiere catálogo de especies y razas disponible'
+                        : undefined
+                    }
+                    className="bg-terracotta hover:bg-[#A34E35] text-white inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-xs cursor-pointer shrink-0 active:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <PlusIcon className="w-4 h-4" />
                     <span>Registrar mascota</span>
@@ -988,6 +1146,12 @@ export function MascotasSuperAdmin({
         duenos={duenos}
         speciesOptions={speciesOptions}
         raceOptions={raceOptions}
+        speciesStatus={speciesStatus}
+        racesStatus={racesStatus}
+        ownersStatus={ownersStatus}
+        onRetryOwners={() => void retryOwners()}
+        onRetrySpecies={() => void retrySpecies()}
+        onRetryRaces={() => void retryRaces()}
       />
 
       <DuenoDrawer
