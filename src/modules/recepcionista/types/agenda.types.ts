@@ -78,7 +78,7 @@ export interface RecepAgendaDayAppointment {
 export function isRecepAppointmentEditable(
   status: RecepAgendaDayAppointment['status'],
 ): boolean {
-  return status === 'AGENDADO' || status === 'EN CONSULTORIO'
+  return status === 'AGENDADO' || status === 'EN ESPERA' || status === 'EN CONSULTORIO'
 }
 
 // Tomar signos vitales al llegar la mascota (citas activas/no terminales)

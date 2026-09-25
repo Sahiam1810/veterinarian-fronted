@@ -58,6 +58,7 @@ interface RecepAgendaViewProps {
   onMarkNoAsistio?: (appointment: RecepAgendaDayAppointment) => void
   onCheckIn?: (appointment: RecepAgendaDayAppointment) => void
   onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
+  onViewReceipt?: (appointment: RecepAgendaDayAppointment) => void
   onVitalsUpdated?: () => void
 }
 
@@ -114,6 +115,7 @@ export function RecepAgendaView({
   onMarkNoAsistio,
   onCheckIn,
   onRegistrarPago,
+  onViewReceipt,
   onVitalsUpdated,
 }: RecepAgendaViewProps) {
   const showOwnerSuggestions =
@@ -427,6 +429,7 @@ export function RecepAgendaView({
         onMarkNoAsistio={onMarkNoAsistio}
         onCheckIn={onCheckIn}
         onRegistrarPago={onRegistrarPago}
+        onViewReceipt={onViewReceipt}
         onVitalsUpdated={onVitalsUpdated}
       />
     </>

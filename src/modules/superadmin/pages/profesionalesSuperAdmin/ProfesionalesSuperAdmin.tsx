@@ -197,7 +197,7 @@ export function ProfesionalesSuperAdmin({
   )
 
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 7
+  const itemsPerPage = 5
 
   const [selectedDiaForBlock, setSelectedDiaForBlock] = useState<DiaSemana>('LUNES')
   // Confirmación in-app (sin window.confirm del navegador)

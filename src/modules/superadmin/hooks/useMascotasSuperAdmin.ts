@@ -59,7 +59,7 @@ export function useMascotasSuperAdmin() {
 
   const [mascotaPage, setMascotaPage] = useState(1)
   const [duenoPage, setDuenoPage] = useState(1)
-  const itemsPerPage = 7
+  const itemsPerPage = 5
 
   const [isMascotaModalOpen, setIsMascotaModalOpen] = useState(false)
   const [editingMascota, setEditingMascota] = useState<SuperAdminMascota | null>(null)

@@ -28,6 +28,7 @@ interface RecepDayCalendarPanelProps {
   onMarkNoAsistio?: (appointment: RecepAgendaDayAppointment) => void
   onCheckIn?: (appointment: RecepAgendaDayAppointment) => void
   onRegistrarPago?: (appointment: RecepAgendaDayAppointment) => void
+  onViewReceipt?: (appointment: RecepAgendaDayAppointment) => void
   onVitalsUpdated?: () => void
 }
 
@@ -87,6 +88,7 @@ export function RecepDayCalendarPanel({
   onMarkNoAsistio,
   onCheckIn,
   onRegistrarPago,
+  onViewReceipt,
   onVitalsUpdated,
 }: RecepDayCalendarPanelProps) {
   const [search, setSearch] = useState('')
@@ -358,6 +360,7 @@ export function RecepDayCalendarPanel({
                 }
                 onCheckIn={onCheckIn ? () => onCheckIn(selected) : undefined}
                 onRegistrarPago={() => onRegistrarPago?.(selected)}
+                onViewReceipt={onViewReceipt ? () => onViewReceipt(selected) : undefined}
               />
             )}
           </aside>
@@ -396,6 +399,7 @@ function AppointmentDetail({
   onMarkNoAsistio,
   onCheckIn,
   onRegistrarPago,
+  onViewReceipt,
 }: {
   appointment: RecepAgendaDayAppointment
   isPaid?: boolean
@@ -406,6 +410,7 @@ function AppointmentDetail({
   onMarkNoAsistio?: () => void
   onCheckIn?: () => void
   onRegistrarPago?: () => void
+  onViewReceipt?: () => void
 }) {
   const canEdit = isRecepAppointmentEditable(appointment.status)
   const canNoShow = canMarkRecepNoAsistio(appointment.status)
@@ -529,31 +534,34 @@ function AppointmentDetail({
                   type="button"
                   onClick={onRegistrarPago}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-ochre/40 bg-[#FBF1E6] text-ochre px-4 py-2.5 text-sm font-bold hover:bg-ochre/15 transition cursor-pointer shadow-2xs active:translate-y-0.5"
-                  title="Registrar el pago de la cita para habilitar la llegada"
+                  title="Registrar el pago de la cita"
                 >
                   <span>Registrar Pago</span>
                 </button>
               ) : isPaid ? (
-                <div className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-mint-soft text-brand text-xs font-bold border border-brand/20 shadow-2xs">
-                  <span className="text-xs">✓</span>
-                  <span>Pago Registrado</span>
+                <div className="w-full flex items-center gap-2">
+                  <div className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-mint-soft text-brand text-xs font-bold border border-brand/20 shadow-2xs">
+                    <span className="text-xs">✓</span>
+                    <span>Cobrado</span>
+                  </div>
+                  {onViewReceipt && (
+                    <button
+                      type="button"
+                      onClick={onViewReceipt}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-brand/30 bg-white hover:bg-mint-soft text-brand text-xs font-bold transition cursor-pointer shadow-2xs active:translate-y-0.5"
+                      title="Ver factura de la cita"
+                    >
+                      <span>Ver Factura</span>
+                    </button>
+                  )}
                 </div>
               ) : null}
 
               <button
                 type="button"
-                disabled={!isPaid}
                 onClick={onCheckIn}
-                title={
-                  !isPaid
-                    ? 'Debes registrar el pago antes de marcar la llegada'
-                    : 'Marcar llegada del paciente'
-                }
-                className={`w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
-                  isPaid
-                    ? 'bg-ochre text-charcoal hover:bg-ochre/90 cursor-pointer shadow-xs active:translate-y-0.5'
-                    : 'bg-ochre/40 text-charcoal/50 cursor-not-allowed shadow-none'
-                }`}
+                title="Marcar llegada del paciente"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition bg-ochre text-charcoal hover:bg-ochre/90 cursor-pointer shadow-xs active:translate-y-0.5"
               >
                 <span>Marcar llegada</span>
               </button>

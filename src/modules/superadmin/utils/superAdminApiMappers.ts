@@ -279,7 +279,7 @@ export function mapAvailabilityToBloque(av: ApiAvailabilityResponse, specialtyLa
 // Mapea estado de cita API a enum de agenda
 export function mapStatusToEstadoCita(statusName?: string | null): EstadoCita {
   const n = (statusName ?? '').toLowerCase()
-  if (n.includes('espera') || n.includes('sala') || n.includes('curso')) return 'EN_ESPERA'
+  if (n.includes('espera') || n.includes('sala') || n.includes('curso') || n.includes('confirm')) return 'EN_ESPERA'
   if (n.includes('atend') || n.includes('complet')) return 'ATENDIDA'
   if (n.includes('cancel')) return 'CANCELADA'
   if (n.includes('no_asist') || n.includes('no asist') || n.includes('ausent')) return 'NO_ASISTIO'
@@ -290,7 +290,7 @@ export function mapStatusToEstadoCita(statusName?: string | null): EstadoCita {
 // Mapea estado de cita API a dashboard
 export function mapStatusToAppointmentStatus(statusName?: string | null): AppointmentStatus {
   const n = (statusName ?? '').toLowerCase()
-  if (n.includes('espera') || n.includes('sala')) return 'En sala'
+  if (n.includes('espera') || n.includes('sala') || n.includes('confirm')) return 'En sala'
   if (n.includes('atend') || n.includes('complet')) return 'Atendido'
   if (n.includes('cancel')) return 'Cancelado'
   return 'Agendado'
@@ -383,6 +383,7 @@ export function mapAppointmentToCita(
     species?: string
     ownerName?: string
     professionalName?: string
+    statusName?: string
   } = {}
 ): CitaSuperAdmin {
   const fromNotes = extractConsultorioAndNotes(apt.notes)
@@ -395,7 +396,7 @@ export function mapAppointmentToCita(
     dateKey: toDateKey(apt.scheduledStart),
     startTime: toTime24(apt.scheduledStart),
     endTime: toTime24(apt.scheduledEnd),
-    status: mapStatusToEstadoCita(apt.statusName),
+    status: mapStatusToEstadoCita(apt.statusName || context.statusName),
     petName: context.petName,
     petBreed: context.petBreed,
     species: context.species,

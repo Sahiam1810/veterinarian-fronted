@@ -13,6 +13,7 @@ export interface CitaDetalleModalProps {
   onClose: () => void
   onCancel: (citaId: string) => void
   onReprogramar: (cita: CitaSuperAdmin) => void
+  onMarcarLlegada?: (citaId: string) => void
   onMarcarAtendida: (citaId: string) => void
   onMarcarNoAsistio: (citaId: string) => void
   onRegistrarPago?: (citaId: string) => void
@@ -44,6 +45,7 @@ export function CitaDetalleModal({
   onClose,
   onCancel,
   onReprogramar,
+  onMarcarLlegada,
   onMarcarAtendida,
   onMarcarNoAsistio,
   onRegistrarPago,
@@ -54,6 +56,7 @@ export function CitaDetalleModal({
   if (!isOpen || !cita) return null
 
   const actions = getCitaDetalleFooterActions(cita.status)
+  const showMarcarLlegada = actions.showMarcarLlegada && canEdit && Boolean(onMarcarLlegada)
   const showCancelar = actions.showCancelar && canDelete
   const showReprogramar = actions.showReprogramar && canEdit
   const showMarcarNoAsistio = actions.showMarcarNoAsistio && canEdit
@@ -66,6 +69,7 @@ export function CitaDetalleModal({
     cita.respiratoryRate != null
 
   const showNoActionsMessage =
+    !showMarcarLlegada &&
     !showCancelar &&
     !showReprogramar &&
     !showMarcarNoAsistio &&
@@ -256,6 +260,17 @@ export function CitaDetalleModal({
               </button>
             )}
 
+            {showMarcarLlegada && (
+              <button
+                type="button"
+                onClick={() => onMarcarLlegada?.(cita.id)}
+                title="Marcar llegada del paciente"
+                className="border border-ochre/40 bg-ochre hover:bg-ochre/90 text-charcoal text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
+              >
+                <span>Marcar llegada</span>
+              </button>
+            )}
+
             {showMarcarNoAsistio && (
               <button
                 type="button"
@@ -273,7 +288,7 @@ export function CitaDetalleModal({
                     type="button"
                     onClick={() => onRegistrarPago?.(cita.id)}
                     className="border border-ochre/40 bg-[#FBF1E6] hover:bg-ochre/15 text-ochre text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
-                    title="Registrar el pago de la cita para habilitar la atención"
+                    title="Registrar el pago de la cita"
                   >
                     <span>Registrar Pago</span>
                   </button>
@@ -285,18 +300,9 @@ export function CitaDetalleModal({
 
                 <button
                   type="button"
-                  disabled={!isPaid}
-                  onClick={() => isPaid && onMarcarAtendida(cita.id)}
-                  title={
-                    !isPaid
-                      ? 'Debes registrar el pago antes de marcar la cita como atendida'
-                      : 'Marcar cita como atendida'
-                  }
-                  className={`${
-                    isPaid
-                      ? 'bg-brand hover:bg-brand-hover text-white cursor-pointer shadow-xs active:translate-y-0.5'
-                      : 'bg-brand/35 text-white/70 cursor-not-allowed shadow-none'
-                  } text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition`}
+                  onClick={() => onMarcarAtendida(cita.id)}
+                  title="Marcar cita como atendida"
+                  className="bg-brand hover:bg-brand-hover text-white cursor-pointer shadow-xs active:translate-y-0.5 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition"
                 >
                   Marcar Atendida
                 </button>

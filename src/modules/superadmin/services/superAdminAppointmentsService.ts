@@ -19,6 +19,7 @@ export interface ApiAppointmentResponse {
   heartRate?: number | null
   respiratoryRate?: number | null
   isPaid?: boolean
+  paidAt?: string | null
   createdAt: string
 }
 
