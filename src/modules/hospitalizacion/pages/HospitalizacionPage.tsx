@@ -8,6 +8,9 @@ export interface HospitalizacionPageProps {
   canEdit?: boolean
   canViewSupplies?: boolean
   canCreateSupplies?: boolean
+  canViewOrders?: boolean
+  canCreateOrders?: boolean
+  canEditOrders?: boolean
 }
 
 export function HospitalizacionPage({
@@ -16,6 +19,9 @@ export function HospitalizacionPage({
   canEdit = false,
   canViewSupplies = false,
   canCreateSupplies = false,
+  canViewOrders = false,
+  canCreateOrders = false,
+  canEditOrders = false,
 }: HospitalizacionPageProps) {
   const [selectedStayId, setSelectedStayId] = useState<string | null>(null)
 
@@ -27,6 +33,9 @@ export function HospitalizacionPage({
         canEdit={canEdit}
         canViewSupplies={canViewSupplies}
         canCreateSupplies={canCreateSupplies}
+        canViewOrders={canViewOrders}
+        canCreateOrders={canCreateOrders}
+        canEditOrders={canEditOrders}
         onBack={() => setSelectedStayId(null)}
       />
     )

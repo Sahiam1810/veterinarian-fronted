@@ -1,4 +1,4 @@
-import { vetApiFetch } from '../api/vetHttp'
+import { vetApiFetch } from '../api/vetHttp.ts'
 
 // Modelos del catálogo
 export interface ApiMedication {
@@ -32,7 +32,8 @@ export interface ApiMedicationOrder {
   id: string
   clientPetId: string
   veterinarianId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
@@ -54,7 +55,8 @@ export interface ApiProcedureOrder {
   id: string
   clientPetId: string
   veterinarianId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
@@ -97,7 +99,8 @@ export interface CreateMedicationOrderItemInput {
 
 export interface CreateMedicationOrderInput {
   clientPetId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
@@ -111,7 +114,8 @@ export interface CreateProcedureOrderItemInput {
 
 export interface CreateProcedureOrderInput {
   clientPetId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   isInHouse: boolean
   referredTo?: string | null
   referralReason?: string | null
@@ -188,6 +192,10 @@ export async function fetchMedicationOrdersByAppointment(appointmentId: string):
   return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/appointment/${appointmentId}`).catch(() => [])
 }
 
+export async function fetchMedicationOrdersByStay(stayId: string): Promise<ApiMedicationOrder[]> {
+  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/hospitalization-stay/${stayId}`)
+}
+
 // Services - Órdenes de Procedimientos
 export async function createProcedureOrder(data: CreateProcedureOrderInput): Promise<ApiProcedureOrder> {
   return vetApiFetch<ApiProcedureOrder>('/api/procedure-orders', {
@@ -205,6 +213,10 @@ export async function completeProcedureOrder(id: string, resultFileUrl?: string 
 
 export async function fetchProcedureOrdersByAppointment(appointmentId: string): Promise<ApiProcedureOrder[]> {
   return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/appointment/${appointmentId}`).catch(() => [])
+}
+
+export async function fetchProcedureOrdersByStay(stayId: string): Promise<ApiProcedureOrder[]> {
+  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/hospitalization-stay/${stayId}`)
 }
 
 
@@ -232,9 +244,9 @@ export interface PendingProcedureOrder {
 }
 
 export async function fetchPendingMedicationOrders(): Promise<PendingMedicationOrder[]> {
-  return vetApiFetch<PendingMedicationOrder[]>('/api/medication-orders/pending').catch(() => [])
+  return vetApiFetch<PendingMedicationOrder[]>('/api/medication-orders/pending')
 }
 
 export async function fetchPendingProcedureOrders(): Promise<PendingProcedureOrder[]> {
-  return vetApiFetch<PendingProcedureOrder[]>('/api/procedure-orders/pending').catch(() => [])
+  return vetApiFetch<PendingProcedureOrder[]>('/api/procedure-orders/pending')
 }

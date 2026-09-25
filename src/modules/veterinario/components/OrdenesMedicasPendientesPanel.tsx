@@ -27,6 +27,7 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
   const [medicationOrders, setMedicationOrders] = useState<PendingMedicationOrder[]>([])
   const [procedureOrders, setProcedureOrders] = useState<PendingProcedureOrder[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<PendingOrderFilterType>('TODOS')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -55,6 +56,7 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
 
   const loadPendingOrders = async () => {
     setIsLoading(true)
+    setOrdersError(null)
     try {
       const [meds, procs] = await Promise.all([
         fetchPendingMedicationOrders(),
@@ -62,8 +64,9 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
       ])
       setMedicationOrders(meds)
       setProcedureOrders(procs)
-    } catch {
-      // Error silencioso con fallback
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'No se pudieron cargar las órdenes médicas pendientes.'
+      setOrdersError(msg)
     } finally {
       setIsLoading(false)
     }
@@ -179,8 +182,25 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
         </div>
       )}
 
+      {/* Estado Error */}
+      {!isLoading && ordersError && (
+        <div className="p-6 bg-terracotta-soft/30 border border-terracotta/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-terracotta">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">Error:</span>
+            <span>{ordersError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadPendingOrders()}
+            className="px-4 py-2 bg-white border border-terracotta/40 rounded-xl font-semibold hover:bg-terracotta-soft transition cursor-pointer shrink-0"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
       {/* Lista Vacía */}
-      {!isLoading && filteredOrders.length === 0 && (
+      {!isLoading && !ordersError && filteredOrders.length === 0 && (
         <div className="p-12 text-center bg-white rounded-2xl border border-border-tan">
           <PillIcon className="w-12 h-12 text-brand/30 mx-auto mb-3" />
           <h3 className="text-base font-bold text-brand">No hay órdenes pendientes</h3>
@@ -193,7 +213,7 @@ export function OrdenesMedicasPendientesPanel({ canEdit = true }: OrdenesMedicas
       )}
 
       {/* Grilla de Ordenes */}
-      {!isLoading && filteredOrders.length > 0 && (
+      {!isLoading && !ordersError && filteredOrders.length > 0 && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {paginatedOrders.map((order) => {
