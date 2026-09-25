@@ -32,7 +32,7 @@ export function HospitalizacionDetalleView({
   canView = true,
   canViewSupplies = false,
   canCreateSupplies = false,
-  canViewOrders = true,
+  canViewOrders = false,
   canCreateOrders = false,
   canEditOrders = false,
   onBack,

@@ -193,7 +193,7 @@ export async function fetchMedicationOrdersByAppointment(appointmentId: string):
 }
 
 export async function fetchMedicationOrdersByStay(stayId: string): Promise<ApiMedicationOrder[]> {
-  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/hospitalization/${stayId}`)
+  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/hospitalization-stay/${stayId}`)
 }
 
 // Services - Órdenes de Procedimientos
@@ -216,7 +216,7 @@ export async function fetchProcedureOrdersByAppointment(appointmentId: string): 
 }
 
 export async function fetchProcedureOrdersByStay(stayId: string): Promise<ApiProcedureOrder[]> {
-  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/hospitalization/${stayId}`)
+  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/hospitalization-stay/${stayId}`)
 }
 
 

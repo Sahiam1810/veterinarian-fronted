@@ -88,7 +88,7 @@ test('fetchMedicationOrdersByStay and fetchProcedureOrdersByStay target T1 hospi
       body: init?.body ? JSON.parse(init.body as string) : undefined,
     })
 
-    if (url.includes('/api/medication-orders/hospitalization/stay-123')) {
+    if (url.includes('/api/medication-orders/hospitalization-stay/stay-123')) {
       const mockOrders: ApiMedicationOrder[] = [
         {
           id: 'med-ord-1',
@@ -116,7 +116,7 @@ test('fetchMedicationOrdersByStay and fetchProcedureOrdersByStay target T1 hospi
       })
     }
 
-    if (url.includes('/api/procedure-orders/hospitalization/stay-123')) {
+    if (url.includes('/api/procedure-orders/hospitalization-stay/stay-123')) {
       const mockProcOrders: ApiProcedureOrder[] = [
         {
           id: 'proc-ord-1',
@@ -162,8 +162,8 @@ test('fetchMedicationOrdersByStay and fetchProcedureOrdersByStay target T1 hospi
   assert.equal(procs[0].hospitalizationStayId, 'stay-123')
   assert.equal(procs[0].appointmentId, null)
 
-  assert.ok(recordedCalls.some((c) => c.url.endsWith('/api/medication-orders/hospitalization/stay-123')))
-  assert.ok(recordedCalls.some((c) => c.url.endsWith('/api/procedure-orders/hospitalization/stay-123')))
+  assert.ok(recordedCalls.some((c) => c.url.endsWith('/api/medication-orders/hospitalization-stay/stay-123')))
+  assert.ok(recordedCalls.some((c) => c.url.endsWith('/api/procedure-orders/hospitalization-stay/stay-123')))
 })
 
 test('createMedicationOrder sends hospitalizationStayId and appointmentId: null for stay orders', async () => {

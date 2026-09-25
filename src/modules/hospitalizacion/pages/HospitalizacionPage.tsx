@@ -19,7 +19,7 @@ export function HospitalizacionPage({
   canEdit = false,
   canViewSupplies = false,
   canCreateSupplies = false,
-  canViewOrders = true,
+  canViewOrders = false,
   canCreateOrders = false,
   canEditOrders = false,
 }: HospitalizacionPageProps) {
