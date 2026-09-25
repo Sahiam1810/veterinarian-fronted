@@ -194,18 +194,17 @@ export function HospitalizacionListaView({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="w-full overflow-hidden">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-bone border-b border-border-tan text-sage font-bold uppercase tracking-wider text-[10px]">
                 <tr>
-                  <th className="p-3.5 pl-5">Paciente / Mascota</th>
-                  <th className="p-3.5">Propietario</th>
-                  <th className="p-3.5">Motivo de Hospitalización</th>
-                  <th className="p-3.5">Fecha de Ingreso</th>
-                  <th className="p-3.5">Días Internado</th>
-                  <th className="p-3.5">Responsable</th>
-                  <th className="p-3.5">Estado</th>
-                  <th className="p-3.5 pr-5 text-right">Acción</th>
+                  <th className="py-3 px-4">Paciente / Propietario</th>
+                  <th className="py-3 px-3">Motivo</th>
+                  <th className="py-3 px-3">Fecha Ingreso</th>
+                  <th className="py-3 px-3">Días</th>
+                  <th className="py-3 px-3">Responsable</th>
+                  <th className="py-3 px-3">Estado</th>
+                  <th className="py-3 px-4 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-tan/60 text-charcoal">
@@ -215,24 +214,26 @@ export function HospitalizacionListaView({
 
                   return (
                     <tr key={stay.id} className="hover:bg-bone/40 transition">
-                      <td className="p-3.5 pl-5">
-                        <span className="font-extrabold text-brand block">
+                      <td className="py-3 px-4 min-w-[140px]">
+                        <span className="font-extrabold text-brand block leading-tight">
                           {stay.petName || 'Mascota'}
                         </span>
+                        <span className="text-[11px] text-sage block mt-0.5 font-medium leading-tight">
+                          {stay.ownerName || '—'}
+                        </span>
                       </td>
-                      <td className="p-3.5 font-medium text-charcoal">
-                        {stay.ownerName || '—'}
+                      <td className="py-3 px-3 max-w-[220px]">
+                        <span className="font-medium text-charcoal line-clamp-2" title={stay.motivo}>
+                          {stay.motivo || '—'}
+                        </span>
                       </td>
-                      <td className="p-3.5 max-w-xs truncate font-medium text-charcoal">
-                        <span title={stay.motivo}>{stay.motivo || '—'}</span>
-                      </td>
-                      <td className="p-3.5 text-sage font-medium whitespace-nowrap">
+                      <td className="py-3 px-3 text-sage font-medium whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <CalendarIcon className="w-3.5 h-3.5 text-sage" />
                           {formatDate(stay.admittedAt)}
                         </span>
                       </td>
-                      <td className="p-3.5 whitespace-nowrap">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-extrabold ${
                             days >= 3
@@ -243,10 +244,10 @@ export function HospitalizacionListaView({
                           {daysFormatted}
                         </span>
                       </td>
-                      <td className="p-3.5 text-sage whitespace-nowrap">
+                      <td className="py-3 px-3 text-sage whitespace-nowrap font-medium">
                         {stay.admittedByName || 'Veterinario'}
                       </td>
-                      <td className="p-3.5 whitespace-nowrap">
+                      <td className="py-3 px-3 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                             stay.status === 'Activa'
@@ -257,7 +258,7 @@ export function HospitalizacionListaView({
                           {stay.status}
                         </span>
                       </td>
-                      <td className="p-3.5 pr-5 text-right whitespace-nowrap">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
                         {onSelectStay && (
                           <button
                             type="button"
