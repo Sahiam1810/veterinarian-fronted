@@ -46,6 +46,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
     handleMarkNoAsistio,
     handleCheckIn,
     handleRegisterPayment,
+    handleViewReceipt,
     isCitaPaid,
     reloadAppointments,
     receiptData,
@@ -117,6 +118,7 @@ export function AgendaPage({ onNotice }: AgendaPageProps) {
         onMarkNoAsistio={canEdit ? handleMarkNoAsistio : undefined}
         onCheckIn={canEdit ? handleCheckIn : undefined}
         onRegistrarPago={canEdit ? handleRegisterPayment : undefined}
+        onViewReceipt={handleViewReceipt}
         onVitalsUpdated={reloadAppointments}
       />
 

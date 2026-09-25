@@ -39,6 +39,25 @@ const EMPTY_FORM: RecepAgendaFormState = {
   notes: '',
 }
 
+const PAID_APPOINTMENTS_KEY = 'huellitas_paid_appointments'
+
+function readPaidAppointments(): string[] {
+  try {
+    const raw = localStorage.getItem(PAID_APPOINTMENTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function writePaidAppointments(ids: string[]): void {
+  try {
+    localStorage.setItem(PAID_APPOINTMENTS_KEY, JSON.stringify(ids))
+  } catch (e) {
+    console.error('Error saving paid appointments', e)
+  }
+}
+
 function todayIsoDate(): string {
   const now = new Date()
   const year = now.getFullYear()
@@ -91,6 +110,7 @@ export function useRecepAgenda(enabled: boolean) {
   const [availableDaysLabel, setAvailableDaysLabel] = useState<string>('')
   const [receiptData, setReceiptData] = useState<AppointmentReceiptResponse | null>(null)
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
+  const [paidAppointmentIds, setPaidAppointmentIds] = useState<string[]>(readPaidAppointments)
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -462,10 +482,25 @@ export function useRecepAgenda(enabled: boolean) {
 
   const isCitaPaid = useCallback(
     (appointmentId: string): boolean => {
+      if (paidAppointmentIds.includes(appointmentId)) return true
       const apt = dayAppointments.find((a) => a.id === appointmentId)
       return apt?.isPaid ?? false
     },
-    [dayAppointments],
+    [dayAppointments, paidAppointmentIds],
+  )
+
+  const handleViewReceipt = useCallback(
+    async (appointment: RecepAgendaDayAppointment) => {
+      try {
+        const receipt = await fetchAppointmentReceipt(appointment.id)
+        setReceiptData(receipt)
+        setIsReceiptModalOpen(true)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'No se pudo cargar la factura'
+        showNotice(msg)
+      }
+    },
+    [showNotice],
   )
 
   const handleRegisterPayment = useCallback(
@@ -474,21 +509,45 @@ export function useRecepAgenda(enabled: boolean) {
         showNotice('No tienes permiso para registrar pagos de citas.')
         return
       }
+
+      if (isCitaPaid(appointment.id)) {
+        await handleViewReceipt(appointment)
+        return
+      }
+
       try {
         await registerRecepAppointmentPayment(appointment.id)
-        showNotice('Pago registrado correctamente.')
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        const alreadyPaid = /ya (ha sido|fue|está|esta) pagad|already paid|cobrad/i.test(errorMsg)
+        if (!alreadyPaid) {
+          const msg = err instanceof Error ? err.message : 'No se pudo registrar el pago'
+          showNotice(msg)
+          return
+        }
+      }
+
+      setPaidAppointmentIds((prev) => {
+        if (prev.includes(appointment.id)) return prev
+        const updated = [...prev, appointment.id]
+        writePaidAppointments(updated)
+        return updated
+      })
+
+      showNotice('Pago registrado correctamente.')
+      try {
         const receipt = await fetchAppointmentReceipt(appointment.id)
         setReceiptData(receipt)
         setIsReceiptModalOpen(true)
-        if (dayPanelDate) {
-          await loadDayAppointments(dayPanelDate)
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'No se pudo registrar el pago'
-        showNotice(msg)
+      } catch (receiptErr) {
+        console.warn('No se pudo cargar el recibo automáticamente', receiptErr)
+      }
+
+      if (dayPanelDate) {
+        await loadDayAppointments(dayPanelDate)
       }
     },
-    [canEdit, showNotice, dayPanelDate, loadDayAppointments],
+    [canEdit, showNotice, dayPanelDate, loadDayAppointments, isCitaPaid, handleViewReceipt],
   )
 
   const handleCheckIn = async (appointment: RecepAgendaDayAppointment) => {
@@ -498,11 +557,6 @@ export function useRecepAgenda(enabled: boolean) {
     }
     if (!canCheckIn(appointment.status)) {
       showNotice('Solo se puede marcar la llegada en citas agendadas.')
-      return
-    }
-
-    if (!isCitaPaid(appointment.id)) {
-      showNotice('Debes registrar el pago antes de marcar la llegada.')
       return
     }
 
@@ -556,6 +610,7 @@ export function useRecepAgenda(enabled: boolean) {
     handleMarkNoAsistio,
     handleCheckIn,
     handleRegisterPayment,
+    handleViewReceipt,
     isCitaPaid,
     reloadAppointments: () => loadDayAppointments(dayPanelDate || todayIsoDate()),
     receiptData,

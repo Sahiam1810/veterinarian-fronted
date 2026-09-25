@@ -333,7 +333,12 @@ export async function updateRecepAppointmentStatus(
   const statuses = await apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments')
   const catalogName = RECEP_STATUS_TO_CATALOG_NAME[targetStatus]
 
-  const matching = statuses.find((st) => st.name.toUpperCase() === catalogName)
+  const matching = statuses.find((st) => {
+    const upper = (st.name || '').toUpperCase()
+    if (upper === catalogName) return true
+    if (catalogName === 'CONFIRMADA' && (upper.includes('CONFIRM') || upper.includes('ESPERA'))) return true
+    return false
+  })
   const statusId = matching?.id
 
   if (!statusId) throw new Error('No se pudo resolver el estado de la cita.')

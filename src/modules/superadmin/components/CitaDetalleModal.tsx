@@ -273,7 +273,7 @@ export function CitaDetalleModal({
                     type="button"
                     onClick={() => onRegistrarPago?.(cita.id)}
                     className="border border-ochre/40 bg-[#FBF1E6] hover:bg-ochre/15 text-ochre text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition cursor-pointer shadow-2xs inline-flex items-center gap-1.5 active:translate-y-0.5"
-                    title="Registrar el pago de la cita para habilitar la atención"
+                    title="Registrar el pago de la cita"
                   >
                     <span>Registrar Pago</span>
                   </button>
@@ -285,18 +285,9 @@ export function CitaDetalleModal({
 
                 <button
                   type="button"
-                  disabled={!isPaid}
-                  onClick={() => isPaid && onMarcarAtendida(cita.id)}
-                  title={
-                    !isPaid
-                      ? 'Debes registrar el pago antes de marcar la cita como atendida'
-                      : 'Marcar cita como atendida'
-                  }
-                  className={`${
-                    isPaid
-                      ? 'bg-brand hover:bg-brand-hover text-white cursor-pointer shadow-xs active:translate-y-0.5'
-                      : 'bg-brand/35 text-white/70 cursor-not-allowed shadow-none'
-                  } text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition`}
+                  onClick={() => onMarcarAtendida(cita.id)}
+                  title="Marcar cita como atendida"
+                  className="bg-brand hover:bg-brand-hover text-white cursor-pointer shadow-xs active:translate-y-0.5 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition"
                 >
                   Marcar Atendida
                 </button>

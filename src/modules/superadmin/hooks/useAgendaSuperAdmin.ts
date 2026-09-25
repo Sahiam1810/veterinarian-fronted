@@ -453,15 +453,10 @@ export function useAgendaSuperAdmin() {
     [showToast],
   )
 
-  // Backend no tiene EN_ESPERA: "Iniciar atención" = marcar ATENDIDA (requiere pago registrado)
+  // Marcar ATENDIDA (sin bloquear por pago, compatible con AGENDADA y EN_ESPERA)
   const handleStartAttention = async (id: string) => {
     const target = citas.find((c) => c.id === id)
     if (!target) return
-
-    if (!isCitaPaid(id)) {
-      showToast('Debes registrar el pago antes de marcar la cita como atendida.')
-      return
-    }
 
     const attendedId = findStatusId(statusCatalog, 'atendida')
     if (!attendedId) {
@@ -469,8 +464,8 @@ export function useAgendaSuperAdmin() {
       return
     }
 
-    if (target.status !== 'AGENDADA') {
-      showToast('Solo se puede atender una cita AGENDADA.')
+    if (target.status !== 'AGENDADA' && target.status !== 'EN_ESPERA') {
+      showToast('Solo se puede atender una cita en espera o agendada.')
       return
     }
 
