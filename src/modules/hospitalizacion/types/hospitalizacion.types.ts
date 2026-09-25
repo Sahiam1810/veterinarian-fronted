@@ -57,10 +57,10 @@ export interface HospitalizationInvoice {
   admittedAt: string
   dischargedAt: string | null
   status: string
-  dailyRate?: number
-  billedDays?: number
-  isPaid?: boolean
-  paidAt?: string | null
+  dailyRate: number
+  billedDays: number
+  isPaid: boolean
+  paidAt: string | null
   hospitalizationTotal: number
   suppliesTotal: number
   medicationsTotal: number
