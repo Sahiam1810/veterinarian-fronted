@@ -182,8 +182,9 @@ export function HospitalizacionDetalleView({
 
       {/* Stay Info Card */}
       {isLoadingStay ? (
-        <div className="p-6 bg-white rounded-2xl border border-warm-grey/40 shadow-xs flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+        <div className="p-8 bg-white rounded-2xl border border-warm-grey/40 shadow-xs flex flex-col items-center justify-center gap-2.5">
+          <div className="w-8 h-8 border-3 border-brand/30 border-t-brand rounded-full animate-spin" />
+          <p className="text-xs text-sage font-medium">Cargando detalles de la estancia hospitalaria…</p>
         </div>
       ) : stayError ? (
         <div className="p-4 bg-terracotta-soft/30 border border-terracotta/30 text-terracotta text-xs rounded-xl">
