@@ -25,9 +25,9 @@ export function HospitalizationInvoiceModal({
   error = null,
   onRetry,
 }: HospitalizationInvoiceModalProps) {
-  if (!open) return null
-
   const [isPreparingPrint, setIsPreparingPrint] = useState(false)
+
+  if (!open) return null
 
   const handlePrint = () => {
     setIsPreparingPrint(true)
