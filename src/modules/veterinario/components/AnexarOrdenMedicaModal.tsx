@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   fetchMedications,
   fetchProcedures,
@@ -48,6 +48,7 @@ export function AnexarOrdenMedicaModal({
   const [medicationsCatalog, setMedicationsCatalog] = useState<ApiMedication[]>([])
   const [proceduresCatalog, setProceduresCatalog] = useState<ApiProcedure[]>([])
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false)
+  const [catalogError, setCatalogError] = useState<string | null>(null)
 
   // Ítems seleccionados para orden interna
   const [items, setItems] = useState<SelectedItemInput[]>([{ catalogId: '', notes: '' }])
@@ -58,34 +59,34 @@ export function AnexarOrdenMedicaModal({
   const isMedication = orderType === 'MEDICAMENTO'
   const title = isMedication ? 'Anexar Orden de Medicamento' : 'Anexar Orden de Procedimiento'
 
+  const loadCatalog = useCallback(async () => {
+    setIsLoadingCatalog(true)
+    setCatalogError(null)
+    try {
+      if (isMedication) {
+        const list = await fetchMedications(true)
+        setMedicationsCatalog(list)
+      } else {
+        const list = await fetchProcedures(true)
+        setProceduresCatalog(list)
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : `No se pudo cargar el catálogo de ${isMedication ? 'medicamentos' : 'procedimientos'}.`
+      setCatalogError(msg)
+    } finally {
+      setIsLoadingCatalog(false)
+    }
+  }, [isMedication])
+
   useEffect(() => {
     if (!isOpen) return
-
-    let cancelled = false
-    setIsLoadingCatalog(true)
     setFormError(null)
-
-    async function loadCatalog() {
-      try {
-        if (isMedication) {
-          const list = await fetchMedications(true)
-          if (!cancelled) setMedicationsCatalog(list)
-        } else {
-          const list = await fetchProcedures(true)
-          if (!cancelled) setProceduresCatalog(list)
-        }
-      } catch {
-        // Handle silenly
-      } finally {
-        if (!cancelled) setIsLoadingCatalog(false)
-      }
-    }
-
+    setCatalogError(null)
     void loadCatalog()
-    return () => {
-      cancelled = true
-    }
-  }, [isOpen, orderType, isMedication])
+  }, [isOpen, orderType, loadCatalog])
 
   if (!isOpen) return null
 
@@ -105,6 +106,7 @@ export function AnexarOrdenMedicaModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setFormError(null)
 
     if (!clientPetId || (!appointmentId && !hospitalizationStayId)) {
@@ -307,6 +309,26 @@ export function AnexarOrdenMedicaModal({
               {/* Formulario Interno (Ítems del catálogo) */}
               {isInHouse ? (
                 <div className="space-y-3 pt-2">
+                  {catalogError && (
+                    <div
+                      role="alert"
+                      className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs sm:text-sm font-medium flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold shrink-0">Error de catálogo:</span>
+                        <span className="truncate">{catalogError}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => void loadCatalog()}
+                        disabled={isLoadingCatalog}
+                        className="px-3 py-1 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition cursor-pointer shrink-0 disabled:opacity-50"
+                      >
+                        {isLoadingCatalog ? 'Reintentando…' : 'Reintentar'}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold uppercase tracking-wide text-sage">
                       {isMedication ? 'Medicamentos Formulados' : 'Procedimientos Solicitados'} *
@@ -314,7 +336,8 @@ export function AnexarOrdenMedicaModal({
                     <button
                       type="button"
                       onClick={handleAddItem}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline cursor-pointer"
+                      disabled={isLoadingCatalog}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-brand hover:underline cursor-pointer disabled:opacity-50"
                     >
                       <PlusIcon className="w-3.5 h-3.5" />
                       <span>Agregar ítem</span>

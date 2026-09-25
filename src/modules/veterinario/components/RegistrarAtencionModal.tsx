@@ -468,19 +468,6 @@ export function RegistrarAtencionModal({
               </div>
             </div>
 
-            {/* Modal para anexar nueva orden médica */}
-            <AnexarOrdenMedicaModal
-              isOpen={orderModalState.isOpen}
-              orderType={orderModalState.type}
-              clientPetId={clientPetId}
-              appointmentId={selectedAppointmentId}
-              petName={petName}
-              onClose={() => setOrderModalState((prev) => ({ ...prev, isOpen: false }))}
-              onSuccess={() => {
-                void ordersListRef.current?.reload()
-              }}
-            />
-
             {/* Footer buttons */}
             <footer className="shrink-0 flex items-center justify-end gap-2.5 p-3 sm:p-4 border-t border-border-tan bg-white">
               <button
@@ -510,6 +497,19 @@ export function RegistrarAtencionModal({
           </form>
         </div>
       </ViewPopup>
+
+      {/* Modal para anexar nueva orden médica (renderizado fuera del form para evitar anidación de formularios) */}
+      <AnexarOrdenMedicaModal
+        isOpen={orderModalState.isOpen}
+        orderType={orderModalState.type}
+        clientPetId={clientPetId}
+        appointmentId={selectedAppointmentId}
+        petName={petName}
+        onClose={() => setOrderModalState((prev) => ({ ...prev, isOpen: false }))}
+        onSuccess={() => {
+          void ordersListRef.current?.reload()
+        }}
+      />
     </div>
   )
 }

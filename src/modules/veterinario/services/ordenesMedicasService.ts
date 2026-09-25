@@ -125,7 +125,7 @@ export interface CreateProcedureOrderInput {
 // Services - Catálogo de Medicamentos
 export async function fetchMedications(onlyActive = true): Promise<ApiMedication[]> {
   const query = onlyActive ? '?onlyActive=true' : '?onlyActive=false'
-  return vetApiFetch<ApiMedication[]>(`/api/medications${query}`).catch(() => [])
+  return vetApiFetch<ApiMedication[]>(`/api/medications${query}`)
 }
 
 export async function createMedication(data: CreateMedicationDto): Promise<ApiMedication> {
@@ -151,7 +151,7 @@ export async function deleteMedication(id: string): Promise<void> {
 // Services - Catálogo de Procedimientos
 export async function fetchProcedures(onlyActive = true): Promise<ApiProcedure[]> {
   const query = onlyActive ? '?onlyActive=true' : '?onlyActive=false'
-  return vetApiFetch<ApiProcedure[]>(`/api/procedures${query}`).catch(() => [])
+  return vetApiFetch<ApiProcedure[]>(`/api/procedures${query}`)
 }
 
 export async function createProcedure(data: CreateProcedureDto): Promise<ApiProcedure> {
@@ -189,7 +189,7 @@ export async function completeMedicationOrder(id: string): Promise<void> {
 }
 
 export async function fetchMedicationOrdersByAppointment(appointmentId: string): Promise<ApiMedicationOrder[]> {
-  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/appointment/${appointmentId}`).catch(() => [])
+  return vetApiFetch<ApiMedicationOrder[]>(`/api/medication-orders/appointment/${appointmentId}`)
 }
 
 export async function fetchMedicationOrdersByStay(stayId: string): Promise<ApiMedicationOrder[]> {
@@ -212,7 +212,7 @@ export async function completeProcedureOrder(id: string, resultFileUrl?: string 
 }
 
 export async function fetchProcedureOrdersByAppointment(appointmentId: string): Promise<ApiProcedureOrder[]> {
-  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/appointment/${appointmentId}`).catch(() => [])
+  return vetApiFetch<ApiProcedureOrder[]>(`/api/procedure-orders/appointment/${appointmentId}`)
 }
 
 export async function fetchProcedureOrdersByStay(stayId: string): Promise<ApiProcedureOrder[]> {
