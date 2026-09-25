@@ -91,7 +91,9 @@ export function buildActionMap(
   },
 ): ShellActionMap {
   if (options.isPlatformSuperAdmin) {
-    return platformFullActionMap()
+    const map = platformFullActionMap()
+    map.historiaClinica = { ...ALL_FALSE_ACTIONS }
+    return map
   }
 
   // Fail-closed: sin API aún o vacía, solo Inicio visible
@@ -111,6 +113,7 @@ export function buildActionMap(
     }
   }
 
+  actions.historiaClinica = { ...ALL_FALSE_ACTIONS }
   return actions
 }
 

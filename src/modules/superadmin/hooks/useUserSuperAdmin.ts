@@ -66,7 +66,7 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   hospitalizacion: { view: true, create: true, edit: true, delete: true },
   disponibilidad: { view: true, create: true, edit: true, delete: true },
   agenda: { view: true, create: true, edit: true, delete: true },
-  historiaClinica: { view: true, create: true, edit: true, delete: true },
+  historiaClinica: { view: false, create: false, edit: false, delete: false },
   reportes: { view: true, create: true, edit: true, delete: true },
 }
 

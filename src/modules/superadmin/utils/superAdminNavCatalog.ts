@@ -17,7 +17,6 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'insumos', label: 'Insumos', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'hospitalizacion', label: 'Hospitalización', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
-  { id: 'historiaClinica', label: 'Historia Clínica', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
 ]
 
@@ -27,7 +26,7 @@ export const SUPER_ADMIN_NAV_CATALOG: AdminNavItemMeta[] = [
   { id: 'mascotas', moduleId: 'mascotas', label: 'Mascotas' },
   { id: 'especies-razas', moduleId: 'especiesRazas', label: 'Especies y razas' },
   { id: 'servicios', moduleId: 'servicios', label: 'Servicios' },
-  { id: 'diagnosticos', moduleId: 'historiaClinica', label: 'Diagnósticos' },
+  { id: 'diagnosticos', moduleId: 'mascotas', label: 'Diagnósticos' },
   { id: 'profesionales', moduleId: 'profesionales', label: 'Profesionales' },
   { id: 'agenda', moduleId: 'agenda', label: 'Agenda' },
   { id: 'reportes', moduleId: 'reportes', label: 'Reportes' },
