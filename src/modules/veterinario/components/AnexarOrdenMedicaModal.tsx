@@ -23,7 +23,8 @@ interface AnexarOrdenMedicaModalProps {
   isOpen: boolean
   orderType: MedicalOrderType
   clientPetId: string
-  appointmentId: string
+  appointmentId?: string | null
+  hospitalizationStayId?: string | null
   petName: string
   onClose: () => void
   onSuccess: () => void
@@ -34,6 +35,7 @@ export function AnexarOrdenMedicaModal({
   orderType,
   clientPetId,
   appointmentId,
+  hospitalizationStayId,
   petName,
   onClose,
   onSuccess,
@@ -105,8 +107,8 @@ export function AnexarOrdenMedicaModal({
     e.preventDefault()
     setFormError(null)
 
-    if (!clientPetId || !appointmentId) {
-      setFormError('Faltan datos obligatorios del contexto de la consulta.')
+    if (!clientPetId || (!appointmentId && !hospitalizationStayId)) {
+      setFormError('Faltan datos obligatorios del contexto de la atención.')
       return
     }
 
@@ -124,7 +126,8 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: true,
             referredTo: null,
             referralReason: null,
@@ -136,7 +139,8 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: true,
             referredTo: null,
             referralReason: null,
@@ -172,7 +176,8 @@ export function AnexarOrdenMedicaModal({
         if (isMedication) {
           await createMedicationOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: false,
             referredTo: referredTo.trim(),
             referralReason: referralReason.trim(),
@@ -181,7 +186,8 @@ export function AnexarOrdenMedicaModal({
         } else {
           await createProcedureOrder({
             clientPetId,
-            appointmentId,
+            appointmentId: appointmentId || null,
+            hospitalizationStayId: hospitalizationStayId || null,
             isInHouse: false,
             referredTo: referredTo.trim(),
             referralReason: referralReason.trim(),

@@ -1,11 +1,11 @@
 import { API_BASE_URL } from '../../../config/env.ts'
-import { getAccessToken } from '@/modules/auth'
+import { getAccessToken } from '../../auth/services/authService.ts'
 import {
   ApiError,
   fetchWithSession,
   parseErrorMessage,
   sanitizeEncoding,
-} from '@/services/apiClient'
+} from '../../../services/apiClient.ts'
 
 export function getVetApiBaseUrl(): string {
   return API_BASE_URL

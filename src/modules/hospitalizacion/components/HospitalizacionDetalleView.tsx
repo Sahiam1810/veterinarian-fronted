@@ -10,6 +10,7 @@ import {
 import { isStayActive } from '../utils/hospitalizacionView'
 import { HospitalizationInvoiceModal } from './HospitalizationInvoiceModal'
 import { HospitalizacionInsumosPanel } from './HospitalizacionInsumosPanel'
+import { HospitalizacionOrdenesPanel } from './HospitalizacionOrdenesPanel'
 
 export interface HospitalizacionDetalleViewProps {
   stayId: string
@@ -18,6 +19,9 @@ export interface HospitalizacionDetalleViewProps {
   canView?: boolean
   canViewSupplies?: boolean
   canCreateSupplies?: boolean
+  canViewOrders?: boolean
+  canCreateOrders?: boolean
+  canEditOrders?: boolean
   onBack?: () => void
 }
 
@@ -28,6 +32,9 @@ export function HospitalizacionDetalleView({
   canView = true,
   canViewSupplies = false,
   canCreateSupplies = false,
+  canViewOrders = true,
+  canCreateOrders = false,
+  canEditOrders = false,
   onBack,
 }: HospitalizacionDetalleViewProps) {
   const [stay, setStay] = useState<ApiHospitalizationStay | null>(initialStay)
@@ -270,6 +277,20 @@ export function HospitalizacionDetalleView({
         isLoading={isLoadingInvoice}
         error={invoiceError}
         onRetry={handleOpenInvoice}
+      />
+
+      {/* Panel de Órdenes Médicas de la Estancia */}
+      <HospitalizacionOrdenesPanel
+        stayId={stayId}
+        clientPetId={stay?.clientPetId}
+        petName={stay?.petName || undefined}
+        ownerName={stay?.ownerName || undefined}
+        veterinarianName={stay?.admittedByName || undefined}
+        isDischarged={isDischarged}
+        isStayLoading={isLoadingStay || !!stayError || !stay}
+        canViewOrders={canViewOrders}
+        canCreateOrders={canCreateOrders}
+        canEditOrders={canEditOrders}
       />
 
       {/* Panel de Insumos Consumidos */}
