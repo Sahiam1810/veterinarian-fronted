@@ -20,6 +20,7 @@ import {
   TrashIcon,
   PawIcon,
   PageToast,
+  Pagination,
 } from '@/global/components'
 
 export interface EspeciesRazasSuperAdminProps {
@@ -106,6 +107,19 @@ export function EspeciesRazasSuperAdmin({
   const [editingEspecie, setEditingEspecie] = useState<EspecieCatalogo | null>(null)
   const [razaDrawerOpen, setRazaDrawerOpen] = useState(false)
   const [editingRaza, setEditingRaza] = useState<RazaCatalogo | null>(null)
+
+  const [razaPage, setRazaPage] = useState(1)
+  const ITEMS_PER_PAGE = 5
+
+  useEffect(() => {
+    setRazaPage(1)
+  }, [selectedSpeciesId, searchQuery])
+
+  const totalRazaPages = Math.ceil(razasDeEspecie.length / ITEMS_PER_PAGE)
+  const paginatedRazas = razasDeEspecie.slice(
+    (razaPage - 1) * ITEMS_PER_PAGE,
+    razaPage * ITEMS_PER_PAGE
+  )
 
   const [pendingDeleteEspecie, setPendingDeleteEspecie] = useState<EspecieCatalogo | null>(null)
   const [pendingDeleteRaza, setPendingDeleteRaza] = useState<RazaCatalogo | null>(null)
@@ -333,7 +347,7 @@ export function EspeciesRazasSuperAdmin({
                         </td>
                       </tr>
                     )}
-                    {razasDeEspecie.map((raza) => (
+                    {paginatedRazas.map((raza) => (
                       <tr key={raza.id} className="hover:bg-bone/40 transition">
                         <td className="py-3.5 px-6 font-bold text-charcoal">{raza.name}</td>
                         <td className="py-3.5 px-4 text-charcoal/80">
@@ -371,6 +385,15 @@ export function EspeciesRazasSuperAdmin({
                   </tbody>
                 </table>
               </div>
+
+              <Pagination
+                currentPage={razaPage}
+                totalPages={totalRazaPages}
+                totalItems={razasDeEspecie.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setRazaPage}
+                itemName="razas"
+              />
             </section>
           </div>
     </>

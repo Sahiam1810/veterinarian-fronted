@@ -94,6 +94,8 @@ export function HospitalizacionListaView({
     return pet.includes(term) || owner.includes(term) || motivo.includes(term)
   })
 
+=======
+>>>>>>> develop
   return (
     <div className="flex flex-col gap-5 w-full">
       {toastMessage && (

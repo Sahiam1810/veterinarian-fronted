@@ -1,4 +1,4 @@
-import { SearchIcon, PlusIcon, EditIcon, TrashIcon, EyeIcon } from '@/global/components'
+import { SearchIcon, PlusIcon, EditIcon, TrashIcon, EyeIcon, Pagination } from '@/global/components'
 import type { SuperAdminDueno, DuenoFilters } from '../types'
 
 const actionBtnClass =
@@ -272,50 +272,14 @@ export function DuenosTablePanel({
           </table>
         </div>
 
-        {/* Footer de Paginación */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-border-tan/50 bg-white text-xs text-sage">
-          <span>
-            Mostrando {totalDuenos === 0 ? 0 : (duenoPage - 1) * itemsPerPage + 1} -{' '}
-            {Math.min(duenoPage * itemsPerPage, totalDuenos)} de {totalDuenos}
-          </span>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={duenoPage <= 1}
-              onClick={() => onPageChange((p) => Math.max(1, p - 1))}
-              className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
-              aria-label="Página anterior"
-            >
-              Anterior
-            </button>
-
-            {Array.from({ length: totalDuenoPages }, (_, i) => i + 1).map((num) => (
-              <button
-                key={num}
-                type="button"
-                onClick={() => onPageChange(num)}
-                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-[0.85rem] cursor-pointer transition-all duration-150 ${
-                  duenoPage === num
-                    ? 'bg-brand text-white font-bold'
-                    : 'font-semibold text-sage hover:bg-[#F5F3EE] hover:text-brand'
-                }`}
-              >
-                {num}
-              </button>
-            ))}
-
-            <button
-              type="button"
-              disabled={duenoPage >= totalDuenoPages}
-              onClick={() => onPageChange((p) => Math.min(totalDuenoPages, p + 1))}
-              className="inline-flex items-center justify-center px-2.5 h-8 rounded-lg text-[0.75rem] font-semibold text-sage bg-transparent border border-transparent cursor-pointer hover:not-disabled:bg-[#F5F3EE] hover:not-disabled:text-brand disabled:opacity-35 disabled:cursor-not-allowed transition-all duration-150"
-              aria-label="Página siguiente"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={duenoPage}
+          totalPages={totalDuenoPages}
+          totalItems={totalDuenos}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => onPageChange(page)}
+          itemName="dueños"
+        />
       </div>
     </div>
   )

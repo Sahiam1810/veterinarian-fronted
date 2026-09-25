@@ -25,6 +25,8 @@ import {
   PAST_APPOINTMENT_MESSAGE,
 } from '@/modules/superadmin/utils/appointmentDateGuard'
 import { createRecepPermissionHelpers } from '../utils/recepModulePermissions'
+import { buildAvailableDaysLabel } from '../utils/availableDays'
+import { fetchAvailabilitiesByVeterinarian } from '@/modules/superadmin/services/superAdminAvailabilitiesService'
 
 const EMPTY_FORM: RecepAgendaFormState = {
   ownerQuery: '',
@@ -86,6 +88,7 @@ export function useRecepAgenda(enabled: boolean) {
   const [dayPanelDate, setDayPanelDate] = useState('')
   const [timeSlots, setTimeSlots] = useState<RecepAgendaTimeSlot[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
+  const [availableDaysLabel, setAvailableDaysLabel] = useState<string>('')
   const [receiptData, setReceiptData] = useState<AppointmentReceiptResponse | null>(null)
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false)
 
@@ -182,6 +185,25 @@ export function useRecepAgenda(enabled: boolean) {
       cancelled = true
     }
   }, [enabled, form.professionalId, form.dateValue])
+
+  // Carga los días de disponibilidad del profesional cada vez que cambia la selección
+  // para mostrárselos al recepcionista como guía antes de elegir la fecha.
+  useEffect(() => {
+    if (!enabled || !form.professionalId) {
+      setAvailableDaysLabel('')
+      return
+    }
+    let cancelled = false
+    setAvailableDaysLabel('')
+    fetchAvailabilitiesByVeterinarian(form.professionalId)
+      .then((avs) => {
+        if (!cancelled) setAvailableDaysLabel(buildAvailableDaysLabel(avs))
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableDaysLabel('')
+      })
+    return () => { cancelled = true }
+  }, [enabled, form.professionalId])
 
   // Si el horario elegido deja de estar disponible (cambió profesional/fecha
   // o ya pasó), se limpia en vez de dejar seleccionado un horario inválido.
@@ -508,6 +530,7 @@ export function useRecepAgenda(enabled: boolean) {
     canDelete,
     timeSlots,
     isLoadingSlots,
+    availableDaysLabel,
     matchedOwners,
     selectedOwner,
     petsForOwner,
