@@ -33,7 +33,7 @@ export function MedicamentosSuperAdmin({
   const [searchTerm, setSearchTerm] = useState('')
   const [filterActiveOnly, setFilterActiveOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 5
+  const ITEMS_PER_PAGE = 10
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastType, setToastType] = useState<'success' | 'danger'>('success')
 

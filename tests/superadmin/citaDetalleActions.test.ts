@@ -4,7 +4,7 @@ import test from 'node:test'
 import { getCitaDetalleFooterActions, isCitaAgendada } from '../../src/modules/superadmin/utils/citaDetalleActions.ts'
 import type { EstadoCita } from '../../src/modules/superadmin/types/agendaSuperAdmin.types.ts'
 
-const closedStatuses: EstadoCita[] = ['ATENDIDA', 'CANCELADA', 'NO_ASISTIO', 'EN_ESPERA', 'BLOQUEO']
+const closedStatuses: EstadoCita[] = ['ATENDIDA', 'CANCELADA', 'NO_ASISTIO', 'BLOQUEO']
 
 test('isCitaAgendada solo es true para AGENDADA', () => {
   assert.equal(isCitaAgendada('AGENDADA'), true)
@@ -16,6 +16,7 @@ test('isCitaAgendada solo es true para AGENDADA', () => {
 test('el footer del detalle muestra Reprogramar/Cancelar/Atendida/No Asistió solo si AGENDADA', () => {
   const abierta = getCitaDetalleFooterActions('AGENDADA')
   assert.deepEqual(abierta, {
+    showMarcarLlegada: true,
     showCancelar: true,
     showReprogramar: true,
     showMarcarAtendida: true,

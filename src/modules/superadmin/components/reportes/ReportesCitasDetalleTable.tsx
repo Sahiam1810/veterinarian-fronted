@@ -8,7 +8,7 @@ interface ReportesCitasDetalleTableProps {
   onSearchChange: (value: string) => void
 }
 
-const ITEMS_PER_PAGE = 5
+const ITEMS_PER_PAGE = 10
 
 // Tabla de detalle de citas del periodo (fuente: Appointments, no Reports API)
 export function ReportesCitasDetalleTable({
