@@ -440,6 +440,7 @@ export function ServiciosSuperAdmin({
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
         onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
+        onLogout={onLogout}
       />
 
       {/* 2. Cuerpo Principal */}

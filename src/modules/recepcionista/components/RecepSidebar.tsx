@@ -46,7 +46,10 @@ export function resolveRecepSidebarNav(
 
   return {
     navItems: toSidebarNavItems(main, badgesMap),
-    footerNavItems: toSidebarNavItems(footer, badgesMap),
+    footerNavItems: toSidebarNavItems(
+      footer.filter((item) => item.id !== 'perfil'),
+      badgesMap,
+    ),
   }
 }
 
@@ -77,7 +80,7 @@ export function RecepSidebar({
       footerNavItems={footerNavItems}
       showPanelHeader={false}
       showProfileButton={false}
-      showLogoutButton={true}
+      showLogoutButton={false}
       logoutLabel="Cerrar Sesión"
       sectionTitle="Navegación Recepción"
       panelTitle="Panel Recepción"

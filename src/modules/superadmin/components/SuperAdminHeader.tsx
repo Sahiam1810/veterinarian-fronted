@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { BrandLogo, HeaderBackgroundTexture } from '@/global/components'
-import { BellPlusIcon, UserAvatarIcon, CheckIcon } from './DashboardIcons'
+import {
+  BellPlusIcon,
+  UserAvatarIcon,
+  CheckIcon,
+  LogOutIcon,
+  ChevronDownIcon,
+} from './DashboardIcons'
 import type { NotificacionSuperAdmin } from '../types'
 
 export interface SuperAdminHeaderProps {
@@ -16,6 +22,7 @@ export interface SuperAdminHeaderProps {
   userName?: string
   userRole?: string
   onProfileClick?: () => void
+  onLogout?: () => void
 }
 
 export function SuperAdminHeader({
@@ -31,8 +38,10 @@ export function SuperAdminHeader({
   userName = 'SuperAdmin Veterinario',
   userRole = 'SuperAdministrador',
   onProfileClick,
+  onLogout,
 }: SuperAdminHeaderProps) {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const unreadCount =
     unreadNotificationsCount !== undefined
       ? unreadNotificationsCount
@@ -90,6 +99,7 @@ export function SuperAdminHeader({
             type="button"
             onClick={() => {
               setIsNotifOpen((curr) => !curr)
+              setIsUserMenuOpen(false)
               if (!isNotifOpen) onReloadNotifications?.()
             }}
             className="relative p-2 text-brand hover:text-brand-hover hover:bg-border-tan/50 rounded-xl transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/20 group"
@@ -189,28 +199,84 @@ export function SuperAdminHeader({
           )}
         </div>
 
-        {/* User Profile */}
-        <button
-          type="button"
-          onClick={onProfileClick}
-          className="flex items-center gap-2 p-1.5 text-brand hover:text-brand-hover hover:bg-border-tan/50 rounded-full sm:rounded-xl transition cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/20 group"
-          aria-label={`Perfil de ${userName}`}
-          title={`${userName} (${userRole})`}
-        >
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-border-tan/60 text-brand flex items-center justify-center border border-brand/15 group-hover:border-brand/40 transition">
-            <UserAvatarIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div className="hidden md:flex flex-col text-left">
-            <span className="text-xs font-bold text-charcoal leading-tight">
-              {userName}
-            </span>
-            <span className="text-[10px] text-sage font-medium leading-tight">
-              {userRole}
-            </span>
-          </div>
-        </button>
-      </div>
+        {/* User Profile Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => {
+              setIsUserMenuOpen((curr) => !curr)
+              setIsNotifOpen(false)
+            }}
+            className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 text-brand hover:text-brand-hover hover:bg-border-tan/50 rounded-full sm:rounded-xl transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand/20 group select-none border border-transparent hover:border-border-tan"
+            aria-label={`Menú de usuario: ${userName}`}
+            aria-expanded={isUserMenuOpen}
+          >
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-border-tan/60 text-brand flex items-center justify-center border border-brand/15 group-hover:border-brand/40 transition shrink-0">
+              <UserAvatarIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </div>
+            <div className="hidden md:flex flex-col text-left">
+              <span className="text-xs font-bold text-charcoal leading-tight">
+                {userName}
+              </span>
+              <span className="text-[10px] text-sage font-medium leading-tight">
+                {userRole}
+              </span>
+            </div>
+            <ChevronDownIcon
+              className={`w-3.5 h-3.5 text-sage group-hover:text-brand transition-transform duration-200 hidden sm:block ${
+                isUserMenuOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
 
+          {isUserMenuOpen && (
+            <>
+              {/* Backdrop para cerrar menú al hacer clic fuera */}
+              <button
+                type="button"
+                className="fixed inset-0 z-40 cursor-default border-0 bg-transparent"
+                aria-label="Cerrar menú de usuario"
+                onClick={() => setIsUserMenuOpen(false)}
+              />
+
+              {/* Menú Desplegable */}
+              <div className="absolute right-0 top-full mt-2 z-50 w-52 bg-white rounded-2xl shadow-[0_10px_30px_rgba(35,78,70,0.12)] border border-border-tan overflow-hidden modal-content-animate p-1.5 animate-view-popup">
+                {/* Encabezado con datos del usuario */}
+                <div className="px-3 py-2.5 border-b border-border-tan/60 mb-1">
+                  <p className="text-xs font-bold text-charcoal truncate">{userName}</p>
+                  <p className="text-[11px] text-sage font-medium truncate">{userRole}</p>
+                </div>
+
+                {/* Botón Perfil */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false)
+                    onProfileClick?.()
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-charcoal hover:bg-bone hover:text-brand transition-colors cursor-pointer text-left"
+                >
+                  <UserAvatarIcon className="w-4 h-4 text-brand" />
+                  <span>Mi Perfil</span>
+                </button>
+
+                {/* Botón Cerrar Sesión */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false)
+                    onLogout?.()
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-terracotta hover:bg-terracotta-soft transition-colors cursor-pointer text-left"
+                >
+                  <LogOutIcon className="w-4 h-4 text-terracotta" />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </header>
   )
 }

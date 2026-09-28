@@ -706,6 +706,7 @@ export function MascotasSuperAdmin({
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
         onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
+        onLogout={onLogout}
       />
 
       {/* 2. Cuerpo Principal con Sidebar y Área de Trabajo */}

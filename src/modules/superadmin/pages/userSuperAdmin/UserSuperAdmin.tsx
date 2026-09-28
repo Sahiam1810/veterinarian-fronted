@@ -1569,6 +1569,7 @@ export function UserSuperAdmin({
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
         onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
+        onLogout={onLogout}
       />
 
 

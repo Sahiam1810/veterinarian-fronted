@@ -93,6 +93,7 @@ export function DashboardSuperAdmin({
         userName={userName}
         userRole={userRole}
         onProfileClick={externalOnProfileClick || (() => handleNavigate('perfil'))}
+        onLogout={onLogout}
       />
 
       {/* Main Body with Left Sidebar & Content */}

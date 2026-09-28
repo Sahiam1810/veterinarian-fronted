@@ -142,6 +142,7 @@ export function DiagnosticosSuperAdmin({
         onMarkAllNotificationsRead={onMarkAllNotificationsRead}
         onReloadNotifications={onReloadNotifications}
         onProfileClick={externalOnProfileClick || (() => handleSidebarNavigate('perfil'))}
+        onLogout={onLogout}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
