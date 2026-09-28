@@ -46,7 +46,16 @@ export async function fetchClientByPhone(phone: string): Promise<ApiClientRespon
 
   try {
     const res = await apiClient.get<ApiClientResponse>(`/api/Clients/by-phone/${encodeURIComponent(cleanPhone)}`)
-    if (res && res.id) return res
+    if (res && res.id) {
+      // El endpoint anónimo por teléfono devuelve un DTO reducido. Para el
+      // agendamiento rápido necesitamos el nombre completo del cliente.
+      if (res.fullName?.trim()) return res
+
+      const list = await lookupOwner({ phone: cleanPhone })
+      if (list && list.length > 0 && list[0]?.id) {
+        return list[0]
+      }
+    }
   } catch {
     // Si /api/Clients/by-phone/{phone} falla o no encuentra, recurrir a lookupOwner
     try {
