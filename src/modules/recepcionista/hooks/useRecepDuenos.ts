@@ -111,6 +111,13 @@ export function useRecepDuenos(enabled: boolean) {
   const pageStart = totalCount === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1
   const pageEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalCount)
 
+  // Asegurar que la página actual no exceda el total de páginas
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
   const paginatedItems = useMemo(() => {
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE
     return filteredItems.slice(startIdx, startIdx + ITEMS_PER_PAGE)

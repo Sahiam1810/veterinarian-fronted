@@ -19,6 +19,8 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
     pageStart,
     pageEnd,
     totalCount,
+    currentPage,
+    totalPages,
     isLoading,
     isSubmitting,
     isModalOpen,
@@ -74,6 +76,8 @@ export function DuenosPage({ onNotice }: DuenosPageProps) {
         pageStart={pageStart}
         pageEnd={pageEnd}
         totalCount={totalCount}
+        currentPage={currentPage}
+        totalPages={totalPages}
         onSearchChange={setSearch}
         onStatusFilterChange={setStatusFilter}
         onNewOwner={canCreate ? openCreateOwner : undefined}
