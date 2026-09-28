@@ -12,6 +12,8 @@ interface RecepDuenosViewProps {
   pageStart: number
   pageEnd: number
   totalCount: number
+  currentPage?: number
+  totalPages?: number
   onSearchChange: (value: string) => void
   onStatusFilterChange: (value: RecepDuenoStatusFilter) => void
   onNewOwner?: () => void
@@ -52,6 +54,8 @@ export function RecepDuenosView({
   pageStart,
   pageEnd,
   totalCount,
+  currentPage,
+  totalPages,
   onSearchChange,
   onStatusFilterChange,
   onNewOwner,
@@ -85,6 +89,8 @@ export function RecepDuenosView({
             pageStart={pageStart}
             pageEnd={pageEnd}
             totalCount={totalCount}
+            currentPage={currentPage}
+            totalPages={totalPages}
             onSelect={onSelect}
             onPrevPage={onPrevPage}
             onNextPage={onNextPage}
