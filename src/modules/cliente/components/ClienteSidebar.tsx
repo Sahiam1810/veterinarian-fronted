@@ -37,7 +37,7 @@ export function resolveClienteSidebarNav(grantedPermissions?: GrantedPermissions
 
   return {
     navItems: toSidebarNavItems(main),
-    footerNavItems: toSidebarNavItems(footer),
+    footerNavItems: toSidebarNavItems(footer.filter((item) => item.id !== 'perfil')),
   }
 }
 
@@ -64,7 +64,7 @@ export function ClienteSidebar({
       footerNavItems={footerNavItems}
       showPanelHeader={false}
       showProfileButton={false}
-      showLogoutButton={true}
+      showLogoutButton={false}
       logoutLabel="Cerrar Sesión"
       sectionTitle="Mi Portal"
       panelTitle="Portal Cliente"

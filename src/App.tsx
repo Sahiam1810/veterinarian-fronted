@@ -365,6 +365,7 @@ function SuperAdminApp({
           onMarkAllNotificationsRead={onMarkAllNotificationsRead}
           onReloadNotifications={onReloadNotifications}
           onProfileClick={shellProps.onProfileClick}
+          onLogout={shellProps.onLogout}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <SuperAdminSidebar
@@ -403,6 +404,7 @@ function SuperAdminApp({
           onMarkAllNotificationsRead={onMarkAllNotificationsRead}
           onReloadNotifications={onReloadNotifications}
           onProfileClick={shellProps.onProfileClick}
+          onLogout={shellProps.onLogout}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <SuperAdminSidebar
@@ -441,6 +443,7 @@ function SuperAdminApp({
           onMarkAllNotificationsRead={onMarkAllNotificationsRead}
           onReloadNotifications={onReloadNotifications}
           onProfileClick={shellProps.onProfileClick}
+          onLogout={shellProps.onLogout}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <SuperAdminSidebar
@@ -479,6 +482,7 @@ function SuperAdminApp({
           onMarkAllNotificationsRead={onMarkAllNotificationsRead}
           onReloadNotifications={onReloadNotifications}
           onProfileClick={shellProps.onProfileClick}
+          onLogout={shellProps.onLogout}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <SuperAdminSidebar
@@ -525,6 +529,7 @@ function SuperAdminApp({
           onMarkAllNotificationsRead={onMarkAllNotificationsRead}
           onReloadNotifications={onReloadNotifications}
           onProfileClick={shellProps.onProfileClick}
+          onLogout={shellProps.onLogout}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <SuperAdminSidebar

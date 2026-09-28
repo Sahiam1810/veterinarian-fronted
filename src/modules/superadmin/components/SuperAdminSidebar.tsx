@@ -136,8 +136,9 @@ export function SuperAdminSidebar({
       activeRoute={activeRoute === 'duenos' ? 'mascotas' : activeRoute}
       onNavigate={onNavigate}
       navItems={visibleNavItems}
-      sectionTitle="Navegación SuperAdmin"
-      panelTitle="Panel de Control"
+      showPanelHeader={false}
+      showProfileButton={false}
+      showLogoutButton={false}
       onLogout={onLogout}
     />
   )

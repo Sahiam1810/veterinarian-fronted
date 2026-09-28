@@ -56,6 +56,7 @@ export function PuntoInicio({
         userName={userName || dashboard?.profile.displayName || 'Ana Gómez'}
         userRole={userRole || 'Cliente'}
         onProfileClick={() => handleNavigate('perfil')}
+        onLogout={onLogout}
       />
 
       <div className="flex flex-1 h-[calc(100vh-57px)] overflow-hidden overflow-x-hidden relative min-w-0">

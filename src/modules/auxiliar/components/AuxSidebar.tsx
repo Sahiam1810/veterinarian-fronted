@@ -40,7 +40,7 @@ export function resolveAuxSidebarNav(grantedPermissions?: GrantedPermissions): {
 
   return {
     navItems: toSidebarNavItems(main),
-    footerNavItems: toSidebarNavItems(footer),
+    footerNavItems: toSidebarNavItems(footer.filter((item) => item.id !== 'perfil')),
     primaryAction: toSidebarPrimaryAction(actions),
   }
 }
@@ -72,7 +72,7 @@ export function AuxSidebar({
       onPrimaryAction={onPrimaryAction}
       showPanelHeader={false}
       showProfileButton={false}
-      showLogoutButton={true}
+      showLogoutButton={false}
       logoutLabel="Cerrar Sesión"
       sectionTitle="Navegación Auxiliar"
       panelTitle="Panel Auxiliar"
