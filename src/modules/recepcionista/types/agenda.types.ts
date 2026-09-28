@@ -16,6 +16,8 @@ export interface RecepAgendaPetOption {
   ownerId: string
   name: string
   breed: string
+  speciesId: string
+  gender: string
 }
 
 export interface RecepAgendaServiceOption {

@@ -20,6 +20,7 @@ import type {
 import type {
   RecepAgendaServiceOption,
   RecepAgendaProfessionalOption,
+  RecepAgendaPetOption,
   RecepAgendaTimeSlot,
 } from '../types'
 import {
@@ -40,6 +41,7 @@ interface RecepAgendamientoRapidoModalProps {
 }
 
 type WizardStep = 1 | 2 | 3
+type PetSelectionMode = 'EXISTING' | 'NEW'
 
 function todayIsoDateLocal(): string {
   const now = new Date()
@@ -78,6 +80,7 @@ export function RecepAgendamientoRapidoModal({
   const [racesList, setRacesList] = useState<ApiRaceResponse[]>([])
   const [servicesList, setServicesList] = useState<RecepAgendaServiceOption[]>([])
   const [professionalsList, setProfessionalsList] = useState<RecepAgendaProfessionalOption[]>([])
+  const [agendaPets, setAgendaPets] = useState<RecepAgendaPetOption[]>([])
 
   // Step 1: Dueño
   const [phone, setPhone] = useState('')
@@ -90,6 +93,8 @@ export function RecepAgendamientoRapidoModal({
   const [petName, setPetName] = useState('')
   const [speciesId, setSpeciesId] = useState('')
   const [gender, setGender] = useState<'Hembra' | 'Macho'>('Hembra')
+  const [petSelectionMode, setPetSelectionMode] = useState<PetSelectionMode>('NEW')
+  const [selectedPetId, setSelectedPetId] = useState('')
 
   // Step 3: Cita
   const [serviceId, setServiceId] = useState('')
@@ -116,6 +121,7 @@ export function RecepAgendamientoRapidoModal({
         if (cancelled) return
         setSpeciesList(petCatalogs.species)
         setRacesList(petCatalogs.races)
+        setAgendaPets(agendaCatalogs.pets)
         setServicesList(agendaCatalogs.services)
         setProfessionalsList(agendaCatalogs.professionals)
 
@@ -151,6 +157,8 @@ export function RecepAgendamientoRapidoModal({
       setExistingClient(null)
       setOwnerFullName('')
       setPetName('')
+      setPetSelectionMode('NEW')
+      setSelectedPetId('')
       setGender('Hembra')
       setDateValue(todayIsoDateLocal())
       setTimeSlotId('')
@@ -248,6 +256,13 @@ export function RecepAgendamientoRapidoModal({
       return
     }
 
+    const ownerPets = existingClient
+      ? agendaPets.filter((pet) => pet.ownerId.toLowerCase() === existingClient.id.toLowerCase())
+      : []
+
+    setPetSelectionMode(ownerPets.length > 0 ? 'EXISTING' : 'NEW')
+    setSelectedPetId('')
+    setPetName('')
     setStep(2)
   }
 
@@ -256,13 +271,20 @@ export function RecepAgendamientoRapidoModal({
     e.preventDefault()
     setError(null)
 
-    if (!petName.trim()) {
-      setError('Por favor ingresa el nombre de la mascota.')
-      return
-    }
-    if (!speciesId) {
-      setError('Por favor selecciona una especie.')
-      return
+    if (petSelectionMode === 'EXISTING') {
+      if (!selectedPetId) {
+        setError('Por favor selecciona una mascota existente o elige registrar una nueva.')
+        return
+      }
+    } else {
+      if (!petName.trim()) {
+        setError('Por favor ingresa el nombre de la mascota.')
+        return
+      }
+      if (!speciesId) {
+        setError('Por favor selecciona una especie.')
+        return
+      }
     }
 
     setStep(3)
@@ -301,20 +323,24 @@ export function RecepAgendamientoRapidoModal({
         resolvedClientId = createdOwner.clientId
       }
 
-      // 2. Crear Mascota con raza Mestizo, edad 0, peso 0.01 y vincular con cliente
-      const createdPet = await createQuickRecepPet({
-        name: petName.trim(),
-        speciesId,
-        gender,
-        clientId: resolvedClientId,
-        races: racesList,
-      })
+      // 2. Reutilizar la mascota seleccionada o crear una nueva.
+      let resolvedPetId = selectedPetId
+      if (petSelectionMode === 'NEW') {
+        const createdPet = await createQuickRecepPet({
+          name: petName.trim(),
+          speciesId,
+          gender,
+          clientId: resolvedClientId,
+          races: racesList,
+        })
+        resolvedPetId = createdPet.id
+      }
 
       // 3. Crear Cita
       await createRecepAppointment({
         ownerQuery: ownerFullName,
         ownerId: resolvedClientId,
-        petId: createdPet.id,
+        petId: resolvedPetId,
         serviceId,
         professionalId,
         dateValue,
@@ -333,6 +359,10 @@ export function RecepAgendamientoRapidoModal({
   }
 
   const selectedSpeciesName = speciesList.find((s) => s.id === speciesId)?.name || 'Especie'
+  const ownerPets = existingClient
+    ? agendaPets.filter((pet) => pet.ownerId.toLowerCase() === existingClient.id.toLowerCase())
+    : []
+  const selectedExistingPet = ownerPets.find((pet) => pet.id === selectedPetId)
   const selectedServiceName = servicesList.find((s) => s.id === serviceId)?.label || 'Servicio'
   const selectedProfessionalName = professionalsList.find((p) => p.id === professionalId)?.name || 'Veterinario'
   const selectedSlotLabel = timeSlots.find((s) => s.id === timeSlotId)?.displayLabel || timeSlotId
@@ -536,7 +566,60 @@ export function RecepAgendamientoRapidoModal({
                     <span className="text-xs text-sage font-bold">Tel: {phone}</span>
                   </div>
 
-                  <div>
+                  {ownerPets.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <span className="block text-xs font-bold text-charcoal">Mascotas registradas</span>
+                          <span className="text-[11px] text-sage">Selecciona una mascota existente o registra una nueva.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPetSelectionMode('NEW')
+                            setSelectedPetId('')
+                            setPetName('')
+                          }}
+                          className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition cursor-pointer ${
+                            petSelectionMode === 'NEW'
+                              ? 'border-brand bg-brand text-white'
+                              : 'border-border-tan bg-white text-charcoal hover:border-brand/50'
+                          }`}
+                        >
+                          Nueva mascota
+                        </button>
+                      </div>
+
+                      <div className="grid gap-2">
+                        {ownerPets.map((pet) => (
+                          <button
+                            key={pet.id}
+                            type="button"
+                            onClick={() => {
+                              setPetSelectionMode('EXISTING')
+                              setSelectedPetId(pet.id)
+                              setPetName(pet.name)
+                              setSpeciesId(pet.speciesId)
+                              setGender(pet.gender?.toLowerCase().startsWith('m') ? 'Macho' : 'Hembra')
+                            }}
+                            className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl border text-left transition cursor-pointer ${
+                              petSelectionMode === 'EXISTING' && selectedPetId === pet.id
+                                ? 'border-brand bg-sage-soft/70 ring-1 ring-brand/20'
+                                : 'border-border-tan bg-white hover:border-brand/50'
+                            }`}
+                          >
+                            <span className="min-w-0">
+                              <span className="block text-sm font-extrabold text-brand truncate">{pet.name}</span>
+                              <span className="block text-[11px] text-sage">{speciesList.find((species) => species.id === pet.speciesId)?.name || 'Especie'} · {pet.breed}</span>
+                            </span>
+                            <span className="text-[11px] font-bold text-sage shrink-0">{pet.gender || 'Sin sexo'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {petSelectionMode === 'NEW' && <div>
                     <label className="block text-xs font-bold text-charcoal mb-1.5" htmlFor="quick-pet-name">
                       Nombre de la Mascota <span className="text-brand">*</span>
                     </label>
@@ -553,9 +636,15 @@ export function RecepAgendamientoRapidoModal({
                         className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
                       />
                     </div>
-                  </div>
+                  </div>}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {petSelectionMode === 'EXISTING' && selectedExistingPet && (
+                    <div className="p-3 rounded-xl bg-sage-soft/60 border border-brand/10 text-xs text-brand">
+                      Se agendará la cita para <strong>{selectedExistingPet.name}</strong>. No se creará una mascota nueva.
+                    </div>
+                  )}
+
+                  {petSelectionMode === 'NEW' && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
                       <label className="block text-xs font-bold text-charcoal mb-1.5" htmlFor="quick-pet-species">
                         Especie <span className="text-brand">*</span>
@@ -604,16 +693,16 @@ export function RecepAgendamientoRapidoModal({
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </div>}
 
-                  <div className="p-3.5 rounded-2xl bg-bone border border-border-tan text-xs text-sage space-y-1">
+                  {petSelectionMode === 'NEW' && <div className="p-3.5 rounded-2xl bg-bone border border-border-tan text-xs text-sage space-y-1">
                     <p className="font-semibold text-charcoal/90">
                       ⚡ Autocompletado inteligente:
                     </p>
                     <p className="text-[11px] leading-relaxed">
                       La raza se asignará automáticamente como <strong className="text-brand">Mestizo</strong>. La edad y el peso se marcarán como pendientes para registrarse en consulta.
                     </p>
-                  </div>
+                  </div>}
                 </form>
               )}
 
@@ -811,7 +900,7 @@ export function RecepAgendamientoRapidoModal({
               <button
                 type="submit"
                 form="step-2-form"
-                disabled={!petName.trim() || !speciesId}
+                disabled={petSelectionMode === 'EXISTING' ? !selectedPetId : !petName.trim() || !speciesId}
                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-brand hover:bg-brand-hover text-white transition shadow-xs cursor-pointer disabled:opacity-50"
               >
                 <span>Continuar a Cita →</span>

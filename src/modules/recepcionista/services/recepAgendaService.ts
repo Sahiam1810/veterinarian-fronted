@@ -150,6 +150,8 @@ export async function fetchRecepAgendaCatalog(): Promise<RecepAgendaCatalogPaylo
         ownerId: cp.clientId,
         name: pet.name,
         breed: racesMap.get(pet.raceId?.toLowerCase()) || 'Mestizo',
+        speciesId: pet.speciesId,
+        gender: pet.gender,
       }
     })
     .filter((p): p is RecepAgendaPetOption => p !== null)
