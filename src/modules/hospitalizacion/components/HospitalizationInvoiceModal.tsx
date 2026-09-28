@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { HospitalizationInvoice } from '../types/hospitalizacion.types'
 import {
   formatInvoiceCurrency,
@@ -47,14 +48,14 @@ export function HospitalizationInvoiceModal({
     ? getInvoiceStayStatusBadge(invoice.status)
     : null
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm print:bg-white print:p-0 print:backdrop-blur-none print:static print:inset-auto animate-view-popup"
       role="dialog"
       aria-modal="true"
       aria-labelledby="hospitalization-invoice-title"
     >
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden print:shadow-none print:max-w-none print:border-none print:m-0 print:rounded-none print:p-0 flex flex-col max-h-[90vh] print:max-h-none print:overflow-visible">
+      <div className="relative w-full max-w-3xl max-h-[calc(100vh-2rem)] bg-white rounded-2xl shadow-xl overflow-hidden print:shadow-none print:max-w-none print:border-none print:m-0 print:rounded-none print:p-0 flex flex-col print:max-h-none print:overflow-visible">
         {/* Header - Screen only */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-tan print:hidden bg-[#FAF8F5]">
           <div>
@@ -81,7 +82,7 @@ export function HospitalizationInvoiceModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 sm:p-8 overflow-y-auto space-y-6 print:overflow-visible print:p-6 text-charcoal">
+        <div className="flex-1 min-h-0 p-6 sm:p-8 overflow-y-auto space-y-6 print:overflow-visible print:p-6 text-charcoal">
           {isLoading && (
             <div className="py-16 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-3 border-brand/30 border-t-brand rounded-full animate-spin" />
@@ -445,5 +446,5 @@ export function HospitalizationInvoiceModal({
         </div>
       </div>
     </div>
-  )
+  ), document.body)
 }
