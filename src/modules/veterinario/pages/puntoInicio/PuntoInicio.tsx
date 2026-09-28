@@ -19,6 +19,7 @@ import { EspeciesRazasPage } from '../especiesRazas'
 import { ServiciosPage } from '../servicios'
 import { ProfesionalesPage } from '../profesionales'
 import { HospitalizacionPage } from '@/modules/hospitalizacion'
+import { ResultadosClinicosPage } from '../resultados'
 import { useVetHome } from '../../hooks'
 
 interface PuntoInicioProps {
@@ -76,9 +77,10 @@ export function PuntoInicio({
   const isServicios = activeRoute === 'servicios'
   const isProfesionales = activeRoute === 'profesionales'
   const isHospitalizacion = activeRoute === 'hospitalizacion'
+  const isResultados = activeRoute === 'resultados'
   const isPerfil = activeRoute === 'perfil'
   const fillHeight =
-    isAgenda || isMascotas || isDuenos || isEspeciesRazas || isServicios || isProfesionales || isHospitalizacion
+    isAgenda || isMascotas || isDuenos || isEspeciesRazas || isServicios || isProfesionales || isHospitalizacion || isResultados
   // Perfil ya no fuerza alto completo: se alinea al contenido
 
   return (
@@ -198,6 +200,8 @@ export function PuntoInicio({
             />
           )}
 
+          {isResultados && <ResultadosClinicosPage onNotice={showToast} />}
+
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
           {activeRoute !== 'inicio' &&
@@ -209,6 +213,7 @@ export function PuntoInicio({
             activeRoute !== 'servicios' &&
             activeRoute !== 'profesionales' &&
             activeRoute !== 'hospitalizacion' &&
+            activeRoute !== 'resultados' &&
             activeRoute !== 'perfil' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">

@@ -25,11 +25,14 @@ export const VET_MODULE_TO_NAV: Record<string, NavPermissionKey> = {
   Servicios: 'vet.servicios',
   Veterinarios: 'vet.profesionales',
   Hospitalización: 'vet.hospitalizacion',
+  'Órdenes Médicas': 'vet.resultados',
+  'Ã“rdenes MÃ©dicas': 'vet.resultados',
 }
 
 // Claves de menú que siempre quedan visibles (no dependen de un módulo CRUD)
 export const VET_ALWAYS_VISIBLE_NAV: NavPermissionKey[] = [
   'vet.inicio',
+  'vet.resultados',
   'vet.perfil',
 ]
 

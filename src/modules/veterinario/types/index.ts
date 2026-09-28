@@ -32,3 +32,11 @@ export type {
 } from './historiaClinica.types'
 
 export type { VetProfilePayload, ChangeVetPasswordPayload } from './perfil.types'
+export type {
+  ClinicalResultStatus,
+  ClinicalResultItem,
+  ClinicalResult,
+  ClinicalResultsPagination,
+  ClinicalResultsResponse,
+  ClinicalResultsFilters,
+} from './resultadosClinicos.types'

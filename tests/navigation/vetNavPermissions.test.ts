@@ -67,6 +67,7 @@ test('fetchVetNavPermissions returns all nav keys when all modules have canView 
     'vet.agenda',
     'vet.mascotas',
     'vet.duenos',
+    'vet.resultados',
     'vet.reportes',
     'vet.perfil',
   ])
@@ -172,7 +173,7 @@ test('fetchVetNavPermissions hides vet.reportes when Reportes canView is false',
   assert.equal(itemIds.includes('reportes'), false)
 })
 
-test('filterNavKeysByModuleView leaves only Inicio and Perfil when Vet has no View permissions', () => {
+test('filterNavKeysByModuleView keeps Inicio, Resultados and Perfil for Vet without other View permissions', () => {
   const filtered = filterNavKeysByModuleView(
     VET_DEFAULT_PERMISSIONS,
     {
@@ -185,7 +186,7 @@ test('filterNavKeysByModuleView leaves only Inicio and Perfil when Vet has no Vi
     VET_ALWAYS_VISIBLE_NAV,
   )
 
-  assert.deepEqual(filtered, ['vet.inicio', 'vet.perfil'])
+  assert.deepEqual(filtered, ['vet.inicio', 'vet.resultados', 'vet.perfil'])
 })
 
 test('fetchVetNavPermissions falls back to VET_ALWAYS_VISIBLE_NAV on network/auth error', async () => {
@@ -213,7 +214,7 @@ test('filterNavKeysByModuleView correctly handles empty permissions map', () => 
     VET_MODULE_TO_NAV,
     VET_ALWAYS_VISIBLE_NAV,
   )
-  assert.deepEqual(filtered, ['vet.inicio', 'vet.perfil'])
+  assert.deepEqual(filtered, ['vet.inicio', 'vet.resultados', 'vet.perfil'])
 })
 
 test('filterNavKeysByModuleView oculta Asesor si falta Chat o Escalamientos', () => {

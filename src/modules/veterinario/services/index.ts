@@ -43,4 +43,5 @@ export type {
   ApiCreateMedicalRecordResponse,
 } from './historiaClinicaService'
 export { fetchVetProfile, changeVetPassword } from './vetProfileService'
+export { fetchClinicalResults, fetchClinicalResultVeterinarians } from './clinicalResultsService'
 

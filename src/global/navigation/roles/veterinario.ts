@@ -68,6 +68,15 @@ export const VET_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    id: 'resultados',
+    label: 'Resultados clínicos',
+    permissionKey: 'vet.resultados',
+    iconKey: 'clinical-history',
+    kind: 'link',
+    order: 57,
+    placement: 'main',
+  },
+  {
     id: 'profesionales',
     label: 'Profesionales',
     permissionKey: 'vet.profesionales',
