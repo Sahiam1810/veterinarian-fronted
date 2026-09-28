@@ -32,6 +32,7 @@ export function HospitalizacionPage({
       <HospitalizacionDetalleView
         stayId={selectedStayId}
         canView={canView}
+        canCreate={canCreate}
         canEdit={canEdit}
         canViewSupplies={canViewSupplies}
         canCreateSupplies={canCreateSupplies}
