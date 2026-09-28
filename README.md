@@ -1,205 +1,275 @@
-# Documentación Técnica del Frontend — Sistema de Gestión Veterinaria (Huellitas)
+# Huellitas — Frontend
 
-Frontend modular y escalable construido como una Aplicación de Página Única (SPA) orientada a roles y permisos granulares para la gestión integral de una clínica veterinaria.
+Frontend web del sistema de gestión veterinaria Huellitas. Es una SPA construida con React y TypeScript que reúne los flujos administrativos, clínicos, de recepción y de apoyo operativo de la clínica.
 
----
+La aplicación utiliza una arquitectura modular por dominio y un modelo de autorización `permission-first`: el backend entrega los permisos efectivos del usuario y el frontend decide qué rutas, módulos y acciones puede mostrar.
 
-## 1. Arquitectura General del Proyecto
+## Contenido
 
-### 1.1 Visión General
-El frontend gestiona los flujos clínicos, administrativos, operativos y de recepción a través de una interfaz moderna, reactiva, accesible y optimizada. La aplicación se conecta a una API REST en ASP.NET Core con autenticación JWT, rotación transparente de tokens y control de acceso basado en permisos por módulo y acción.
+- [Arquitectura y stack](#arquitectura-y-stack)
+- [Módulos funcionales](#módulos-funcionales)
+- [Autenticación y permisos](#autenticación-y-permisos)
+- [Notificaciones en tiempo real](#notificaciones-en-tiempo-real)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Diseño de interfaz](#diseño-de-interfaz)
+- [Configuración local](#configuración-local)
+- [Scripts](#scripts)
+- [Build y despliegue](#build-y-despliegue)
 
-### 1.2 Stack Tecnológico
-- **Framework & Librería Principal:** [React 19](https://react.dev/) (`^19.1.1`) con [TypeScript](https://www.typescriptlang.org/) (`~5.9.2`).
-- **Herramienta de Construcción:** [Vite 7](https://vite.dev/) (`^7.1.3`) con soporte de HMR y compilación ultrarrápida.
-- **Estilos & Diseño:** [Tailwind CSS v4](https://tailwindcss.com/) (`@tailwindcss/vite` + `tailwindcss` `^4.1.12`), CSS Vanilla modular, variables de diseño y paleta cromática corporativa.
-- **Iconografía:** Iconos SVG personalizados, estilizados y parametrizables centralizados en `@/global/components`.
-- **Gestión de Estado & Red:** Custom Hooks de React, Context API (`useAuth`), cliente HTTP centralizado (`apiClient`) con interceptores de refresh token, manejo de errores tipados (`ApiError`) y soporte contra errores de codificación (Mojibake).
-- **Testing:** Node.js Test Runner nativo con `--experimental-strip-types` para ejecución de pruebas unitarias ultrarrápidas sin dependencias externas pesadas.
-- **Gestor de Paquetes:** `pnpm` (v11+).
+## Arquitectura y stack
 
----
+- **React 19** (`^19.1.1`) para la interfaz y los flujos interactivos.
+- **TypeScript 5.9** (`~5.9.2`) con compilación estricta.
+- **Vite 7** (`^7.1.3`) para desarrollo, HMR y empaquetado de producción.
+- **Tailwind CSS 4** (`^4.1.12`) y variables CSS para el sistema visual.
+- **SignalR** (`@microsoft/signalr` `^10.0.11`) para notificaciones y eventos de chat en tiempo real.
+- **Node Test Runner** para las pruebas, ejecutadas con `node --test` y `--experimental-strip-types`.
+- **pnpm 11.24.0** como gestor de paquetes, según `package.json`.
 
-## 2. Estructura del Proyecto
+El frontend consume la API REST del backend mediante el cliente centralizado `src/services/apiClient.ts`. La autenticación usa JWT, renovación de tokens y manejo común de errores HTTP.
 
-```
+## Módulos funcionales
+
+### Autenticación — `src/modules/auth`
+
+Incluye el inicio y cierre de sesión, recuperación del usuario actual, almacenamiento de sesión, renovación del token y consulta de permisos mediante `GET /api/auth/permissions`.
+
+### Superadministrador y administrador — `src/modules/superadmin`
+
+El shell administrativo genera el menú y las rutas según los permisos efectivos del usuario. Incluye:
+
+- Dashboard con indicadores y resumen de citas.
+- Usuarios, roles y permisos por módulo y acción.
+- Mascotas y dueños.
+- Especies y razas.
+- Servicios.
+- Profesionales, especialidades, disponibilidades y ausencias.
+- Diagnósticos.
+- Medicamentos, procedimientos e insumos.
+- Agenda global.
+- Órdenes médicas pendientes.
+- Reportes.
+- Perfil y notificaciones.
+
+La edición de la tarifa de hospitalización se limita en la interfaz a Administrador y Superadministrador, además de la validación correspondiente en el backend.
+
+### Veterinario — `src/modules/veterinario`
+
+Incluye el shell clínico, agenda del profesional, mascotas, historia clínica, resultados clínicos, órdenes médicas y perfil. Las acciones de crear, editar y eliminar se habilitan de acuerdo con los permisos recibidos.
+
+Las órdenes médicas pueden corresponder a medicamentos o procedimientos, y cuentan con vistas de detalle e impresión cuando el flujo lo requiere.
+
+### Recepcionista — `src/modules/recepcionista`
+
+Incluye:
+
+- Inicio de recepción.
+- Agenda del día y seguimiento de citas.
+- Registro de pagos y validación de llegada.
+- Dueños y mascotas, con búsqueda, paginación y fichas.
+- Agendamiento rápido.
+- Bandeja de asesoría y conversaciones escaladas.
+- Hospitalización, incluyendo estancias pendientes de pago y registro del pago de una liquidación.
+
+La navegación de recepción se filtra por permisos. Los módulos que el rol no tiene habilitados no aparecen en su menú.
+
+### Hospitalización — `src/modules/hospitalizacion`
+
+El módulo está disponible dentro de los shells que tienen acceso al permiso correspondiente e incluye:
+
+- Admisión de una mascota y motivo de ingreso.
+- Lista principal de estancias activas sin duplicar mascotas.
+- Detalle de la estancia.
+- Notas y evolución del paciente.
+- Órdenes médicas e insumos asociados a la estancia, cuando están disponibles por permisos.
+- Alta de la mascota.
+- Historial de hospitalizaciones anteriores dentro de la ficha.
+- Liquidación de la estancia.
+- Bandeja de pendientes de pago para recepción.
+- Revisión de conceptos y registro del pago.
+
+Dar de alta una mascota no elimina su estancia. La estancia deja de pertenecer a la lista de activas, pero permanece consultable desde el historial y desde la bandeja de pagos pendientes.
+
+### Auxiliar veterinario — `src/modules/auxiliar`
+
+El flujo auxiliar permite consultar la operación asignada, gestionar la cola de pacientes y registrar información de preparación y signos vitales del paciente según los permisos del rol.
+
+### Portal público — `src/modules/public`
+
+Contiene la página pública de Política de Tratamiento de Datos Personales, accesible desde el flujo público de la aplicación sin requerir el shell interno.
+
+El módulo `src/modules/cliente` existe en el repositorio, pero no forma parte del shell operativo actual; el flujo de acceso de clientes se mantiene separado del panel interno.
+
+## Autenticación y permisos
+
+### Resolución inicial por rol
+
+`src/App.tsx` identifica el rol del usuario autenticado y renderiza el shell correspondiente:
+
+- Usuario no autenticado: inicio de sesión.
+- Cliente: el acceso al panel web se rechaza; la atención de clientes se mantiene por Telegram o chatbot.
+- Veterinario: shell clínico.
+- Recepcionista: shell de recepción.
+- Auxiliar: shell operativo.
+- Administrador, Superadministrador y roles configurables con acceso web: shell administrativo filtrado.
+
+### Permisos por módulo
+
+El backend entrega permisos con las acciones `canView`, `canCreate`, `canEdit` y `canDelete`. Los servicios de navegación transforman esos permisos en claves de menú para cada rol:
+
+- `src/modules/auth/services/myPermissionsService.ts`
+- `src/modules/veterinario/services/vetNavPermissionsService.ts`
+- `src/modules/recepcionista/services/recepNavPermissionsService.ts`
+- `src/global/navigation/resolveNav.ts`
+
+El frontend controla tanto la visibilidad de las rutas como la disponibilidad de botones y operaciones. Esta validación visual complementa, pero no reemplaza, la autorización del backend.
+
+La sesión se sincroniza entre pestañas del mismo navegador mediante eventos de `storage`. Al cambiar permisos en el backend puede ser necesario cerrar sesión e iniciar sesión nuevamente para obtener un JWT actualizado.
+
+## Notificaciones en tiempo real
+
+La conexión SignalR se centraliza en `src/global/notifications/notificationsHubManager.ts` y se comparte entre los módulos.
+
+Se utiliza para:
+
+- Notificaciones generales del sistema.
+- Mensajes y eventos de conversaciones escaladas.
+- Actualizaciones de la bandeja de recepción.
+- Reconexión automática y renovación del token de acceso cuando corresponde.
+
+Los hooks principales son `useNotificationsRealtime` y `useChatEscalationsRealtime`.
+
+## Estructura del proyecto
+
+```text
 src/
-├── App.tsx                     # Enrutador dinámico por roles y permisos
-├── main.tsx                    # Punto de entrada de la aplicación React
-├── index.css                   # Tokens de diseño Tailwind CSS y directivas globales
-├── assets/                     # Imágenes de marca (logos, wordmarks, fondos)
-├── config/                     # Lectura de variables de entorno (env.ts) y constantes
-├── services/
-│   └── apiClient.ts            # Cliente HTTP fetch con interceptor JWT y rotación de tokens
-├── global/                     # Recursos transversales compartidos
-│   ├── components/             # BrandLogo, PageToast, Icons, Modales genéricos
-│   ├── navigation/             # Definiciones de permisos y resolución de menús
-│   ├── notifications/          # Conexión SignalR, notificaciones y escalaciones en tiempo real
-│   ├── styles/                 # Estilos y animaciones reutilizables
-│   └── utils/                  # Utilidades transversales
-└── modules/                    # Módulos encapsulados por dominio y rol
-    ├── auth/                   # Autenticación, sesión, JWT y consulta de permisos
-    ├── superadmin/             # Panel maestro / Administrador (Usuarios, Catálogos, Reportes)
-    ├── veterinario/            # Flujo clínico (Agenda médica, Pacientes, Historia Clínica)
-    ├── recepcionista/          # Flujo de recepción (Agenda diaria, Citas, Dueños, Mascotas, Asesor)
-    └── auxiliar/               # Flujo operativo (Triaje, Signos vitales, Cola de atención)
+├── App.tsx                         # Entrada de rutas y shells por rol
+├── main.tsx                        # Punto de entrada de React
+├── index.css                       # Estilos globales y tokens visuales
+├── assets/                         # Logos, fondos y recursos visuales
+├── config/                         # Lectura y validación de variables de entorno
+├── services/                       # Cliente HTTP y servicios transversales
+├── global/
+│   ├── components/                 # Header, sidebar, modales, toast e iconos
+│   ├── navigation/                 # Catálogos y resolución de navegación
+│   ├── notifications/              # SignalR y eventos en tiempo real
+│   └── utils/                      # Utilidades compartidas
+├── modules/
+│   ├── auth/                       # Autenticación y permisos
+│   ├── auxiliar/                   # Operación auxiliar
+│   ├── hospitalizacion/            # Estancias, historial y liquidaciones
+│   ├── public/                     # Páginas públicas
+│   ├── recepcionista/              # Recepción, agenda y asesoría
+│   ├── superadmin/                 # Administración y catálogos
+│   └── veterinario/                # Flujo clínico
+├── stores/                         # Estado compartido cuando aplica
+└── styles/                         # Estilos complementarios
 ```
 
-> `src/modules/cliente/` existe en el repositorio pero **no se usa**: ningún componente lo
-> importa desde `App.tsx` ni `main.tsx`, y por diseño (ver §3) un usuario con rol `Cliente`
-> nunca llega a renderizar nada del panel — se cierra su sesión de inmediato. No forma parte
-> del sistema en ejecución.
+Los módulos normalmente agrupan sus `components`, `hooks`, `pages`, `services`, `types` y `utils` según sus necesidades.
 
-Cada módulo dentro de `src/modules/` sigue una estructura cohesiva e independiente:
-```
-module_name/
-├── assets/                     # Imágenes, ilustraciones y recursos locales
-├── components/                 # Componentes de UI específicos del módulo
-├── hooks/                      # Custom hooks para lógica de negocio y estado
-├── pages/                      # Vistas y pantallas principales
-├── services/                   # Llamadas a endpoints de la API REST
-├── styles/                     # Estilos complementarios
-├── types/                      # Interfaces y tipos TypeScript del módulo
-└── utils/                      # Funciones auxiliares y transformadores de datos
-```
+## Diseño de interfaz
 
----
+El sistema visual utiliza una paleta cálida y natural, con fondos claros, verde institucional, terracota, salvia, arena y ocre. Los componentes compartidos proporcionan:
 
-## 3. Sistema de Enrutamiento y Control de Acceso (`App.tsx`)
+- Header con identidad del usuario, rol y notificaciones.
+- Sidebars adaptadas al rol y a los permisos.
+- Modales, drawers, toast y estados de carga reutilizables.
+- Fondos ilustrados y texturas de marca.
+- Transiciones suaves para vistas y paneles.
+- Diseño responsive para escritorio, tablet y pantallas pequeñas.
 
-El componente raíz `App.tsx` evalúa el estado del usuario autenticado devuelto por `useAuth()` y renderiza el shell correspondiente:
+La navegación y las acciones deben mantenerse consistentes con los componentes globales antes de crear componentes equivalentes dentro de un módulo.
 
-1. **Sin Sesión Activa:** Renderiza `LoginPage`.
-2. **Rol Cliente (`cliente`):** El panel web está reservado para el personal de la clínica. Si un cliente intenta iniciar sesión, se destruye la sesión y se le informa que su canal de atención es Telegram / Chatbot.
-3. **Rol Veterinario (`veterinario`):** Renderiza `VetPuntoInicio` con acceso a agenda médica, expedientes clínicos de pacientes, consultas y perfil profesional. Las acciones de modificación están sujetas a sus permisos vigentes.
-4. **Rol Recepcionista (`recepcionista`):** Renderiza `RecepPuntoInicio` para la gestión rápida de citas del día, registro de tutores/dueños y vinculación de mascotas.
-5. **Rol Auxiliar (`auxiliar`):** Renderiza `AuxApp` con pestañas operativas de triaje, toma de signos vitales (temperatura, peso, pulso), preparación pre-consulta y cola de pacientes.
-6. **SuperAdmin, Admin y Roles Configurables (`custom`):** Renderiza `SuperAdminApp`. Este shell consulta en tiempo real `GET /api/auth/permissions` mediante `useAdminShellAccess` y genera el menú lateral y las rutas permitidas dinámicamente a través de `buildViewMap`, adaptándose a cualquier rol nuevo creado en el sistema (ej. *Practicante*, *Auditor*, etc.).
+## Configuración local
 
----
+Requisitos:
 
-## 4. Módulos del Sistema
+- Node.js compatible con el proyecto.
+- pnpm 11.
+- Backend de Huellitas ejecutándose o accesible desde la URL configurada.
 
-### 4.1 Módulo de Autenticación (`src/modules/auth`)
-- **Vistas:** `LoginPage` con formulario de acceso, validación en tiempo real, selector de cuentas de prueba para desarrollo y manejo de estados de carga y error.
-- **Servicios:**
-  - `authService.ts`: Comunicación con `POST /api/auth/login`, `GET /api/auth/me` y `POST /api/auth/refresh`.
-  - `myPermissionsService.ts`: Consulta a `GET /api/auth/permissions` para obtener los permisos vigentes del usuario autenticado.
-- **Hooks:** `useAuth` para proveer el usuario actual, métodos `login`, `logout` y escucha de eventos de expiración/refresco de token.
-- **Seguridad:** Identificación de SuperAdmin canónico (`99999999-9999-9999-9999-999999999999`), resolución de identidades de rol y sanitización de almacenamiento.
-- **Sesión compartida entre pestañas:** la sesión vive en `localStorage` (compartido por origen) y un listener del evento `storage` sincroniza el usuario autenticado entre todas las pestañas abiertas del mismo navegador — iniciar sesión con otra cuenta en una pestaña actualiza el resto sin recargar.
-
-### 4.2 Módulo SuperAdministrador / Administrador (`src/modules/superadmin`)
-- **Vistas y Páginas:**
-  - `DashboardSuperAdmin`: Resumen ejecutivo de KPIs, distribución de citas por estado y métricas operativas.
-  - `UserSuperAdmin`: Gestión completa de usuarios (creación, edición, activación/bloqueo) y matriz de asignación de permisos por módulo y acción (Crear, Editar, Eliminar, Ver) a nivel de rol o excepción de usuario.
-  - `MascotasSuperAdmin`: Administración centralizada de expedientes de mascotas y vinculación con tutores.
-  - `ProfesionalesSuperAdmin`: Gestión de veterinarios, especialidades, disponibilidad y ausencias.
-  - `ServiciosSuperAdmin`: Catálogo de servicios médicos, tarifas y categorías.
-  - `EspeciesRazasSuperAdmin`: Gestión de taxonomía de especies y razas.
-  - `DiagnosticosSuperAdmin`: Catálogo de diagnósticos clínicos usado en la historia clínica.
-  - `AgendaSuperAdmin`: Calendario maestro global de citas de la clínica; incluye registrar el
-    pago de una cita (requisito previo para poder marcar su llegada).
-  - `ReportesSuperAdmin`: Visualización de estadísticas operativas y financieras.
-  - `PerfilSuperAdmin`: Gestión de datos del perfil, foto de perfil (`ChangePhotoDrawer`) y
-    cambio de contraseña.
-- **Hooks Clave:** `useAdminShellAccess`, `useUserSuperAdmin`, `useMascotasSuperAdmin`, `useNotificationsSuperAdmin`.
-
-### 4.3 Módulo Veterinario (`src/modules/veterinario`)
-- **Vistas y Componentes:**
-  - `PuntoInicio`: Shell con navegación entre Inicio, Agenda, Mascotas y Perfil.
-  - `VetAgendaView`: Cuadrícula semanal y diaria de consultas asignadas.
-  - `HistoriaClinicaModal`: Formulario médico para registrar anamnesis, diagnóstico, examen físico, tratamientos, prescripción de recetas y exámenes de laboratorio.
-  - `VetMascotasView`: Consulta de pacientes e historial clínico detallado.
-- **Seguridad en UI:** Las opciones de creación, edición y eliminación de citas y pacientes se habilitan o deshabilitan dinámicamente según los permisos del profesional.
-
-### 4.4 Módulo Recepcionista (`src/modules/recepcionista`)
-- **Vistas y Componentes:**
-  - `PuntoInicio`: Punto de entrada con control de pestañas: Inicio, Agenda del Día, Dueños, Mascotas, Asesor y Perfil.
-  - `RecepAgendaDelDia`: Monitoreo y cambio rápido de estados de cita (*Confirmada*, *En Espera*, *Cancelada*, *Finalizada*); registrar el pago de una cita es requisito previo para poder marcar su llegada.
-  - `RecepDuenosView` & `RecepDuenosTable`: Búsqueda, registro y edición de propietarios.
-  - `RecepMascotasView`: Inspección y registro de pacientes.
-  - `EscalacionesPage` / `RecepEscalacionesView` / `RecepEscalacionesTable`: Bandeja de conversaciones
-    de Telegram escalada a un asesor humano (ver «Escalamiento a un asesor humano» en el README del
-    backend). Se actualiza en tiempo real por SignalR — ver 4.6.
-  - `RecepConversacionDetalleModal` & `RecepResolverEscalacionModal`: Hilo de mensajes con el cliente
-    y cierre/resolución del escalamiento.
-
-### 4.5 Módulo Auxiliar Veterinario (`src/modules/auxiliar`)
-- **Vistas y Drawers:**
-  - `InicioAux`: Resumen operativo y cola de atención de pacientes.
-  - `PreparacionAux`: Registro de triaje clínico pre-consulta (temperatura, peso, frecuencia cardíaca y respiratoria).
-  - `PrepararCitaDrawer`: Formulario lateral para captura rápida de signos vitales.
-  - `AgendaAux` & `MascotasAux`: Consulta de pacientes agendados y fichas médicas.
-
-### 4.6 Notificaciones en Tiempo Real (`src/global/notifications`)
-Conexión SignalR al hub `/hubs/notifications` del backend, compartida entre módulos:
-- `notificationsHubManager.ts`: gestiona la conexión, reconexión y el token de acceso (`ensureSignalRAccessToken.ts`).
-- `useNotificationsRealtime`: notificaciones generales (usado por SuperAdmin, campana de notificaciones).
-- `useChatEscalationsRealtime`: eventos de mensajes nuevos y resolución de escalamientos, consumido por la bandeja de Asesor de Recepcionista (4.4).
-
----
-
-## 5. Diseño, Estilos y Convenciones UI
-
-### 5.1 Paleta Cromática
-La interfaz utiliza una paleta estética moderna y cálida definida en variables CSS y tokens de Tailwind:
-- **`bone` (`#F7F5F0` / `#EFECE6`):** Fondo neutro claro y limpio.
-- **`brand` (`#2C3E35`):** Verde corporativo profundo para encabezados, barras de navegación y elementos primarios.
-- **`terracotta` (`#D96B43`):** Tono terracota para botones de acción principal, badges y llamadas de atención.
-- **`sage` (`#7A8B7B`):** Verde salvia para textos secundarios, bordes suaves e indicadores de soporte.
-- **`ochre` (`#E09F3E`):** Ocre para estados pendientes, alertas intermedias y recordatorios.
-- **`sand` (`#E8DFD1`):** Tono arena para tarjetas, bordes y superficies elevadas.
-
-### 5.2 Microinteracciones & Componentes
-- Transiciones suaves (`ViewPopup`, `AnimatedHeight`) para entradas de modales, paneles deslizantes (*Drawers*) y cambio de vistas.
-- Notificaciones no invasivas mediante `PageToast`.
-- Diseño 100% responsivo adaptable a dispositivos móviles, tablets y pantallas de escritorio (`sm:`, `md:`, `lg:`, `xl:`).
-
----
-
-## 6. Scripts Disponibles
-
-En la raíz del proyecto `veterinarian-fronted`:
-
-```bash
-# Instalar dependencias
-pnpm install
-
-# Iniciar el servidor de desarrollo Vite (http://localhost:5174)
-pnpm dev
-
-# Compilar tipos TypeScript y generar el bundle optimizado para producción
-pnpm build
-
-# Previsualizar el bundle de producción localmente
-pnpm preview
-
-# Validar tipos TypeScript estrictamente sin emitir archivos
-pnpm lint
-
-# Ejecutar la suite completa de pruebas unitarias
-pnpm test
-
-# Ejecutar pruebas por módulo específico
-pnpm test:auth          # Pruebas de autenticación, sesión y roles
-pnpm test:superadmin    # Pruebas del shell y utilidades de administración
-pnpm test:nav           # Pruebas de resolución de permisos de navegación
-pnpm test:recep         # Pruebas del módulo Recepcionista (agenda, escalaciones)
-pnpm test:vet           # Pruebas del módulo Veterinario
-pnpm test:notifications # Pruebas de notificaciones y escalaciones en tiempo real
-```
-
----
-
-## 7. Configuración de Entorno
-
-La URL del backend vive **solo** en `.env` (ese archivo no se sube a git). Vite, el build y `pnpm test` la leen de ahí. `.env.example` es solo una plantilla para copiar, no se usa en runtime.
+Copia `.env.example` como `.env` y ajusta la URL de la API:
 
 ```env
 VITE_API_URL=http://localhost:5233
 ```
 
-### Docker / producción
+`.env` no debe subirse al repositorio. La configuración se consume desde `src/config/env.ts`.
 
-El Dockerfile exige `VITE_API_URL` como build-arg (sin valor por defecto en el código). El stack de producción se define en `../veterinarian-backend/deploy/docker-compose.prod.yml` (frontend en `127.0.0.1:5181`). Guía: `../veterinarian-backend/deploy/DEPLOY.md`. Vite en desarrollo sigue en el puerto **5174**. El navegador usa el dominio público de la API, no `http://backend:8080`.
+Instala las dependencias:
+
+```bash
+pnpm install
+```
+
+Inicia el servidor de desarrollo:
+
+```bash
+pnpm dev
+```
+
+Vite utiliza normalmente el puerto `5174` en desarrollo.
+
+## Scripts
+
+Los scripts definidos en `package.json` son:
+
+```bash
+# Validar TypeScript
+pnpm lint
+
+# Compilar TypeScript y generar el bundle de producción
+pnpm build
+
+# Iniciar desarrollo y previsualizar producción
+pnpm dev
+pnpm preview
+
+# Ejecutar todas las pruebas
+pnpm test
+
+# Ejecutar grupos de pruebas
+pnpm test:auth
+pnpm test:superadmin
+pnpm test:recep
+pnpm test:nav
+pnpm test:vet
+pnpm test:notifications
+```
+
+Las pruebas se encuentran en `tests/` y utilizan el ejecutor nativo de Node.js.
+
+## Build y despliegue
+
+El `Dockerfile` realiza un build multietapa:
+
+1. Usa Node 22 Alpine.
+2. Instala dependencias con `pnpm install --frozen-lockfile`.
+3. Recibe `VITE_API_URL` como argumento de build.
+4. Ejecuta `pnpm run build`.
+5. Sirve el contenido generado en `dist/` mediante Nginx.
+
+Ejemplo:
+
+```bash
+docker build \
+  --build-arg VITE_API_URL=https://api.tuclinica.com \
+  -t huellitas-frontend .
+```
+
+La URL pública de la API debe estar disponible para el navegador. Un nombre interno de Docker, como `http://backend:8080`, no funciona como URL de consumo desde el navegador del usuario.
+
+Antes de desplegar se recomienda ejecutar:
+
+```bash
+pnpm lint
+pnpm test
+pnpm build
+```
+
+El despliegue de infraestructura y backend se documenta en el repositorio correspondiente del backend.
+
+---
+
+Documentación técnica del frontend de Huellitas Veterinaria.
