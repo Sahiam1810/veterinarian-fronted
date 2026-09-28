@@ -89,6 +89,22 @@ body {
   transform-origin: center top;
 }
 
+@media print {
+  body.printing-hospitalization-invoice > *:not(.hospitalization-invoice-print-root) {
+    display: none !important;
+  }
+
+  body.printing-hospitalization-invoice > .hospitalization-invoice-print-root {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    background: white !important;
+    backdrop-filter: none !important;
+  }
+}
+
 /* Transición suave al cambiar de semana / fecha en agenda */
 @keyframes week-switch {
   0% {

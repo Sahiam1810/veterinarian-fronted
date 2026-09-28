@@ -32,10 +32,12 @@ export function HospitalizationInvoiceModal({
 
   const handlePrint = () => {
     setIsPreparingPrint(true)
+    document.body.classList.add('printing-hospitalization-invoice')
     setTimeout(() => {
       try {
         window.print()
       } finally {
+        document.body.classList.remove('printing-hospitalization-invoice')
         setIsPreparingPrint(false)
       }
     }, 50)
@@ -50,7 +52,7 @@ export function HospitalizationInvoiceModal({
 
   return createPortal((
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm print:bg-white print:p-0 print:backdrop-blur-none print:static print:inset-auto animate-view-popup"
+      className="hospitalization-invoice-print-root fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm print:bg-white print:p-0 print:backdrop-blur-none print:static print:inset-auto animate-view-popup"
       role="dialog"
       aria-modal="true"
       aria-labelledby="hospitalization-invoice-title"
