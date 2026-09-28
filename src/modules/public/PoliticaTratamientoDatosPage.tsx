@@ -1,14 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrandLogo } from '@/global/components'
 
 interface PoliticaTratamientoDatosPageProps {
   onGoToLogin?: () => void
 }
 
+const SECTIONS = [
+  { id: 'responsable', label: '1. Responsable' },
+  { id: 'marco-legal', label: '2. Marco Legal' },
+  { id: 'finalidades', label: '3. Finalidades' },
+  { id: 'datos-recolectados', label: '4. Datos Recolectados' },
+  { id: 'derechos', label: '5. Derechos Titular' },
+  { id: 'seguridad', label: '6. Seguridad' },
+  { id: 'procedimiento-pqr', label: '7. Ejercicio y PQR' },
+  { id: 'vigencia', label: '8. Vigencia' },
+]
+
 export function PoliticaTratamientoDatosPage({
   onGoToLogin,
 }: PoliticaTratamientoDatosPageProps) {
   const [activeSection, setActiveSection] = useState<string>('responsable')
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const intersecting = entries.find((e) => e.isIntersecting)
+        if (intersecting) {
+          setActiveSection(intersecting.target.id)
+        }
+      },
+      {
+        rootMargin: '-120px 0px -50% 0px',
+        threshold: 0.1,
+      }
+    )
+
+    SECTIONS.forEach((sec) => {
+      const el = document.getElementById(sec.id)
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   const scrollToSection = (id: string) => {
     setActiveSection(id)
@@ -31,42 +64,43 @@ export function PoliticaTratamientoDatosPage({
 
   return (
     <div className="h-screen w-full overflow-y-auto bg-[var(--color-bone,#faf5ec)] text-[var(--color-slate,#334155)] selection:bg-[#234e46]/20 selection:text-[#234e46]">
-      {/* Barra de navegación superior fija / glassmorphism */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-[#faf5ec]/90 border-b border-[#e8dccf] transition-all">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
+      {/* Barra de navegación superior fija con secciones ancladas */}
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-[#faf5ec]/95 border-b border-[#e8dccf] transition-all shadow-xs">
+        {/* Fila principal: Logo y Acciones */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           {/* Logo y título */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-xs border border-[#e8dccf]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-xs border border-[#e8dccf] shrink-0">
               <BrandLogo
                 mark="principal"
                 variant="transparent"
                 alt="Huellitas"
-                className="w-8 h-8 object-contain"
+                className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-base sm:text-lg text-[var(--color-brand,#234e46)] tracking-tight">
+                <span className="font-bold text-sm sm:text-lg text-[var(--color-brand,#234e46)] tracking-tight truncate">
                   Huellitas Veterinaria
                 </span>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#e8efea] text-[var(--color-brand,#234e46)] border border-[#658e83]/20">
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#e8efea] text-[var(--color-brand,#234e46)] border border-[#658e83]/20 shrink-0">
                   Ley 1581 de 2012
                 </span>
               </div>
-              <p className="text-xs text-[var(--color-text-placeholder,#9aa8a2)] hidden sm:block">
+              <p className="text-xs text-[var(--color-text-placeholder,#9aa8a2)] hidden sm:block truncate">
                 Política de Tratamiento y Privacidad de Datos
               </p>
             </div>
           </div>
 
           {/* Acciones del encabezado */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <a
               href="/politica-tratamiento-datos.pdf"
               target="_blank"
               rel="noopener noreferrer"
               download="politica-tratamiento-datos-huellitas.pdf"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg text-[var(--color-brand,#234e46)] bg-white/80 hover:bg-white border border-[#e8dccf] shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-[var(--color-brand,#234e46)] bg-white/80 hover:bg-white border border-[#e8dccf] shadow-2xs hover:shadow-xs transition-all cursor-pointer"
               title="Descargar versión PDF oficial"
             >
               <DownloadIcon className="w-4 h-4 text-[var(--color-brand,#234e46)]" />
@@ -76,7 +110,7 @@ export function PoliticaTratamientoDatosPage({
             <button
               type="button"
               onClick={handlePrint}
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-lg text-[var(--color-slate,#334155)] bg-white/80 hover:bg-white border border-[#e8dccf] shadow-2xs transition-all cursor-pointer"
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-[var(--color-slate,#334155)] bg-white/80 hover:bg-white border border-[#e8dccf] shadow-2xs transition-all cursor-pointer"
               title="Imprimir documento"
             >
               <PrinterIcon className="w-4 h-4 text-[#658e83]" />
@@ -86,11 +120,41 @@ export function PoliticaTratamientoDatosPage({
             <a
               href="/"
               onClick={handleLoginClick}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg text-white bg-[var(--color-brand,#234e46)] hover:bg-[var(--color-brand-hover,#1b3e37)] shadow-xs hover:shadow-sm transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg text-white bg-[var(--color-brand,#234e46)] hover:bg-[var(--color-brand-hover,#1b3e37)] shadow-xs hover:shadow-sm transition-all cursor-pointer"
             >
               <UserIcon className="w-4 h-4 text-white/90" />
               <span>Acceso Staff</span>
             </a>
+          </div>
+        </div>
+
+        {/* Fila secundaria: Secciones Ancladas al Header */}
+        <div className="border-t border-[#e8dccf]/80 bg-[#faf5ec]/90 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 overflow-x-auto scrollbar-none">
+            <nav
+              aria-label="Índice de la política"
+              className="flex items-center justify-between gap-1.5 text-xs min-w-max xl:min-w-0"
+            >
+              <span className="font-bold text-[var(--color-brand,#234e46)] text-[11px] uppercase tracking-wider pr-1 shrink-0">
+                Secciones:
+              </span>
+              <div className="flex items-center gap-1 flex-1 justify-between">
+                {SECTIONS.map((sec) => (
+                  <button
+                    key={sec.id}
+                    type="button"
+                    onClick={() => scrollToSection(sec.id)}
+                    className={`px-2.5 py-1 rounded-lg whitespace-nowrap text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                      activeSection === sec.id
+                        ? 'bg-[var(--color-brand,#234e46)] text-white shadow-2xs font-bold scale-[1.02]'
+                        : 'text-[var(--color-slate,#334155)] hover:bg-white hover:text-[var(--color-brand,#234e46)] border border-transparent hover:border-[#e8dccf]'
+                    }`}
+                  >
+                    {sec.label}
+                  </button>
+                ))}
+              </div>
+            </nav>
           </div>
         </div>
       </header>
@@ -134,38 +198,6 @@ export function PoliticaTratamientoDatosPage({
 
       {/* Contenido Principal */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Navegación rápida por secciones */}
-        <nav
-          aria-label="Índice de la política"
-          className="mb-8 p-3 rounded-xl bg-white/80 border border-[#e8dccf] shadow-2xs overflow-x-auto flex items-center gap-2 text-xs scrollbar-none"
-        >
-          <span className="font-semibold text-[var(--color-brand,#234e46)] px-2 whitespace-nowrap">
-            Secciones:
-          </span>
-          {[
-            { id: 'responsable', label: '1. Responsable' },
-            { id: 'marco-legal', label: '2. Marco Legal' },
-            { id: 'finalidades', label: '3. Finalidades' },
-            { id: 'datos-recolectados', label: '4. Datos Recolectados' },
-            { id: 'derechos', label: '5. Derechos Titular' },
-            { id: 'seguridad', label: '6. Seguridad' },
-            { id: 'procedimiento-pqr', label: '7. Ejercicio y PQR' },
-            { id: 'vigencia', label: '8. Vigencia' },
-          ].map((sec) => (
-            <button
-              key={sec.id}
-              type="button"
-              onClick={() => scrollToSection(sec.id)}
-              className={`px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-colors cursor-pointer ${
-                activeSection === sec.id
-                  ? 'bg-[var(--color-brand,#234e46)] text-white shadow-2xs'
-                  : 'text-[var(--color-slate,#334155)] hover:bg-[#faf5ec] hover:text-[var(--color-brand,#234e46)]'
-              }`}
-            >
-              {sec.label}
-            </button>
-          ))}
-        </nav>
 
         {/* Tarjetas resumen en grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
@@ -213,7 +245,7 @@ export function PoliticaTratamientoDatosPage({
         {/* Artículos de la Política */}
         <div className="space-y-8 text-sm leading-relaxed text-[var(--color-charcoal,#2d3748)]">
           {/* 1. Responsable */}
-          <section id="responsable" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="responsable" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 1
@@ -245,7 +277,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 2. Marco Legal */}
-          <section id="marco-legal" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="marco-legal" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 2
@@ -271,7 +303,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 3. Finalidades */}
-          <section id="finalidades" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="finalidades" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 3
@@ -320,7 +352,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 4. Datos Recolectados */}
-          <section id="datos-recolectados" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="datos-recolectados" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 4
@@ -365,7 +397,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 5. Derechos del Titular */}
-          <section id="derechos" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="derechos" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 5
@@ -406,7 +438,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 6. Seguridad y Confidencialidad */}
-          <section id="seguridad" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="seguridad" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 6
@@ -427,7 +459,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 7. Procedimiento para Consultas y Reclamos (PQR) */}
-          <section id="procedimiento-pqr" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="procedimiento-pqr" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 7
@@ -463,7 +495,7 @@ export function PoliticaTratamientoDatosPage({
           </section>
 
           {/* 8. Vigencia */}
-          <section id="vigencia" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-24">
+          <section id="vigencia" className="p-6 sm:p-8 rounded-2xl bg-white border border-[#e8dccf] shadow-2xs scroll-mt-36">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-7 h-7 rounded-lg bg-[#e8efea] text-[var(--color-brand,#234e46)] flex items-center justify-center font-bold text-xs">
                 8
