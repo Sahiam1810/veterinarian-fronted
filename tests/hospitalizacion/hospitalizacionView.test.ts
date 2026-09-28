@@ -21,6 +21,8 @@ test('isStayActive returns true for active stay without dischargedAt', () => {
     motivo: 'Observación post-quirúrgica',
     admittedByUserId: 'usr-1',
     admittedByName: 'Dr. Silva',
+    isPaid: false,
+    paidAt: null,
   }
 
   assert.equal(isStayActive(activeStay), true)
@@ -39,6 +41,8 @@ test('isStayActive returns false for discharged stay', () => {
     motivo: 'Observación post-quirúrgica',
     admittedByUserId: 'usr-1',
     admittedByName: 'Dr. Silva',
+    isPaid: true,
+    paidAt: '2026-09-24T19:00:00Z',
   }
 
   assert.equal(isStayActive(dischargedStay), false)
@@ -62,6 +66,8 @@ test('stay status badges and discharge date formatting handle active and dischar
     motivo: 'Observación',
     admittedByUserId: 'usr-1',
     admittedByName: 'Dr. Silva',
+    isPaid: false,
+    paidAt: null,
   }
 
   const activeBadge = getInvoiceStayStatusBadge(activeStay.status)
@@ -80,6 +86,8 @@ test('stay status badges and discharge date formatting handle active and dischar
     motivo: 'Cirugía',
     admittedByUserId: 'usr-1',
     admittedByName: 'Dr. Silva',
+    isPaid: true,
+    paidAt: '2026-09-24T19:00:00Z',
   }
 
   const dischargedBadge = getInvoiceStayStatusBadge(dischargedStay.status)

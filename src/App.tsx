@@ -225,6 +225,13 @@ function SuperAdminApp({
   onLogout: () => void
 }) {
   const isPlatformSuperAdmin = !!user.isPlatformSuperAdmin
+  const normalizedRole = (user.role || '').toLowerCase()
+  const normalizedRoleName = (user.roleName || '').toLowerCase()
+  const canManageHospitalizationSettings =
+    isPlatformSuperAdmin ||
+    normalizedRole === 'admin' ||
+    normalizedRole === 'administrador' ||
+    normalizedRoleName.includes('admin')
   const {
     canViewModule,
     canCreateModule,
@@ -504,7 +511,7 @@ function SuperAdminApp({
               canViewOrders={canViewModule('ordenesMedicas')}
               canCreateOrders={canCreateModule('ordenesMedicas')}
               canEditOrders={canEditModule('ordenesMedicas')}
-              canManageSettings={canEditModule('hospitalizacion')}
+              canManageSettings={canManageHospitalizationSettings}
               canDischarge={canEditModule('hospitalizacion')}
               canRegisterPayment={canEditModule('hospitalizacion')}
             />
