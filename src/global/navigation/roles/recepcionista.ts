@@ -93,6 +93,15 @@ export const RECEP_NAV_CATALOG: NavCatalogItem[] = [
     placement: 'main',
   },
   {
+    id: 'hospitalizacion',
+    label: 'Hospitalización',
+    permissionKey: 'recep.hospitalizacion',
+    iconKey: 'hospital',
+    kind: 'link',
+    order: 87,
+    placement: 'main',
+  },
+  {
     id: 'perfil',
     label: 'Perfil',
     permissionKey: 'recep.perfil',

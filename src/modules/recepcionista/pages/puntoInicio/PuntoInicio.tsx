@@ -20,6 +20,7 @@ import { ServiciosPage } from '../servicios'
 import { ProfesionalesPage } from '../profesionales'
 import { ReportesPage } from '../reportes'
 import { OrdenesMedicasPage } from '../ordenesMedicas'
+import { HospitalizacionPage } from '@/modules/hospitalizacion'
 
 interface PuntoInicioProps {
   userName?: string
@@ -52,6 +53,7 @@ export function PuntoInicio({
     isQuickBookingOpen,
     setIsQuickBookingOpen,
     reloadHome,
+    canViewModule,
     canCreateModule,
     canEditModule,
     canDeleteModule,
@@ -67,6 +69,7 @@ export function PuntoInicio({
   const isProfesionales = activeRoute === 'profesionales'
   const isReportes = activeRoute === 'reportes'
   const isOrdenesMedicas = activeRoute === 'ordenesMedicas'
+  const isHospitalizacion = activeRoute === 'hospitalizacion'
   const fillHeight =
     isMascotas ||
     isAgenda ||
@@ -75,7 +78,8 @@ export function PuntoInicio({
     isEspeciesRazas ||
     isServicios ||
     isProfesionales ||
-    isReportes
+    isReportes ||
+    isHospitalizacion
 
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
@@ -193,6 +197,19 @@ export function PuntoInicio({
 
           {isOrdenesMedicas && <OrdenesMedicasPage canEditModule={canEditModule} />}
 
+          {isHospitalizacion && (
+            <HospitalizacionPage
+              canView={canViewModule('hospitalizacion')}
+              canCreate={canCreateModule('hospitalizacion')}
+              canEdit={canEditModule('hospitalizacion')}
+              canViewSupplies={false}
+              canCreateSupplies={false}
+              canViewOrders={canViewModule('ordenesMedicas')}
+              canCreateOrders={false}
+              canEditOrders={canEditModule('ordenesMedicas')}
+            />
+          )}
+
           {isPerfil && <PerfilPage onNotice={showToast} />}
 
           {activeRoute !== 'inicio' &&
@@ -204,7 +221,8 @@ export function PuntoInicio({
             activeRoute !== 'especiesRazas' &&
             activeRoute !== 'servicios' &&
             activeRoute !== 'profesionales' &&
-            activeRoute !== 'reportes' && (
+            activeRoute !== 'reportes' &&
+            activeRoute !== 'hospitalizacion' && (
               <ViewPopup animationKey={activeRoute}>
                 <p className="text-sm text-sage font-medium">
                   Módulo “{activeRoute}” pendiente de implementación.

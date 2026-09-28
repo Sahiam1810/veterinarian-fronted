@@ -19,7 +19,10 @@ import {
   VET_DEFAULT_PERMISSIONS,
   VET_NAV_CATALOG,
 } from '../../src/global/navigation/roles/veterinario.ts'
-import { RECEP_DEFAULT_PERMISSIONS } from '../../src/global/navigation/roles/recepcionista.ts'
+import {
+  RECEP_DEFAULT_PERMISSIONS,
+  RECEP_NAV_CATALOG,
+} from '../../src/global/navigation/roles/recepcionista.ts'
 
 const originalFetch = globalThis.fetch
 
@@ -396,6 +399,42 @@ test('resolveRecepNavPermissionsFromModules includes new modules when canView is
     'recep.reportes',
     'recep.perfil',
   ])
+})
+
+test('resolveRecepNavPermissionsFromModules includes hospitalizacion when granted by SuperAdmin', () => {
+  const permissions = resolveRecepNavPermissionsFromModules({
+    Hospitalización: {
+      canView: true,
+      canCreate: true,
+      canEdit: true,
+      canDelete: false,
+    },
+  })
+
+  assert.equal(permissions.includes('recep.hospitalizacion'), true)
+
+  const visibleItems = resolveNavCatalog(
+    RECEP_NAV_CATALOG,
+    RECEP_DEFAULT_PERMISSIONS,
+    permissions,
+  )
+  assert.equal(
+    visibleItems.some((item) => item.id === 'hospitalizacion'),
+    true,
+  )
+})
+
+test('resolveRecepNavPermissionsFromModules oculta hospitalizacion sin View', () => {
+  const permissions = resolveRecepNavPermissionsFromModules({
+    Hospitalización: {
+      canView: false,
+      canCreate: true,
+      canEdit: true,
+      canDelete: true,
+    },
+  })
+
+  assert.equal(permissions.includes('recep.hospitalizacion'), false)
 })
 
 test('fetchVetNavPermissions returns especiesRazas, servicios, and profesionales when granted by SuperAdmin', async () => {

@@ -9,6 +9,23 @@ import { ProfessionalCombobox } from '../../superadmin/components/ProfessionalCo
 import { PawIcon, PlusIcon, ReloadIcon } from '../../../global/components/Icons.tsx'
 import { ViewPopup } from '../../veterinario/components/ViewPopup'
 import { CloseIcon } from '../../veterinario/components/MascotasIcons'
+import { ApiError } from '../../../services/apiClient.ts'
+
+function getHospitalizationErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return 'Tu sesión expiró. Ingresa nuevamente.'
+    if (error.status === 403) return 'No tienes permiso para realizar esta acción.'
+    if (error.status === 409) return 'La mascota ya tiene una hospitalización activa.'
+    if (error.status >= 500) return 'El servidor no pudo completar la operación. Intenta de nuevo.'
+    if (error.message && error.message !== 'Unexpected error') return error.message
+  }
+
+  if (error instanceof Error && error.message && error.message !== 'Unexpected error') {
+    return error.message
+  }
+
+  return fallback
+}
 
 export interface AdmitirMascotaModalProps {
   isOpen: boolean
@@ -38,10 +55,10 @@ export function AdmitirMascotaModal({
       const list = await fetchPetAdmissionOptions()
       setPets(list || [])
     } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Error al cargar las mascotas para admisión.'
+      const msg = getHospitalizationErrorMessage(
+        err,
+        'No se pudieron cargar las mascotas para admisión.',
+      )
       setLoadPetsError(msg)
     } finally {
       setIsLoadingPets(false)
@@ -85,8 +102,10 @@ export function AdmitirMascotaModal({
       onClose()
     } catch (err) {
       // Conservar datos y mantener modal abierto en caso de error (ej: 409 conflicto)
-      const msg =
-        err instanceof Error ? err.message : 'Error al admitir la mascota.'
+      const msg = getHospitalizationErrorMessage(
+        err,
+        'No se pudo admitir la mascota. Intenta de nuevo.',
+      )
       setFormError(msg)
     } finally {
       setIsSubmitting(false)

@@ -32,6 +32,7 @@ const IMPLEMENTED_ROUTES = new Set([
   'servicios',
   'profesionales',
   'reportes',
+  'hospitalizacion',
 ])
 
 const GATED_ROUTES: Record<string, NavPermissionKey> = {
@@ -43,6 +44,7 @@ const GATED_ROUTES: Record<string, NavPermissionKey> = {
   servicios: 'recep.servicios',
   profesionales: 'recep.profesionales',
   reportes: 'recep.reportes',
+  hospitalizacion: 'recep.hospitalizacion',
 }
 
 export function useRecepHome(onLogout?: () => void) {

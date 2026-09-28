@@ -13,6 +13,7 @@ export type RecepModuleId =
   | 'servicios'
   | 'profesionales'
   | 'reportes'
+  | 'hospitalizacion'
   | 'ordenesMedicas'
 
 interface RecepModulePermissionRule {
@@ -82,6 +83,12 @@ export const RECEP_MODULE_PERMISSION_RULES: Record<
     createModule: 'Reportes',
     editModule: 'Reportes',
     deleteModule: 'Reportes',
+  },
+  hospitalizacion: {
+    viewModules: ['Hospitalización'],
+    createModule: 'Hospitalización',
+    editModule: 'Hospitalización',
+    deleteModule: 'Hospitalización',
   },
   ordenesMedicas: {
     viewModules: ['Órdenes Médicas'],
