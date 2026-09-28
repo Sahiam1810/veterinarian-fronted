@@ -26,6 +26,7 @@ export interface ApiMedicationOrderItem {
   medicationId: string
   medicationName?: string | null
   notes?: string | null
+  unitPrice?: number | null
 }
 
 export interface ApiMedicationOrder {
@@ -49,6 +50,7 @@ export interface ApiProcedureOrderItem {
   procedureId: string
   procedureName?: string | null
   notes?: string | null
+  unitPrice?: number | null
 }
 
 export interface ApiProcedureOrder {
