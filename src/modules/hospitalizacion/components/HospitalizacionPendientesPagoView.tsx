@@ -7,6 +7,7 @@ import { ReloadIcon } from '@/global/components'
 interface HospitalizacionPendientesPagoViewProps {
   canView?: boolean
   onSelectStay?: (stayId: string) => void
+  searchTerm?: string
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -19,6 +20,7 @@ function formatDate(dateStr: string | null | undefined): string {
 export function HospitalizacionPendientesPagoView({
   canView = true,
   onSelectStay,
+  searchTerm = '',
 }: HospitalizacionPendientesPagoViewProps) {
   const [stays, setStays] = useState<ApiHospitalizationStay[]>([])
   const [invoices, setInvoices] = useState<Record<string, HospitalizationInvoice>>({})
@@ -52,6 +54,21 @@ export function HospitalizacionPendientesPagoView({
     if (canView) void load()
   }, [canView])
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+  const filteredStays = stays.filter((stay) => {
+    if (!normalizedSearchTerm) return true
+
+    const pet = (stay.petName || '').toLowerCase()
+    const owner = (stay.ownerName || '').toLowerCase()
+    const motivo = (stay.motivo || '').toLowerCase()
+
+    return (
+      pet.includes(normalizedSearchTerm) ||
+      owner.includes(normalizedSearchTerm) ||
+      motivo.includes(normalizedSearchTerm)
+    )
+  })
+
   if (!canView) return null
 
   return (
@@ -72,6 +89,10 @@ export function HospitalizacionPendientesPagoView({
         <div className="p-12 text-center text-sage text-sm">
           No hay estancias dadas de alta.
         </div>
+      ) : filteredStays.length === 0 ? (
+        <div className="p-12 text-center text-sage text-sm">
+          No hay estancias pendientes que coincidan con la búsqueda.
+        </div>
       ) : (
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
@@ -85,7 +106,7 @@ export function HospitalizacionPendientesPagoView({
               </tr>
             </thead>
             <tbody className="divide-y divide-border-tan/60 text-charcoal">
-              {stays.map((stay) => (
+              {filteredStays.map((stay) => (
                 <tr key={stay.id} className="hover:bg-bone/40 transition">
                   <td className="py-3 px-4">
                     <span className="font-extrabold text-brand block">{stay.petName || 'Mascota'}</span>

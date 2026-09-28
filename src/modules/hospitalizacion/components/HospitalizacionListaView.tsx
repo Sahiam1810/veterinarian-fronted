@@ -255,7 +255,11 @@ export function HospitalizacionListaView({
       </div>
 
       {activeTab === 'pending' ? (
-        <HospitalizacionPendientesPagoView canView={canView} onSelectStay={onSelectStay} />
+        <HospitalizacionPendientesPagoView
+          canView={canView}
+          onSelectStay={onSelectStay}
+          searchTerm={searchTerm}
+        />
       ) : (
       <div className="bg-white border border-border-tan rounded-2xl shadow-xs overflow-hidden">
         {isLoading ? (
