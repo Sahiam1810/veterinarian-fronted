@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   completeMedicationOrder,
   completeProcedureOrder,
@@ -60,7 +61,7 @@ export function CompletarOrdenModal({
     }
   }
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-charcoal/45 backdrop-blur-xs"
       role="dialog"
@@ -143,5 +144,5 @@ export function CompletarOrdenModal({
         </form>
       </ViewPopup>
     </div>
-  )
+  ), document.body)
 }

@@ -12,6 +12,8 @@ export interface ApiHospitalizationStay {
   motivo: string
   admittedByUserId: string
   admittedByName: string | null
+  isPaid: boolean
+  paidAt: string | null
 }
 
 export interface ApiHospitalizationNote {

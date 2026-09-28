@@ -6,12 +6,15 @@ import type {
 import {
   fetchStayById,
   fetchHospitalizationInvoice,
+  dischargeStay,
+  registerStayPayment,
 } from '../services/hospitalizacionService'
 import { isStayActive } from '../utils/hospitalizacionView'
 import { HospitalizationInvoiceModal } from './HospitalizationInvoiceModal'
 import { HospitalizacionInsumosPanel } from './HospitalizacionInsumosPanel'
 import { HospitalizacionOrdenesPanel } from './HospitalizacionOrdenesPanel'
 import { HospitalizacionNotasPanel } from './HospitalizacionNotasPanel'
+import { HospitalizacionHistorialPanel } from './HospitalizacionHistorialPanel'
 
 export interface HospitalizacionDetalleViewProps {
   stayId: string
@@ -24,6 +27,8 @@ export interface HospitalizacionDetalleViewProps {
   canViewOrders?: boolean
   canCreateOrders?: boolean
   canEditOrders?: boolean
+  canDischarge?: boolean
+  canRegisterPayment?: boolean
   onBack?: () => void
 }
 
@@ -38,6 +43,8 @@ export function HospitalizacionDetalleView({
   canViewOrders = false,
   canCreateOrders = false,
   canEditOrders = false,
+  canDischarge = false,
+  canRegisterPayment = false,
   onBack,
 }: HospitalizacionDetalleViewProps) {
   const [stay, setStay] = useState<ApiHospitalizationStay | null>(initialStay)
@@ -49,6 +56,15 @@ export function HospitalizacionDetalleView({
   const [invoice, setInvoice] = useState<HospitalizationInvoice | null>(null)
   const [isLoadingInvoice, setIsLoadingInvoice] = useState(false)
   const [invoiceError, setInvoiceError] = useState<string | null>(null)
+  const [invoiceStayId, setInvoiceStayId] = useState(stayId)
+  const [isDischarging, setIsDischarging] = useState(false)
+  const [isRegisteringPayment, setIsRegisteringPayment] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
+
+  const reloadStay = useCallback(async () => {
+    const data = await fetchStayById(stayId)
+    setStay(data)
+  }, [stayId])
 
   useEffect(() => {
     if (initialStay) {
@@ -90,15 +106,16 @@ export function HospitalizacionDetalleView({
     }
   }, [stayId, initialStay, canView])
 
-  const handleOpenInvoice = useCallback(async () => {
-    if (!canView || !stayId) return
+  const handleOpenInvoice = useCallback(async (targetStayId = stayId) => {
+    if (!canView || !targetStayId) return
 
+    setInvoiceStayId(targetStayId)
     setIsInvoiceOpen(true)
     setIsLoadingInvoice(true)
     setInvoiceError(null)
 
     try {
-      const data = await fetchHospitalizationInvoice(stayId)
+      const data = await fetchHospitalizationInvoice(targetStayId)
       setInvoice(data)
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
@@ -111,6 +128,42 @@ export function HospitalizacionDetalleView({
       setIsLoadingInvoice(false)
     }
   }, [canView, stayId])
+
+  const handleDischarge = useCallback(async () => {
+    if (!canDischarge || !stayId || isDischarging) return
+    if (!window.confirm('¿Confirmas que deseas dar de alta esta estancia?')) return
+
+    setIsDischarging(true)
+    setActionError(null)
+    try {
+      await dischargeStay(stayId)
+      await reloadStay()
+      if (isInvoiceOpen) setInvoice(await fetchHospitalizationInvoice(stayId))
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+      setActionError(apiErr.response?.data?.message || apiErr.message || 'No se pudo dar de alta la estancia.')
+    } finally {
+      setIsDischarging(false)
+    }
+  }, [canDischarge, isDischarging, isInvoiceOpen, reloadStay, stayId])
+
+  const handleRegisterPayment = useCallback(async () => {
+    if (!canRegisterPayment || !stayId || isRegisteringPayment) return
+    if (!window.confirm('¿Confirmas que deseas registrar el pago de esta liquidación?')) return
+
+    setIsRegisteringPayment(true)
+    setActionError(null)
+    try {
+      await registerStayPayment(stayId)
+      await reloadStay()
+      setInvoice(await fetchHospitalizationInvoice(invoiceStayId))
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+      setActionError(apiErr.response?.data?.message || apiErr.message || 'No se pudo registrar el pago.')
+    } finally {
+      setIsRegisteringPayment(false)
+    }
+  }, [canRegisterPayment, invoiceStayId, isRegisteringPayment, reloadStay, stayId])
 
   const isDischarged = stay ? !isStayActive(stay) : false
 
@@ -148,6 +201,16 @@ export function HospitalizacionDetalleView({
         </div>
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
+          {canDischarge && stay && isStayActive(stay) && (
+            <button
+              type="button"
+              onClick={() => void handleDischarge()}
+              disabled={isDischarging}
+              className="px-4 py-2 text-sm font-semibold rounded-xl border border-brand text-brand hover:bg-brand/10 transition flex items-center gap-2 disabled:opacity-60"
+            >
+              {isDischarging ? 'Dando de alta...' : 'Dar de alta'}
+            </button>
+          )}
           {/* Botón Ver Liquidación */}
           <button
             type="button"
@@ -189,6 +252,12 @@ export function HospitalizacionDetalleView({
           )}
         </div>
       </div>
+
+      {actionError && (
+        <div className="px-4 py-3 rounded-xl bg-terracotta-soft/30 border border-terracotta/30 text-sm text-danger">
+          {actionError}
+        </div>
+      )}
 
       {/* Stay Info Card */}
       {isLoadingStay ? (
@@ -279,7 +348,21 @@ export function HospitalizacionDetalleView({
         invoice={invoice}
         isLoading={isLoadingInvoice}
         error={invoiceError}
-        onRetry={handleOpenInvoice}
+        onRetry={() => void handleOpenInvoice(invoiceStayId)}
+        canRegisterPayment={canRegisterPayment}
+        isRegisteringPayment={isRegisteringPayment}
+        onRegisterPayment={() => void handleRegisterPayment()}
+        actionError={actionError}
+      />
+
+      <HospitalizacionHistorialPanel
+        clientPetId={stay?.clientPetId}
+        currentStayId={stayId}
+        canView={canView}
+        canViewNotes={canView}
+        canViewOrders={canViewOrders}
+        canViewSupplies={canViewSupplies}
+        onViewInvoice={(historyStayId) => void handleOpenInvoice(historyStayId)}
       />
 
       {/* Panel de Órdenes Médicas de la Estancia */}

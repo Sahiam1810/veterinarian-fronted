@@ -18,6 +18,10 @@ export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
   return apiClient.get<ApiHospitalizationStay[]>('/api/hospitalization-stays/active')
 }
 
+export async function fetchPendingPaymentStays(): Promise<ApiHospitalizationStay[]> {
+  return apiClient.get<ApiHospitalizationStay[]>('/api/hospitalization-stays/pending-payment')
+}
+
 export async function fetchHospitalizationSettings(): Promise<HospitalizationSettings> {
   return apiClient.get<HospitalizationSettings>('/api/hospitalization-settings')
 }
@@ -50,6 +54,10 @@ export async function admitStay(data: AdmitStayDto): Promise<{ id: string } | st
 
 export async function dischargeStay(id: string): Promise<void> {
   return apiClient.patch<void>(`/api/hospitalization-stays/${id}/discharge`)
+}
+
+export async function registerStayPayment(id: string): Promise<void> {
+  return apiClient.patch<void>(`/api/hospitalization-stays/${id}/register-payment`)
 }
 
 export async function fetchStayNotes(id: string): Promise<ApiHospitalizationNote[]> {

@@ -197,6 +197,7 @@ export function PuntoInicio({
               canViewOrders={canViewModule('ordenesMedicas')}
               canCreateOrders={canCreateModule('ordenesMedicas')}
               canEditOrders={canEditModule('ordenesMedicas')}
+              canDischarge={canEditModule('hospitalizacion')}
             />
           )}
 

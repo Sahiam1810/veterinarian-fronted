@@ -20,6 +20,7 @@ import {
   fetchHospitalizationSettings,
   updateHospitalizationSettings,
 } from '../services/hospitalizacionService'
+import { HospitalizacionPendientesPagoView } from './HospitalizacionPendientesPagoView'
 
 export interface HospitalizacionListaViewProps {
   canView?: boolean
@@ -66,6 +67,7 @@ export function HospitalizacionListaView({
   const [isLoadingRate, setIsLoadingRate] = useState(false)
   const [isSavingRate, setIsSavingRate] = useState(false)
   const [rateError, setRateError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'active' | 'pending'>('active')
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastTone, setToastTone] = useState<PageToastTone>('success')
@@ -235,7 +237,26 @@ export function HospitalizacionListaView({
         </div>
       </div>
 
-      {/* Tabla de Estancias */}
+      <div className="flex items-center gap-2 border-b border-border-tan">
+        <button
+          type="button"
+          onClick={() => setActiveTab('active')}
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition ${activeTab === 'active' ? 'border-brand text-brand' : 'border-transparent text-sage'}`}
+        >
+          Estancias activas
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('pending')}
+          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition ${activeTab === 'pending' ? 'border-brand text-brand' : 'border-transparent text-sage'}`}
+        >
+          Pendientes de pago
+        </button>
+      </div>
+
+      {activeTab === 'pending' ? (
+        <HospitalizacionPendientesPagoView canView={canView} onSelectStay={onSelectStay} />
+      ) : (
       <div className="bg-white border border-border-tan rounded-2xl shadow-xs overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-sage text-sm space-y-3">
@@ -358,6 +379,7 @@ export function HospitalizacionListaView({
           </div>
         )}
       </div>
+      )}
 
       {/* Modal de Admisión */}
       {isAdmitModalOpen && (

@@ -501,6 +501,8 @@ function SuperAdminApp({
               canCreateOrders={canCreateModule('ordenesMedicas')}
               canEditOrders={canEditModule('ordenesMedicas')}
               canManageSettings={canEditModule('hospitalizacion')}
+              canDischarge={canEditModule('hospitalizacion')}
+              canRegisterPayment={canEditModule('hospitalizacion')}
             />
           </main>
         </div>
