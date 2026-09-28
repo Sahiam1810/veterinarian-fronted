@@ -191,7 +191,7 @@ export function useRecepAgenda(enabled: boolean) {
     }
     let cancelled = false
     setIsLoadingSlots(true)
-    fetchRecepAvailableTimeSlots(form.professionalId, form.dateValue)
+    fetchRecepAvailableTimeSlots(form.professionalId, form.dateValue, form.serviceId)
       .then((slots) => {
         if (!cancelled) setTimeSlots(slots)
       })
@@ -204,7 +204,7 @@ export function useRecepAgenda(enabled: boolean) {
     return () => {
       cancelled = true
     }
-  }, [enabled, form.professionalId, form.dateValue])
+  }, [enabled, form.professionalId, form.dateValue, form.serviceId])
 
   // Carga los días de disponibilidad del profesional cada vez que cambia la selección
   // para mostrárselos al recepcionista como guía antes de elegir la fecha.

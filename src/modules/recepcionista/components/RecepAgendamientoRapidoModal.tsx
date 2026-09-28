@@ -176,7 +176,7 @@ export function RecepAgendamientoRapidoModal({
 
     let cancelled = false
     setIsLoadingSlots(true)
-    fetchRecepAvailableTimeSlots(professionalId, dateValue)
+    fetchRecepAvailableTimeSlots(professionalId, dateValue, serviceId)
       .then((slots) => {
         if (!cancelled) {
           setTimeSlots(slots)
@@ -196,7 +196,7 @@ export function RecepAgendamientoRapidoModal({
     return () => {
       cancelled = true
     }
-  }, [isOpen, step, professionalId, dateValue, timeSlotId])
+  }, [isOpen, step, professionalId, dateValue, serviceId, timeSlotId])
 
   if (!isOpen) return null
 

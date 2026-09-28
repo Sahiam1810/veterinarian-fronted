@@ -36,6 +36,9 @@ export interface RecepAgendaTimeSlot {
   label: string
   displayLabel: string
   available: boolean
+  availabilityId?: string
+  scheduledStartUtc?: string
+  scheduledEndUtc?: string
 }
 
 export interface RecepAgendaCatalogPayload {

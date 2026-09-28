@@ -18,28 +18,28 @@ import type { ApiServiceResponse } from '@/modules/superadmin/services/superAdmi
 import type { ApiVeterinarianResponse } from '@/modules/superadmin/services/superAdminVeterinariansService'
 import type { ApiStatusAppointmentResponse, ApiRaceResponse } from '@/modules/superadmin/services/superAdminCatalogService'
 import type { ApiAppointmentResponse, ApiCreateAppointmentRequest, ApiCreateAppointmentResponse } from '@/modules/superadmin/services/superAdminAppointmentsService'
-import { fetchAvailabilitiesByVeterinarian, type ApiAvailabilityResponse } from '../../superadmin/services/superAdminAvailabilitiesService.ts'
-import { dayOfWeekFromDateKey, findMatchingAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../../superadmin/utils/resolveAvailabilityId.ts'
+import { NO_VET_AVAILABILITY_MESSAGE } from '../../superadmin/utils/resolveAvailabilityId.ts'
 import { isAppointmentDateInThePast } from '../../superadmin/utils/appointmentDateGuard.ts'
 
-const SLOT_DURATION_MINUTES = 30
-
-function toMinutes(hm: string): number {
-  const [h, m] = hm.trim().slice(0, 5).split(':').map(Number)
-  return (h || 0) * 60 + (m || 0)
+interface ApiRecepAvailableSlot {
+  availabilityId: string
+  scheduledStartUtc: string
+  scheduledEndUtc: string
+  consultingRoom?: string | null
+  shiftName?: string | null
 }
 
-function minutesToHm(mins: number): string {
-  const h = Math.floor(mins / 60)
-  const m = mins % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function toDisplayLabel(hm: string): string {
-  const [h, m] = hm.split(':').map(Number)
-  const period = h < 12 ? 'AM' : 'PM'
-  const displayHour = h % 12 === 0 ? 12 : h % 12
-  return `${String(displayHour).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`
+function toLocalTimeParts(isoString: string): { id: string; displayLabel: string } {
+  const date = new Date(isoString)
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const id = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  const period = hours < 12 ? 'AM' : 'PM'
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12
+  return {
+    id,
+    displayLabel: `${String(displayHour).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`,
+  }
 }
 
 // scheduledStart llega en UTC (una cita de la noche en Bogotá puede caer en la
@@ -67,34 +67,30 @@ function isSameLocalDate(iso: string, dateValue: string): boolean {
 export async function fetchRecepAvailableTimeSlots(
   veterinarianId: string,
   dateKey: string,
+  serviceId: string,
 ): Promise<RecepAgendaTimeSlot[]> {
-  if (!veterinarianId || !dateKey) return []
+  if (!veterinarianId || !dateKey || !serviceId) return []
 
-  const availabilities = await fetchAvailabilitiesByVeterinarian(veterinarianId).catch(
-    () => [] as ApiAvailabilityResponse[],
+  const query = new URLSearchParams({ veterinarianId, date: dateKey, serviceId })
+  const slots = await apiClient.get<ApiRecepAvailableSlot[]>(
+    `/api/Availabilities/available-slots?${query.toString()}`,
   )
-  const day = dayOfWeekFromDateKey(dateKey)
 
-  const blocks = availabilities.filter((item) => {
-    const dow = typeof item.dayOfWeek === 'string' ? Number(item.dayOfWeek) : item.dayOfWeek
-    return item.isActive && Number(dow) === day
-  })
-
-  const seen = new Set<string>()
-  const slots: RecepAgendaTimeSlot[] = []
-
-  for (const block of blocks) {
-    const start = toMinutes(block.startTime)
-    const end = toMinutes(block.endTime)
-    for (let mins = start; mins + SLOT_DURATION_MINUTES <= end; mins += SLOT_DURATION_MINUTES) {
-      const hm = minutesToHm(mins)
-      if (seen.has(hm) || isAppointmentDateInThePast(dateKey, hm)) continue
-      seen.add(hm)
-      slots.push({ id: hm, label: hm, displayLabel: toDisplayLabel(hm), available: true })
-    }
-  }
-
-  return slots.sort((a, b) => a.id.localeCompare(b.id))
+  return slots
+    .map((slot) => {
+      const localTime = toLocalTimeParts(slot.scheduledStartUtc)
+      return {
+        id: localTime.id,
+        label: localTime.id,
+        displayLabel: localTime.displayLabel,
+        available: true,
+        availabilityId: slot.availabilityId,
+        scheduledStartUtc: slot.scheduledStartUtc,
+        scheduledEndUtc: slot.scheduledEndUtc,
+      }
+    })
+    .filter((slot) => !isAppointmentDateInThePast(dateKey, slot.id))
+    .sort((a, b) => a.id.localeCompare(b.id))
 }
 
 function formatTimeString(isoString: string): string {
@@ -256,10 +252,9 @@ export { updateAppointmentVitals, type ApiAppointmentVitalsRequest } from '../..
 export async function createRecepAppointment(
   form: RecepAgendaFormState,
 ): Promise<ApiCreateAppointmentResponse> {
-  const [cpRes, statusRes, availabilities] = await Promise.all([
+  const [cpRes, statusRes] = await Promise.all([
     apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets'),
     apiClient.get<ApiStatusAppointmentResponse[]>('/api/StatusAppointments').catch(() => []),
-    fetchAvailabilitiesByVeterinarian(form.professionalId).catch(() => [] as ApiAvailabilityResponse[]),
   ])
 
   // Buscar o resolver el clientPetId correspondiente al cliente y la mascota
@@ -277,31 +272,25 @@ export async function createRecepAppointment(
   const agendadoStatus = statusRes.find((s) => s.name?.toLowerCase().includes('agend')) || statusRes[0]
   const statusId = agendadoStatus?.id || '22222222-2222-2222-2222-222222222222'
 
-  const startTime = form.timeSlotId || '09:00'
-  const endTime = minutesToHm(toMinutes(startTime) + SLOT_DURATION_MINUTES)
+  const availableSlots = await fetchRecepAvailableTimeSlots(
+    form.professionalId,
+    form.dateValue,
+    form.serviceId,
+  )
+  const selectedSlot = availableSlots.find((slot) => slot.id === form.timeSlotId)
+  if (!selectedSlot?.availabilityId || !selectedSlot.scheduledStartUtc || !selectedSlot.scheduledEndUtc) {
+    throw new Error(NO_VET_AVAILABILITY_MESSAGE)
+  }
 
   // S56: resuelve el bloque de disponibilidad real del veterinario para ese
   // día/horario (ya no se toma "el primero que exista" en todo el sistema).
-  const availabilityId = findMatchingAvailabilityId(availabilities, form.dateValue, startTime, endTime)
-  if (!availabilityId) {
-    throw new Error(NO_VET_AVAILABILITY_MESSAGE)
-  }
+  const availabilityId = selectedSlot.availabilityId
 
   // "YYYY-MM-DD" con new Date(string) se interpreta como medianoche UTC (desfasa el día
   // en zonas UTC negativas como Bogotá); se arma con año/mes/día locales, como ya hacen
   // useRecepAgenda.ts y RecepDayCalendarPanel.tsx en este mismo módulo.
-  const [hours, minutes] = startTime.split(':').map(Number)
-  const dateObj = form.dateValue
-    ? (() => {
-        const [year, month, day] = form.dateValue.split('-').map(Number)
-        return new Date(year, month - 1, day)
-      })()
-    : new Date()
-  dateObj.setHours(hours || 9, minutes || 0, 0, 0)
-  const startIso = dateObj.toISOString()
-
-  const endDateObj = new Date(dateObj.getTime() + SLOT_DURATION_MINUTES * 60 * 1000)
-  const endIso = endDateObj.toISOString()
+  const startIso = selectedSlot.scheduledStartUtc
+  const endIso = selectedSlot.scheduledEndUtc
 
   const payload: ApiCreateAppointmentRequest = {
     clientPetId,
