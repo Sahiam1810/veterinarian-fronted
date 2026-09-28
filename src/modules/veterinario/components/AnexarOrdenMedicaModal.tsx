@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   fetchMedications,
   fetchProcedures,
@@ -208,7 +209,7 @@ export function AnexarOrdenMedicaModal({
     }
   }
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
       role="dialog"
@@ -462,5 +463,5 @@ export function AnexarOrdenMedicaModal({
         </div>
       </ViewPopup>
     </div>
-  )
+  ), document.body)
 }

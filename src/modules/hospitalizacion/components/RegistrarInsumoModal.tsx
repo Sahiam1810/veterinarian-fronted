@@ -1,4 +1,5 @@
 import { useState, useMemo, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { ApiSupply } from '../types/hospitalizacion.types'
 import { registerStaySupplyConsumption } from '../services/hospitalizacionService'
 import {
@@ -96,7 +97,7 @@ export function RegistrarInsumoModal({
     }
   }
 
-  return (
+  return createPortal((
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-xs animate-view-popup"
       role="dialog"
@@ -324,5 +325,5 @@ export function RegistrarInsumoModal({
         </form>
       </div>
     </div>
-  )
+  ), document.body)
 }

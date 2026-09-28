@@ -80,7 +80,7 @@ export function PuntoInicio({
   const isResultados = activeRoute === 'resultados'
   const isPerfil = activeRoute === 'perfil'
   const fillHeight =
-    isAgenda || isMascotas || isDuenos || isEspeciesRazas || isServicios || isProfesionales || isHospitalizacion || isResultados
+    isAgenda || isMascotas || isDuenos || isEspeciesRazas || isServicios || isProfesionales || isResultados
   // Perfil ya no fuerza alto completo: se alinea al contenido
 
   return (

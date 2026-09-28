@@ -78,8 +78,7 @@ export function PuntoInicio({
     isEspeciesRazas ||
     isServicios ||
     isProfesionales ||
-    isReportes ||
-    isHospitalizacion
+    isReportes
 
   return (
     <div className="h-screen max-h-screen overflow-hidden overflow-x-hidden flex flex-col bg-bone">
