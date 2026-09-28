@@ -16,12 +16,17 @@ import {
   PageToast,
   type PageToastTone,
 } from '@/global/components'
+import {
+  fetchHospitalizationSettings,
+  updateHospitalizationSettings,
+} from '../services/hospitalizacionService'
 
 export interface HospitalizacionListaViewProps {
   canView?: boolean
   canCreate?: boolean
   canEdit?: boolean
   onSelectStay?: (stayId: string) => void
+  canManageSettings?: boolean
 }
 
 function formatDate(dateStr: string | null | undefined): string {
@@ -40,6 +45,7 @@ export function HospitalizacionListaView({
   canCreate = false,
   canEdit: _canEdit = false,
   onSelectStay,
+  canManageSettings = false,
 }: HospitalizacionListaViewProps) {
   if (!canView) {
     return (
@@ -56,6 +62,10 @@ export function HospitalizacionListaView({
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [isAdmitModalOpen, setIsAdmitModalOpen] = useState(false)
+  const [dailyRate, setDailyRate] = useState('')
+  const [isLoadingRate, setIsLoadingRate] = useState(false)
+  const [isSavingRate, setIsSavingRate] = useState(false)
+  const [rateError, setRateError] = useState<string | null>(null)
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [toastTone, setToastTone] = useState<PageToastTone>('success')
@@ -84,6 +94,35 @@ export function HospitalizacionListaView({
   useEffect(() => {
     void loadStays()
   }, [])
+
+  useEffect(() => {
+    if (!canManageSettings) return
+
+    setIsLoadingRate(true)
+    void fetchHospitalizationSettings()
+      .then((settings) => setDailyRate(String(settings.dailyRate || '')))
+      .catch(() => setRateError('No se pudo cargar la tarifa diaria.'))
+      .finally(() => setIsLoadingRate(false))
+  }, [canManageSettings])
+
+  const saveDailyRate = async () => {
+    const value = Number(dailyRate)
+    if (!Number.isFinite(value) || value <= 0) {
+      setRateError('La tarifa diaria debe ser mayor que cero.')
+      return
+    }
+
+    setIsSavingRate(true)
+    setRateError(null)
+    try {
+      await updateHospitalizationSettings(value)
+      showToast('Tarifa diaria de hospitalización guardada.')
+    } catch {
+      setRateError('No se pudo guardar la tarifa diaria.')
+    } finally {
+      setIsSavingRate(false)
+    }
+  }
 
   const filteredStays = stays.filter((stay) => {
     if (!searchTerm.trim()) return true
@@ -125,6 +164,47 @@ export function HospitalizacionListaView({
           </button>
         )}
       </div>
+
+      {canManageSettings && (
+        <section className="bg-white border border-border-tan rounded-2xl shadow-xs p-4 sm:p-5">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold text-brand">Configuración de hospitalización</h2>
+              <p className="text-xs text-sage mt-1">
+                Define la tarifa diaria para nuevas admisiones. Las estancias existentes conservan su tarifa.
+              </p>
+            </div>
+            <label className="text-xs font-bold text-sage">
+              Tarifa diaria
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-sm font-bold text-charcoal">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={dailyRate}
+                  disabled={isLoadingRate || isSavingRate}
+                  onChange={(event) => {
+                    setDailyRate(event.target.value)
+                    setRateError(null)
+                  }}
+                  className="w-40 px-3 py-2 rounded-xl border border-border-tan text-sm text-charcoal focus:outline-none focus:border-brand disabled:bg-bone"
+                  placeholder="Ej. 50000"
+                />
+                <button
+                  type="button"
+                  onClick={() => void saveDailyRate()}
+                  disabled={isLoadingRate || isSavingRate}
+                  className="px-4 py-2 rounded-xl bg-brand text-white text-xs font-bold hover:bg-brand-hover transition disabled:opacity-50"
+                >
+                  {isSavingRate ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </label>
+          </div>
+          {rateError && <p className="mt-2 text-xs font-semibold text-danger">{rateError}</p>}
+        </section>
+      )}
 
       {/* Control de Búsqueda y Filtros */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-border-tan shadow-xs">

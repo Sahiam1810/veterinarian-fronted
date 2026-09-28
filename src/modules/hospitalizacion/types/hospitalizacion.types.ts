@@ -83,6 +83,10 @@ export interface HospitalizationInvoice {
   procedures: HospitalizationInvoiceItem[]
 }
 
+export interface HospitalizationSettings {
+  dailyRate: number
+}
+
 export interface ApiSupplyConsumption {
   id: string
   hospitalizationStayId: string

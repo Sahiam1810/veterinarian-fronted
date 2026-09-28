@@ -42,6 +42,7 @@ export function MedicamentosSuperAdmin({
   const [editingMedication, setEditingMedication] = useState<ApiMedication | null>(null)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [price, setPrice] = useState('0')
   const [isActive, setIsActive] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -78,6 +79,7 @@ export function MedicamentosSuperAdmin({
     setEditingMedication(null)
     setName('')
     setCode('')
+    setPrice('0')
     setIsActive(true)
     setIsFormOpen(true)
   }
@@ -86,6 +88,7 @@ export function MedicamentosSuperAdmin({
     setEditingMedication(item)
     setName(item.name)
     setCode(item.code || '')
+    setPrice(String(item.price ?? 0))
     setIsActive(item.isActive)
     setIsFormOpen(true)
   }
@@ -96,12 +99,19 @@ export function MedicamentosSuperAdmin({
 
     setIsSubmitting(true)
     const normalizedCode = code.trim() ? code.trim().toUpperCase() : null
+    const parsedPrice = Number(price)
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      showToast('Ingresa un precio válido mayor o igual a cero.', 'danger')
+      setIsSubmitting(false)
+      return
+    }
     try {
       if (editingMedication) {
         await updateMedication(editingMedication.id, {
           name: name.trim(),
           code: normalizedCode,
           isActive,
+          price: parsedPrice,
         })
         showToast('Medicamento actualizado correctamente.')
       } else {
@@ -109,6 +119,7 @@ export function MedicamentosSuperAdmin({
           name: name.trim(),
           code: normalizedCode,
           isActive,
+          price: parsedPrice,
         })
         showToast('Medicamento registrado correctamente.')
       }
@@ -215,6 +226,7 @@ export function MedicamentosSuperAdmin({
                   <tr>
                     <th className="p-3.5 pl-5">Código / Ref</th>
                     <th className="p-3.5">Nombre del Medicamento</th>
+                    <th className="p-3.5">Precio</th>
                     <th className="p-3.5">Estado</th>
                     <th className="p-3.5 pr-5 text-right">Acciones</th>
                   </tr>
@@ -226,6 +238,9 @@ export function MedicamentosSuperAdmin({
                         {item.code || '—'}
                       </td>
                       <td className="p-3.5 font-bold text-brand">{item.name}</td>
+                      <td className="p-3.5 text-charcoal font-semibold whitespace-nowrap">
+                        {item.price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}
+                      </td>
                       <td className="p-3.5">
                         <span
                           className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
@@ -312,6 +327,22 @@ export function MedicamentosSuperAdmin({
                   placeholder="Ej. MED-001 o CUPS"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-sage mb-1 uppercase tracking-wider">
+                  Precio ($) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Ej. 25000"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand"
                 />
               </div>

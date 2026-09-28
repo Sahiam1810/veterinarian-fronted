@@ -11,10 +11,19 @@ import type {
   ApiSupplyConsumptionTotal,
   RegisterStaySupplyConsumptionDto,
   ApiSupply,
+  HospitalizationSettings,
 } from '../types/hospitalizacion.types'
 
 export async function fetchActiveStays(): Promise<ApiHospitalizationStay[]> {
   return apiClient.get<ApiHospitalizationStay[]>('/api/hospitalization-stays/active')
+}
+
+export async function fetchHospitalizationSettings(): Promise<HospitalizationSettings> {
+  return apiClient.get<HospitalizationSettings>('/api/hospitalization-settings')
+}
+
+export async function updateHospitalizationSettings(dailyRate: number): Promise<void> {
+  return apiClient.put<void>('/api/hospitalization-settings', { dailyRate })
 }
 
 export async function fetchStayById(id: string): Promise<ApiHospitalizationStay> {

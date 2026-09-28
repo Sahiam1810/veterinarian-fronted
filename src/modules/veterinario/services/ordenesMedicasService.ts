@@ -6,6 +6,7 @@ export interface ApiMedication {
   name: string
   code?: string | null
   isActive: boolean
+  price: number
   createdAt: string
   updatedAt?: string | null
 }
@@ -15,6 +16,7 @@ export interface ApiProcedure {
   name: string
   code?: string | null
   isActive: boolean
+  price: number
   createdAt: string
   updatedAt?: string | null
 }
@@ -74,24 +76,28 @@ export interface CreateMedicationDto {
   name: string
   code?: string | null
   isActive?: boolean
+  price: number
 }
 
 export interface UpdateMedicationDto {
   name: string
   code?: string | null
   isActive: boolean
+  price: number
 }
 
 export interface CreateProcedureDto {
   name: string
   code?: string | null
   isActive?: boolean
+  price: number
 }
 
 export interface UpdateProcedureDto {
   name: string
   code?: string | null
   isActive: boolean
+  price: number
 }
 
 export interface CreateMedicationOrderItemInput {

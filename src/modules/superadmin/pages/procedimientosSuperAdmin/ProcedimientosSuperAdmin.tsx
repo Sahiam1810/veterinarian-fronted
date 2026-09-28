@@ -41,6 +41,7 @@ export function ProcedimientosSuperAdmin({
   const [editingProcedure, setEditingProcedure] = useState<ApiProcedure | null>(null)
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
+  const [price, setPrice] = useState('0')
   const [isActive, setIsActive] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -77,6 +78,7 @@ export function ProcedimientosSuperAdmin({
     setEditingProcedure(null)
     setName('')
     setCode('')
+    setPrice('0')
     setIsActive(true)
     setIsFormOpen(true)
   }
@@ -85,6 +87,7 @@ export function ProcedimientosSuperAdmin({
     setEditingProcedure(item)
     setName(item.name)
     setCode(item.code || '')
+    setPrice(String(item.price ?? 0))
     setIsActive(item.isActive)
     setIsFormOpen(true)
   }
@@ -94,12 +97,19 @@ export function ProcedimientosSuperAdmin({
     if (!name.trim()) return
 
     setIsSubmitting(true)
+    const parsedPrice = Number(price)
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      showToast('Ingresa un precio válido mayor o igual a cero.', 'danger')
+      setIsSubmitting(false)
+      return
+    }
     try {
       if (editingProcedure) {
         await updateProcedure(editingProcedure.id, {
           name: name.trim(),
           code: code.trim() || null,
           isActive,
+          price: parsedPrice,
         })
         showToast('Procedimiento actualizado correctamente.')
       } else {
@@ -107,6 +117,7 @@ export function ProcedimientosSuperAdmin({
           name: name.trim(),
           code: code.trim() || null,
           isActive,
+          price: parsedPrice,
         })
         showToast('Procedimiento registrado correctamente.')
       }
@@ -207,6 +218,7 @@ export function ProcedimientosSuperAdmin({
                   <tr>
                     <th className="p-3.5 pl-5">Código / Ref</th>
                     <th className="p-3.5">Nombre del Procedimiento / Prueba</th>
+                    <th className="p-3.5">Precio</th>
                     <th className="p-3.5">Estado</th>
                     <th className="p-3.5 pr-5 text-right">Acciones</th>
                   </tr>
@@ -218,6 +230,9 @@ export function ProcedimientosSuperAdmin({
                         {item.code || '—'}
                       </td>
                       <td className="p-3.5 font-bold text-brand">{item.name}</td>
+                      <td className="p-3.5 text-charcoal font-semibold whitespace-nowrap">
+                        {item.price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}
+                      </td>
                       <td className="p-3.5">
                         <span
                           className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-bold ${
@@ -304,6 +319,22 @@ export function ProcedimientosSuperAdmin({
                   placeholder="Ej. PROC-001 o CUPS"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-sage mb-1 uppercase tracking-wider">
+                  Precio ($) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Ej. 45000"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-xs sm:text-sm text-charcoal focus:outline-none focus:border-brand"
                 />
               </div>
