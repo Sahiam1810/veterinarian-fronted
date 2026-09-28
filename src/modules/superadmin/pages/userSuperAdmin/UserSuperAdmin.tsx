@@ -694,6 +694,10 @@ function PermissionMatrixPanel({
   const isProtectedTarget =
     selectedRole.isSystem || isPlatformSuperAdminRoleName(selectedRole.name)
   const matrixLocked = isProtectedTarget
+  const isReceptionistRole = selectedRole.name.trim().toLowerCase() === 'recepcionista'
+  const visibleModulesInfo = isReceptionistRole
+    ? modulesInfo.filter((mod) => mod.id !== 'usuarios' && mod.id !== 'insumos')
+    : modulesInfo
 
   return (
     <div
@@ -725,7 +729,7 @@ function PermissionMatrixPanel({
             </tr>
           </thead>
           <tbody className="divide-y divide-border-tan/35 text-[11px]">
-            {modulesInfo.map((mod) => {
+            {visibleModulesInfo.map((mod) => {
               const perms: ModulePermission = activePermissions[mod.id] || {
                 view: false,
                 create: false,
