@@ -8,6 +8,24 @@ export interface HistoriaConsulta {
   motivo: string
   diagnostico?: string
   tratamientoIndicaciones: string[]
+  ordenesMedicas: HistoriaOrden[]
+}
+
+export interface HistoriaOrdenItem {
+  id: string
+  name: string
+  notes?: string | null
+  unitPrice?: number | null
+}
+
+export interface HistoriaOrden {
+  id: string
+  type: 'MEDICAMENTO' | 'PROCEDIMIENTO'
+  dateLabel: string
+  veterinarian?: string | null
+  status: string
+  items: HistoriaOrdenItem[]
+  resultFileUrl?: string | null
 }
 
 export interface HistoriaVacuna {

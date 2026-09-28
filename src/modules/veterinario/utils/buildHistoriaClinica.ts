@@ -2,7 +2,7 @@ import type {
   ApiMedicalRecord,
   ApiVaccination,
 } from '../api/apiTypes'
-import type { HistoriaClinicaPayload, MascotaDetail } from '../types'
+import type { HistoriaClinicaPayload, HistoriaOrden, MascotaDetail } from '../types'
 
 function formatDateLabel(iso: string): string {
   const date = new Date(iso)
@@ -46,6 +46,7 @@ export function buildHistoriaClinica(input: {
   medicalRecords: ApiMedicalRecord[]
   vaccinations: ApiVaccination[]
   diagnostics?: ApiDiagnosticItem[]
+  ordersByAppointmentId?: Record<string, HistoriaOrden[]>
 }): HistoriaClinicaPayload {
   const idSet = new Set(input.clientPetIds.map((id) => id.toLowerCase()))
   const diagnosticsById = new Map(
@@ -87,6 +88,7 @@ export function buildHistoriaClinica(input: {
       motivo: record.symptoms?.trim() || 'Sin motivo registrado.',
       diagnostico: diagLabel,
       tratamientoIndicaciones: splitTreatment(record.treatment),
+      ordenesMedicas: input.ordersByAppointmentId?.[record.appointmentId.toLowerCase()] || [],
     }
   })
 

@@ -24,6 +24,8 @@ export type {
 
 export type {
   HistoriaConsulta,
+  HistoriaOrdenItem,
+  HistoriaOrden,
   HistoriaVacuna,
   HistoriaSignosVitales,
   HistoriaClinicaPayload,

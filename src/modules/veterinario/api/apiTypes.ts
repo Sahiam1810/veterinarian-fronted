@@ -13,6 +13,7 @@ export interface ApiAppointment {
   id: string
   clientPetId: string
   veterinarianId: string
+  veterinarianName?: string | null
   serviceId: string
   serviceName?: string | null
   statusId: string
@@ -26,6 +27,7 @@ export interface ApiAppointment {
   heartRate?: number | null
   respiratoryRate?: number | null
   createdAt: string
+  petId?: string | null
 }
 
 export interface ApiVeterinarian {

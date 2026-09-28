@@ -1,9 +1,25 @@
 import { vetApiFetch } from '../api/vetHttp'
 import { ApiError } from '@/services/apiClient'
-import type { ApiClientPet, ApiMedicalRecord, ApiVaccination } from '../api/apiTypes'
-import type { HistoriaClinicaPayload, MascotaDetail } from '../types'
+import type { ApiAppointment, ApiClientPet, ApiMedicalRecord, ApiVaccination } from '../api/apiTypes'
+import type { HistoriaClinicaPayload, HistoriaOrden, MascotaDetail } from '../types'
 import { buildHistoriaClinica } from '../utils/buildHistoriaClinica'
 import { fetchVetMascotasBundle } from './vetMascotasService'
+import {
+  fetchMedicationOrdersByAppointment,
+  fetchProcedureOrdersByAppointment,
+  type ApiMedicationOrder,
+  type ApiProcedureOrder,
+} from './ordenesMedicasService'
+
+function formatHistoryDate(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 export interface ApiDiagnostic {
   id: string
@@ -94,12 +110,63 @@ export async function fetchHistoriaClinica(
     .filter((link) => link.petId.toLowerCase() === petId.toLowerCase())
     .map((link) => link.id)
 
+  // Las órdenes se consultan por cita. Si el usuario no tiene permiso para
+  // órdenes médicas, la historia clínica principal debe seguir funcionando.
+  const appointments = await vetApiFetch<ApiAppointment[]>('/api/appointments').catch(
+    () => [] as ApiAppointment[],
+  )
+  const petAppointments = appointments.filter((appointment) =>
+    clientPetIds.some((clientPetId) => clientPetId.toLowerCase() === appointment.clientPetId.toLowerCase()),
+  )
+
+  const ordersByAppointmentId: Record<string, HistoriaOrden[]> = {}
+  await Promise.all(
+    petAppointments.map(async (appointment) => {
+      const [medications, procedures] = await Promise.all([
+        fetchMedicationOrdersByAppointment(appointment.id).catch(() => [] as ApiMedicationOrder[]),
+        fetchProcedureOrdersByAppointment(appointment.id).catch(() => [] as ApiProcedureOrder[]),
+      ])
+
+      const veterinarian = appointment.veterinarianName || null
+      ordersByAppointmentId[appointment.id.toLowerCase()] = [
+        ...medications.map((order) => ({
+          id: order.id,
+          type: 'MEDICAMENTO' as const,
+          dateLabel: formatHistoryDate(order.createdAt),
+          veterinarian,
+          status: order.status,
+          items: order.items.map((item) => ({
+            id: item.id,
+            name: item.medicationName || 'Medicamento',
+            notes: item.notes,
+            unitPrice: item.unitPrice,
+          })),
+        })),
+        ...procedures.map((order) => ({
+          id: order.id,
+          type: 'PROCEDIMIENTO' as const,
+          dateLabel: formatHistoryDate(order.createdAt),
+          veterinarian,
+          status: order.status,
+          resultFileUrl: order.resultFileUrl,
+          items: order.items.map((item) => ({
+            id: item.id,
+            name: item.procedureName || 'Procedimiento',
+            notes: item.notes,
+            unitPrice: item.unitPrice,
+          })),
+        })),
+      ]
+    }),
+  )
+
   return buildHistoriaClinica({
     detail,
     clientPetIds,
     medicalRecords,
     vaccinations,
     diagnostics,
+    ordersByAppointmentId,
   })
 }
 

@@ -118,6 +118,52 @@ export function HistoriaClinicaModal({
                             ))}
                           </ul>
                         )}
+                        {consulta.ordenesMedicas.length > 0 && (
+                          <div className="mt-3 pt-2 border-t border-border-tan/70 space-y-2">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-sage">
+                              Órdenes médicas
+                            </p>
+                            {consulta.ordenesMedicas.map((orden) => (
+                              <div key={orden.id} className="rounded-lg bg-bone/70 border border-border-tan/70 p-2">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <span className="text-[11px] font-extrabold text-brand">
+                                    {orden.type === 'MEDICAMENTO' ? 'Medicamentos' : 'Procedimiento'}
+                                  </span>
+                                  <span className="text-[10px] text-sage">{orden.dateLabel}</span>
+                                  <span className="px-1.5 py-0.5 rounded-full bg-sage-soft text-brand text-[10px] font-bold">
+                                    {orden.status}
+                                  </span>
+                                </div>
+                                {orden.veterinarian && (
+                                  <p className="text-[10px] text-sage mt-1">Veterinario: {orden.veterinarian}</p>
+                                )}
+                                <ul className="mt-1 space-y-1">
+                                  {orden.items.map((item) => (
+                                    <li key={item.id} className="text-[11px] text-charcoal/85">
+                                      <span className="font-semibold text-charcoal">{item.name}</span>
+                                      {item.notes && <span className="text-sage"> — {item.notes}</span>}
+                                      {formatOrderPrice(item.unitPrice) && (
+                                        <span className="block text-[10px] text-brand font-semibold">
+                                          Precio/copago: {formatOrderPrice(item.unitPrice)}
+                                        </span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                                {orden.resultFileUrl && (
+                                  <a
+                                    href={orden.resultFileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-block mt-1 text-[10px] text-brand font-semibold underline break-all"
+                                  >
+                                    Ver resultado adjunto
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </article>
                     ))
                   )}
@@ -175,6 +221,16 @@ export function HistoriaClinicaModal({
       </ViewPopup>
     </div>
   )
+}
+
+function formatOrderPrice(value?: number | null): string | null {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+      }).format(value)
+    : null
 }
 
 function PhotoBlock({
