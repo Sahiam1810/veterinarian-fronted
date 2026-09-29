@@ -77,4 +77,6 @@ export interface AgendaPetOption {
 export interface AgendaServiceOption {
   id: string
   name: string
+  // Services.DurationMinutes: el backend calcula el fin como inicio + duración.
+  durationMinutes?: number
 }

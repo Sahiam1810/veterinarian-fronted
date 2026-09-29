@@ -10,6 +10,12 @@ import { CONSULTORIOS_DISPONIBLES } from '../types'
 import { CalendarIcon } from '@/global/components'
 import { ProfessionalCombobox } from './ProfessionalCombobox'
 import { isAppointmentDateInThePast, PAST_APPOINTMENT_MESSAGE } from '../utils/appointmentDateGuard'
+import {
+  deriveEndTime,
+  INVALID_SERVICE_DURATION_MESSAGE,
+  parseTimeToMinutes,
+  resolveServiceDurationMinutes,
+} from '../utils/appointmentEndTime'
 
 export interface CitaDrawerProps {
   isOpen: boolean
@@ -32,23 +38,15 @@ function todayIsoDateLocal(): string {
   return `${year}-${month}-${day}`
 }
 
-function parseMinutes(time: string): number {
-  if (!time) return 0
-  const [h, m] = time.split(':').map(Number)
-  return (h || 0) * 60 + (m || 0)
-}
-
 function checkIntervalOverlap(
-  startA: string,
-  endA: string,
+  startAMins: number,
+  endAMins: number,
   startB: string,
   endB: string,
 ): boolean {
-  const sA = parseMinutes(startA)
-  const eA = parseMinutes(endA)
-  const sB = parseMinutes(startB)
-  const eB = parseMinutes(endB)
-  return sA < eB && eA > sB
+  const sB = parseTimeToMinutes(startB)
+  const eB = parseTimeToMinutes(endB)
+  return startAMins < eB && endAMins > sB
 }
 
 export function CitaDrawer({
@@ -70,7 +68,6 @@ export function CitaDrawer({
   const [clientPetId, setClientPetId] = useState('')
   const [dateKey, setDateKey] = useState('')
   const [startTime, setStartTime] = useState('08:00')
-  const [endTime, setEndTime] = useState('09:00')
   const [professionalId, setProfessionalId] = useState('')
   const [serviceId, setServiceId] = useState('')
   const [consultorio, setConsultorio] = useState<string>('Consultorio 1')
@@ -87,7 +84,6 @@ export function CitaDrawer({
       setClientPetId(editingCita.clientPetId || mascotasOpciones[0]?.clientPetId || '')
       setDateKey(editingCita.dateKey)
       setStartTime(editingCita.startTime)
-      setEndTime(editingCita.endTime)
       setProfessionalId(editingCita.professionalId || profesionalesOpciones[0]?.id || '')
       setServiceId(editingCita.serviceId || serviciosOpciones[0]?.id || '')
       setConsultorio(editingCita.consultorio || 'Consultorio 1')
@@ -98,7 +94,6 @@ export function CitaDrawer({
       setClientPetId(mascotasOpciones[0]?.clientPetId || '')
       setDateKey(today)
       setStartTime('08:00')
-      setEndTime('09:00')
       setProfessionalId(defaultProfessionalId || profesionalesOpciones[0]?.id || '')
       setServiceId(serviciosOpciones[0]?.id || '')
       setConsultorio('Consultorio 1')
@@ -111,6 +106,18 @@ export function CitaDrawer({
     () => mascotasOpciones.find((m) => m.clientPetId === clientPetId) || null,
     [mascotasOpciones, clientPetId],
   )
+
+  // El fin es siempre inicio + duración del servicio (el backend lo recalcula igual);
+  // sin duración válida no hay fin y no se permite guardar.
+  const serviceDurationMinutes = useMemo(
+    () => resolveServiceDurationMinutes(serviciosOpciones, serviceId),
+    [serviciosOpciones, serviceId],
+  )
+  const hasInvalidServiceDuration = Boolean(serviceId) && serviceDurationMinutes === null
+
+  const effectiveEndTime = serviceDurationMinutes
+    ? deriveEndTime(startTime, serviceDurationMinutes)
+    : ''
 
   // Buscador combinado por mascota o dueño (mismo combobox de S28/S31/S34).
   const mascotasPetOwnerOpciones = useMemo(
@@ -138,18 +145,20 @@ export function CitaDrawer({
     if (!dateKey) {
       return 'Debes seleccionar una fecha válida.'
     }
-    if (!startTime || !endTime) {
-      return 'Debes especificar la hora de inicio y fin.'
+    if (!serviceId) {
+      return 'Debes seleccionar un servicio.'
+    }
+    if (!serviceDurationMinutes) {
+      return INVALID_SERVICE_DURATION_MESSAGE
+    }
+    if (!startTime) {
+      return 'Debes especificar la hora de inicio.'
     }
 
     // S41: sin tope fijo de clínica — el horario real lo valida resolveAvailabilityId
     // contra la disponibilidad configurada del veterinario elegido (soporta turnos nocturnos).
-    const startMins = parseMinutes(startTime)
-    const endMins = parseMinutes(endTime)
-
-    if (startMins >= endMins) {
-      return 'La hora de inicio debe ser anterior a la hora de fin.'
-    }
+    const startMins = parseTimeToMinutes(startTime)
+    const endMins = startMins + serviceDurationMinutes
 
     // S36: ni agendar ni reprogramar hacia una fecha/hora que ya pasó.
     if (isAppointmentDateInThePast(dateKey, startTime)) {
@@ -158,9 +167,6 @@ export function CitaDrawer({
 
     if (!professionalId) {
       return 'Debes seleccionar un médico veterinario.'
-    }
-    if (!serviceId) {
-      return 'Debes seleccionar un servicio.'
     }
     if (!consultorio) {
       return 'Debes asignar un consultorio.'
@@ -178,7 +184,7 @@ export function CitaDrawer({
     const vetConflict = sameDayActiveCitas.find(
       (c) =>
         c.professionalId === professionalId &&
-        checkIntervalOverlap(startTime, endTime, c.startTime, c.endTime),
+        checkIntervalOverlap(startMins, endMins, c.startTime, c.endTime),
     )
     if (vetConflict) {
       const vetName =
@@ -190,7 +196,7 @@ export function CitaDrawer({
     const consultorioConflict = sameDayActiveCitas.find(
       (c) =>
         (c.consultorio || 'Consultorio 1').toLowerCase() === consultorio.toLowerCase() &&
-        checkIntervalOverlap(startTime, endTime, c.startTime, c.endTime),
+        checkIntervalOverlap(startMins, endMins, c.startTime, c.endTime),
     )
     if (consultorioConflict) {
       return `El ${consultorio} ya está ocupado en ese horario (${consultorioConflict.startTime} - ${consultorioConflict.endTime}). Por favor selecciona otro consultorio u horario.`
@@ -222,7 +228,7 @@ export function CitaDrawer({
         ownerName: pet?.ownerName || 'Dueño',
         dateKey,
         startTime,
-        endTime,
+        endTime: effectiveEndTime,
         professionalId,
         serviceId,
         service: serviceName,
@@ -355,19 +361,28 @@ export function CitaDrawer({
               </label>
               <input
                 type="time"
-                required
-                value={endTime}
-                onChange={(e) => {
-                  setEndTime(e.target.value)
-                  setError(null)
-                }}
-                className="w-full px-3.5 py-2 rounded-xl border border-border-tan bg-white text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition font-medium"
+                value={effectiveEndTime}
+                readOnly
+                aria-readonly="true"
+                aria-invalid={hasInvalidServiceDuration}
+                title="Calculada con la duración del servicio"
+                className={`w-full px-3.5 py-2 rounded-xl border bg-bone text-charcoal/80 font-medium cursor-not-allowed ${
+                  hasInvalidServiceDuration ? 'border-danger/60' : 'border-border-tan'
+                }`}
               />
             </div>
           </div>
-          <p className="text-[10px] text-sage -mt-2">
-            El horario disponible depende de la disponibilidad configurada del veterinario elegido.
-          </p>
+          {hasInvalidServiceDuration ? (
+            <p className="text-[10px] text-danger font-semibold -mt-2" role="alert">
+              {INVALID_SERVICE_DURATION_MESSAGE}
+            </p>
+          ) : (
+            <p className="text-[10px] text-sage -mt-2">
+              {serviceDurationMinutes
+                ? `La hora de fin se calcula con la duración del servicio (${serviceDurationMinutes} min).`
+                : 'Selecciona un servicio para calcular la hora de fin.'}
+            </p>
+          )}
 
           {/* 4. Médico Profesional */}
           <div className="relative z-20">
@@ -454,7 +469,7 @@ export function CitaDrawer({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || hasInvalidServiceDuration}
               className="px-5 py-2.5 rounded-xl bg-brand text-white font-bold hover:bg-brand-hover transition shadow-xs cursor-pointer disabled:opacity-60 flex items-center gap-2"
             >
               {isSubmitting && (

@@ -219,7 +219,9 @@ export function useAgendaSuperAdmin() {
         )
       }
 
-      setServiciosOpciones(services.map((s) => ({ id: s.id, name: s.name })))
+      setServiciosOpciones(
+        services.map((s) => ({ id: s.id, name: s.name, durationMinutes: s.durationMinutes })),
+      )
       setMascotasOpciones(
         clientsPets.map((cp) => {
           const pet = petsById.get(cp.petId)

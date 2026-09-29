@@ -66,19 +66,20 @@ export async function fetchClientPets(): Promise<ApiClientPetResponse[]> {
   return apiClient.get<ApiClientPetResponse[]>('/api/ClientsPets').catch(() => [])
 }
 
-// 10. Horarios disponibles de veterinario para una fecha específica
+// 10. Horarios disponibles de veterinario para una fecha específica.
+// serviceId es obligatorio: sin él los huecos miden SlotDurationMinutes y no la duración del servicio.
 export async function fetchAvailableSlots(
   veterinarianId: string,
   date: string,
-  serviceId?: string
+  serviceId: string
 ): Promise<ApiAvailableSlotResponse[]> {
-  if (!veterinarianId || !date) return []
+  if (!veterinarianId || !date || !serviceId) return []
   return apiClient
     .get<ApiAvailableSlotResponse[]>('/api/Availabilities/available-slots', {
       params: {
         veterinarianId,
         date,
-        ...(serviceId ? { serviceId } : {}),
+        serviceId,
       },
     })
     .catch((error) => {

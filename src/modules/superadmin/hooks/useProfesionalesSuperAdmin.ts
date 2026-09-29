@@ -236,7 +236,7 @@ export function useProfesionalesSuperAdmin() {
       // Catálogo de servicios
       const activeServices = services
         .filter((s) => s.isActive)
-        .map((s) => ({ id: s.id, name: s.name }))
+        .map((s) => ({ id: s.id, name: s.name, durationMinutes: s.durationMinutes }))
       setServiciosOpciones(activeServices)
 
       // Catálogo de estados
