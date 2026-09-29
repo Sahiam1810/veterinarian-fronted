@@ -50,6 +50,8 @@ import {
   clearDeprecatedUiShellOverrides,
 } from '../utils/uiShellPermissionsStorage'
 import { MODULES_INFO } from '../utils/superAdminNavCatalog'
+import { excludeClientRole, excludeClientRoleUsers } from '../utils/adminRoleVisibility'
+import { isPersistedClientRole } from '@/modules/auth/utils/systemRoles'
 export { MODULES_INFO } from '../utils/superAdminNavCatalog'
 
 
@@ -235,10 +237,12 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         }
       }
 
-      let fetchedRoles: ApiRoleResponse[] = rolesRes.status === 'fulfilled' ? rolesRes.value : []
+      let fetchedRoles: ApiRoleResponse[] =
+        rolesRes.status === 'fulfilled' ? excludeClientRole(rolesRes.value) : []
       const fetchedModules: ApiModuleResponse[] = modulesRes.status === 'fulfilled' ? modulesRes.value : []
       const fetchedRolePerms: ApiRolePermissionResponse[] = rolePermsRes.status === 'fulfilled' ? rolePermsRes.value : []
-      const fetchedUsers: ApiUserResponse[] = usersRes.status === 'fulfilled' ? usersRes.value : []
+      const fetchedUsers: ApiUserResponse[] =
+        usersRes.status === 'fulfilled' ? excludeClientRoleUsers(usersRes.value) : []
 
       const fetchedSpecialties =
         specialtiesRes.status === 'fulfilled' ? specialtiesRes.value : []
@@ -646,6 +650,9 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
       if (isPlatformSuperAdminRoleName(roleName)) {
         return { ok: false, error: 'El rol SuperAdmin no se puede asignar desde este panel.' }
       }
+      if (isPersistedClientRole(data.roleId)) {
+        return { ok: false, error: 'El rol Cliente no se puede asignar desde Usuarios.' }
+      }
 
       const fullName = `${data.firstName} ${data.lastName}`.trim()
 
@@ -713,6 +720,9 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         roles.find((r) => r.id === data.roleId)?.name || '',
       )) {
         return { ok: false, error: 'El rol SuperAdmin no se puede asignar desde este panel.' }
+      }
+      if (isPersistedClientRole(data.roleId)) {
+        return { ok: false, error: 'El rol Cliente no se puede asignar desde Usuarios.' }
       }
       const fullName = `${data.firstName} ${data.lastName}`.trim()
       const email = data.email.trim()
