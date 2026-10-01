@@ -17,6 +17,7 @@ import {
   deleteUser as apiDeleteUser,
   createFullUser as apiCreateFullUser,
   updateUser as apiUpdateUser,
+  resetUserPassword as apiResetUserPassword,
   activateUser as apiActivateUser,
   deactivateUser as apiDeactivateUser,
   type ApiUserResponse,
@@ -732,6 +733,14 @@ export function useUserSuperAdmin(options?: { canManagePermissions?: boolean }) 
         email,
         roleId: data.roleId,
       })
+
+      // Si se especificó una nueva contraseña, actualiza las credenciales vía PATCH /api/Users/{id}/password
+      const trimmedPassword = data.password?.trim()
+      if (trimmedPassword) {
+        await apiResetUserPassword(userId, {
+          newPassword: trimmedPassword,
+        })
+      }
 
       // El dropdown de estado del drawer debe persistir con activate/deactivate
       if (current?.status !== data.status) {

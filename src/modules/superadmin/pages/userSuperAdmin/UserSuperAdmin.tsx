@@ -205,6 +205,10 @@ function UserDrawer({
       setFormError('Por favor asigna una contraseña inicial para el usuario.')
       return
     }
+    if (password.trim() && password.trim().length < 8) {
+      setFormError('La contraseña debe tener al menos 8 caracteres.')
+      return
+    }
 
     if (isVeterinarioForm) {
       if (!specialtyId) {

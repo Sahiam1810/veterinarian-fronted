@@ -29,6 +29,10 @@ export interface ApiUpdateUserRequest {
   roleId: string
 }
 
+export interface ApiResetUserPasswordRequest {
+  newPassword: string
+}
+
 export interface CreateFullUserParams {
   fullName: string
   email: string
@@ -89,6 +93,11 @@ export async function createFullUser(params: CreateFullUserParams): Promise<Crea
 // Actualizar usuario
 export async function updateUser(id: string, data: ApiUpdateUserRequest): Promise<void> {
   return apiClient.put<void>(`/api/Users/${id}`, data)
+}
+
+// Restablecer contraseña de un usuario (SuperAdmin)
+export async function resetUserPassword(id: string, data: ApiResetUserPasswordRequest): Promise<void> {
+  return apiClient.patch<void>(`/api/Users/${id}/password`, data)
 }
 
 // Activar usuario
