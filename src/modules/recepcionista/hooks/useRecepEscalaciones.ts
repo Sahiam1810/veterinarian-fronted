@@ -55,8 +55,8 @@ export function useRecepEscalaciones(
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<EscalationStatusFilter>('todos')
-  // Escaladas = cola de asesor (como antes); Todas = inbox completo del chat
-  const [listMode, setListMode] = useState<ConversationsListMode>('escaladas')
+  // Vista inicial: Todas = bandeja completa de conversaciones; Escaladas = solo las escaladas
+  const [listMode, setListMode] = useState<ConversationsListMode>('todas')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -210,7 +210,7 @@ export function useRecepEscalaciones(
           lastMessage:
             payload.lastMessage ||
             payload.reason ||
-            'Solicitud de asesor humano',
+            'Conversación pendiente de revisión',
           lastMessageAt: payload.createdAt,
           lastMessageTimeLabel,
           waitingTimeLabel: waitingInfo.label,
@@ -312,12 +312,10 @@ export function useRecepEscalaciones(
     const query = search.trim().toLowerCase()
 
     return directory.items.filter((item) => {
-      // En "Todas", los filtros de estado solo aplican a filas con escalamiento
       const matchesStatus =
         statusFilter === 'todos' ||
-        (Boolean(item.escalationId) &&
-          ((statusFilter === 'pendientes' && item.status === 'Pendiente') ||
-            (statusFilter === 'en_atencion' && item.status === 'En atención')))
+        (statusFilter === 'pendientes' && item.status === 'Pendiente') ||
+        (statusFilter === 'en_atencion' && item.status === 'En atención')
 
       const matchesQuery =
         !query ||

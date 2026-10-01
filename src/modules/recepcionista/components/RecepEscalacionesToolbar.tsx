@@ -18,14 +18,14 @@ interface RecepEscalacionesToolbarProps {
 }
 
 const LIST_MODES: { id: ConversationsListMode; label: string; hint: string }[] = [
-  { id: 'escaladas', label: 'Escaladas', hint: 'Cola de quien espera asesor' },
-  { id: 'todas', label: 'Todas', hint: 'Todas las conversaciones del chat' },
+  { id: 'todas', label: 'Todas', hint: 'Todas las conversaciones' },
+  { id: 'escaladas', label: 'Escaladas', hint: 'Conversaciones escaladas a atención humana' },
 ]
 
 const FILTERS: { id: EscalationStatusFilter; label: string }[] = [
-  { id: 'todos', label: 'Cualquiera' },
-  { id: 'pendientes', label: 'Esperando Asesor' },
-  { id: 'en_atencion', label: 'En Atención' },
+  { id: 'todos', label: 'Todas' },
+  { id: 'pendientes', label: 'Pendientes' },
+  { id: 'en_atencion', label: 'En atención' },
 ]
 
 export function RecepEscalacionesToolbar({

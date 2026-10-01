@@ -182,9 +182,9 @@ test('buildEscalatedDirectory cruza conversaciones y escalamientos activos exclu
   assert.equal(payload.items[0]?.status, 'Pendiente')
   assert.equal(payload.items[0]?.channel, 'Telegram')
 
-  // La segunda conversación debe tener fallback "Cliente sin nombre"
+  // La segunda conversación debe tener fallback "Usuario invitado"
   assert.equal(payload.items[1]?.id, 'esc-2')
-  assert.equal(payload.items[1]?.clientName, 'Cliente sin nombre')
+  assert.equal(payload.items[1]?.clientName, 'Usuario invitado')
   assert.equal(payload.items[1]?.status, 'En atención')
   assert.equal(payload.items[1]?.channel, 'Web')
 
@@ -403,3 +403,78 @@ test('buildAllConversationsDirectory prioriza la conversación con escalamiento 
   assert.equal(payload.items[0].conversationId, 'conv-escalada')
   assert.equal(payload.items[0].escalationId, 'esc-1')
 })
+
+test('buildAllConversationsDirectory maneja múltiples usuarios invitados sin colisionar', () => {
+  const now = new Date('2026-09-14T12:00:00.000Z')
+
+  const conversations: ChatConversationResponseDto[] = [
+    {
+      id: 'conv-guest-1',
+      clientId: null,
+      clientName: null,
+      clientPhone: null,
+      channel: 'web',
+      createdAt: '2026-09-14T11:40:00.000Z',
+      lastMessageAt: '2026-09-14T11:40:00.000Z',
+      lastMessage: 'Hola, primer mensaje de invitado 1',
+    },
+    {
+      id: 'conv-guest-2',
+      clientId: null,
+      clientName: null,
+      clientPhone: null,
+      channel: 'telegram',
+      createdAt: '2026-09-14T11:50:00.000Z',
+      lastMessageAt: '2026-09-14T11:50:00.000Z',
+      lastMessage: 'Hola, primer mensaje de invitado 2',
+    },
+  ]
+
+  const payload = buildAllConversationsDirectory(conversations, [], now)
+
+  assert.equal(payload.totalCount, 2)
+  assert.equal(payload.items.length, 2)
+
+  const guest1 = payload.items.find((i) => i.conversationId === 'conv-guest-1')
+  const guest2 = payload.items.find((i) => i.conversationId === 'conv-guest-2')
+
+  assert.ok(guest1)
+  assert.equal(guest1?.clientName, 'Usuario invitado')
+  assert.equal(guest1?.lastMessage, 'Hola, primer mensaje de invitado 1')
+  assert.equal(guest1?.channel, 'Web')
+  assert.equal(guest1?.escalationId, null)
+
+  assert.ok(guest2)
+  assert.equal(guest2?.clientName, 'Usuario invitado')
+  assert.equal(guest2?.lastMessage, 'Hola, primer mensaje de invitado 2')
+  assert.equal(guest2?.channel, 'Telegram')
+  assert.equal(guest2?.escalationId, null)
+})
+
+test('buildAllConversationsDirectory incluye conversaciones no escaladas con estado Pendiente y badge null', () => {
+  const now = new Date('2026-09-14T12:00:00.000Z')
+
+  const conversations: ChatConversationResponseDto[] = [
+    {
+      id: 'conv-general',
+      clientId: 'cli-10',
+      clientName: 'Daniel Gómez',
+      channel: 'web',
+      createdAt: '2026-09-14T11:00:00.000Z',
+      lastMessageAt: '2026-09-14T11:20:00.000Z',
+      lastMessage: '¿Tienen servicio de peluquería hoy?',
+    },
+  ]
+
+  const payload = buildAllConversationsDirectory(conversations, [], now)
+
+  assert.equal(payload.totalCount, 1)
+  const item = payload.items[0]
+  assert.ok(item)
+  assert.equal(item?.clientName, 'Daniel Gómez')
+  assert.equal(item?.escalationId, null)
+  assert.equal(item?.status, 'Pendiente')
+  assert.equal(item?.inboxBadge, null)
+  assert.equal(item?.lastMessage, '¿Tienen servicio de peluquería hoy?')
+})
+

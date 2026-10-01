@@ -70,7 +70,7 @@ export function useRecepConversacionDetalle({
         setIsLoadingThread(false)
       }
     }
-  }, [conversationId])
+  }, [conversationId, relatedConversationIds])
 
   useEffect(() => {
     isMountedRef.current = true

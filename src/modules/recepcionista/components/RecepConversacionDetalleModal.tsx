@@ -126,7 +126,11 @@ export function RecepConversacionDetalleModal({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-sage font-medium mt-0.5 truncate">
                   {conversation.clientPhone && <span>{conversation.clientPhone} · </span>}
-                  <span>Esperando hace {conversation.waitingTimeLabel}</span>
+                  <span>
+                    {conversation.escalationId
+                      ? `Esperando hace ${conversation.waitingTimeLabel}`
+                      : `Actividad ${conversation.waitingTimeLabel}`}
+                  </span>
                   {conversation.reason && (
                     <span className="hidden md:inline truncate max-w-xs text-charcoal/80">
                       · Motivo: {conversation.reason}

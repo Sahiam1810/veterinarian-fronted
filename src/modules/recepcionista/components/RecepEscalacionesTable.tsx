@@ -25,7 +25,7 @@ interface RecepEscalacionesTableProps {
 export function RecepEscalacionesTable({
   items,
   selectedId,
-  listMode = 'escaladas',
+  listMode = 'todas',
   pageStart,
   pageEnd,
   totalCount,
@@ -40,11 +40,11 @@ export function RecepEscalacionesTable({
     const emptyTitle =
       listMode === 'todas'
         ? 'No hay conversaciones de chat todavía'
-        : 'No hay conversaciones esperando un asesor ahora mismo'
+        : 'No hay conversaciones escaladas en este momento'
     const emptyBody =
       listMode === 'todas'
-        ? 'Cuando un cliente inicie un chat con el bot o Telegram, la conversación aparecerá aquí aunque no haya pedido asesor.'
-        : 'Cuando un cliente solicite hablar con una persona desde el chatbot o Telegram, la conversación aparecerá automáticamente aquí.'
+        ? 'Cuando un usuario o cliente inicie un chat con el bot o Telegram, la conversación aparecerá aquí desde el primer mensaje.'
+        : 'Las conversaciones que requieran atención humana aparecerán aquí automáticamente.'
 
     return (
       <section className="flex-1 min-w-0 min-h-[350px] flex flex-col items-center justify-center rounded-2xl border border-border-tan bg-white p-8 sm:p-12 text-center shadow-[0_2px_16px_rgba(35,78,70,0.04)]">
@@ -127,7 +127,7 @@ export function RecepEscalacionesTable({
                       <StatusBadge status={item.status} />
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-bone text-sage border border-border-tan">
-                        Con el bot
+                        General
                       </span>
                     )}
                   </td>
@@ -187,7 +187,7 @@ function InboxBadge({ badge }: { badge: ConversationInboxBadge | null }) {
   if (badge === 'esperando_asesor') {
     return (
       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-terracotta/15 text-terracotta border border-terracotta/25">
-        Esperando asesor
+        Revisión pendiente
       </span>
     )
   }
@@ -199,7 +199,10 @@ function InboxBadge({ badge }: { badge: ConversationInboxBadge | null }) {
 }
 
 function ClientAvatar({ name }: { name: string }) {
-  const isAnonymous = !name || name.toLowerCase().includes('cliente sin nombre')
+  const isAnonymous =
+    !name ||
+    name.toLowerCase().includes('usuario invitado') ||
+    name.toLowerCase().includes('cliente sin nombre')
   if (isAnonymous) {
     return (
       <div className="w-9 h-9 rounded-full bg-bone text-sage border border-border-tan flex items-center justify-center shrink-0">

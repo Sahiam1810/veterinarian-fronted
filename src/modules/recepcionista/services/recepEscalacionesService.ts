@@ -202,12 +202,12 @@ function mapEscalationRow(
   conv: ChatConversationResponseDto | undefined,
   now: Date,
 ): EscalatedConversationListItem {
-  const clientName = conv?.clientName || conv?.fullName || 'Cliente sin nombre'
+  const clientName = conv?.clientName || conv?.fullName || 'Usuario invitado'
   const clientPhone = conv?.clientPhone || conv?.phoneNumber || null
   const channel = resolveChannel(conv?.channel)
   const status = resolveStatus(esc.escalationStatusId, esc.status)
   const waiting = formatWaitingTime(esc.createdAt, now)
-  const lastMessage = conv?.lastMessage || esc.reason || 'Solicita atención con un asesor.'
+  const lastMessage = conv?.lastMessage || esc.reason || 'Conversación pendiente de revisión'
   const lastMessageAt = conv?.lastMessageAt || conv?.updatedAt || esc.createdAt
   const lastMessageTimeLabel = formatTimeLabel(lastMessageAt)
   const inboxBadge: ConversationInboxBadge =
@@ -334,7 +334,7 @@ export function buildAllConversationsDirectory(
       return { ...row, id: conv.id }
     }
 
-    const clientName = conv.clientName || conv.fullName || 'Cliente sin nombre'
+    const clientName = conv.clientName || conv.fullName || 'Usuario invitado'
     const clientPhone = conv.clientPhone || conv.phoneNumber || null
     const channel = resolveChannel(conv.channel)
     const activityAt = conv.lastMessageAt || conv.updatedAt || conv.createdAt
