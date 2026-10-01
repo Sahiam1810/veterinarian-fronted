@@ -18,7 +18,7 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'hospitalizacion', label: 'Hospitalización', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
-  { id: 'conversaciones', label: 'Asesor', supportsCreate: true, supportsEdit: true, supportsDelete: true },
+  { id: 'conversaciones', label: 'Asesor', supportsCreate: true, supportsEdit: true, supportsDelete: false },
 ]
 
 export const SUPER_ADMIN_NAV_CATALOG: AdminNavItemMeta[] = [

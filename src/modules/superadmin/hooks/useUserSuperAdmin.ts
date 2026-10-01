@@ -70,7 +70,7 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   agenda: { view: true, create: true, edit: true, delete: true },
   historiaClinica: { view: false, create: false, edit: false, delete: false },
   reportes: { view: true, create: true, edit: true, delete: true },
-  conversaciones: { view: true, create: true, edit: true, delete: true },
+  conversaciones: { view: true, create: true, edit: true, delete: false },
 }
 
 const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {

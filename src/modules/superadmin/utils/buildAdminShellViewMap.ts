@@ -81,6 +81,8 @@ function platformFullActionMap(): ShellActionMap {
   for (const id of ids) {
     map[id] = { ...ALL_TRUE_ACTIONS }
   }
+  // Asesor reutiliza los permisos funcionales de Recepcionista: no elimina.
+  map.conversaciones.delete = false
   return map
 }
 
@@ -125,20 +127,7 @@ export function buildActionMap(
       view: canViewConversaciones,
       create: canViewConversaciones && !!apiPermissions['Chat']?.canCreate,
       edit: canViewConversaciones && !!apiPermissions['Escalamientos']?.canEdit,
-      delete:
-        canViewConversaciones &&
-        (!!apiPermissions['Escalamientos']?.canDelete || !!apiPermissions['Chat']?.canDelete),
-    }
-  }
-
-  // Salvaguarda: Administrador (11111111-...) siempre tiene habilitado Asesor igual que Recepcionista y SuperAdmin
-  const isAdminRole = options.roleId === '11111111-1111-1111-1111-111111111111'
-  if (isAdminRole) {
-    actions.conversaciones = {
-      view: true,
-      create: true,
-      edit: true,
-      delete: true,
+      delete: false,
     }
   }
 
