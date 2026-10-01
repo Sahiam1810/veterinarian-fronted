@@ -8,6 +8,7 @@ import {
   ProfessionalCombobox,
 } from '../../components'
 import { useAgendaSuperAdmin } from '../../hooks'
+import { formatAgendaCatalogFailure } from '../../hooks/agendaLoadHelpers'
 import type {
   CitaSuperAdmin,
   ModuleId,
@@ -32,6 +33,8 @@ export interface AgendaSuperAdminProps {
   canCreateModule?: (moduleId: ModuleId) => boolean
   canEditModule?: (moduleId: ModuleId) => boolean
   canDeleteModule?: (moduleId: ModuleId) => boolean
+  // "Signos Vitales":Edit; sin dato no se ofrece registrar vitales
+  canEditVitals?: boolean
   notifications?: NotificacionSuperAdmin[]
   isLoadingNotifications?: boolean
   notificationsError?: string | null
@@ -146,6 +149,7 @@ export function AgendaSuperAdmin({
   canCreateModule,
   canEditModule,
   canDeleteModule,
+  canEditVitals = false,
   notifications,
   isLoadingNotifications,
   notificationsError,
@@ -201,6 +205,8 @@ export function AgendaSuperAdmin({
     handleCheckIn,
     isCitaPaid,
     reload,
+    agendaError,
+    catalogFailures,
   } = useAgendaSuperAdmin()
 
   const { hourStart, hourEnd, hourRows } = useMemo(() => {
@@ -287,6 +293,31 @@ export function AgendaSuperAdmin({
 
           {/* Toast Notification */}
           {activeNotification && <PageToast message={activeNotification} />}
+
+          {agendaError && (
+            <div
+              role="alert"
+              className="relative z-10 rounded-2xl border border-danger/30 bg-danger-soft px-4 py-3 text-xs sm:text-sm font-medium text-danger"
+            >
+              {agendaError}
+            </div>
+          )}
+
+          {!agendaError && catalogFailures.length > 0 && (
+            <div
+              role="status"
+              className="relative z-10 rounded-2xl border border-ochre/25 bg-[#FBF1E6] px-4 py-3 text-xs text-charcoal"
+            >
+              <p className="font-bold text-ochre">
+                Algunos datos complementarios no están disponibles; las citas se muestran con información parcial.
+              </p>
+              <ul className="mt-1 list-disc pl-5 space-y-0.5 text-sage">
+                {catalogFailures.map((failure) => (
+                  <li key={failure.key}>{formatAgendaCatalogFailure(failure)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
 
           {/* Barra de Filtros Superior */}
@@ -689,6 +720,7 @@ export function AgendaSuperAdmin({
         isPaid={selectedCita ? isCitaPaid(selectedCita.id) : false}
         canEdit={canEdit}
         canDelete={canDelete}
+        canEditVitals={canEditVitals}
         onClose={() => setIsDetalleModalOpen(false)}
         onCancel={(citaId) => {
           // Cancelar requiere permiso de borrado

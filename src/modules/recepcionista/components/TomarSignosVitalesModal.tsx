@@ -3,6 +3,7 @@ import { StethoscopeIcon } from '@/global/components'
 import { CloseIcon } from './RecepMascotasIcons'
 import { ViewPopup } from './ViewPopup'
 import { updateAppointmentVitals, type ApiAppointmentVitalsRequest } from '../services/recepAgendaService'
+import { resolveVitalsSaveError } from '../utils/vitalsSaveError'
 
 export interface TomarSignosVitalesModalProps {
   isOpen: boolean
@@ -101,8 +102,7 @@ export function TomarSignosVitalesModal({
       })
       onClose()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudieron guardar los signos vitales.'
-      setFormError(msg)
+      setFormError(resolveVitalsSaveError(err))
     } finally {
       setIsSubmitting(false)
     }

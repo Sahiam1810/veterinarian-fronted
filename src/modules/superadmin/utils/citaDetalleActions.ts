@@ -9,6 +9,11 @@ export function isCitaAgendada(status: EstadoCita): boolean {
   return status === 'AGENDADA'
 }
 
+// Signos vitales: solo "Signos Vitales":Edit + cita abierta; no depende de Citas.Edit ni Clientes.View.
+export function canRegisterCitaVitals(status: EstadoCita, canEditVitals: boolean): boolean {
+  return canEditVitals && isCitaAbierta(status)
+}
+
 export interface CitaDetalleFooterActions {
   showMarcarLlegada: boolean
   showCancelar: boolean

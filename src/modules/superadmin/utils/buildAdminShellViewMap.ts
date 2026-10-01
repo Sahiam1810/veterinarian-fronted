@@ -117,6 +117,19 @@ export function buildActionMap(
   return actions
 }
 
+// Módulo propio del backend para PATCH /api/Appointments/{id}/vitals,
+// independiente de Citas.Edit y de Clientes.View.
+export const VITALS_API_MODULE = 'Signos Vitales'
+
+// Espeja la autorización del backend: solo exige "Signos Vitales":Edit.
+export function resolveCanEditVitals(
+  apiPermissions: MyPermissionsMap | null,
+  options: { isPlatformSuperAdmin?: boolean },
+): boolean {
+  if (options.isPlatformSuperAdmin) return true
+  return apiPermissions?.[VITALS_API_MODULE]?.canEdit === true
+}
+
 // Mapa de visibilidad del shell admin (menú + route guard)
 export function buildViewMap(
   apiPermissions: MyPermissionsMap | null,
