@@ -138,6 +138,60 @@ test('Audit 6: Platform SuperAdmin bypasses API permissions and receives full ac
     assert.equal(actionMap[info.id].view, true)
     assert.equal(actionMap[info.id].create, true)
     assert.equal(actionMap[info.id].edit, true)
-    assert.equal(actionMap[info.id].delete, true)
+    assert.equal(actionMap[info.id].delete, info.id === 'conversaciones' ? false : true)
   }
+})
+
+test('Audit 7: Asesor / Conversaciones permissions mapping and dual-view rule', () => {
+  assert.equal(API_MODULE_TO_SHELL['Chat'], 'conversaciones')
+  assert.equal(API_MODULE_TO_SHELL['Escalamientos'], 'conversaciones')
+
+  // Case 1: Missing Escalamientos view -> conversaciones hidden
+  const chatOnly: MyPermissionsMap = {
+    Chat: { canView: true, canCreate: true, canEdit: false, canDelete: false },
+    Escalamientos: { canView: false, canCreate: false, canEdit: false, canDelete: false },
+  }
+  const viewMapChatOnly = buildViewMap(chatOnly, testUserOptions)
+  const actionMapChatOnly = buildActionMap(chatOnly, testUserOptions)
+  assert.equal(viewMapChatOnly.conversaciones, false)
+  assert.equal(actionMapChatOnly.conversaciones.view, false)
+
+  // Case 2: Missing Chat view -> conversaciones hidden
+  const escalationsOnly: MyPermissionsMap = {
+    Chat: { canView: false, canCreate: false, canEdit: false, canDelete: false },
+    Escalamientos: { canView: true, canCreate: false, canEdit: true, canDelete: false },
+  }
+  const viewMapEscOnly = buildViewMap(escalationsOnly, testUserOptions)
+  const actionMapEscOnly = buildActionMap(escalationsOnly, testUserOptions)
+  assert.equal(viewMapEscOnly.conversaciones, false)
+  assert.equal(actionMapEscOnly.conversaciones.view, false)
+
+  // Case 3: Both Chat and Escalamientos view granted -> visible and actions mapped
+  const bothGranted: MyPermissionsMap = {
+    Chat: { canView: true, canCreate: true, canEdit: false, canDelete: false },
+    Escalamientos: { canView: true, canCreate: false, canEdit: true, canDelete: true },
+  }
+  const viewMapBoth = buildViewMap(bothGranted, testUserOptions)
+  const actionMapBoth = buildActionMap(bothGranted, testUserOptions)
+  assert.equal(viewMapBoth.conversaciones, true)
+  assert.equal(actionMapBoth.conversaciones.view, true)
+  assert.equal(actionMapBoth.conversaciones.create, true)
+  assert.equal(actionMapBoth.conversaciones.edit, true)
+  assert.equal(actionMapBoth.conversaciones.delete, false)
+})
+
+test('Audit 8: Administrador still requires Chat and Escalamientos permissions', () => {
+  const adminOptions = {
+    ...testUserOptions,
+    roleId: '11111111-1111-1111-1111-111111111111',
+  }
+
+  const actionMap = buildActionMap({}, adminOptions)
+  const viewMap = buildViewMap({}, adminOptions)
+
+  assert.equal(viewMap.conversaciones, false)
+  assert.equal(actionMap.conversaciones.view, false)
+  assert.equal(actionMap.conversaciones.create, false)
+  assert.equal(actionMap.conversaciones.edit, false)
+  assert.equal(actionMap.conversaciones.delete, false)
 })

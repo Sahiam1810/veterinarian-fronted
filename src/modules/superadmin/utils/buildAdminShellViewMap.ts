@@ -15,6 +15,8 @@ export const API_MODULE_TO_SHELL: Record<string, ModuleId> = {
   'Órdenes Médicas': 'ordenesMedicas',
   Insumos: 'insumos',
   Hospitalización: 'hospitalizacion',
+  Chat: 'conversaciones',
+  Escalamientos: 'conversaciones',
 }
 
 // Acción CRUD sobre un módulo del shell
@@ -53,6 +55,7 @@ function emptyActionMap(inicioView: boolean): ShellActionMap {
     ordenesMedicas: { ...ALL_FALSE_ACTIONS },
     insumos: { ...ALL_FALSE_ACTIONS },
     hospitalizacion: { ...ALL_FALSE_ACTIONS },
+    conversaciones: { ...ALL_FALSE_ACTIONS },
   }
 }
 
@@ -72,11 +75,14 @@ function platformFullActionMap(): ShellActionMap {
     'ordenesMedicas',
     'insumos',
     'hospitalizacion',
+    'conversaciones',
   ]
   const map = {} as ShellActionMap
   for (const id of ids) {
     map[id] = { ...ALL_TRUE_ACTIONS }
   }
+  // Asesor reutiliza los permisos funcionales de Recepcionista: no elimina.
+  map.conversaciones.delete = false
   return map
 }
 
@@ -110,6 +116,18 @@ export function buildActionMap(
         edit: isViewAllowed && !!perm.canEdit,
         delete: isViewAllowed && !!perm.canDelete,
       }
+    }
+
+    // Regla Asesor: requiere canView tanto en Chat como en Escalamientos
+    const hasChatView = !!apiPermissions['Chat']?.canView
+    const hasEscalationsView = !!apiPermissions['Escalamientos']?.canView
+    const canViewConversaciones = hasChatView && hasEscalationsView
+
+    actions.conversaciones = {
+      view: canViewConversaciones,
+      create: canViewConversaciones && !!apiPermissions['Chat']?.canCreate,
+      edit: canViewConversaciones && !!apiPermissions['Escalamientos']?.canEdit,
+      delete: false,
     }
   }
 

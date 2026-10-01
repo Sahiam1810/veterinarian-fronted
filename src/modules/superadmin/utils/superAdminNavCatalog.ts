@@ -18,12 +18,14 @@ export const MODULES_INFO: ModuleInfo[] = [
   { id: 'hospitalizacion', label: 'Hospitalización', supportsCreate: true, supportsEdit: true, supportsDelete: false },
   { id: 'agenda', label: 'Agenda', supportsCreate: true, supportsEdit: true, supportsDelete: true },
   { id: 'reportes', label: 'Reportes', supportsCreate: false, supportsEdit: false, supportsDelete: false },
+  { id: 'conversaciones', label: 'Asesor', supportsCreate: true, supportsEdit: true, supportsDelete: false },
 ]
 
 export const SUPER_ADMIN_NAV_CATALOG: AdminNavItemMeta[] = [
   { id: 'inicio', moduleId: 'inicio', label: 'Inicio' },
   { id: 'usuarios', moduleId: 'usuarios', label: 'Usuarios' },
   { id: 'mascotas', moduleId: 'mascotas', label: 'Mascotas' },
+  { id: 'conversaciones', moduleId: 'conversaciones', label: 'Asesor' },
   { id: 'especies-razas', moduleId: 'especiesRazas', label: 'Especies y razas' },
   { id: 'servicios', moduleId: 'servicios', label: 'Servicios' },
   { id: 'diagnosticos', moduleId: 'mascotas', label: 'Diagnósticos' },

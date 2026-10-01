@@ -27,6 +27,7 @@ import {
 import { useAdminShellAccess, useNotificationsSuperAdmin } from '@/modules/superadmin/hooks'
 import { PuntoInicio as VetPuntoInicio, OrdenesMedicasPendientesPanel } from '@/modules/veterinario'
 import { PuntoInicio as RecepPuntoInicio } from '@/modules/recepcionista'
+import { EscalacionesPage } from '@/modules/recepcionista/pages/escalaciones'
 import { isPublicPolicyRoute, PoliticaTratamientoDatosPage } from '@/modules/public'
 import { HospitalizacionPage } from '@/modules/hospitalizacion'
 
@@ -35,6 +36,7 @@ const ROUTE_TO_MODULE: Record<string, ModuleId> = {
   usuarios: 'usuarios',
   mascotas: 'mascotas',
   duenos: 'duenos',
+  conversaciones: 'conversaciones',
   'especies-razas': 'especiesRazas',
   servicios: 'servicios',
   diagnosticos: 'historiaClinica',
@@ -319,6 +321,41 @@ function SuperAdminApp({
         {...shellProps}
         activeRoute={currentRoute}
       />
+    )
+  }
+
+  if (currentRoute === 'conversaciones') {
+    return (
+      <div className="h-screen max-h-screen overflow-hidden flex flex-col bg-bone relative text-charcoal">
+        <SuperAdminHeader
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+          userName={shellProps.userName}
+          userRole={shellProps.userRole}
+          notifications={notifications}
+          isLoadingNotifications={isLoadingNotifications}
+          notificationsError={notificationsError}
+          onMarkNotificationRead={onMarkNotificationRead}
+          onMarkAllNotificationsRead={onMarkAllNotificationsRead}
+          onReloadNotifications={onReloadNotifications}
+          onProfileClick={shellProps.onProfileClick}
+          onLogout={shellProps.onLogout}
+        />
+        <div className="flex-1 flex overflow-hidden relative">
+          <SuperAdminSidebar
+            isOpen={isSidebarOpen}
+            onClose={closeSidebar}
+            activeRoute="conversaciones"
+            onNavigate={handleNavigate}
+            canViewModule={canViewModule}
+            onLogout={onLogout}
+          />
+          <main className="flex-1 overflow-hidden relative p-3 sm:p-4 lg:p-5 flex flex-col min-w-0 max-w-[1400px] w-full mx-auto animate-view-popup">
+            <DashboardBackgroundDecoration />
+            <EscalacionesPage />
+          </main>
+        </div>
+      </div>
     )
   }
 

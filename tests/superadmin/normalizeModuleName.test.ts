@@ -27,6 +27,9 @@ test('normalizeModuleName preserves mappings for all other modules', () => {
   assert.equal(normalizeModuleName('Reportes'), 'reportes')
   assert.equal(normalizeModuleName('Órdenes Médicas'), 'ordenesMedicas')
   assert.equal(normalizeModuleName('Insumos'), 'insumos')
+  assert.equal(normalizeModuleName('Chat'), 'conversaciones')
+  assert.equal(normalizeModuleName('Escalamientos'), 'conversaciones')
+  assert.equal(normalizeModuleName('Asesor'), 'conversaciones')
 })
 
 test('normalizeModuleName returns null for unknown module names', () => {
