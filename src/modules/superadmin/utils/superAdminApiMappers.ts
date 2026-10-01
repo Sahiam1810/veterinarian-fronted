@@ -135,11 +135,57 @@ export function parseAgeToInt(age: string): number {
   return Number.isFinite(value) ? Math.min(Math.max(value, 0), 150) : 1
 }
 
-// Extrae peso numérico del texto del formulario (kg)
-export function parseWeightToDecimal(weight: string): number {
-  const match = weight.replace(',', '.').match(/[\d.]+/)
-  const value = match ? Number.parseFloat(match[0]) : 1
-  return Number.isFinite(value) && value > 0 ? value : 1
+// Extrae peso numérico del texto del formulario (kg). Retorna null si no hay peso válido.
+export function parseWeightToDecimal(weight?: string | number | null): number | null {
+  if (weight == null) return null
+  if (typeof weight === 'number') {
+    if (!Number.isFinite(weight) || weight <= 0) return null
+    return Math.round(weight * 100) / 100
+  }
+  const trimmed = weight.trim().toLowerCase()
+  if (
+    !trimmed ||
+    trimmed === 'sin peso' ||
+    trimmed === 'peso pendiente' ||
+    trimmed === 'null' ||
+    trimmed === 'undefined' ||
+    trimmed === '—' ||
+    trimmed === '-'
+  ) {
+    return null
+  }
+  const match = trimmed.replace(',', '.').match(/[\d.]+/)
+  if (!match) return null
+  const value = Number.parseFloat(match[0])
+  return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : null
+}
+
+// Formatea el peso de una mascota para visualización UI ('12.5 kg' o 'Sin peso')
+export function formatPetWeight(weight?: number | string | null): string {
+  if (weight === null || weight === undefined) return 'Sin peso'
+  if (typeof weight === 'number') {
+    if (!Number.isFinite(weight) || weight <= 0) return 'Sin peso'
+    return `${weight} kg`
+  }
+  const trimmed = String(weight).trim()
+  if (
+    !trimmed ||
+    trimmed === 'null' ||
+    trimmed === 'undefined' ||
+    trimmed === '—' ||
+    trimmed === '-'
+  ) {
+    return 'Sin peso'
+  }
+  const lower = trimmed.toLowerCase()
+  if (lower === 'sin peso' || lower === 'peso pendiente') {
+    return 'Sin peso'
+  }
+  const match = trimmed.replace(',', '.').match(/[\d.]+/)
+  if (!match) return 'Sin peso'
+  const val = Number.parseFloat(match[0])
+  if (!Number.isFinite(val) || val <= 0) return 'Sin peso'
+  return `${val} kg`
 }
 
 // true si el texto de edad es solo dígitos (años)
@@ -189,7 +235,7 @@ export function mapPetToMascota(params: {
     breed: raceName || 'Sin raza',
     age: `${pet.age} año${pet.age === 1 ? '' : 's'}`,
     sex: mapGenderToSexo(pet.gender),
-    weight: `${pet.weight} kg`,
+    weight: formatPetWeight(pet.weight),
     ownerId: clientPet?.clientId ?? owner?.id ?? '',
     ownerName: owner?.name ?? 'Sin dueño',
     ownerPhone: owner?.phone ?? '',

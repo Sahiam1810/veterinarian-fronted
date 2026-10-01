@@ -46,7 +46,7 @@ export function RecepMascotaModal({
   const [raceId, setRaceId] = useState('')
   const [age, setAge] = useState<number | ''>(1)
   const [gender, setGender] = useState('Hembra')
-  const [weight, setWeight] = useState<number | ''>(5)
+  const [weight, setWeight] = useState<number | ''>('')
   const [clientId, setClientId] = useState('')
   const [observations, setObservations] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -79,7 +79,7 @@ export function RecepMascotaModal({
       setRaceId(editingPet.raceId || racesList[0]?.id || '')
       setAge(typeof editingPet.age === 'number' ? editingPet.age : 1)
       setGender(mapRecepApiGenderToUi(editingPet.gender))
-      setWeight(typeof editingPet.weight === 'number' ? editingPet.weight : 5)
+      setWeight(typeof editingPet.weight === 'number' && editingPet.weight > 0 ? editingPet.weight : '')
       setClientId('')
       setObservations(editingPet.observations || '')
       setError(null)
@@ -97,7 +97,7 @@ export function RecepMascotaModal({
     setRaceId(initialRaceId)
     setAge(1)
     setGender('Hembra')
-    setWeight(5)
+    setWeight('')
     setClientId(duenosList[0]?.id || '')
     setObservations('')
     setError(null)
@@ -134,13 +134,18 @@ export function RecepMascotaModal({
     }
 
     const parsedAge = typeof age === 'number' ? age : parseInt(String(age), 10) || 0
-    const parsedWeight = typeof weight === 'number' ? weight : parseFloat(String(weight)) || 0
+    const parsedWeight =
+      weight === '' || weight === null || weight === undefined
+        ? null
+        : typeof weight === 'number'
+          ? weight
+          : parseFloat(String(weight).replace(',', '.'))
 
     if (parsedAge < 0) {
       setError('La edad no puede ser negativa.')
       return
     }
-    if (parsedWeight <= 0) {
+    if (parsedWeight !== null && (Number.isNaN(parsedWeight) || parsedWeight <= 0)) {
       setError('El peso debe ser mayor a 0 kg.')
       return
     }
@@ -340,17 +345,17 @@ export function RecepMascotaModal({
 
             <div>
               <label className="block text-xs font-bold text-charcoal mb-1.5" htmlFor="mascota-weight">
-                Peso (kg) <span className="text-brand">*</span>
+                Peso (kg)
               </label>
               <input
                 id="mascota-weight"
                 type="number"
                 min="0.01"
                 step="any"
-                required
                 disabled={isLoading}
                 value={weight}
                 onChange={(e) => setWeight(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                placeholder="Ej. 12.5"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-border-tan text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition disabled:bg-bone"
               />
             </div>

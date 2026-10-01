@@ -45,7 +45,7 @@ export interface ApiPet {
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string

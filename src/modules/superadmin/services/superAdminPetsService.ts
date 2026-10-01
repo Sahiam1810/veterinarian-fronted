@@ -1,11 +1,11 @@
-import { apiClient } from '@/services'
+import { apiClient } from '../../../services/apiClient.ts'
 
 export interface ApiPetResponse {
   id: string
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string
@@ -17,7 +17,7 @@ export interface ApiCreatePetRequest {
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string
@@ -28,7 +28,7 @@ export interface ApiUpdatePetRequest {
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string

@@ -138,7 +138,7 @@ export function mapDbPetToUi(
     species: pet.species?.name ?? 'Mascota',
     breed: pet.race?.name ?? 'Sin raza',
     ageLabel: pet.age != null ? `${pet.age} Años` : 'Sin edad',
-    weightLabel: pet.weight_kg != null ? `${pet.weight_kg} kg` : 'Sin peso',
+    weightLabel: pet.weight_kg != null && pet.weight_kg > 0 ? `${pet.weight_kg} kg` : 'Sin peso',
     sexLabel: formatGender(pet.gender),
     status: 'ACTIVO' as const,
     photoUrl: null,

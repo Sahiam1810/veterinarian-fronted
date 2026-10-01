@@ -11,7 +11,7 @@ export interface VetMascotaFormData {
   raceId: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   clientId?: string
   photoUrl?: string | null
@@ -43,7 +43,7 @@ export function VetMascotaModal({
   const [raceId, setRaceId] = useState('')
   const [age, setAge] = useState<number | ''>(1)
   const [gender, setGender] = useState('Hembra')
-  const [weight, setWeight] = useState<number | ''>(5.0)
+  const [weight, setWeight] = useState<number | ''>('')
   const [clientId, setClientId] = useState('')
   const [observations, setObservations] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
@@ -72,7 +72,7 @@ export function VetMascotaModal({
             ? 'Hembra'
             : 'Macho'
         )
-        setWeight(typeof initialData.weight === 'number' ? initialData.weight : 5)
+        setWeight(typeof initialData.weight === 'number' && initialData.weight > 0 ? initialData.weight : '')
         setClientId(initialData.clientId || '')
         setObservations(initialData.observations || '')
         setPhotoUrl(initialData.photoUrl || '')
@@ -82,7 +82,7 @@ export function VetMascotaModal({
         setRaceId(racesList[0]?.id || '')
         setAge(1)
         setGender('Hembra')
-        setWeight(5)
+        setWeight('')
         setClientId(clientsList[0]?.id || '')
         setObservations('')
         setPhotoUrl('')
@@ -121,13 +121,18 @@ export function VetMascotaModal({
     }
 
     const parsedAge = typeof age === 'number' ? age : parseInt(String(age), 10) || 0
-    const parsedWeight = typeof weight === 'number' ? weight : parseFloat(String(weight)) || 0
+    const parsedWeight =
+      weight === '' || weight === null || weight === undefined
+        ? null
+        : typeof weight === 'number'
+          ? weight
+          : parseFloat(String(weight).replace(',', '.'))
 
     if (parsedAge < 0) {
       setFormError('La edad no puede ser negativa.')
       return
     }
-    if (parsedWeight <= 0) {
+    if (parsedWeight !== null && (Number.isNaN(parsedWeight) || parsedWeight <= 0)) {
       setFormError('El peso debe ser mayor a 0 kg.')
       return
     }
@@ -287,15 +292,15 @@ export function VetMascotaModal({
 
             <div>
               <label className="block text-xs font-bold text-charcoal mb-1">
-                Peso (kg) <span className="text-terracotta">*</span>
+                Peso (kg)
               </label>
               <input
                 type="number"
                 min="0.1"
                 step="0.1"
-                required
                 value={weight}
                 onChange={(e) => setWeight(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                placeholder="Ej. 12.5"
                 className="w-full px-3 py-2.5 rounded-xl border border-border-tan bg-bone/30 text-sm text-charcoal focus:outline-none focus:ring-2 focus:ring-brand/20 focus:bg-white transition"
               />
             </div>

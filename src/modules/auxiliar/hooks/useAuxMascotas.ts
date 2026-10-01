@@ -130,7 +130,7 @@ export function useAuxMascotas() {
           breed: raceName,
           age: `${p.age} Años`,
           gender: genderFormatted,
-          weight: String(p.weight),
+          weight: p.weight != null && p.weight > 0 ? `${p.weight} kg` : 'Sin peso',
           ownerName,
           ownerPhone,
           nextAppointment: nextAppointmentText,

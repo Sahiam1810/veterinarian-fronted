@@ -232,7 +232,7 @@ export function useVetMascotas(enabled: boolean) {
       // S49: raw.gender viene del backend como "M"/"F" (PetGender), hay que
       // traducirlo a "Macho"/"Hembra" para que el formulario lo entienda.
       gender: raw?.gender ? mapGenderToSexo(raw.gender) : (detail?.sexLabel === 'Macho' ? 'Macho' : 'Hembra'),
-      weight: typeof raw?.weight === 'number' ? raw.weight : 5,
+      weight: typeof raw?.weight === 'number' ? raw.weight : null,
       observations: raw?.observations || detail?.allergyAlert || '',
       clientId: matchingCp?.clientId,
       photoUrl: raw?.photoUrl || null,

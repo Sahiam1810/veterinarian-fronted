@@ -154,7 +154,8 @@ function MascotaDrawer({
       // Solo número: el estándar UI es años / kg
       setAge(String(parseAgeToInt(editingMascota.age)))
       setSex(editingMascota.sex)
-      setWeight(String(parseWeightToDecimal(editingMascota.weight)))
+      const parsedWeight = parseWeightToDecimal(editingMascota.weight)
+      setWeight(parsedWeight !== null ? String(parsedWeight) : '')
       setOwnerId(editingMascota.ownerId)
       setStatus(editingMascota.status)
       setPhotoUrl(editingMascota.photoUrl || '')
@@ -266,7 +267,7 @@ function MascotaDrawer({
       breed: breed.trim(),
       age: age.trim() || '0',
       sex,
-      weight: weight.trim() || '0',
+      weight: weight.trim(),
       ownerId,
       status,
       photoUrl: photoUrl.trim() || undefined,
