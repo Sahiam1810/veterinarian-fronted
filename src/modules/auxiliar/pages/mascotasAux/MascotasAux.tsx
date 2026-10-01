@@ -22,7 +22,7 @@ function toFichaItem(pet: MascotaAuxItem): MascotaFichaModalItem {
       breed: pet.breed,
       ageLabel: pet.age,
       sexLabel: pet.gender,
-      weightLabel: `${pet.weight} kg`,
+      weightLabel: pet.weight,
       microchip: 'No disponible',
       ownerName: pet.ownerName,
       ownerPhone: pet.ownerPhone || 'No disponible',
@@ -142,7 +142,7 @@ export function MascotasAux(_props: MascotasAuxProps) {
                         <div className="flex flex-col text-xs text-gray-700">
                           <span>{pet.age}</span>
                           <span className="font-semibold text-sage">{pet.gender}</span>
-                          <span className="text-[10px] text-gray-500">{pet.weight} kg</span>
+                          <span className="text-[10px] text-gray-500">{pet.weight}</span>
                         </div>
                       </td>
 

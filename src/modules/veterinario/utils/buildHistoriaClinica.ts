@@ -99,9 +99,9 @@ export function buildHistoriaClinica(input: {
     sexLabel: input.detail.sexLabel,
     breed: input.detail.breed,
     ageLabel: input.detail.ageLabel,
-    weightLabel: latest?.weightAtVisit
+    weightLabel: latest?.weightAtVisit != null && latest.weightAtVisit > 0
       ? `${latest.weightAtVisit} kg`
-      : input.detail.weightLabel,
+      : (input.detail.weightLabel && input.detail.weightLabel !== '—' ? input.detail.weightLabel : 'Sin peso'),
     ownerName: input.detail.ownerName,
     ownerPhone: input.detail.ownerPhone,
     photoUrl: input.detail.photoUrl,

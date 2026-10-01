@@ -29,7 +29,7 @@ export interface RecepMascotaFormData {
   raceId: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   clientId: string
   photoUrl?: string | null
@@ -44,7 +44,7 @@ export interface RecepMascotaRawFields {
   raceId: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
 }
 

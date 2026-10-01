@@ -26,8 +26,8 @@ function formatAgeLabel(age: number): string {
   return `${age} años`
 }
 
-function formatWeightLabel(weight: number): string {
-  if (!Number.isFinite(weight)) return '—'
+function formatWeightLabel(weight?: number | null): string {
+  if (weight == null || !Number.isFinite(weight) || weight <= 0) return 'Sin peso'
   return `${weight} kg`
 }
 

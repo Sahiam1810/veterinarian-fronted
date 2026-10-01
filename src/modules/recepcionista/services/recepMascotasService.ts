@@ -89,7 +89,8 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
     const ageLabel = ageNum === 0 ? '0 años' : `${ageNum} ${ageNum === 1 ? 'año' : 'años'}`
     const sexLabel = pet.gender?.toLowerCase().includes('h') || pet.gender === 'Hembra' ? 'Hembra' : 'Macho'
     const patientCode = `PAC-${pet.id.slice(0, 8).toUpperCase()}`
-    const weightNum = typeof pet.weight === 'number' ? pet.weight : 5
+    const weightNum = typeof pet.weight === 'number' && Number.isFinite(pet.weight) && pet.weight > 0 ? pet.weight : null
+    const weightLabel = weightNum != null ? `${weightNum} kg` : 'Sin peso'
 
     const listItem: RecepMascotaListItem = {
       id: pet.id,
@@ -109,7 +110,7 @@ export async function fetchRecepMascotasDirectory(): Promise<RecepMascotasDirect
     detailsById[pet.id] = {
       ...listItem,
       patientCode,
-      weightLabel: `${weightNum} kg`,
+      weightLabel,
       microchip: `981020${pet.id.slice(0, 6).toUpperCase()}`,
       ownerPhone: client?.phoneNumber || '',
       allergyAlert: pet.observations || null,
@@ -153,7 +154,7 @@ export interface CreateRecepPetWithClientPayload {
   raceId: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   clientId?: string
   photoUrl?: string | null

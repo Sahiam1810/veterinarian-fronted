@@ -95,7 +95,7 @@ export interface ApiPetResponse {
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string
@@ -106,7 +106,7 @@ export interface ApiCreatePetRequest {
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string
@@ -117,7 +117,7 @@ export interface ApiUpdatePetRequest {
   name: string
   age: number
   gender: string
-  weight: number
+  weight?: number | null
   observations?: string | null
   speciesId: string
   raceId: string
