@@ -70,6 +70,7 @@ const DEFAULT_PERMISSIONS_ALL: Record<ModuleId, ModulePermission> = {
   agenda: { view: true, create: true, edit: true, delete: true },
   historiaClinica: { view: false, create: false, edit: false, delete: false },
   reportes: { view: true, create: true, edit: true, delete: true },
+  conversaciones: { view: true, create: true, edit: true, delete: true },
 }
 
 const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
@@ -87,6 +88,7 @@ const DEFAULT_PERMISSIONS_EMPTY: Record<ModuleId, ModulePermission> = {
   agenda: { view: false, create: false, edit: false, delete: false },
   historiaClinica: { view: false, create: false, edit: false, delete: false },
   reportes: { view: false, create: false, edit: false, delete: false },
+  conversaciones: { view: false, create: false, edit: false, delete: false },
 }
 
 // Rol vacío seguro cuando /api/Roles responde 403 o la lista aún no cargó

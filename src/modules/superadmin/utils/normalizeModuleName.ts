@@ -19,5 +19,6 @@ export function normalizeModuleName(name: string): ModuleId | null {
   if (norm.includes('orden')) return 'ordenesMedicas'
   if (norm.includes('insumo')) return 'insumos'
   if (norm.includes('hospital')) return 'hospitalizacion'
+  if (norm.includes('chat') || norm.includes('escalam') || norm.includes('asesor') || norm.includes('conversaci')) return 'conversaciones'
   return null
 }
