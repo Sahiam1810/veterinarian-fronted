@@ -1,6 +1,11 @@
 import type { UserRole } from '../types/auth'
 
 export const SUPERADMIN_ROLE_ID = '99999999-9999-9999-9999-999999999999'
+export const CLIENT_ROLE_ID = '77777777-7777-7777-7777-777777777777'
+
+export function isPersistedClientRole(roleId: string | undefined | null): boolean {
+  return roleId?.trim().toLowerCase() === CLIENT_ROLE_ID
+}
 
 export function isPersistedSuperAdminRole(roleId: string | undefined | null): boolean {
   return roleId?.trim().toLowerCase() === SUPERADMIN_ROLE_ID

@@ -411,6 +411,8 @@ test('resolveRecepNavPermissionsFromModules includes hospitalizacion when grante
     },
   })
 
+  assert.ok(permissions)
+  if (!permissions) return
   assert.equal(permissions.includes('recep.hospitalizacion'), true)
 
   const visibleItems = resolveNavCatalog(
@@ -434,6 +436,8 @@ test('resolveRecepNavPermissionsFromModules oculta hospitalizacion sin View', ()
     },
   })
 
+  assert.ok(permissions)
+  if (!permissions) return
   assert.equal(permissions.includes('recep.hospitalizacion'), false)
 })
 
