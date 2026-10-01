@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { useCurrentPermissions } from '@/modules/auth'
 import type { ModuleId } from '../types'
 import { superAdminNavItems } from '../components/SuperAdminSidebar'
-import { buildActionMap, buildViewMap } from '../utils/buildAdminShellViewMap'
+import { buildActionMap, buildViewMap, resolveCanEditVitals } from '../utils/buildAdminShellViewMap'
 
 export { buildViewMap, buildActionMap } from '../utils/buildAdminShellViewMap'
 
@@ -83,11 +83,17 @@ export function useAdminShellAccess(options: {
     [canViewModule],
   )
 
+  const canEditVitals = useMemo(
+    () => resolveCanEditVitals(apiPermissions, { isPlatformSuperAdmin }),
+    [apiPermissions, isPlatformSuperAdmin],
+  )
+
   return {
     canViewModule,
     canCreateModule,
     canEditModule,
     canDeleteModule,
+    canEditVitals,
     viewMap,
     actionMap,
     firstAllowedRoute,

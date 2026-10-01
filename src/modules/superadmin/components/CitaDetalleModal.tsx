@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { CalendarIcon } from '@/global/components'
 import type { CitaSuperAdmin } from '../types'
-import { getCitaDetalleFooterActions } from '../utils/citaDetalleActions'
+import { canRegisterCitaVitals, getCitaDetalleFooterActions } from '../utils/citaDetalleActions'
 import { TomarSignosVitalesModal } from '@/modules/recepcionista/components'
 
 export interface CitaDetalleModalProps {
@@ -10,6 +10,7 @@ export interface CitaDetalleModalProps {
   isPaid?: boolean
   canEdit?: boolean
   canDelete?: boolean
+  canEditVitals?: boolean
   onClose: () => void
   onCancel: (citaId: string) => void
   onReprogramar: (cita: CitaSuperAdmin) => void
@@ -42,6 +43,7 @@ export function CitaDetalleModal({
   isPaid = false,
   canEdit = true,
   canDelete = true,
+  canEditVitals = false,
   onClose,
   onCancel,
   onReprogramar,
@@ -61,7 +63,7 @@ export function CitaDetalleModal({
   const showReprogramar = actions.showReprogramar && canEdit
   const showMarcarNoAsistio = actions.showMarcarNoAsistio && canEdit
   const showMarcarAtendida = actions.showMarcarAtendida && canEdit
-  const canTakeVitals = cita.status === 'AGENDADA' || cita.status === 'EN_ESPERA'
+  const canTakeVitals = canRegisterCitaVitals(cita.status, canEditVitals)
   const hasVitals =
     cita.weightKg != null ||
     cita.temperature != null ||

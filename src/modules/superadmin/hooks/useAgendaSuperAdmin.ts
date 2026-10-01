@@ -21,9 +21,10 @@ import {
   fetchStatusAppointments,
   fetchAvailabilitiesByVeterinarian,
 } from '../services'
-import { mapAppointmentToCita, buildWeekDays, formatNotesWithConsultorio } from '../utils/superAdminApiMappers'
+import { buildWeekDays, formatNotesWithConsultorio } from '../utils/superAdminApiMappers'
 import { resolveAvailabilityId, NO_VET_AVAILABILITY_MESSAGE } from '../utils/resolveAvailabilityId'
 import { isAppointmentDateInThePast, PAST_APPOINTMENT_MESSAGE } from '../utils/appointmentDateGuard'
+import { loadAgendaData, type AgendaCatalogFailure } from './agendaLoadHelpers'
 import { ApiError } from '@/services'
 
 const PAID_APPOINTMENTS_KEY = 'huellitas_paid_appointments'
@@ -65,6 +66,8 @@ export function useAgendaSuperAdmin() {
   const [serviciosOpciones, setServiciosOpciones] = useState<AgendaServiceOption[]>([])
   const [mascotasOpciones, setMascotasOpciones] = useState<AgendaPetOption[]>([])
   const [statusCatalog, setStatusCatalog] = useState<{ id: string; name: string }[]>([])
+  const [agendaError, setAgendaError] = useState<string | null>(null)
+  const [catalogFailures, setCatalogFailures] = useState<AgendaCatalogFailure[]>([])
 
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'semana' | 'dia'>('semana')
@@ -136,118 +139,37 @@ export function useAgendaSuperAdmin() {
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Catálogos opcionales: Auxiliar con Citas.View no siempre tiene Usuarios/Veterinarios.
-      // No deben tumbar la agenda si Appointments ya cargó.
-      const settleList = async <T,>(promise: Promise<T[]>): Promise<T[]> => {
-        try {
-          return await promise
-        } catch (err) {
-          if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
-            return []
-          }
-          throw err
-        }
-      }
-
-      const [
-        apiAppointments,
-        veterinarians,
-        pets,
-        clientsPets,
-        clients,
-        species,
-        races,
-        services,
-        statuses,
-      ] = await Promise.all([
-        fetchAppointments(),
-        settleList(fetchVeterinarians()),
-        fetchPets(),
-        fetchClientsPets(),
-        fetchClients(),
-        fetchSpecies(),
-        fetchRaces(),
-        fetchServices(),
-        fetchStatusAppointments(),
-      ])
-
-      const clientsById = new Map(clients.map((c) => [c.id, c]))
-      const petsById = new Map(pets.map((p) => [p.id, p]))
-      const speciesById = new Map(species.map((s) => [s.id, s.name]))
-      const racesById = new Map(races.map((r) => [r.id, r.name]))
-      const vetsById = new Map(veterinarians.map((v) => [v.id, v]))
-
-      const statusesById = new Map(statuses.map((s) => [s.id.toLowerCase(), s.name]))
-      setStatusCatalog(statuses.map((s) => ({ id: s.id, name: s.name })))
-
-      const mapped = apiAppointments.map((apt) => {
-        const clientPet = clientsPets.find((cp) => cp.id === apt.clientPetId)
-        const pet = clientPet ? petsById.get(clientPet.petId) : undefined
-        const client = clientPet ? clientsById.get(clientPet.clientId) : undefined
-        const vet = vetsById.get(apt.veterinarianId)
-        const statusName = apt.statusName || (apt.statusId ? statusesById.get(apt.statusId.toLowerCase()) : undefined)
-
-        return mapAppointmentToCita(apt, {
-          petName: pet?.name,
-          petBreed: pet ? racesById.get(pet.raceId) : undefined,
-          species: pet ? speciesById.get(pet.speciesId) : undefined,
-          ownerName: client?.fullName,
-          professionalName: vet?.userFullName ?? undefined,
-          statusName,
-        })
+      const result = await loadAgendaData({
+        appointments: fetchAppointments,
+        veterinarians: fetchVeterinarians,
+        pets: fetchPets,
+        clientsPets: fetchClientsPets,
+        clients: fetchClients,
+        species: fetchSpecies,
+        races: () => fetchRaces(),
+        services: fetchServices,
+        statuses: fetchStatusAppointments,
       })
 
-      setCitas(mapped)
-
-      // Filtro de profesionales: catálogo si hay permiso; si no, IDs únicos de las citas
-      if (veterinarians.length > 0) {
-        setProfesionalesOpciones(
-          veterinarians.map((v) => ({
-            id: v.id,
-            name: v.userFullName ?? 'Profesional',
-          })),
-        )
-      } else {
-        const fromCitas = new Map<string, string>()
-        for (const apt of apiAppointments) {
-          if (!fromCitas.has(apt.veterinarianId)) {
-            fromCitas.set(apt.veterinarianId, 'Profesional')
-          }
-        }
-        setProfesionalesOpciones(
-          [...fromCitas.entries()].map(([id, name]) => ({ id, name })),
-        )
+      if (!result.ok) {
+        setAgendaError(result.error)
+        setCatalogFailures([])
+        showToast(result.error)
+        return
       }
 
-      setServiciosOpciones(services.map((s) => ({ id: s.id, name: s.name })))
-      setMascotasOpciones(
-        clientsPets.map((cp) => {
-          const pet = petsById.get(cp.petId)
-          const client = clientsById.get(cp.clientId)
-          return {
-            clientPetId: cp.id,
-            petId: cp.petId,
-            petName: pet?.name ?? 'Mascota',
-            breed: pet ? racesById.get(pet.raceId) ?? '' : '',
-            species: pet ? speciesById.get(pet.speciesId) ?? '' : '',
-            ownerName: client?.fullName ?? 'Dueño',
-            clientId: cp.clientId,
-            ownerPhone: client?.phoneNumber ?? undefined,
-          }
-        }),
-      )
-
-      setSelectedCitaId((prev) => prev ?? mapped[0]?.id ?? null)
+      const { data } = result
+      setAgendaError(null)
+      setCatalogFailures(data.catalogFailures)
+      setStatusCatalog(data.statusCatalog)
+      setCitas(data.citas)
+      setProfesionalesOpciones(data.profesionalesOpciones)
+      setServiciosOpciones(data.serviciosOpciones)
+      setMascotasOpciones(data.mascotasOpciones)
+      setSelectedCitaId((prev) => prev ?? data.citas[0]?.id ?? null)
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.status === 403
-            ? 'No tienes permisos para ver la agenda.'
-            : err.message === 'Forbidden'
-              ? 'No tienes permisos para ver la agenda.'
-              : err.message
-          : 'No se pudieron cargar las citas.'
-      showToast(message)
+      console.error('Error armando la agenda', err)
+      showToast('No se pudieron cargar las citas.')
     } finally {
       setIsLoading(false)
     }
@@ -552,6 +474,8 @@ export function useAgendaSuperAdmin() {
   return {
     citas,
     isLoading,
+    agendaError,
+    catalogFailures,
     baseDate,
     setBaseDate,
     weekDays,

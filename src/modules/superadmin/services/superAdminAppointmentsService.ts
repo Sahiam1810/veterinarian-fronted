@@ -3,7 +3,9 @@ import { apiClient } from '../../../services/apiClient.ts'
 export interface ApiAppointmentResponse {
   id: string
   clientPetId: string
+  petName?: string | null
   veterinarianId: string
+  veterinarianName?: string | null
   serviceId: string
   serviceName?: string | null
   statusId: string

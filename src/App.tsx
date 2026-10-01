@@ -237,6 +237,7 @@ function SuperAdminApp({
     canCreateModule,
     canEditModule,
     canDeleteModule,
+    canEditVitals,
     firstAllowedRoute,
   } = useAdminShellAccess({
     id: user.id,
@@ -563,6 +564,7 @@ function SuperAdminApp({
       <AgendaSuperAdmin
         {...shellProps}
         activeRoute="agenda"
+        canEditVitals={canEditVitals}
       />
     )
   }
