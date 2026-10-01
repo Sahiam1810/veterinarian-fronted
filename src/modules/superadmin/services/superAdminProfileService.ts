@@ -1,5 +1,5 @@
-import { apiClient } from '@/services'
-import type { CurrentProfileResponse } from '@/modules/auth/types'
+import { apiClient } from '../../../services/apiClient.ts'
+import type { CurrentProfileResponse } from '../../auth/types/index.ts'
 
 // Perfil persistido del usuario autenticado, incluido SuperAdmin.
 export async function fetchCurrentProfile(): Promise<CurrentProfileResponse> {
